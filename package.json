@@ -1,0 +1,42 @@
+{
+  "name": "kermanatari_v1",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": "18.x"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@vercel/speed-insights": "^1.3.1",
+    "framer-motion": "^12.23.26",
+    "lucide-react": "^0.562.0",
+    "moment-jalaali": "^0.10.4",
+    "mongodb": "^7.0.0",
+    "mongoose": "^9.0.2",
+    "next": "14.1.0",
+    "next-auth": "^4.24.13",
+    "provinces-and-cities": "^1.0.7",
+    "react": "18.2.0",
+    "react-date-object": "^2.1.9",
+    "react-dom": "18.2.0",
+    "react-loading-skeleton": "^3.5.0",
+    "react-multi-date-picker": "^4.5.2",
+    "react-toastify": "^11.0.5",
+    "swiper": "^12.0.3",
+    "yup": "^1.7.1",
+    "zustand": "^5.0.9"
+  },
+  "devDependencies": {
+    "@types/node": "25.0.3",
+    "@types/react": "19.2.7",
+    "autoprefixer": "^10.4.23",
+    "postcss": "^8.5.6",
+    "tailwindcss": "3.4.1",
+    "typescript": "5.9.3"
+  }
+}
