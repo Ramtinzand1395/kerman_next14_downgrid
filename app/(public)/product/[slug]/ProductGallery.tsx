@@ -4,15 +4,12 @@ import { ZoomIn, Heart, Share2 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "react-toastify";
 import { useSession } from "next-auth/react";
-import { ProductImage } from "@/types";
-
 interface ProductGalleryProps {
   mainImage: string;
-  images: ProductImage[];
+  images: string[];
   title: string;
   productId: number;
 }
-
 export const ProductGallery = ({
   mainImage,
   images,
@@ -22,20 +19,21 @@ export const ProductGallery = ({
   const [activeImage, setActiveImage] = useState(mainImage);
   const [isZoomed, setIsZoomed] = useState(false);
   const { data: session } = useSession();
-
   // Combine main image with gallery images for the list, filtering duplicates if necessary
-  const allImages = [{ id: 0, url: mainImage, productId: 0 }, ...images];
+  const allImages = [
+    { id: 0, url: mainImage },
+    ...images.map((img, index) => ({ id: index + 1, url: img })),
+  ];
   const [isFavorite, setIsFavorite] = useState(false);
   const handleToggleFavorite = async () => {
     if (!session?.user?.id) {
       toast.error("برای افزودن به علاقه‌مندی ابتدا وارد شوید.");
       return;
     }
-
     try {
       if (isFavorite) {
         // حذف
-        const res = await fetch("/api/favorites", {
+        const res = await fetch("/api/profile/favorites", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ productId }),
@@ -56,7 +54,7 @@ export const ProductGallery = ({
         toast.info("از علاقه‌مندی‌ها حذف شد ❌");
       } else {
         // افزودن
-        const res = await fetch("/api/favorites", {
+        const res = await fetch("/api/profile/favorites", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ productId }),
@@ -127,10 +125,10 @@ export const ProductGallery = ({
 
       {/* Thumbnails */}
       <div className="grid grid-cols-5 gap-2">
-        {allImages.map((img, index) => (
+        {allImages.map((img) => (
           <button
             title="activeImage"
-            key={`${img.id}-${index}`}
+            key={img.url}
             onClick={() => setActiveImage(img.url)}
             className={`
               relative aspect-square rounded-lg overflow-hidden border-2 transition-all
@@ -142,11 +140,10 @@ export const ProductGallery = ({
             `}
           >
             <Image
-              width={50}
-              height={50}
               src={img.url}
-              alt={`Thumbnail ${index + 1}`}
-              className="w-full h-full object-cover"
+              alt={`Thumbnail`}
+              fill
+              className="object-cover"
             />
           </button>
         ))}

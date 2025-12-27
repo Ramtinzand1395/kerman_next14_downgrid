@@ -6,15 +6,18 @@ import TabSection from "./TabSection";
 import { Product } from "@/types";
 
 async function getProduct(slug: string) {
-  const res = await fetch(`${process.env.NEXTAUTH_URL}/api/products/${slug}`, {
-    cache: "no-store",
-  });
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_BASE_URL}/api/products/${slug}`,
+    {
+      cache: "no-store",
+    }
+  );
   return res.json();
 }
 
 async function getRelatedProducts(id: number) {
   const res = await fetch(
-    `${process.env.NEXTAUTH_URL}/api/products/related/${id}`,
+    `${process.env.NEXT_PUBLIC_BASE_URL}/api/products/related/${id}`,
     {
       cache: "no-store",
     }
@@ -29,14 +32,12 @@ export default async function ProductPage({
   const { slug } = await params;
   const product = await getProduct(slug);
   const { relatedProducts } = await getRelatedProducts(product.id);
-
   if (product.error)
     return (
       <div className="p-10 text-center text-red-500 font-semibold">
         {product.error}
       </div>
     );
-
   return (
     <div className="md:container md:mx-auto mx-2">
       {/* Product Top Section */}
@@ -45,7 +46,7 @@ export default async function ProductPage({
           {/* Right: Gallery (In RTL this is Right visually) */}
           <div className="lg:col-span-5 order-1">
             <ProductGallery
-              productId={product.id}
+              productId={product._id}
               mainImage={product.mainImage}
               images={product.images}
               title={product.title}
@@ -71,43 +72,44 @@ export default async function ProductPage({
             </h3>
 
             <div className="space-y-4">
-              {relatedProducts.length === 0 && (
+              {relatedProducts && relatedProducts.length === 0 && (
                 <p className="text-xs text-gray-500">محصول مشابهی یافت نشد.</p>
               )}
 
-              {relatedProducts.map((item: Product) => (
-                <div
-                  key={item.id}
-                  className="group flex gap-3 items-start cursor-pointer"
-                >
-                  {/* Image */}
-                  <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden shrink-0">
-                    <Image
-                      width={200}
-                      height={200}
-                      src={item.mainImage}
-                      alt={item.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform"
-                    />
-                  </div>
+              {relatedProducts &&
+                relatedProducts.map((item: Product) => (
+                  <div
+                    key={item._id}
+                    className="group flex gap-3 items-start cursor-pointer"
+                  >
+                    {/* Image */}
+                    <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                      <Image
+                        width={200}
+                        height={200}
+                        src={item.mainImage}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                      />
+                    </div>
 
-                  {/* Info */}
-                  <div>
-                    <h4 className="text-xs font-medium text-gray-700 leading-5 group-hover:text-red-500 transition-colors line-clamp-2">
-                      {item.title}
-                    </h4>
+                    {/* Info */}
+                    <div>
+                      <h4 className="text-xs font-medium text-gray-700 leading-5 group-hover:text-red-500 transition-colors line-clamp-2">
+                        {item.title}
+                      </h4>
 
-                    <div className="mt-2 text-left">
-                      <span className="text-xs font-bold text-gray-900">
-                        {item.discountPrice || item.price}
-                      </span>
-                      <span className="text-[10px] text-gray-400 mr-1">
-                        تومان
-                      </span>
+                      <div className="mt-2 text-left">
+                        <span className="text-xs font-bold text-gray-900">
+                          {item.discountPrice || item.price}
+                        </span>
+                        <span className="text-[10px] text-gray-400 mr-1">
+                          تومان
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
         </div>

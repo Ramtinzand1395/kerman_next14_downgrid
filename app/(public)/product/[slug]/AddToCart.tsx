@@ -10,7 +10,7 @@ export default function AddToCart({ product }: AddToCartProps) {
 
   const handleAddToCart = () => {
     addToCart({
-      id: product.id!.toString(),
+      id: product._id!.toString(),
       title: product.title,
       price: product.price,
       discountPrice: product.discountPrice || null,
