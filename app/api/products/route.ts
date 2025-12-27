@@ -9,8 +9,9 @@ import "@/model/Comment";
 
 export async function GET(req: Request) {
   try {
+    //    const connect= await dbConnect();
+    // console.log(connect)
     await dbConnect();
-
     const { searchParams } = new URL(req.url);
     const categorySlug = searchParams.get("category");
     const hasDiscount = searchParams.get("discount");
@@ -51,7 +52,8 @@ export async function GET(req: Request) {
     }
 
     /* ================== QUERY ================== */
-    const products = await Product.find(filter).lean()
+    const products = await Product.find(filter)
+      .lean()
       .populate("category")
       .populate("images")
       .populate("tags")
@@ -69,7 +71,6 @@ export async function GET(req: Request) {
     );
   }
 }
-
 
 // // import { NextResponse } from "next/server";
 // // import Category from "@/model/Category";

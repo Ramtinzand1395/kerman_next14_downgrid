@@ -22,6 +22,7 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
       const res = await fetch("/api/admin/category");
       if (!res.ok) throw new Error("Failed to fetch categories");
       const data: Category[] = await res.json();
+
       setCategories(data);
     } catch (err) {
       console.error(err);
@@ -67,7 +68,7 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
 
   const handleDelete = async (id: string) => {
     if (!confirm("آیا از حذف این دسته مطمئن هستید؟")) return;
-    console.log(id);
+
     try {
       const res = await fetch(`/api/admin/category/${id}`, {
         method: "DELETE",
@@ -84,7 +85,6 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
       toast.error("خطا در حذف دسته");
     }
   };
-
   return (
     <div
       role="dialog"

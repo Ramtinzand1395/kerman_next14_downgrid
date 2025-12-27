@@ -89,7 +89,7 @@ export default function Cart({ game }: CartProps) {
         aria-label={`مشاهده جزئیات ${game.title}`}
         itemProp="url"
       >
-        <div className="w-full relative h-42 flex items-center justify-center rounded-lg bg-gray-200">
+        <div className="w-full relative h-[200px] flex items-center justify-center rounded-lg bg-gray-200">
           <Image
             src={game.mainImage}
             alt={game.title}
