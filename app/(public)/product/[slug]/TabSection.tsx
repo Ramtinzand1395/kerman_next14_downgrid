@@ -73,7 +73,7 @@ const TabSection = ({ product }: TabSectionProps) => {
 
         {activeTab === "comments" && (
           <div className="animate-fade-in">
-            <CommentsList comments={product.comments} productId={product.id} />
+            <CommentsList comments={product.comments} productId={product._id} />
           </div>
         )}
       </div>

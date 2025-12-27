@@ -7,7 +7,7 @@ import ProductComments from "../../components/ProductComments";
 
 interface CommentsListProps {
   comments: Comment[];
-  productId: number;
+  productId: string;
 }
 
 export const CommentsList = ({ comments, productId }: CommentsListProps) => {

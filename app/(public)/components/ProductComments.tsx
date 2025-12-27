@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
 interface ProductCommentsProps {
-  productId: number; // یا string اگر اینطور است
+  productId: string; // یا string اگر اینطور است
 }
 
 export default function ProductComments({ productId }: ProductCommentsProps) {
