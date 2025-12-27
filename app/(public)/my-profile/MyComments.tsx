@@ -23,7 +23,7 @@ export default function MyComments() {
   useEffect(() => {
     const fetchComments = async () => {
       try {
-        const res = await fetch(`/api/users_data/comments`);
+        const res = await fetch(`/api/profile/comments`);
         const data = await res.json();
         setComments(data);
       } catch (err) {

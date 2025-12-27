@@ -38,7 +38,7 @@ export default function MyOrders() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/users_data/orders")
+    fetch("/api/profile/orders")
       .then((res) => res.json())
       .then((data) => {
         setOrders(data);

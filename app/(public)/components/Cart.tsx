@@ -48,7 +48,7 @@ export default function Cart({ game }: CartProps) {
     const productId = game._id;
 
     try {
-      const res = await fetch("/api/users_data/favorites", {
+      const res = await fetch("/api/profile/favorites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId }),

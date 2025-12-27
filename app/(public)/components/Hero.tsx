@@ -126,8 +126,8 @@ const Hero = () => {
 
       {/* تصویر شخصیت (غیر LCP) */}
       <motion.div
-        initial={{ opacity: 0, x: 40 }}
-        animate={{ opacity: 1, x: 0 }}
+        initial={{ opacity: 0, x: 0 }}
+        animate={{ opacity: 1, x: 300 }}
         transition={{ duration: 1, ease: "easeOut" }}
         className="absolute bottom-0 right-0 w-full h-full"
       >
