@@ -21,6 +21,11 @@ const commentSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
+      product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+      default: null,
+    },
   },
   { timestamps: false }
 );

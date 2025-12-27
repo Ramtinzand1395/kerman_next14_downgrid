@@ -12,19 +12,14 @@ export default function ProductComments({ productId }: ProductCommentsProps) {
 
   const submitComment = async () => {
     if (!text) return alert("متن کامنت را وارد کنید");
-
     setLoading(true);
     const res = await fetch(`/api/products/comments`, {
       method: "POST",
       body: JSON.stringify({ productId, text, rating }),
     });
+    const data = await res.json();
     setLoading(false);
-    toast.success("نظر شما ثبت و بعد از تایید ابلاغ میشه");
-    if (res.ok) {
-      window.location.reload();
-    } else {
-      alert("خطا در ارسال کامنت");
-    }
+    toast.success(data.message);
   };
 
   return (

@@ -20,7 +20,6 @@ export async function POST(req: Request) {
     }
 
     await dbConnect(); // اتصال به MongoDB
-
     const comment = await Comment.create({
       text,
       rating: rating || 5,
@@ -30,7 +29,7 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(
-      { message: "کامنت با موفقیت ثبت شد", comment },
+      { message: " و بعد از تایید اضافه میشه کامنت با موفقیت ثبت شد", comment },
       { status: 201 }
     );
   } catch (error) {
