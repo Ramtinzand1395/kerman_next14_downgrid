@@ -2,8 +2,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb"; // تابع اتصال به MongoDB
 import Product from "@/model/Product";
+import "@/model/Category";
+import "@/model/Tag";
+import "@/model/Comment";
 
-export async function GET(req: NextRequest, context: { params: { slug: string } }) {
+export async function GET(
+  req: NextRequest,
+  context: { params: { slug: string } }
+) {
   const { slug } = context.params;
   if (!slug) {
     return NextResponse.json({ error: "Slug موجود نیست" }, { status: 400 });
@@ -11,7 +17,8 @@ export async function GET(req: NextRequest, context: { params: { slug: string } 
 
   try {
     await dbConnect(); // اتصال به MongoDB
-
+    // todo
+    // اضافه کردن اسم نویسنده کامنت
     // جستجو محصول بر اساس slug و populate کردن روابط
     const product = await Product.findOne({ slug })
       .populate("images") // اگر مدل جدا برای تصاویر داری
@@ -22,9 +29,10 @@ export async function GET(req: NextRequest, context: { params: { slug: string } 
       .populate("tags")
       .populate({
         path: "comments",
-        match: { verified: true }, // فقط کامنت‌های تایید شده
+        match: { verified: true },
+        model: "Comment",
+        populate: { path: "user", model: "User" },
       });
-
     if (!product) {
       return NextResponse.json({ error: "محصول پیدا نشد" }, { status: 404 });
     }

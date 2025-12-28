@@ -18,6 +18,7 @@ export default function ProductComments({ productId }: ProductCommentsProps) {
       body: JSON.stringify({ productId, text, rating }),
     });
     const data = await res.json();
+    console.log(data)
     setLoading(false);
     toast.success(data.message);
   };

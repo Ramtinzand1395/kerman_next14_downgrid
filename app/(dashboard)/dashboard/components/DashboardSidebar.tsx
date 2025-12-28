@@ -1,6 +1,7 @@
 "use client";
-
-import { useState } from "react";
+// todo
+// جای بدج درست بشه در حالت بشته
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
@@ -18,6 +19,7 @@ import {
 import AddProductDrawer from "./drawers/AddProductDrawer";
 import AddCategoryDrawer from "./drawers/AddCategoryDrawer";
 import AddTagDrawer from "./drawers/AddTagDrawer";
+import { toast } from "react-toastify";
 
 type DrawerAction =
   | "addProduct"
@@ -77,7 +79,7 @@ export default function DashboardSidebar() {
 
   const [expanded, setExpanded] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
-
+  const [UnreadCount, setUnreadCount] = useState(0);
   // کشویی بودن منوها
   const [openMenus, setOpenMenus] = useState<string[]>([]);
 
@@ -97,6 +99,21 @@ export default function DashboardSidebar() {
 
   const closeDrawer = () => setActiveDrawer(null);
 
+  const countMsg = async () => {
+    try {
+      const res = await fetch("/api/admin/notifications/unread");
+      if (!res.ok) throw new Error("خطا در دریافت پیام‌ها");
+
+      const data = await res.json();
+      setUnreadCount(data);
+    } catch (err) {
+      toast.error("خطا در دریافت پیام‌ها");
+    }
+  };
+
+  useEffect(() => {
+    countMsg();
+  }, []);
   return (
     <>
       {/* Mobile Button */}
@@ -184,6 +201,12 @@ export default function DashboardSidebar() {
                   >
                     <item.icon className="w-4 h-4" />
                     {expanded && <span>{item.label}</span>}
+
+                    {item.label === "پیام‌ها" && UnreadCount > 0 && (
+                      <span className="mr-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                        {UnreadCount}
+                      </span>
+                    )}
                   </Link>
                 )}
 

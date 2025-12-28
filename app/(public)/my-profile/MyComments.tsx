@@ -58,7 +58,7 @@ export default function MyComments() {
   if (!comments.length) {
     return <p>هیچ کامنتی موجود نیست.</p>;
   }
-
+console.log(comments)
   return (
     <div className="space-y-4 mt-5">
       {comments.map((comment) => (
@@ -82,6 +82,10 @@ export default function MyComments() {
               }`}
             >
               {comment.verified ? "تایید شده" : "تایید نشده"}
+            </p>
+            <p>
+              {comment.rating}⭐
+
             </p>
           </div>
         </div>
