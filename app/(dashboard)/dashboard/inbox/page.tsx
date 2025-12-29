@@ -3,47 +3,11 @@
 import { useEffect, useState } from "react";
 import { Bell, Check } from "lucide-react";
 import { toast } from "react-toastify";
-import Modal from "./Modal";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
-
-interface User {
-  _id: string;
-  username: string;
-  mobile: string;
-}
-
-interface Product {
-  _id: string;
-  title: string;
-  sku: string;
-  mainImage: string;
-  price: number;
-}
-
-interface Comment {
-  _id: string;
-  text: string;
-  rating: number;
-  verified: boolean;
-  user: User;
-  product: Product;
-}
-
-interface Target {
-  kind: "Comment" | "Order" | "User" | "Product";
-  item: Comment; // یا Order, Product و … بسته به kind
-}
-interface Notification {
-  _id: string;
-  title: string;
-  message: string;
-  type: "comment" | "order" | "user" | "payment";
-  isRead: boolean;
-  for: "admin" | "user";
-  createdAt: string;
-  target: Target;
-}
+import CommentModal from "./modal/CommentModal";
+import UserModal from "./modal/UserModal";
+import { Notification, User, Comment } from "@/types/notifType";
 
 export default function AdminNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -95,6 +59,18 @@ export default function AdminNotifications() {
       toast.error("خطا در علامت‌گذاری نوتیفیکیشن");
     }
   };
+  
+  function isCommentNotification(
+    n: Notification
+  ): n is Notification & { target: { kind: "Comment"; item: Comment } } {
+    return n.target.kind === "Comment";
+  }
+
+  function isUserNotification(
+    n: Notification
+  ): n is Notification & { target: { kind: "User"; item: User } } {
+    return n.target.kind === "User";
+  }
 
   return (
     <div className="bg-white rounded-xl shadow p-4 w-full max-w-lg">
@@ -150,12 +126,15 @@ export default function AdminNotifications() {
             ))}
       </div>
 
-      {OpenModal && selected && (
-        <Modal
+      {OpenModal && selected && isCommentNotification(selected) && (
+        <CommentModal
           selected={selected}
           closeModal={closeModal}
           markAsRead={markAsRead}
         />
+      )}
+      {OpenModal && selected && isUserNotification(selected) && (
+        <UserModal selected={selected} closeModal={closeModal} />
       )}
     </div>
   );

@@ -5,47 +5,75 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/options";
 import { NextResponse } from "next/server";
 
+// export async function GET() {
+//   const session = await getServerSession(authOptions);
+//   if (!session || session.user.role !== "superadmin")
+//     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+
+//   await dbConnect();
+// console.log("first")
+//   const notifications = await Notification.find({ for: "admin" })
+
+//     .populate({
+//       path: "target.item",
+//       populate: [
+//         {
+//           path: "product",
+//           select: "title mainImage price sku", // اگر کامنت بود
+//         },
+//         {
+//           path: "user",
+//           select: "username mobile", // اگر کامنت یا سفارش بود
+//         },
+//       ],
+//     })
+//     .sort({ createdAt: -1 })
+//     .limit(20);
+
+//   return NextResponse.json(notifications);
+// }
+
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "superadmin")
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
   await dbConnect();
-  // todo
-  // اگه لازم شد اطلاعات بیشتر محصول
-  // const notifications = await Notification.find({ for: "admin" })
-  //   .populate("product", "title mainImage price sku","comment")
-  //   .sort({ createdAt: -1 })
-  //   .limit(20);
+
+  // 1. گرفتن Notification ها بدون populate
   const notifications = await Notification.find({ for: "admin" })
-    // .populate({
-    //   path: "product",
-    //   select: "title mainImage price sku comments",
-    //   populate: {
-    //     path: "comments",
-    //     select: "text rating user createdAt verified",
-    //     populate: {
-    //       path: "user",
-    //       select: "username mobile",
-    //     },
-    //   },
-    // })
-    // .populate("target")
-    .populate({
-      path: "target.item",
-      populate: [
-        {
-          path: "product",
-          select: "title mainImage price sku", // اگر کامنت بود
-        },
-        {
-          path: "user",
-          select: "username mobile", // اگر کامنت یا سفارش بود
-        },
-      ],
-    })
     .sort({ createdAt: -1 })
     .limit(20);
 
-  return NextResponse.json(notifications);
+  // 2. populate شرطی
+  const populated = await Promise.all(
+    notifications.map(async (n) => {
+      if (n.type === "comment") {
+        // populate Comment
+        const populatedComment = await Notification.populate(n, {
+          path: "target.item",
+          model: "Comment", // مدل صحیح
+          populate: [
+            { path: "product", select: "title mainImage price sku" },
+            { path: "user", select: "username mobile" },
+          ],
+        });
+        return populatedComment;
+      }
+
+      if (n.type === "user") {
+        // populate User
+        const populatedUser = await Notification.populate(n, {
+          path: "target.item",
+          model: "User", // مدل صحیح
+          select: "username mobile createdAt",
+        });
+        return populatedUser;
+      }
+
+      return n;
+    })
+  );
+
+  return NextResponse.json(populated);
 }

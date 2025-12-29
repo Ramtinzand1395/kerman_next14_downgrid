@@ -2,6 +2,7 @@
 import { X, CheckCircle } from "lucide-react";
 import Image from "next/image";
 import { toast } from "react-toastify";
+
 interface User {
   _id: string;
   username: string;
@@ -26,31 +27,24 @@ interface Comment {
 }
 
 interface Target {
-  kind: "Comment" | "Order" | "User" | "Product";
-  item: Comment; // یا Order, Product و … بسته به kind
+  kind: "Comment";
+  item: Comment;
 }
 
-export interface Notification {
+interface Notification {
   _id: string;
-  title: string;
-  message: string;
-  type: "comment" | "order" | "user" | "payment";
-  isRead: boolean;
-  for: "admin" | "user";
-  createdAt: string;
   target: Target;
 }
 
-interface ModalProps {
+interface CommentModalProps {
   selected: Notification;
   closeModal: () => void;
   markAsRead: (id: string) => void;
 }
 
-export default function Modal({ selected, closeModal, markAsRead }: ModalProps) {
+export default function CommentModal({ selected, closeModal, markAsRead }: CommentModalProps) {
   const comment = selected.target.item;
   const product = comment.product;
-console.log(selected)
   const approve = async () => {
     const res = await fetch(`/api/admin/notifications/approve`, {
       method: "PUT",
@@ -75,7 +69,7 @@ console.log(selected)
 
       <div className="relative bg-white w-[520px] rounded-2xl p-5 shadow-xl animate-fadeIn">
         <button
-          title="fsjk"
+          title="بستن"
           onClick={closeModal}
           className="absolute right-4 top-4"
         >

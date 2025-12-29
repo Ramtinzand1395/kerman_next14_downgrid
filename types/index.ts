@@ -270,3 +270,4 @@ export interface SpecificationItem {
   specificationId: number;
   specification: Specification;
 }
+
