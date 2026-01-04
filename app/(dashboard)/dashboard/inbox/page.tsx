@@ -8,6 +8,7 @@ import "react-loading-skeleton/dist/skeleton.css";
 import CommentModal from "./modal/CommentModal";
 import UserModal from "./modal/UserModal";
 import { Notification, User, Comment } from "@/types/notifType";
+import OrderModal from "./modal/OrderModal";
 
 export default function AdminNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -71,6 +72,12 @@ export default function AdminNotifications() {
   ): n is Notification & { target: { kind: "User"; item: User } } {
     return n.target.kind === "User";
   }
+    function isOrderNotification(
+    n: Notification
+  ): n is Notification & { target: { kind: "Order"; item: Order } } {
+    return n.target.kind === "Order";
+  }
+
 
   return (
     <div className="bg-white rounded-xl shadow p-4 w-full max-w-lg">
@@ -135,6 +142,9 @@ export default function AdminNotifications() {
       )}
       {OpenModal && selected && isUserNotification(selected) && (
         <UserModal selected={selected} closeModal={closeModal} />
+      )}
+         {OpenModal && selected && isOrderNotification(selected) && (
+        <OrderModal selected={selected} closeModal={closeModal} />
       )}
     </div>
   );

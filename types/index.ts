@@ -1,5 +1,5 @@
 export interface CartItem {
-  id: string | number;
+  id: string;
   title: string;
   image: string;
   price: number;
@@ -86,7 +86,7 @@ export interface storeOrder {
   list: string[];
   price: number | null;
   customer?: Customer | string;
-  customerId?:string;
+  customerId?: string;
   description: string;
   consoleType: ConsoleType | string;
   deliveryStatus: string;
@@ -115,39 +115,6 @@ export interface Favorite {
   createdAt: string;
   user: User;
   product: Product;
-}
-
-export interface Order {
-  id: number;
-  userId?: number;
-  addressId?: number;
-  totalPrice: number;
-  shippingCost: number;
-  finalPrice: number;
-  status: string;
-  paymentMethod: string;
-  paymentStatus: string;
-  trackingCode?: string;
-  invoiceNumber?: string;
-  description?: string;
-  createdAt: string;
-  updatedAt: string;
-
-  user?: User;
-  address?: Address;
-  items: OrderItem[];
-}
-
-export interface Comment {
-  id: number;
-  text: string;
-  rating: number;
-  userId: number;
-  productId?: number;
-  verified: boolean;
-  createdAt: string;
-  user?: User;
-  product?: Product;
 }
 
 export interface Category {
@@ -190,7 +157,7 @@ export interface Tag {
   slug: string;
 }
 export interface Favorite {
-  id: number;
+  _id: number;
   userId: number;
   productId: number;
   createdAt: string;
@@ -198,7 +165,7 @@ export interface Favorite {
   product: Product;
 }
 export interface OrderItem {
-  id: number;
+  _id: string;
   orderId: number;
   productId: number;
   quantity: number;
@@ -209,7 +176,7 @@ export interface OrderItem {
 }
 
 export interface Order {
-  id: number;
+  _id: string;
   userId?: number;
   addressId?: number;
   totalPrice: number;
@@ -230,7 +197,7 @@ export interface Order {
 }
 
 export interface Comment {
-  id: number;
+  id: string;
   text: string;
   rating: number;
   userId: number;
@@ -242,7 +209,7 @@ export interface Comment {
 }
 
 export interface Address {
-  _id: number;
+  _id: string;
   userId: number;
   address: string;
   city: string;
@@ -256,7 +223,7 @@ export interface Address {
 }
 
 export interface Specification {
-  id: number;
+  _id: string;
   title: string;
   productId?: number;
   product?: Product;
@@ -264,10 +231,9 @@ export interface Specification {
 }
 
 export interface SpecificationItem {
-  id: number;
+  _id: string;
   key: string;
   value: string;
   specificationId: number;
   specification: Specification;
 }
-

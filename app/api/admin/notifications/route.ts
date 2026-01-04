@@ -4,7 +4,7 @@ import Notification from "@/model/Notification";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/options";
 import { NextResponse } from "next/server";
-
+import "@/model/Order"
 // export async function GET() {
 //   const session = await getServerSession(authOptions);
 //   if (!session || session.user.role !== "superadmin")
@@ -70,6 +70,34 @@ export async function GET() {
         });
         return populatedUser;
       }
+
+      // if (n.type === "order") {
+      //   // populate Comment
+      //   const populatedOrder = await Notification.populate(n, {
+      //     path: "target.item",
+      //     model: "Order", // مدل صحیح
+      //     // populate: [
+      //     //   { path: "product", select: "title mainImage price sku" },
+      //     //   { path: "user", select: "username mobile" },
+      //     // ],
+      //   });
+      //   return populatedOrder;
+      // }
+       if (n.type === "order") {
+      return Notification.populate(n, {
+        path: "target.item",
+        populate: [
+          {
+            path: "user",
+            select: "username mobile",
+          },
+          {
+            path: "items.product",
+            select: "title mainImage price",
+          },
+        ],
+      });
+    }
 
       return n;
     })

@@ -10,7 +10,6 @@ export async function CheckPhoneAction(mobile: string) {
     let user = await User.findOne({ mobile });
     if (!user) {
       const user = await User.create({ mobile });
-      console.log(user);
       await Notification.create({
         title: "کاربر جدید",
         message: "یک کاربر جدید ثبت نام شد",

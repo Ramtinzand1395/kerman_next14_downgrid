@@ -76,7 +76,7 @@ export default function CartDropdown({
                     <div className="border-t border-gray-200 pt-3 mt-3">
                       <Link
                         href="/cart"
-                        className="block w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2.5 rounded-xl transition-all"
+                        className="block w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2.5 rounded-xl transition-all text-center"
                       >
                         مشاهده سبد خرید
                       </Link>
