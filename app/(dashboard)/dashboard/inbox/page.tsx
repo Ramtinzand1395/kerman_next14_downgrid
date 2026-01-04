@@ -10,7 +10,8 @@ import UserModal from "./modal/UserModal";
 import { Notification, User, Comment } from "@/types/notifType";
 import OrderModal from "./modal/OrderModal";
 import { Order } from "@/types";
-
+// todo
+// صفحه بندی یا جدا کردن پیام ها از هم
 export default function AdminNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
@@ -61,7 +62,7 @@ export default function AdminNotifications() {
       toast.error("خطا در علامت‌گذاری نوتیفیکیشن");
     }
   };
-  
+
   function isCommentNotification(
     n: Notification
   ): n is Notification & { target: { kind: "Comment"; item: Comment } } {
@@ -73,12 +74,11 @@ export default function AdminNotifications() {
   ): n is Notification & { target: { kind: "User"; item: User } } {
     return n.target.kind === "User";
   }
-    function isOrderNotification(
+  function isOrderNotification(
     n: Notification
   ): n is Notification & { target: { kind: "Order"; item: Order } } {
     return n.target.kind === "Order";
   }
-
 
   return (
     <div className="bg-white rounded-xl shadow p-4 w-full max-w-lg">
@@ -144,7 +144,7 @@ export default function AdminNotifications() {
       {OpenModal && selected && isUserNotification(selected) && (
         <UserModal selected={selected} closeModal={closeModal} />
       )}
-         {OpenModal && selected && isOrderNotification(selected) && (
+      {OpenModal && selected && isOrderNotification(selected) && (
         <OrderModal selected={selected} closeModal={closeModal} />
       )}
     </div>

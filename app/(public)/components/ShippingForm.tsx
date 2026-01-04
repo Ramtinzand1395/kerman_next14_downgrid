@@ -18,7 +18,7 @@ interface ShippingFormProps {
 export default function ShippingForm({
   selectedAddress,
   setSelectedAddress,
-}): ShippingFormProps {
+}: ShippingFormProps) {
   const [form, setForm] = useState<Partial<Address>>({});
 
   const router = useRouter();
@@ -69,7 +69,7 @@ export default function ShippingForm({
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("آیا مطمئن هستید می‌خواهید این آدرس را حذف کنید؟")) return;
     try {
       const res = await fetch(`/api/profile/address?id=${id}`, {
@@ -238,7 +238,6 @@ export default function ShippingForm({
             ))
         ) : addresses.length > 0 ? (
           addresses.map((a) => (
-          
             <div
               key={a._id}
               onClick={() => setSelectedAddress(a)}
