@@ -13,7 +13,7 @@ export const Specifications = ({ specs }: SpecificationsProps) => {
 
       {specs.map((spec) => (
         <div
-          key={spec.id}
+          key={spec._id}
           className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm"
         >
           <div className="bg-gray-50 px-6 py-3 border-b border-gray-100">
@@ -25,7 +25,7 @@ export const Specifications = ({ specs }: SpecificationsProps) => {
           <div className="divide-y divide-gray-50">
             {spec.items.map((item) => (
               <div
-                key={item.id}
+                key={item._id}
                 className="grid grid-cols-1 md:grid-cols-4 px-6 py-4 hover:bg-gray-50/50 transition-colors"
               >
                 <div className="text-gray-500 text-sm font-medium md:col-span-1 mb-1 md:mb-0">

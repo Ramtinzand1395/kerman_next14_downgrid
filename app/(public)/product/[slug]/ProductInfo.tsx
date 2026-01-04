@@ -74,7 +74,7 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
             .slice(0, 3)
             .flatMap((s) => s.items.slice(0, 2))
             .map((item) => (
-              <li key={item.id} className="flex items-center gap-2">
+              <li key={item._id} className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
                 <span className="text-gray-500">{item.key}:</span>
                 <span className="font-medium text-gray-800">{item.value}</span>
