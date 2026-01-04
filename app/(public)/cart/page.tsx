@@ -9,8 +9,7 @@ import PaymentForm from "../components/PaymentForm";
 import ShippingForm from "../components/ShippingForm";
 import { formatPrice } from "@/helpers/Price";
 import { Address } from "@/types";
-// todo
-// کم کردن ایتم ها از لیست
+
 const steps = [
   {
     id: 1,
@@ -28,16 +27,7 @@ const steps = [
 const CartPage = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
-  // const [form, setForm] = useState({
-  //   province: "",
-  //   city: "",
-  //   address: "",
-  //   plaque: "",
-  //   unit: "",
-  //   postalCode: "",
-  //   receiverName: "",
-  //   receiverPhone: "",
-  // });
+
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
 
   const activeStep = parseInt(searchParams.get("step") || "1");

@@ -4,8 +4,11 @@ import { formatPrice } from "@/helpers/Price";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { toast } from "react-toastify";
-
-export default function PaymentForm({ selectedAddress }) {
+import { Address } from "@/types";
+interface PaymentFormProps {
+  selectedAddress: Address ;
+}
+export default function PaymentForm({ selectedAddress }:PaymentFormProps) {
   const { cart, clearCart } = useCartStore();
 
   const shippingCost = 0;
