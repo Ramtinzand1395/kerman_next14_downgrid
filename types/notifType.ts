@@ -22,11 +22,20 @@ export interface Comment {
   product: Product;
 }
 
+export interface Order {
+  _id: string;
+  orderNumber: string;
+  totalAmount: number;
+  user: User;
+  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  createdAt: string;
+}
 // Target union
 export type Target =
   | { kind: "Comment"; item: Comment }
   | { kind: "User"; item: User }
-  | { kind: "Product"; item: Product };
+  | { kind: "Product"; item: Product }
+  | { kind: "Order"; item: Order };
 
 // Notification اصلی
 export interface Notification {

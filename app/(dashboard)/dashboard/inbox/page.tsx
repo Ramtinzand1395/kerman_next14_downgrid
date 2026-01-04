@@ -9,6 +9,7 @@ import CommentModal from "./modal/CommentModal";
 import UserModal from "./modal/UserModal";
 import { Notification, User, Comment } from "@/types/notifType";
 import OrderModal from "./modal/OrderModal";
+import { Order } from "@/types";
 
 export default function AdminNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
