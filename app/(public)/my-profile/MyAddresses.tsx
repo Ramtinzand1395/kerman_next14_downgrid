@@ -57,7 +57,7 @@ export default function MyAddresses() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("آیا مطمئن هستید می‌خواهید این آدرس را حذف کنید؟")) return;
     try {
       const res = await fetch(`/api/profile/address?id=${id}`, {
