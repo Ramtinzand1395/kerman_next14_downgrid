@@ -6,6 +6,7 @@ import { authOptions } from "../../auth/[...nextauth]/options";
 import Comment from "@/model/Comment";
 import Notification from "@/model/Notification";
 import Product from "@/model/Product";
+import User from "@/model/User";
 
 export async function POST(req: Request) {
   try {
@@ -29,6 +30,9 @@ export async function POST(req: Request) {
     });
     await Product.findByIdAndUpdate(productId, {
       $push: { comments: comment._id },
+    });
+    await User.findByIdAndUpdate(session.user.id, {
+      $addToSet: { comments: comment._id },
     });
 
     await Notification.create({

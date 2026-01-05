@@ -4,7 +4,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/options";
 import dbConnect from "@/lib/mongodb";
 import Favorite from "@/model/Favorite";
-
+import User from "@/model/User";
+// todo
+// notification
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -52,7 +54,9 @@ export async function POST(req: NextRequest) {
       userId: session.user.id,
       productId,
     });
-
+    await User.findByIdAndUpdate(session.user.id, {
+      $addToSet: { favorites: favorite },
+    });
     return NextResponse.json(favorite, { status: 201 });
   } catch (err: any) {
     // جلوگیری از ثبت تکراری
@@ -90,9 +94,12 @@ export async function DELETE(req: NextRequest) {
 
     await dbConnect();
 
-    await Favorite.deleteOne({
+    const fav = await Favorite.deleteOne({
       userId: session.user.id,
       productId,
+    });
+    await User.findByIdAndUpdate(session.user.id, {
+      $pull: { favorites: fav },
     });
 
     return NextResponse.json({ message: "با موفقیت حذف شد" });

@@ -3,17 +3,14 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/options";
 import dbConnect from "@/lib/mongodb";
 import Address from "@/model/Address";
-
+import User from "@/model/User";
 
 // ===== GET Addresses =====
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "کاربر وارد نشده" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
     }
 
     await dbConnect();
@@ -32,16 +29,12 @@ export async function GET() {
   }
 }
 
-
 // ===== POST Add Address =====
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "کاربر وارد نشده" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
     }
 
     await dbConnect();
@@ -58,27 +51,23 @@ export async function POST(req: NextRequest) {
       unit,
       postalCode,
     });
-
+    // اضافه کردن به آرایه addresses کاربر
+    await User.findByIdAndUpdate(session.user.id, {
+      $addToSet: { addresses: newAddress._id },
+    });
     return NextResponse.json(newAddress, { status: 201 });
   } catch (err) {
     console.error(err);
-    return NextResponse.json(
-      { error: "خطا در افزودن آدرس" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "خطا در افزودن آدرس" }, { status: 500 });
   }
 }
-
 
 // ===== PUT Update Address =====
 export async function PUT(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "کاربر وارد نشده" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
     }
 
     await dbConnect();
@@ -102,39 +91,32 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-
 // ===== DELETE Address =====
 export async function DELETE(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "کاربر وارد نشده" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
     }
 
     await dbConnect();
 
     const id = req.nextUrl.searchParams.get("id");
     if (!id) {
-      return NextResponse.json(
-        { error: "id الزامی است" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "id الزامی است" }, { status: 400 });
     }
 
     await Address.deleteOne({
       _id: id,
       userId: session.user.id,
     });
+    await User.findByIdAndUpdate(session.user.id, {
+      $pull: { addresses: id },
+    });
 
     return NextResponse.json({ message: "آدرس حذف شد" });
   } catch (err) {
     console.error(err);
-    return NextResponse.json(
-      { error: "خطا در حذف آدرس" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "خطا در حذف آدرس" }, { status: 500 });
   }
 }

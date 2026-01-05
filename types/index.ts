@@ -30,7 +30,7 @@ export type ProfileFormPayload = {
 };
 
 export interface User {
-  id: number;
+  _id: string;
   username: string;
   email: string;
   password: string;
@@ -43,6 +43,10 @@ export interface User {
   nationalCode?: number;
   createdAt: string | Date;
   updatedAt: string | Date;
+  addresses: Address;
+  comments: Comment;
+  orders: Order;
+  favorites: Favorite;
 }
 
 export interface OTP {
