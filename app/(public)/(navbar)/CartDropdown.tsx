@@ -27,14 +27,18 @@ export default function CartDropdown({
           onMouseEnter={() => setActiveDropdown("cart")}
           onMouseLeave={() => setActiveDropdown(null)}
         >
-          <ShoppingBag className="text-black w-5 h-5" />
+          <ShoppingBag className="text-black w-4 h-4" />
           {cart.length > 0 && (
+            <>
             <span
-              className="text-black text-xs mr-2 flex items-center"
+              className="text-white text-xs bg-red-500 px-1 rounded-full flex items-center whitespace-nowrap absolute -top-3 left-8"
               aria-live="polite"
             >
-              {cart.length} کالا <ChevronDown className="ml-1 w-3 h-3" />
+              {cart.length} 
             </span>
+            <ChevronDown className="ml-1 w-3 h-3" />
+            </>
+            
           )}
           <AnimatePresence>
             {activeDropdown === "cart" && (

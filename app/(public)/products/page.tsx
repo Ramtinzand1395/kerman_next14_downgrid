@@ -1,23 +1,8 @@
 import { Product } from "@/types";
 import Cart from "../components/Cart";
-import FilterProducts from "./FilterProducts";
-import SortProducts from "./SortProducts";
-import Pagination from "./Pagination";
-
-// دریافت محصولات با فیلتر و مرتب‌سازی از URL
-// async function getProducts(params: { category?: string; sort?: string; page?: string }) {
-//   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-
-//   const { category, sort, page } = searchParams;
-//   const url = new URL(`${baseUrl}/api/products/all_products`);
-//   if (category) url.searchParams.append("category", category);
-//   if (sort) url.searchParams.append("sort", sort);
-//   if (page) url.searchParams.append("page", page);
-
-//   const res = await fetch(url.toString(), { cache: "no-store" });
-//   if (!res.ok) throw new Error("خطا در دریافت محصولات");
-//   return res.json();
-// }
+import SortProducts from "./components/SortProducts";
+import Pagination from "./components/Pagination";
+import FilterProducts from "./components/FilterProducts";
 
 async function getProducts(params: {
   category?: string;
@@ -45,39 +30,24 @@ export default async function ProductsPage({
   const products = data.products;
   const totalPages = Math.ceil(data.total / data.limit);
   const currentPage = data.page;
-
   return (
-    <section className="mx-4 md:mx-10 my-10">
-      {/* 🔹 بخش فیلتر و مرتب‌سازی */}
-      <div className="flex flex-col md:flex-row gap-8 items-start">
+    <section className="mx-4 md:mx-auto md:container my-5">
+      <SortProducts length={products?.length} />
+      <div className="flex mt-5 gap-8 items-start">
         {/* Sidebar */}
         <FilterProducts />
-
-        {/* 🔹 بخش اصلی محصولات */}
-        <div className="flex-1 w-full">
-          {/* مرتب‌سازی بالا */}
-          <div className="flex flex-wrap justify-between items-center mb-4 gap-3">
-            <SortProducts />
-            <span className="text-xs text-gray-500">
-              تعداد کالاها: {products?.length || 0}
-            </span>
-          </div>
-
-          {/* نمایش محصولات */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {products.length > 0 ? (
-              products.map((game: Product) => (
-                <Cart key={game._id} game={game} />
-              ))
-            ) : (
-              <p className="text-center text-gray-500 text-sm col-span-full py-10">
-                محصولی یافت نشد.
-              </p>
-            )}
-          </div>
-          <Pagination totalPages={totalPages} currentPage={currentPage} />
+        {/* نمایش محصولات  */}
+        <div className="grid  w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {products.length > 0 ? (
+            products.map((game: Product) => <Cart key={game._id} game={game} />)
+          ) : (
+            <p className="text-center text-gray-500 text-sm col-span-full py-10">
+              محصولی یافت نشد.
+            </p>
+          )}
         </div>
       </div>
+      <Pagination totalPages={totalPages} currentPage={currentPage} />
     </section>
   );
 }

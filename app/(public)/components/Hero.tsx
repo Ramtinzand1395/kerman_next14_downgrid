@@ -135,7 +135,7 @@ const Hero = () => {
           src="/charecture1.webp"
           fill
           alt="شخصیت بازی پلی‌استیشن در فروشگاه کرمان آتاری"
-          className="object-contain object-bottom-right"
+          className="object-contain object-bottom-right hidden md:block "
           loading="lazy"
           sizes="(max-width: 768px) 80vw, 40vw"
         />

@@ -24,11 +24,11 @@ export default function UserBtn({
           onMouseEnter={() => setActiveDropdown("user")}
           onMouseLeave={() => setActiveDropdown(null)}
         >
-          <div className=" items-center gap-2 cursor-pointer hidden md:flex">
-            <span className=" text-sm text-black">
+          <div className=" items-center gap-2 cursor-pointer flex  whitespace-nowrap ">
+            <span className="text-xs md:text-sm text-black">
               {session.user?.username}
             </span>
-            <ChevronDown className="text-black w-4 h-4" />
+            <ChevronDown className="text-black w-3 h-3" />
           </div>
 
           <AnimatePresence>

@@ -105,7 +105,7 @@ export default function Cart({ game }: CartProps) {
       <motion.button
         whileHover={{ scale: 1.05 }}
         onClick={handleAddToCart}
-        className=" z-20 bottom-0 left-0 w-full bg-[#377dff] rounded-md text-white text-sm py-2 md:opacity-0 opacity-100 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-yellow-400"
+        className=" z-20 bottom-0 left-0 w-full text-xs md:text-sm bg-[#377dff] rounded-md text-white  py-2 md:opacity-0 opacity-100 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-yellow-400"
         aria-label={`افزودن ${game.title} به سبد خرید`}
       >
         افزودن به سبد خرید
@@ -166,13 +166,13 @@ export default function Cart({ game }: CartProps) {
               </span>
             </div>
           ) : (
-            <span>{`${game.price.toLocaleString()} تومان`}</span>
+            <span className="text-xs md:text-sm">{`${game.price.toLocaleString()} تومان`}</span>
           )}
         </div>
 
         {/* امتیاز و ستاره‌ها */}
 
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-1 text-sm">
           {[1, 2, 3, 4, 5].map((i) => (
             <span
               key={i}
@@ -183,10 +183,10 @@ export default function Cart({ game }: CartProps) {
               ★
             </span>
           ))}
-          <span className="text-gray-500">
-            {game.comments?.length ? rating.toFixed(1) : "بدون امتیاز"}
+          <span className="text-gray-500 text-xs ">
+            {game.comments?.length ? rating.toFixed(1) : ""}
           </span>
-          <span className="text-gray-400">
+          <span className="text-gray-400 text-xs ">
             ({game.comments?.length || 0} نظر)
           </span>
         </div>

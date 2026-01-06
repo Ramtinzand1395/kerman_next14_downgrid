@@ -224,7 +224,7 @@ export default function Navbar() {
             onClick={() => setMobileMenuOpen(true)}
             title="Open_Menu"
           >
-            <Menu className="w-6 h-6" />
+            <Menu className="w-3 h-3 md:w-5 md:h-5" />
           </button>
         </div>
         {mobileMenuOpen && (
