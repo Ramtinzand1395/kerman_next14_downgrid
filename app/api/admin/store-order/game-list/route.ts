@@ -4,25 +4,6 @@ import dbConnect from "@/lib/mongodb";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 
-// GET /api/game-list/:consoleType
-// export async function GET(req: NextRequest) {
-//   const session = await getServerSession(authOptions);
-//   if (!session?.user)
-//     return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
-
-//   if (session.user.role !== "superadmin")
-//     return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
-//   await dbConnect();
-//   try {
-//     const gameList = await GameList.find();
-
-//     return NextResponse.json(gameList);
-//   } catch (error) {
-//     console.error(error);
-//     return NextResponse.json({ message: "server error" }, { status: 500 });
-//   }
-// }
-
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user)

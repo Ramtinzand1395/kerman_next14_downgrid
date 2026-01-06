@@ -4,6 +4,8 @@ import "@/model/Category";
 import "@/model/Tag";
 import { NextResponse } from "next/server";
 import Comment from "@/model/Comment";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../../auth/[...nextauth]/options";
 
 export async function GET(req: Request) {
   await dbConnect();
@@ -51,6 +53,12 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   await dbConnect();
+    const session = await getServerSession(authOptions);
+  
+    if (!session?.user) {
+      return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
+    }
+    
   const generateSKU = () =>
     `SKU-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   try {

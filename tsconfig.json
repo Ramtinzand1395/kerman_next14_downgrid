@@ -39,7 +39,7 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts",
     "next.config.js"
-  ],
+, "app/api/seed/route.js"  ],
   "exclude": [
     "node_modules"
   ]

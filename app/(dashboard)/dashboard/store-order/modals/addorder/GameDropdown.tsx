@@ -48,6 +48,7 @@ const GameDropdown: React.FC<GameDropdownProps> = ({
       game.name.toLowerCase().includes(search.toLowerCase())
     );
   }, [search, GameData]);
+  console.log(GameData)
   return (
     <div className="relative max-w-52">
       <input
