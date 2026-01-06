@@ -110,7 +110,7 @@ export default function MobileMenu({
                                     <li key={sub.slug}>
                                       <Link
                                         aria-label={`رفتن به ${cat.slug}`}
-                                        href={`/products/${cat.slug}/${sub.slug}`}
+                                        href={`/products?sort=newest&category=${sub.slug}&page=1`}
                                         onClick={onClose}
                                         className="block text-gray-600 text-sm hover:text-blue-600 transition"
                                       >

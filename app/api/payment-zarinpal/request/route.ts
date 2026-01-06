@@ -59,9 +59,14 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
-  } catch (err) {
+  } catch (err: unknown) {
+    let errorMessage = "خطا در سرور";
+    if (err instanceof Error) {
+      errorMessage = err.message;
+    }
+
     return NextResponse.json(
-      { success: false, error: err.message },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }
