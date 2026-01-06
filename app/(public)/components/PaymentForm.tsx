@@ -5,12 +5,13 @@ import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { Address } from "@/types";
+import { useRouter } from "next/navigation";
 interface PaymentFormProps {
-  selectedAddress: Address ;
+  selectedAddress: Address;
 }
-export default function PaymentForm({ selectedAddress }:PaymentFormProps) {
+export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
   const { cart, clearCart } = useCartStore();
-
+  const router = useRouter();
   const shippingCost = 0;
 
   const total = cart.reduce((a, i) => a + i.price * i.quantity, 0);
@@ -27,7 +28,7 @@ export default function PaymentForm({ selectedAddress }:PaymentFormProps) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        addressId: selectedAddress,
+        addressId: selectedAddress._id,
         shippingCost,
         items: cart.map((i) => ({
           productId: i.id,
@@ -38,15 +39,35 @@ export default function PaymentForm({ selectedAddress }:PaymentFormProps) {
     });
 
     if (!res.ok) throw new Error();
+    const resOrder = await res.json();
+    const orderId = resOrder._id;
+
     toast.success("سفارش با موفقیت ذخیره شد");
     clearCart();
-    // const pay = await fetch("/api/payment/request", {
-    //   method: "POST",
-    //   body: JSON.stringify({ orderId: order._id })
-    // });
+    try {
+      const res = await fetch(`/api/payment-zarinpal/request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          orderId,
+          items: cart.map((i) => i.id),
+          finalPrice: final,
+        }),
+      });
 
-    // const { url } = await pay.json();
-    // window.location.href = url;
+      const data = await res.json();
+
+      if (data.success && data.url) {
+        router.push(data.url);
+      } else {
+        alert("خطا در ایجاد پرداخت:" + (data.error || "نامشخص"));
+      }
+    } catch (error) {
+      console.error("خطای واقعی:", error);
+      console.log("مشکل از سمت سرور رخ داده است");
+    }
   };
   return (
     <div className="max-w-5xl mx-auto mt-10 px-4">
