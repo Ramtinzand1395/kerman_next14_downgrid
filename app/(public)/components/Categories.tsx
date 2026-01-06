@@ -1,12 +1,33 @@
 import Image from "next/image";
 import Link from "next/link";
-
+// todo
+// ادرس ها درست بشه و تغییر کنه
 const categories = [
-  { title: "بازی‌ها", src: "/icons/tic-tac-toe.webp", href: "/products/games" },
-  { title: "دسته کنسول", src: "/icons/gamepad.webp", href: "/products/console-handler" },
-  { title: "کنسول‌ها", src: "/icons/game.webp", href: "/products/consoles" },
-  { title: "اکشن فیگور", src: "/icons/action-figure.webp", href: "/products/action-figures" },
-  { title: "لوازم جانبی", src: "/icons/action-figure.webp", href: "/products/accessories" },
+  {
+    title: "بازی‌ها",
+    src: "/icons/tic-tac-toe.webp",
+    href: "/products?sort=newest&category=account-games&page=1",
+  },
+  {
+    title: "دسته کنسول",
+    src: "/icons/gamepad.webp",
+    href: "/products?sort=newest&category=controllers&page=1",
+  },
+  {
+    title: "کنسول‌ها",
+    src: "/icons/game.webp",
+    href: "/products?sort=newest&category=playstation-5&page=1",
+  },
+  {
+    title: "اکشن فیگور",
+    src: "/icons/action-figure.webp",
+    href: "/products/action-figures",
+  },
+  {
+    title: "لوازم جانبی",
+    src: "/icons/action-figure.webp",
+    href: "/products?sort=newest&category=headsets&page=1",
+  },
   { title: "کیف", src: "/icons/school-bag.webp", href: "/products/bags" },
 ];
 
@@ -17,7 +38,13 @@ const Categories = () => (
         <div className="drop-shadow-2xl shadow-2xl flex flex-col items-center space-y-3 p-4 hover:scale-105 transition">
           <h3>{title}</h3>
           <div className="relative w-full h-24">
-            <Image alt={title} fill  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw" className="object-contain" src={src} />
+            <Image
+              alt={title}
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
+              className="object-contain"
+              src={src}
+            />
           </div>
         </div>
       </Link>
