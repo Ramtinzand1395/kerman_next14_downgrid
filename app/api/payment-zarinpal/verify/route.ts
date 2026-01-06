@@ -12,13 +12,13 @@ export async function GET(req:NextRequest) {
 
     // اگر پرداخت لغو شده بود
     if (status !== "OK") {
-      return NextResponse.redirect(`${process.env.BASE_URL}/payment-failed`);
+      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/payment-failed`);
     }
 
     // گرفتن پرداخت موقت
     const temp = await TempPayment.findOne({ authority }).lean();
     if (!temp) {
-      return NextResponse.redirect(`${process.env.BASE_URL}/payment-failed`);
+      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/payment-failed`);
     }
 
     const {  finalPrice, items, orderId } = temp;
@@ -58,13 +58,13 @@ export async function GET(req:NextRequest) {
       await TempPayment.deleteOne({ authority });
 
       // ریدایرکت به صفحه موفقیت
-      return NextResponse.redirect(`${process.env.BASE_URL}/payment-success`);
+      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/payment-success`);
     }
 
     // در صورت عدم تایید پرداخت
-    return NextResponse.redirect(`${process.env.BASE_URL}/payment-failed`);
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/payment-failed`);
   } catch (err) {
     console.error(err);
-    return NextResponse.redirect(`${process.env.BASE_URL}/payment-failed`);
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/payment-failed`);
   }
 }
