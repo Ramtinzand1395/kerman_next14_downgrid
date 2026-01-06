@@ -27,7 +27,7 @@ const commentSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { timestamps: false }
+  { timestamps: true }
 );
 
 export default mongoose.models.Comment ||

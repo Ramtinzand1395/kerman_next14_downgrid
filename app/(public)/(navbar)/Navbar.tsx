@@ -176,7 +176,7 @@ export default function Navbar() {
                             {cat.subcategories.map((sub) => (
                               <li key={sub.slug}>
                                 <Link
-                                  href={`/products/${cat.slug}/${sub.slug}`}
+                                  href={`/products?sort=newest&category=${sub.slug}&page=1`}
                                   className="text-sm hover:text-blue-600 transition"
                                   aria-label={`رفتن به ${cat.slug}`}
                                 >

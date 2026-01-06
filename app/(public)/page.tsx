@@ -3,7 +3,11 @@ import Hero from "./components/Hero";
 import DiscountTimer from "./components/slider/DiscountTimer";
 import SliderContainer from "./components/slider/SliderContainer";
 import BoxContainer from "./components/BoxContainer";
-
+import UsersComments from "./components/landing/UsersComments";
+import Trust from "./components/landing/Trust";
+import Subscribed from "./components/landing/Subscribed ";
+// todo
+// خبر نامه و مقالات بیاد
 const now = new Date();
 const nextMidnight = new Date(
   now.getFullYear(),
@@ -43,16 +47,20 @@ export default async function Home() {
           title="بازی‌ها"
           subtitle="بازی های پلی استیشن"
         />
+
+        <UsersComments />
         <SliderContainer
           games={gamingAccessories}
           title="لوازم گیمینگ"
           subtitle="لوازم پلی استیشن 4"
         />
+        <Trust />
         <SliderContainer
           games={accessories}
           title="لوازم جانبی"
           subtitle="لوازم جانبی کنسول"
         />
+        {/* <Subscribed /> */}
       </div>
     </div>
   );
