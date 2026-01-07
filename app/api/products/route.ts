@@ -9,8 +9,7 @@ import "@/model/Comment";
 
 export async function GET(req: Request) {
   try {
-    //    const connect= await dbConnect();
-    // console.log(connect)
+
     await dbConnect();
     const { searchParams } = new URL(req.url);
     const categorySlug = searchParams.get("category");

@@ -8,14 +8,14 @@ interface SliderContainerProps {
   games: Product[];
   title: string;
   subtitle: string | ReactNode;
-  href?: string; // لینک برای دکمه مشاهده همه
+  link?: string; // لینک برای دکمه مشاهده همه
 }
 
 export default function SliderContainer({
   games,
   title,
   subtitle,
-  href = "/products", // لینک پیش‌فرض
+  link, // لینک پیش‌فرض
 }: SliderContainerProps) {
   return (
     <section
@@ -47,15 +47,17 @@ export default function SliderContainer({
         <>
           <Slider games={games} />
           {/* ✅ دکمه مشاهده همه (لینک قابل کراول برای گوگل) */}
-          <div className="flex items-center justify-center mt-10">
-            <Link
-              href={href}
-              className="w-full md:w-64 text-center bg-[#001A6E] hover:bg-[#010c32] text-white py-3 rounded-xl transition-all cursor-pointer focus:ring-2 focus:ring-offset-2 focus:ring-[#1B4242]"
-              aria-label={`مشاهده همه ${title}`}
-            >
-              مشاهده همه
-            </Link>
-          </div>
+          {link && (
+            <div className="flex items-center justify-center mt-10">
+              <Link
+                href={link}
+                className="w-full md:w-64 text-center bg-[#001A6E] hover:bg-[#010c32] text-white py-3 rounded-xl transition-all cursor-pointer focus:ring-2 focus:ring-offset-2 focus:ring-[#1B4242]"
+                aria-label={`مشاهده همه ${title}`}
+              >
+                مشاهده همه
+              </Link>
+            </div>
+          )}
         </>
       ) : (
         <p>هیچ محصولی نداریم.</p>

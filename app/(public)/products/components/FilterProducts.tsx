@@ -32,17 +32,8 @@ const categories = [
     ],
   },
   {
-    name: "خدمات",
-    slug: "services",
-    subcategories: [
-      { name: "نصب بازی", slug: "game-installation" },
-      { name: "اکانت قانونی", slug: "legal-accounts" },
-      { name: "تعمیرات کنسول", slug: "console-repair" },
-    ],
-  },
-  {
     name: "لوازم گیمینگ",
-    slug: "gaming",
+    slug: "gaming-accessories",
     subcategories: [
       { name: "موس", slug: "mouse" },
       { name: "کیبورد", slug: "keyboard" },
@@ -99,7 +90,14 @@ export default function FilterProducts() {
             <nav className="flex flex-col gap-4">
               {categories.map((cat) => (
                 <div key={cat.slug}>
-                  <p className="text-sm font-semibold text-gray-700 mb-1">
+                  <p
+                    onClick={() => handleFilter(cat.slug)}
+                    className={`text-sm font-semibold text-gray-700 mb-1 block px-2 py-1.5 rounded-md  cursor-pointer transition-all ${
+                      selectedCategory === cat.slug
+                        ? "bg-blue-500 text-white"
+                        : "text-gray-600 hover:bg-blue-100 hover:text-blue-600"
+                    }`}
+                  >
                     {cat.name}
                   </p>
                   <ul className="ml-2 flex flex-col gap-1">
@@ -141,7 +139,14 @@ export default function FilterProducts() {
         <nav className="flex flex-col gap-2">
           {categories.map((cat) => (
             <div key={cat.slug}>
-              <p className="text-sm font-semibold text-gray-700 mb-1">
+              <p
+                onClick={() => handleFilter(cat.slug)}
+                className={`text-sm font-semibold text-gray-700 mb-1 block px-2 py-1.5 rounded-md  cursor-pointer transition-all ${
+                  selectedCategory === cat.slug
+                    ? "bg-blue-500 text-white"
+                    : "text-gray-600 hover:bg-blue-100 hover:text-blue-600"
+                }`}
+              >
                 {cat.name}
               </p>
               <ul className="ml-2 flex flex-col gap-1">

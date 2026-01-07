@@ -17,12 +17,28 @@ export async function GET(req: Request) {
 
     const filter: any = {};
 
-    // category filter
+    /* ================== CATEGORY FILTER ================== */
     if (categorySlug) {
-      const category = await Category.findOne({ slug: categorySlug });
-      if (category) filter.category = category._id;
-    }
+      const mainCategory = await Category.findOne({
+        slug: categorySlug,
+      }).select("_id");
 
+      // اگر دسته وجود نداشت → هیچی برنگرد
+      if (!mainCategory) {
+        return NextResponse.json([]);
+      }
+
+      const subCategories = await Category.find({
+        parent: mainCategory._id,
+      }).select("_id");
+
+      const categoryIds = [
+        mainCategory._id,
+        ...subCategories.map((c) => c._id),
+      ];
+
+      filter.category = { $in: categoryIds };
+    }
     // sorting
     let sort: any = { createdAt: -1 };
 

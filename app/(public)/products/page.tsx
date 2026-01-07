@@ -30,6 +30,7 @@ export default async function ProductsPage({
   const products = data.products;
   const totalPages = Math.ceil(data.total / data.limit);
   const currentPage = data.page;
+
   return (
     <section className="mx-4 md:mx-auto md:container my-5">
       <SortProducts length={products?.length} />
@@ -38,7 +39,7 @@ export default async function ProductsPage({
         <FilterProducts />
         {/* نمایش محصولات  */}
         <div className="grid  w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {products.length > 0 ? (
+          {products && products.length > 0 ? (
             products.map((game: Product) => <Cart key={game._id} game={game} />)
           ) : (
             <p className="text-center text-gray-500 text-sm col-span-full py-10">

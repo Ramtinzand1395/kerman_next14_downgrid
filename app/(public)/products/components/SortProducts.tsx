@@ -2,11 +2,9 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 const sortOptions = [
-  { label: "پرفروش‌ترین", value: "bestSeller" },
   { label: "بیشترین قیمت", value: "highPrice" },
   { label: "کمترین قیمت", value: "lowPrice" },
   { label: "جدیدترین", value: "newest" },
-  { label: "بیشترین تخفیف", value: "highestDiscount" },
 ];
 interface SortProductsProps {
   length: number;

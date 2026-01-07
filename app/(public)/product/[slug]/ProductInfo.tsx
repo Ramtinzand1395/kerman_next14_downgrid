@@ -58,29 +58,16 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
           </span>
         </div>
         <div className="h-4 w-px bg-gray-300"></div>
-        <a
-          href="#comments"
-          className="text-sm text-cyan-600 hover:text-cyan-700"
-        >
+        <button className="text-sm text-cyan-600 hover:text-cyan-700">
           افزودن دیدگاه
-        </a>
+        </button>
       </div>
 
       {/* Features Summary */}
       <div className="mb-6">
-        <h3 className="font-bold text-gray-800 mb-3">ویژگی‌های اصلی:</h3>
-        <ul className="space-y-2 text-sm text-gray-600">
-          {product.specifications
-            .slice(0, 3)
-            .flatMap((s) => s.items.slice(0, 2))
-            .map((item) => (
-              <li key={item._id} className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
-                <span className="text-gray-500">{item.key}:</span>
-                <span className="font-medium text-gray-800">{item.value}</span>
-              </li>
-            ))}
-        </ul>
+        <h3 className="font-bold text-gray-800 mb-3">درباره محصول</h3>
+
+        <p>{product.shortDesc}</p>
       </div>
 
       {/* Services/Trust Badges */}
@@ -108,7 +95,13 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
           </span>
         </div>
       </div>
-
+      {/* tags */}
+      <div className="">
+        <h2>تگ ها</h2>
+        {product.tags.map((tag) => (
+          <p className="bg-red-500 px-5 py-2 rounded-md">{/* {tag} */}</p>
+        ))}
+      </div>
       {/* Price Box */}
       <div className="mt-auto bg-gray-50 rounded-2xl p-5 border border-gray-100">
         <div className="flex justify-between items-center mb-2">
