@@ -44,5 +44,5 @@ export async function sendOtpToUser(mobile: string) {
     to: mobile,
     args: [otp],
   });
-  return otpDoc.otp;
+  return otpDoc._id.toString();
 }
