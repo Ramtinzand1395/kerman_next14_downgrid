@@ -3,9 +3,20 @@ import Otp from "@/model/Otp";
 
 export async function POST(req: Request) {
   await dbConnect();
-  const { enteredOtp } = await req.json();
+  const { enteredOtp, otpId, mobile } = await req.json();
 
-  const otpDoc = await Otp.findOne({ otp: enteredOtp });
+  if (!enteredOtp || !otpId || !mobile) {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        message: "اطلاعات لازم برای تایید OTP ناقص است",
+      }),
+      { status: 400 }
+    );
+  }
+
+  const enteredOtpString = String(enteredOtp);
+  const otpDoc = await Otp.findOne({ _id: otpId, mobile });
 
   if (!otpDoc) {
     return new Response(
@@ -14,7 +25,7 @@ export async function POST(req: Request) {
     );
   }
 
-  if (otpDoc.otp !== enteredOtp) {
+  if (otpDoc.otp !== enteredOtpString) {
     return new Response(
       JSON.stringify({ success: false, message: "OTP اشتباه است" }),
       { status: 400 }
