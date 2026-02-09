@@ -1,15 +1,18 @@
 "use client";
 // todo
+// اضافه کردن اعتبار سنجی
 // !اضافه کرئدن sitemap,robot.ts
 // !سرچ محصولات اضافه بشه
+// !ریسپانسیو صفحه ارسال کد
 // !زدن خودکار کد بعد از sms
+// !ساخت یوزر های جدید عکس و دیتا بیسو ...
 import { useState, useEffect } from "react";
 import { CheckPhoneAction } from "@/helpers/CheckPhoneAction";
 import { sendOtpToUser } from "@/helpers/sendSms";
 import { signIn } from "next-auth/react";
 import { toast } from "react-toastify";
 import Image from "next/image";
-import { mobileSchema, otpSchema } from "@/validations/validation";
+import { mobileSchema } from "@/validations/validation";
 import * as yup from "yup";
 
 export default function LoginWithOtp() {
@@ -18,7 +21,6 @@ export default function LoginWithOtp() {
   const [enteredOtp, setEnteredOtp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [otpId, setOtpId] = useState<string | null>(null);
-  const otpMetaKey = "otpMeta";
   // ----------------------
   // تایمر + ذخیره LocalStorage
   // ----------------------
@@ -27,7 +29,7 @@ export default function LoginWithOtp() {
 
   useEffect(() => {
     const savedExpireTime = localStorage.getItem("otpExpireTime");
-    const savedMeta = localStorage.getItem(otpMetaKey);
+
     if (savedExpireTime) {
       const expire = Number(savedExpireTime);
       const now = Date.now();
@@ -36,42 +38,26 @@ export default function LoginWithOtp() {
       if (diff > 0) {
         setTimer(diff);
         setOtpSent(true);
-        if (savedMeta) {
-          try {
-            const { otpId: storedOtpId, mobile: storedMobile } =
-              JSON.parse(savedMeta);
-
-            setOtpId(storedOtpId || null);
-
-            if (storedMobile) {
-              setMobile(storedMobile);
-            }
-          } catch (err) {
-            localStorage.removeItem(otpMetaKey);
-          }
-        }
       } else {
         localStorage.removeItem("otpExpireTime");
-        localStorage.removeItem(otpMetaKey);
       }
     }
   }, []);
 
   // اجرای تایمر
-
   useEffect(() => {
-    if (timer === 0) {
-      localStorage.removeItem("otpExpireTime");
+    if (timer <= 0) return;
 
-      localStorage.removeItem(otpMetaKey);
-    }
+    const interval = setInterval(() => {
+      setTimer((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
   }, [timer]);
 
   const formatTime = (sec: number) => {
     const m = Math.floor(sec / 60);
-
     const s = sec % 60;
-
     return `${m}:${s < 10 ? "0" : ""}${s}`;
   };
 
@@ -99,10 +85,6 @@ export default function LoginWithOtp() {
 
       setOtpId(otpRes);
       setOtpSent(true);
-      localStorage.setItem(
-        otpMetaKey,
-        JSON.stringify({ otpId: otpRes, mobile }),
-      );
 
       toast.success("کد تایید ارسال شد");
 
@@ -128,23 +110,13 @@ export default function LoginWithOtp() {
   // ----------------------
   const handleVerifyOtp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!otpId) {
-      toast.error("اطلاعات تایید ناقص است، دوباره درخواست کد دهید.");
-      return;
-    }
-
-    try {
-      await otpSchema.validate(enteredOtp);
-    } catch (err) {
-      toast.error("کد تایید معتبر نیست");
-      return;
-    }
+    if (!otpId) return;
 
     try {
       const res = await fetch("/api/verifyOtp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ otpId, enteredOtp, mobile }),
+        body: JSON.stringify({ otpId, enteredOtp }),
       });
 
       const data = await res.json();
@@ -157,7 +129,7 @@ export default function LoginWithOtp() {
       toast.success("ورود با موفقیت انجام شد");
 
       localStorage.removeItem("otpExpireTime");
-      localStorage.removeItem(otpMetaKey);
+
       signIn("credentials", {
         mobile,
         callbackUrl: "/",
