@@ -142,14 +142,14 @@ export default function LoginWithOtp() {
   return (
     <div className="flex items-center justify-center h-screen flex-col">
       <Image
-        width={30}
-        height={30}
+        width={50}
+        height={50}
         alt="لوگوی کرمان آتاری"
         src="/atari-seeklogo.svg"
         className=" mb-10"
         priority
       />
-      <div className="max-w-md mx-auto  bg-white p-5">
+      <div className=" w-[300px] md:w-[500px] mx-auto  bg-white p-5">
         <h2 className="font-semibold mb-6">ورود به کرمان آتاری</h2>
         {!otpSent ? (
           <form onSubmit={handleSendOtp}>
