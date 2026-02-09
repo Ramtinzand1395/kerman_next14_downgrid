@@ -1,6 +1,6 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
-// todo اصلاح بشه
+
 export default withAuth(
   function middleware(req) {
     const role = req.nextauth.token?.role;

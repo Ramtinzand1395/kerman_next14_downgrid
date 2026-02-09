@@ -21,7 +21,7 @@ const TabSection = ({ product }: TabSectionProps) => {
           onClick={() => setActiveTab("desc")}
           className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${
             activeTab === "desc"
-              ? "bg-red-50 text-red-600"
+              ? "bg-green-50 text-green-500"
               : "text-gray-500 hover:bg-gray-50"
           }`}
         >

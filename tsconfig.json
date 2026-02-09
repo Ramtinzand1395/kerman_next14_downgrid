@@ -17,8 +17,6 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    // todo
-    // جدیده
     "forceConsistentCasingInFileNames": true,
     "plugins": [
       {

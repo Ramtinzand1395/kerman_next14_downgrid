@@ -96,10 +96,11 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
         </div>
       </div>
       {/* tags */}
-      <div className="">
-        <h2>تگ ها</h2>
+      <div className="flex items-center gap-3">
         {product.tags.map((tag) => (
-          <p className="bg-red-500 px-5 py-2 rounded-md">{/* {tag} */}</p>
+          <p className="bg-blue-500 px-3 py-2 text-xs rounded-md text-white ">
+            {tag.name}
+          </p>
         ))}
       </div>
       {/* Price Box */}
