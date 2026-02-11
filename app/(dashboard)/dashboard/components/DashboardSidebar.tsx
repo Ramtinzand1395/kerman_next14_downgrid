@@ -1,6 +1,4 @@
 "use client";
-// todo
-// جای بدج درست بشه در حالت بشته
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -85,7 +83,7 @@ export default function DashboardSidebar() {
 
   const toggleMenu = (label: string) => {
     setOpenMenus((prev) =>
-      prev.includes(label) ? prev.filter((i) => i !== label) : [...prev, label]
+      prev.includes(label) ? prev.filter((i) => i !== label) : [...prev, label],
     );
   };
 
@@ -191,7 +189,7 @@ export default function DashboardSidebar() {
                 ) : (
                   <Link
                     href={item.href!}
-                    className={`flex items-center gap-3 p-2 rounded-lg transition
+                    className={`flex items-center gap-3 p-2 rounded-lg transition relative
                ${
                  pathname === item.href
                    ? "bg-[#0057f9] text-white"
@@ -203,7 +201,9 @@ export default function DashboardSidebar() {
                     {expanded && <span>{item.label}</span>}
 
                     {item.label === "پیام‌ها" && UnreadCount > 0 && (
-                      <span className="mr-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                      <span
+                        className={`mr-auto bg-red-500 text-white  rounded-full ${expanded ? "relative  px-2 py-0.5 text-xs" : "absolute top-0 right-0 px-0.5 text-[10px]"} `}
+                      >
                         {UnreadCount}
                       </span>
                     )}

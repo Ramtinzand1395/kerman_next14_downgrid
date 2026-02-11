@@ -27,12 +27,11 @@ const UserInfoModal = ({
   setOrders,
 }: UserInfoModalProps) => {
   const [userOrder, setUserOrder] = useState<storeOrder | null>(order || null);
-  // todo
-  // چک بشه
+
   const [customer, setCustomer] = useState<Customer | null>(
     order?.customer && typeof order.customer !== "string"
       ? order.customer
-      : null
+      : null,
   );
 
   const HandleDeleteOrder = async () => {
@@ -53,7 +52,7 @@ const UserInfoModal = ({
         setOrders((prev) => ({
           ...prev,
           [consoleType]: prev[consoleType].filter(
-            (order) => order._id !== userOrder._id
+            (order) => order._id !== userOrder._id,
           ),
         }));
       }
@@ -66,7 +65,7 @@ const UserInfoModal = ({
   const HandleNoSms = async () => {
     if (!customer?._id || !userOrder) return;
     const confirmNoSms = window.confirm(
-      "آیا از انجام عملیات بدون پیام مطمئنی؟"
+      "آیا از انجام عملیات بدون پیام مطمئنی؟",
     );
 
     if (!confirmNoSms) return;
@@ -80,7 +79,7 @@ const UserInfoModal = ({
             status: "تحویل به مشتری",
             sendSms: false, // 👈 پیامک ارسال نشه
           }),
-        }
+        },
       );
       const data = await res.json();
       if (res.status === 200) {
@@ -90,7 +89,7 @@ const UserInfoModal = ({
         setOrders((prev) => ({
           ...prev,
           [consoleType]: prev[consoleType].filter(
-            (order) => order._id !== userOrder._id
+            (order) => order._id !== userOrder._id,
           ),
         }));
         closeModal();

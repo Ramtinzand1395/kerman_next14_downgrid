@@ -1,109 +1,11 @@
-// "use client";
-// // todo
-// // seach
-// import { useEffect, useState } from "react";
-// import GameListTable from "./GameListTable";
-// import AddGameListModal from "./AddGameListModal";
-
-// type GameLists = {
-//   ps5: any[];
-//   ps4: any[];
-//   copy: any[];
-//   xbox: any[];
-// };
-
-// export default function AllGameList() {
-//   const [loading, setLoading] = useState(false);
-
-//   const [gameList, setGameList] = useState<GameListItem[]>([]);
-//   const [OpenModal, setOpenModal] = useState(false);
-
-//   const [page, setPage] = useState(1);
-//   const [totalPages, setTotalPages] = useState(1);
-//   useEffect(() => {
-//     const getData = async () => {
-//       try {
-//         setLoading(true);
-
-//         const res = await fetch(
-//           `/api/admin/store-order/game-list?page=${page}`
-//         );
-//         const data = await res.json();
-//         setGameList(data || []);
-//       } catch (err) {
-//         console.log(err);
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     getData();
-//   }, [page]);
-//   console.log(gameList);
-
-//   return (
-//     <div className="mx-2">
-//       <div className="flex items-center justify-between">
-//         <button
-//           onClick={() => setOpenModal(true)}
-//           className="mt-4 px-4 py-2 bg-green-600 text-white rounded"
-//         >
-//           افزودن بازی
-//         </button>
-//       </div>
-//       {/* <div className="flex justify-start my-4">
-//         <input
-//           type="text"
-//           placeholder="جستجوی نام بازی..."
-//           value={searchTerm}
-//           onChange={(e) => setSearchTerm(e.target.value)}
-//           className="px-4 py-2 border border-gray-300 rounded w-full max-w-md"
-//         />
-//       </div> */}
-
-//       <div className="w-full md:container md:mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mx-2 my-10">
-//         {gameList.map((list) => (
-//           <GameListTable
-//             key={list.platform}
-//             title={list.platform}
-//             platform={list.platform}
-//             list={list.items}
-//           />
-//         ))}
-//       </div>
-
-//       {/* Pagination */}
-//       <div className="flex justify-center items-center gap-2 my-8">
-//         <button
-//           className="rounded-lg border border-gray-200 px-3 py-1 text-sm text-gray-600 disabled:opacity-50"
-//           disabled={page === 1}
-//           onClick={() => setPage((p) => p - 1)}
-//         >
-//           قبلی
-//         </button>
-//         <button
-//           className="rounded-lg border border-gray-200 px-3 py-1 text-sm text-gray-600 disabled:opacity-50"
-//           disabled={page === totalPages}
-//           onClick={() => setPage((p) => p + 1)}
-//         >
-//           بعدی
-//         </button>
-//       </div>
-
-//       {OpenModal && <AddGameListModal setOpenModal={setOpenModal} />}
-//     </div>
-//   );
-// }
-
 // todo
 // همه api ها در پلترفورم های مختلف مشکل دارند
-// همه موارد با pnpm نصب بشه
+// seach
 "use client";
 import { useEffect, useState } from "react";
 import GameListTable from "./GameListTable";
 import AddGameListModal from "./AddGameListModal";
 import { GameList } from "@/types";
-
 
 export default function AllGameList() {
   const [loading, setLoading] = useState(false);
@@ -114,7 +16,7 @@ export default function AllGameList() {
   const [pageMap, setPageMap] = useState<Record<string, number>>({});
   const [limit] = useState(20);
   const [totalPagesMap, setTotalPagesMap] = useState<Record<string, number>>(
-    {}
+    {},
   );
 
   useEffect(() => {
@@ -123,7 +25,7 @@ export default function AllGameList() {
         setLoading(true);
 
         const res = await fetch(
-          `/api/admin/store-order/game-list?limit=${limit}`
+          `/api/admin/store-order/game-list?limit=${limit}`,
         );
         const data = await res.json();
         setGameList(data.gameList || []);
@@ -157,13 +59,13 @@ export default function AllGameList() {
     try {
       setLoading(true);
       const res = await fetch(
-        `/api/admin/store-order/game-list?platform=${platform}&page=${page}&limit=${limit}`
+        `/api/admin/store-order/game-list?platform=${platform}&page=${page}&limit=${limit}`,
       );
       const data = await res.json();
       setGameList((prev) =>
         prev.map((p) =>
-          p.platform === platform ? { ...p, items: data.gameList[0].items } : p
-        )
+          p.platform === platform ? { ...p, items: data.gameList[0].items } : p,
+        ),
       );
     } catch (err) {
       console.log(err);

@@ -7,21 +7,21 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { Customer } from "@/types";
 
-
 interface RegisterCustomerProps {
   customerData: Customer;
   setCustomerData: React.Dispatch<React.SetStateAction<Customer>>;
 }
 
-// todo
-// loading
-const RegisterCustomer = ({ setCustomerData, customerData }:RegisterCustomerProps) => {
+const RegisterCustomer = ({
+  setCustomerData,
+  customerData,
+}: RegisterCustomerProps) => {
   const router = useRouter();
 
   const handleUserChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => {
     const { name, value } = e.target;
     setCustomerData((prev) => ({

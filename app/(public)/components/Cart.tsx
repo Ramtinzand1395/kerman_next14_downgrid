@@ -8,7 +8,6 @@ import useCartStore from "@/stores/cartStore";
 import { toast } from "react-toastify";
 import { useSession } from "next-auth/react";
 import { Comment, Product } from "@/types";
-// import { Product } from "@prisma/client";
 
 interface CartProps {
   game: Product;
@@ -19,7 +18,6 @@ export default function Cart({ game }: CartProps) {
   const { data: session } = useSession();
 
   const handleAddToCart = () => {
-    // todo
     addToCart({
       id: game._id!.toLocaleString(),
       title: game.title,

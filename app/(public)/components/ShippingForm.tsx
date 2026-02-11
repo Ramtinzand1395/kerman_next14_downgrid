@@ -13,8 +13,6 @@ interface ShippingFormProps {
   selectedAddress: Address | null;
   setSelectedAddress: (a: Address) => void;
 }
-// todo
-// استفاده از کامپوننت ادرس های من و انتخاب ادرس اصلی
 export default function ShippingForm({
   selectedAddress,
   setSelectedAddress,
@@ -84,7 +82,7 @@ export default function ShippingForm({
   };
 
   const selectedProvinceCities = form.province
-    ? Iran.main.find((p) => p.name === form.province)?.cities ?? []
+    ? (Iran.main.find((p) => p.name === form.province)?.cities ?? [])
     : [];
 
   useEffect(() => {

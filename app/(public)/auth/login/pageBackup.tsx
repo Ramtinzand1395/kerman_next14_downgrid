@@ -1,11 +1,4 @@
 "use client";
-// todo
-// اضافه کردن اعتبار سنجی
-// !اضافه کرئدن sitemap,robot.ts
-// !سرچ محصولات اضافه بشه
-// !ریسپانسیو صفحه ارسال کد
-// !زدن خودکار کد بعد از sms
-// !ساخت یوزر های جدید عکس و دیتا بیسو ...
 import { useState, useEffect } from "react";
 import { CheckPhoneAction } from "@/helpers/CheckPhoneAction";
 import { sendOtpToUser } from "@/helpers/sendSms";
@@ -216,10 +209,6 @@ export default function LoginWithOtp() {
 }
 // !مشکل رفرش داره ثانیه شمار
 // "use client";
-// // todo
-// // !اضافه کرئدن sitemap,robot.ts
-// // !سرچ محصولات اضافه بشه
-// // !زدن خودکار کد بعد از sms
 // import { useState, useEffect } from "react";
 // import { CheckPhoneAction } from "@/helpers/CheckPhoneAction";
 // import { sendOtpToUser } from "@/helpers/sendSms";

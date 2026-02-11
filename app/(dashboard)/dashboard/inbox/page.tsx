@@ -10,8 +10,7 @@ import UserModal from "./modal/UserModal";
 import { Notification, User, Comment } from "@/types/notifType";
 import OrderModal from "./modal/OrderModal";
 import { Order } from "@/types";
-// todo
-// صفحه بندی یا جدا کردن پیام ها از هم
+
 export default function AdminNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);

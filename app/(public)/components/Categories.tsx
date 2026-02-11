@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-// todo
-// ادرس ها درست بشه و تغییر کنه
+
 const categories = [
   {
     title: "بازی‌ها",

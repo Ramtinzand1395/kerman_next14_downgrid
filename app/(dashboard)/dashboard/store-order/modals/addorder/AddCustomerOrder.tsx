@@ -44,20 +44,6 @@ const AddCustomerOrder = ({
     deliveryDate: "",
   });
   const handleSubmite = async () => {
-    // todo
-    // validation
-
-    //   try {
-    //     mobileSchema.validateSync(customerData.mobile, { abortEarly: false });
-    //   } catch (err) {
-    //     if (err instanceof yup.ValidationError) {
-    //       err.inner.forEach((e) => toast.error(e.message));
-    //     } else {
-    //       toast.error("خطای ناشناخته");
-    //     }
-    //     return;
-    //   }
-
     setLoading(true);
     try {
       const res = await fetch("/api/admin/store-order", {
@@ -87,7 +73,7 @@ const AddCustomerOrder = ({
   const handleOrderChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    >,
   ) => {
     const { name, value } = e.target;
 
@@ -95,10 +81,6 @@ const AddCustomerOrder = ({
       const numericValue = value.replace(/,/g, "");
       if (!/^\d*$/.test(numericValue)) return;
 
-      // setOrder((prev) => ({
-      //   ...prev,
-      //   price: numericValue === "" ? null : Number(numericValue),
-      // }));
       setOrder((prev) => {
         if (!prev) return prev; // do nothing if null
         return {
@@ -107,10 +89,6 @@ const AddCustomerOrder = ({
         };
       });
     } else {
-      // setOrder((prev) => ({
-      //   ...prev,
-      //   [name]: value,
-      // }));
       setOrder((prev) => {
         if (!prev) return prev; // do nothing if state is null
         return {
@@ -122,10 +100,6 @@ const AddCustomerOrder = ({
   };
 
   const removeGame = (gameToRemove: string) => {
-    // setOrder((prev) => ({
-    //   ...prev,
-    //   list: prev?.list.filter((g) => g !== gameToRemove),
-    // }));
     setOrder((prev) => {
       if (!prev) return prev;
       return {
