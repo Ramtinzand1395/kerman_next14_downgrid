@@ -207,7 +207,7 @@ export default function Navbar() {
         </div>
 
         {/* کاربر و سبد خرید */}
-        <div className="flex items-center gap-1 md:gap-4 relative">
+        <div className="flex items-center gap-2 md:gap-4 relative">
           <UserBtn
             setActiveDropdown={setActiveDropdown}
             activeDropdown={activeDropdown}
@@ -224,7 +224,7 @@ export default function Navbar() {
             onClick={() => setMobileMenuOpen(true)}
             title="Open_Menu"
           >
-            <Menu className="w-3 h-3 md:w-5 md:h-5" />
+            <Menu className="w-5 h-5 " />
           </button>
         </div>
         {mobileMenuOpen && (
