@@ -5,8 +5,10 @@ import SliderContainer from "./components/slider/SliderContainer";
 import BoxContainer from "./components/BoxContainer";
 import UsersComments from "./components/landing/UsersComments";
 import Trust from "./components/landing/Trust";
-// todo
-// خبر نامه و مقالات بیاد
+import Subscribed from "./components/landing/Subscribed";
+import Faq from "./components/landing/Faq";
+import Link from "next/link";
+
 const now = new Date();
 const nextMidnight = new Date(
   now.getFullYear(),
@@ -14,18 +16,24 @@ const nextMidnight = new Date(
   now.getDate() + 1,
   0,
   0,
-  0
+  0,
 );
 export default async function Home() {
-  const [discountedProducts, consoles, games, gamingAccessories, accessories,accountGames] =
-    await Promise.all([
-      fetcher("/api/products?discount=true"),
-      fetcher("/api/products?category=consoles"),
-      fetcher("/api/products?category=games"),
-      fetcher("/api/products?category=gaming-accessories"),
-      fetcher("/api/products?category=accessories"),
-      fetcher("/api/products?category=account-games"),
-    ]);
+  const [
+    discountedProducts,
+    consoles,
+    games,
+    gamingAccessories,
+    accessories,
+    accountGames,
+  ] = await Promise.all([
+    fetcher("/api/products?discount=true"),
+    fetcher("/api/products?category=consoles"),
+    fetcher("/api/products?category=games"),
+    fetcher("/api/products?category=gaming-accessories"),
+    fetcher("/api/products?category=accessories"),
+    fetcher("/api/products?category=account-games"),
+  ]);
   return (
     <div>
       <Hero />
@@ -36,7 +44,10 @@ export default async function Home() {
           title="تخفیف امروز"
           subtitle={<DiscountTimer endDate={nextMidnight.toISOString()} />}
         />
-        <BoxContainer title="دسته بندی ها" subtitle="جستجو بر اساس دسته بندی" />
+        <BoxContainer
+          title="خرید در سه مرحله ساده"
+          subtitle=" بدون پیچیدگی خرید کن و سریع به تجربه بازی مورد علاقه‌ات برس. "
+        />
         <SliderContainer
           games={consoles}
           title="کنسول ها "
@@ -64,13 +75,31 @@ export default async function Home() {
           subtitle="لوازم جانبی کنسول"
           link="/products?sort=newest&category=accessories&page=1"
         />
-         <SliderContainer
+        <SliderContainer
           games={accountGames}
           title=" بازی ها"
           subtitle="بازی های اکانتی"
           link="/products?sort=newest&category=account-games&page=1"
         />
-        {/* <Subscribed /> */}
+        <Subscribed />
+        <Faq />
+        <section className="mt-8 rounded-3xl border border-indigo-100 bg-indigo-50 px-6 py-8 text-center md:px-10">
+          <h2 className="text-2xl font-black text-slate-900 md:text-3xl">
+            هنوز برای انتخاب مرددی؟
+          </h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-slate-600 md:text-base">
+            تیم ما آماده‌ست با توجه به بودجه و سبک بازی‌ت بهترین پیشنهاد را
+            ارائه بدهد. همین حالا پیام بده تا سریع راهنمایی‌ات کنیم.
+          </p>
+          {/* todo */}
+          {/* مستقیم بره به تلگرام */}
+          <Link
+            href="/contact-us"
+            className="mt-5 inline-flex rounded-xl bg-[#001A6E] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#000e3c]"
+          >
+            شروع مشاوره خرید
+          </Link>
+        </section>
       </div>
     </div>
   );

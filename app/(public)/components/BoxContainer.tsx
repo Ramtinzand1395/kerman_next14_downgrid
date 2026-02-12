@@ -9,11 +9,12 @@ interface BoxContainerProps {
 
 export default function BoxContainer({ title, subtitle }: BoxContainerProps) {
   return (
-    <div className="p-5">
+     <section className="mt-10 rounded-3xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-6 md:p-8">
+
       <Motion delay={0.25}>
         <div className="flex items-center justify-between">
           <h2 className="font-bold text-lg lg:text-2xl whitespace-nowrap my-5 flex items-center">
-            <div className="bg-[#0D1023] w-5 h-10 rounded-md ml-3" />
+            <div className="bg-[#001A6E] w-3 h-10 rounded-md ml-3" />
             {title}
           </h2>
         </div>
@@ -24,6 +25,7 @@ export default function BoxContainer({ title, subtitle }: BoxContainerProps) {
       </Motion>
 
       <Categories />
-    </div>
+   </section>
+
   );
 }

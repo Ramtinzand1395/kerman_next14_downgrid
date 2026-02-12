@@ -1,192 +1,63 @@
-// "use client";
-// import { motion } from "framer-motion";
-// import Image from "next/image";
-// import Link from "next/link";
-// import Script from "next/script";
-
-// const Hero = () => {
-//   return (
-//     <section
-//       className="relative h-[90vh] bg-[url('/Hero1.webp')] bg-cover bg-center bg-no-repeat flex items-center justify-end"
-//       aria-label="بخش هدر و معرفی فروشگاه کرمان آتاری"
-//     >
-//       {/* تصویر شخصیت */}
-//       <motion.div
-//         initial={{ opacity: 0, x: 40 }}
-//         animate={{ opacity: 1, x: 0 }}
-//         transition={{ duration: 1, ease: "easeOut" }}
-//         className="absolute bottom-0 right-0 w-full h-full"
-//       >
-//         <Image
-//           src="/charecture1.webp"
-//           fill
-//           alt="شخصیت بازی پلی‌استیشن در فروشگاه کرمان آتاری"
-//           className="object-contain object-bottom-right"
-//           priority
-//         />
-//       </motion.div>
-
-//       {/* محتوای اصلی */}
-//       <motion.div
-//         initial={{ opacity: 0, x: -40 }}
-//         animate={{ opacity: 1, x: 0 }}
-//         transition={{ duration: 1, ease: "easeOut" }}
-//         className="relative z-10 px-5 md:px-10 text-white max-w-xl"
-//       >
-//         <motion.p
-//           initial={{ opacity: 0, x: -30 }}
-//           animate={{ opacity: 1, x: 0 }}
-//           transition={{ delay: 0.3, duration: 1 }}
-//           className="text-3xl md:text-5xl font-bold mb-4 leading-snug"
-//         >
-//           دنیای بازی در دستان شما
-//         </motion.p>
-
-//         <motion.p
-//           initial={{ opacity: 0 }}
-//           animate={{ opacity: 1 }}
-//           transition={{ delay: 0.6, duration: 1 }}
-//           className="text-sm md:text-lg text-gray-200 mb-6 leading-relaxed"
-//         >
-//           جدیدترین بازی‌ها، کنسول‌ها و اکسسوری‌های پلی‌استیشن را با بهترین قیمت
-//           اینجاست.
-//         </motion.p>
-
-//         <motion.div
-//           initial={{ opacity: 0 }}
-//           animate={{ opacity: 1 }}
-//           transition={{ delay: 0.9, duration: 0.8 }}
-//           className="flex flex-col md:flex-row items-center gap-4"
-//         >
-//           <Link href="/products?sort=newest" aria-label="مشاهده محصولات فروشگاه">
-//             <motion.button
-//               whileHover={{ scale: 1.05 }}
-//               whileTap={{ scale: 0.95 }}
-//               className="bg-[#001A6E] hover:bg-[#010c32] text-white px-8 py-3 rounded-xl shadow-lg transition cursor-pointer"
-//             >
-//               مشاهده محصولات
-//             </motion.button>
-//           </Link>
-
-//           <Link href="/contact" aria-label="تماس با فروشگاه">
-//             <motion.button
-//               whileHover={{ scale: 1.05 }}
-//               whileTap={{ scale: 0.95 }}
-//               className="bg-[#377dff] text-white hover:bg-[#0057f9] px-8 py-3 rounded-xl shadow-lg transition cursor-pointer"
-//             >
-//               تماس با ما
-//             </motion.button>
-//           </Link>
-//         </motion.div>
-//       </motion.div>
-
-//       {/* Schema.org برای Hero Section */}
-//       <Script
-//         id="hero-schema"
-//         type="application/ld+json"
-//         strategy="afterInteractive"
-//         dangerouslySetInnerHTML={{
-//           __html: JSON.stringify({
-//             "@context": "https://schema.org",
-//             "@type": "WebPageElement",
-//             name: "Hero Section",
-//             description:
-//               "معرفی فروشگاه کرمان آتاری با آخرین بازی‌ها و محصولات پلی‌استیشن",
-//           }),
-//         }}
-//       />
-//     </section>
-//   );
-// };
-
-// export default Hero;
-
 "use client";
-import { motion } from "framer-motion";
-import Image from "next/image";
+import { Gift } from "lucide-react";
 import Link from "next/link";
-import Script from "next/script";
-
+// todo
+// بعدا فریمر موشن اضافه بشه
+// مشاوره خرید رایگان بره به تلگرام
 const Hero = () => {
   return (
     <section
-      className="relative h-[90vh] flex items-center justify-end overflow-hidden"
       aria-label="بخش هدر و معرفی فروشگاه کرمان آتاری"
+      className="mx-2 mt-4 rounded-3xl bg-gradient-to-br from-[#001A6E]  to-[#377dff] px-4 py-8 text-white md:mx-10 md:px-10 md:py-12"
     >
-      {/* 🔥 تصویر LCP (Hero Background) */}
-      <Image
-        src="/Hero1.webp"
-        alt="فروشگاه کرمان آتاری - خرید بازی و کنسول پلی‌استیشن"
-        fill
-        priority
-        fetchPriority="high"
-        sizes="100vw"
-        className="object-cover object-center -z-10"
-      />
-
-      {/* تصویر شخصیت (غیر LCP) */}
-      <motion.div
-        initial={{ opacity: 0, x: 0 }}
-        animate={{ opacity: 1, x: 300 }}
-        transition={{ duration: 1, ease: "easeOut" }}
-        className="absolute bottom-0 right-0 w-full h-full"
-      >
-        <Image
-          src="/charecture1.webp"
-          fill
-          alt="شخصیت بازی پلی‌استیشن در فروشگاه کرمان آتاری"
-          className="object-contain object-bottom-right hidden md:block "
-          loading="lazy"
-          sizes="(max-width: 768px) 80vw, 40vw"
-        />
-      </motion.div>
-
-      {/* محتوای متنی */}
-      <motion.div
-        initial={{ opacity: 0, x: -40 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 1, ease: "easeOut" }}
-        className="relative z-10 px-5 md:px-10 text-white max-w-xl"
-      >
-        <h1 className="text-3xl md:text-5xl font-bold mb-4 leading-snug">
-          دنیای بازی در دستان شما
-        </h1>
-
-        <p className="text-sm md:text-lg text-gray-200 mb-6 leading-relaxed">
-          جدیدترین بازی‌ها، کنسول‌ها و اکسسوری‌های پلی‌استیشن را با بهترین قیمت
-          اینجاست.
-        </p>
-
-        <div className="flex flex-col md:flex-row items-center gap-4">
-          <Link href="/products?sort=newest">
-            <button className="bg-[#001A6E] hover:bg-[#010c32] text-white px-8 py-3 rounded-xl shadow-lg transition">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="max-w-2xl space-y-5">
+          <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1 text-sm">
+            <Gift size={16} />
+            فروش ویژه هر روز
+          </span>
+          <h1 className="text-3xl font-black leading-loose md:text-5xl md:leading-[4rem]">
+            فروشگاه تخصصی پلی‌استیشن، بازی و تجهیزات گیمینگ
+          </h1>
+          <p className="text-sm text-slate-200 md:text-base">
+            از کنسول‌های نسل جدید تا اکسسوری‌های حرفه‌ای را با بهترین قیمت،
+            ضمانت اصالت و ارسال سریع تهیه کنید.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/products?sort=newest&page=1"
+              className="rounded-xl bg-white px-5 py-2 text-sm font-bold text-slate-900 transition hover:bg-slate-200"
+            >
               مشاهده محصولات
-            </button>
-          </Link>
-
-          <Link href="/contact">
-            <button className="bg-[#377dff] hover:bg-[#0057f9] text-white px-8 py-3 rounded-xl shadow-lg transition">
-              تماس با ما
-            </button>
-          </Link>
+            </Link>
+            <Link
+              href="/contact-us"
+              className="rounded-xl border border-white/40 px-5 py-2 text-sm font-bold transition hover:bg-white/10"
+            >
+              مشاوره رایگان خرید
+            </Link>
+          </div>
         </div>
-      </motion.div>
 
-      {/* Schema */}
-      <Script
-        id="hero-schema"
-        type="application/ld+json"
-        strategy="afterInteractive"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "WebPageElement",
-            name: "Hero Section",
-            description:
-              "معرفی فروشگاه کرمان آتاری با آخرین بازی‌ها و محصولات پلی‌استیشن",
-          }),
-        }}
-      />
+        <div className="grid w-full max-w-sm grid-cols-2 gap-3 text-center">
+          <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
+            <p className="text-2xl font-black md:text-3xl">1200</p>
+            <p className="mt-1 text-xs text-slate-200">سفارش موفق</p>
+          </div>
+          <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
+            <p className="text-2xl font-black md:text-3xl">340</p>
+            <p className="mt-1 text-xs text-slate-200">محصول فعال</p>
+          </div>
+          <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
+            <p className="text-2xl font-black md:text-3xl">24/7</p>
+            <p className="mt-1 text-xs text-slate-200">پشتیبانی آنلاین</p>
+          </div>
+          <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
+            <p className="text-2xl font-black md:text-3xl">%100</p>
+            <p className="mt-1 text-xs text-slate-200">ضمانت اصالت</p>
+          </div>
+        </div>
+      </div>
     </section>
   );
 };

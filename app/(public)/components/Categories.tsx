@@ -1,54 +1,44 @@
-import Image from "next/image";
-import Link from "next/link";
-
-const categories = [
+"use client";
+import { CreditCard, Gamepad2, Truck } from "lucide-react";
+const buyingSteps = [
   {
-    title: "بازی‌ها",
-    src: "/icons/tic-tac-toe.webp",
-    href: "/products?sort=newest&category=account-games&page=1",
+    icon: Gamepad2,
+    title: "انتخاب محصول",
+    description:
+      "بین کنسول‌ها، بازی‌ها و لوازم جانبی، محصول مناسب خودت را پیدا کن.",
   },
   {
-    title: "دسته کنسول",
-    src: "/icons/gamepad.webp",
-    href: "/products?sort=newest&category=controllers&page=1",
+    icon: CreditCard,
+    title: "پرداخت امن",
+    description: "از طریق درگاه امن بانکی سفارش را نهایی کن و رسید خرید بگیر.",
   },
   {
-    title: "کنسول‌ها",
-    src: "/icons/game.webp",
-    href: "/products?sort=newest&category=playstation-5&page=1",
+    icon: Truck,
+    title: "تحویل سریع",
+    description: "سفارشت در کوتاه‌ترین زمان ارسال می‌شود و قابل پیگیری است.",
   },
-  {
-    title: "اکشن فیگور",
-    src: "/icons/action-figure.webp",
-    href: "/products/action-figures",
-  },
-  {
-    title: "لوازم جانبی",
-    src: "/icons/action-figure.webp",
-    href: "/products?sort=newest&category=headsets&page=1",
-  },
-  { title: "کیف", src: "/icons/school-bag.webp", href: "/products/bags" },
 ];
 
 const Categories = () => (
-  <div className="container mx-auto grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 my-10 cursor-pointer">
-    {categories.map(({ title, src, href }) => (
-      <Link key={href} href={href}>
-        <div className="drop-shadow-2xl shadow-2xl flex flex-col items-center space-y-3 p-4 hover:scale-105 transition">
-          <h3>{title}</h3>
-          <div className="relative w-full h-24">
-            <Image
-              alt={title}
-              fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
-              className="object-contain"
-              src={src}
-            />
+    <div className="mt-6 grid gap-4 md:grid-cols-3 ">
+      {buyingSteps.map(({ icon: Icon, title, description }, index) => (
+        <article
+          key={title}
+          className="rounded-2xl  bg-gradient-to-br from-[#377dff]  to-[#001A6E] p-5 shadow-sm ring-1 ring-slate-100"
+        >
+          <div className="flex items-center justify-between">
+            <span className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-sm font-bold text-indigo-900">
+              {index + 1}
+            </span>
+            <div className="mb-3 inline-flex rounded-xl bg-indigo-50 p-2 text-indigo-700">
+              <Icon size={20} />
+            </div>
           </div>
-        </div>
-      </Link>
-    ))}
-  </div>
+          <h3 className="mb-2 text-base font-bold text-white">{title}</h3>
+          <p className="text-sm leading-6 text-slate-200">{description}</p>
+        </article>
+      ))}
+    </div>
 );
 
 export default Categories;

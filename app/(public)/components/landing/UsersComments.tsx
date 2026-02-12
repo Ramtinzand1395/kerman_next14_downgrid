@@ -1,104 +1,49 @@
-// import Image from "next/image";
+"use client"
 
-// async function getComments() {
-//   const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/landing`, {
-//     cache: "no-store",
-//   });
-//   return res.json();
-// }
-// export default async function UsersComments() {
-//   const comments = await getComments();
-//   console.log(comments);
-//   return (
-//     <section className="py-24">
-//       <h2 className="text-center text-3xl md:text-4xl font-black mb-16 text-[#0057f9] tracking-widest">
-//         نظر کاربران
-//       </h2>
+import { Star } from "lucide-react";
+import Link from "next/link";
 
-//       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4 lg:px-24">
-//         {comments.map((c: any, i: number) => (
-//           <div
-//             key={c._id}
-//             className="glass p-8 rounded-3xl space-y-6 border border-white/10 hover:border-cyan-400/60 transition-all"
-//           >
-//             {/* ستاره‌ها */}
-//             <div className="flex gap-1 text-[#ece800] text-xl">
-//               {"★★★★★".split("").map((s, j) => (
-//                 <span key={j}>{s}</span>
-//               ))}
-//             </div>
-//         {c.text}
-
-//             <div className="">
-//                 <div className="flex items-center">
-//                 <Image className="rounded-full" src={c.product.mainImage} width={50} height={50} alt={c.product.title} />
-//                 {c.product.title}
-
-//                 </div>
-//                 <p className="text-xs text-gray-500">
-
-//                 {c.user.username}
-//                 </p>
-//             </div>
-//           </div>
-
-//         ))}
-//       </div>
-//     </section>
-//   );
-// }
-
-import Image from "next/image";
-
-async function getComments() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/landing`, {
-    cache: "no-store",
-  });
-  return res.json();
-}
-
+const blogHighlights = [
+  {
+    title: "راهنمای خرید پلی‌استیشن 5 در سال 1405",
+    description: "چه مدلی بخریم؟ نسخه دیجیتال یا دیسک‌خور؟ این راهنما کمک می‌کند تصمیم بهتری بگیرید.",
+    link: "/about-us",
+  },
+  {
+    title: "بهترین اکسسوری‌های ضروری برای گیمرها",
+    description: "از هدست تا پایه شارژر دسته؛ لیست کامل ابزارهایی که تجربه بازی را حرفه‌ای‌تر می‌کنند.",
+    link: "/products?sort=newest&category=gaming-accessories&page=1",
+  },
+  {
+    title: "چطور از اکانت و بازی‌های دیجیتال محافظت کنیم؟",
+    description: "نکات امنیتی مهم برای خرید، نگهداری و استفاده امن از بازی‌های اکانتی.",
+    link: "/products?sort=newest&category=account-games&page=1",
+  },
+];
+// todo
+// اضافه کردن مقاله واقعی و ادرس مشاهده درست مقااله
 export default async function UsersComments() {
-  const comments = await getComments();
 
   return (
-    <section className="my-10">
-      <h2 className="text-center text-3xl md:text-4xl font-black mb-16 text-[#001a6e] tracking-widest">
-        نظر کاربران
-      </h2>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4 lg:px-24">
-        {comments.map((c: any) => (
-          <div
-            key={c._id}
-            className="bg-[#001a6e] backdrop-blur-lg border border-white/20 rounded-3xl p-8 space-y-6 "
-          >
-            {/* ستاره‌ها */}
-            <div className="flex gap-1 text-[#ece800] text-xl">
-              {"★★★★★".split("").map((s, j) => (
-                <span key={j}>{s}</span>
-              ))}
-            </div>
-
-            {/* متن نظر */}
-            <p className="text-white/90">{c.text}</p>
-
-            {/* اطلاعات محصول و کاربر */}
-            <div className="flex items-center gap-4 mt-4">
-              <Image
-                className="rounded-full border border-white/30"
-                src={c.product.mainImage}
-                width={50}
-                height={50}
-                alt={c.product.title}
-              />
-              <div className="flex flex-col">
-                <span className="text-white font-semibold">{c.product.title}</span>
-                <span className="text-gray-400 text-sm">{c.user.username}</span>
-              </div>
-            </div>
+     <section className="mt-8 rounded-3xl border border-amber-100 bg-amber-50 p-6 md:p-8">
+          <div className="mb-5 flex items-center justify-between">
+            <h2 className="text-xl font-black text-slate-900 md:text-2xl">مطالب پیشنهادی برای خرید بهتر</h2>
+            <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-bold text-amber-700">
+              <Star size={14} />
+              مطالعه سریع
+            </span>
           </div>
-        ))}
-      </div>
-    </section>
+          <div className="grid gap-4 md:grid-cols-3">
+            {blogHighlights.map((post) => (
+              <article key={post.title} className="rounded-2xl bg-white p-5 shadow-sm">
+                <h3 className="text-base font-bold text-slate-900">{post.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{post.description}</p>
+                <Link href={post.link} className="mt-4 inline-flex text-sm font-bold text-indigo-700 hover:text-indigo-900">
+                  مطالعه یا مشاهده
+                </Link>
+              </article>
+            ))}
+          </div>
+        </section>
   );
 }
