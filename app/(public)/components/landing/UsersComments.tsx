@@ -25,13 +25,10 @@ const blogHighlights = [
 export default  function UsersComments() {
 
   return (
-     <section className="mt-8 rounded-3xl border border-amber-100 bg-amber-50 p-6 md:p-8">
+     <section className="mt-8 rounded-3xl border border-blue-100 bg-blue-50 p-6 md:p-8">
           <div className="mb-5 flex items-center justify-between">
             <h2 className="text-xl font-black text-slate-900 md:text-2xl">مطالب پیشنهادی برای خرید بهتر</h2>
-            <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-bold text-amber-700">
-              <Star size={14} />
-              مطالعه سریع
-            </span>
+          
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {blogHighlights.map((post) => (
