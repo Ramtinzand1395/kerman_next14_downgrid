@@ -1,184 +1,201 @@
-import { Home, Info, Phone, Grid2x2, FileText } from "lucide-react";
+import {
+  ArrowLeft,
+  BadgeCheck,
+  Clock3,
+  Home,
+  Info,
+  Instagram,
+  MapPin,
+  Phone,
+  ShoppingBag,
+  ShieldCheck,
+  Truck,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-
-const menuItems = [
+// todo
+// باید تکمیل بشه
+// نماد اعتماد بیاد
+// گذینه ها اضافه بشه مثل اخرین محصولات و مقالات
+const quickLinks = [
   { name: "خانه", href: "/", icon: Home },
-  { name: "دسته‌بندی‌ها", href: "/categories", icon: Grid2x2 },
-  { name: "درباره ما", href: "/about", icon: Info },
-  { name: "تماس با ما", href: "/contact", icon: Phone },
-  { name: "وبلاگ", href: "/weblog", icon: FileText },
+  { name: "فروشگاه", href: "/products", icon: ShoppingBag },
+  { name: "درباره ما", href: "/about-us", icon: Info },
+  { name: "تماس با ما", href: "/contact-us", icon: Phone },
+];
+
+const features = [
+  { title: "ارسال سریع", desc: "ارسال همان‌روز در کرمان", icon: Truck },
+  {
+    title: "ضمانت اصالت",
+    desc: "محصولات اورجینال و تست‌شده",
+    icon: ShieldCheck,
+  },
+  {
+    title: "پشتیبانی واقعی",
+    desc: "پاسخ‌گویی قبل و بعد خرید",
+    icon: BadgeCheck,
+  },
 ];
 
 export default function Footer() {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: "Kerman Atari",
+    address: "کرمان، میدان شهدا، خیابان زینبیه، جنب داروخانه",
+    telephone: "09383077225",
+    image: "/atari-seeklogo.svg",
+    url: "https://kermanatari.ir",
+  };
+// from-[#001A6E]  to-[#377dff]
   return (
     <footer
-      className="bg-white text-gray-700 mt-10 border-t rounded-2xl"
+      className="mt-14 overflow-hidden rounded-t-[100px] border-t border-[#001A6E] bg-gradient-to-b from-white via-red-50/40 to-white text-gray-700"
       role="contentinfo"
       aria-label="پاورقی سایت"
     >
-      {/* Local Business Schema */}
+      {/* SEO Structured Data */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "LocalBusiness",
-            name: "Kerman Atari",
-            address: "کرمان، میدان شهدا، خیابان زینبیه، جنب داروخانه",
-            telephone: "09383077225",
-            image: "/atari-seeklogo.svg",
-            url: "https://kermanatari.ir",
-          }),
-        }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-      {/* todo */}
-      {/* پاک کردن هاشیه بالا */}
-      <div className="">
-        <Image
-          width={120}
-          height={120}
-          alt="شخصیت بازی پلی‌استیشن"
-          src="/post.webp"
-          className="object-contain w-52 h-52 "
-        />
-      </div>
-      {/* بخش اصلی */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10  pb-5 px-5 md:px-10 ">
-        {/* آخرین مقالات - فقط اگر واقعی داری */}
-        {/* در صورت نبود داده، این بخش را با data واقعی پر کن */}
-        <section aria-labelledby="latest-articles">
-          <h2
-            id="latest-articles"
-            className="text-lg md:text-xl font-bold text-black mb-4 border-b border-red-600 pb-2 w-fit"
-          >
-            آخرین مقالات
-          </h2>
-          {/* TODO */}
-          {/* بهتر است این لیست از CMS یا DB بیاید */}
-          {false && (
-            <ul className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <li key={i}>
-                  <Link
-                    href={`/blog/sample-${i}`}
-                    className="flex items-center gap-3 hover:text-black transition"
-                  >
-                    <Image
-                      src="/thumbnails/article-60.jpg"
-                      alt="تصویر مقاله"
-                      width={60}
-                      height={60}
-                      className="rounded-lg object-cover"
-                    />
-                    <div>
-                      <h3 className="font-semibold text-sm">عنوان مقاله</h3>
-                      <p className="text-xs text-gray-400">توضیح کوتاه...</p>
-                    </div>
-                  </Link>
-                </li>
-              ))}
+
+      <div className="mx-auto max-w-7xl px-4 pb-8 pt-10 md:px-8">
+        {/* Top CTA */}
+        <div className="relative mb-10 rounded-2xl border border-red-100 bg-white/80 p-5 shadow-sm backdrop-blur md:p-7">
+          <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div>
+              <h2 className="text-lg font-black text-gray-900 md:text-2xl">
+                کرمان آتاری؛ مقصد حرفه‌ای گیمرها
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-gray-600 md:text-base">
+                از جدیدترین بازی‌های PS5 تا لوازم جانبی گیمینگ را با قیمت مناسب،
+                تضمین اصالت و پشتیبانی سریع تهیه کنید.
+              </p>
+
+              <div className="mt-5 flex flex-wrap gap-3">
+                <Link
+                  href="/products"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#001A6E] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#000d38]"
+                >
+                  مشاهده محصولات
+                  <ArrowLeft className="h-4 w-4" />
+                </Link>
+
+                <Link
+                  href="/contact-us"
+                  className="inline-flex items-center gap-2 rounded-xl border border-[#377dff] px-4 py-2.5 text-sm font-semibold text-[#001A6E] transition hover:text-[#377dff]"
+                >
+                  مشاوره قبل خرید
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Features */}
+        <div className="grid gap-6 md:grid-cols-3">
+          {features.map((feature) => {
+            const Icon = feature.icon;
+            return (
+              <div
+                key={feature.title}
+                className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"
+              >
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#b7c8ff] text-[#001A6E]">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <h3 className="font-bold text-gray-900">{feature.title}</h3>
+                <p className="mt-1 text-sm text-gray-600">{feature.desc}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Columns */}
+        <div className="mt-10 grid gap-8 border-t border-gray-200 pt-8 md:grid-cols-3">
+          {/* Brand */}
+          <section aria-label="معرفی">
+            <Link href="/" className="mb-4 inline-flex items-center gap-2">
+              <Image
+                width={42}
+                height={42}
+                alt="لوگوی کرمان آتاری"
+                src="/atari-seeklogo.svg"
+              />
+              <span className="text-lg font-extrabold text-gray-900">
+                Kerman Atari
+              </span>
+            </Link>
+
+            <p className="text-sm leading-7 text-gray-600">
+              خرید و فروش بازی‌های پلی‌استیشن، کنسول و اکانت‌های دیجیتالی با
+              قیمت رقابتی و ارسال سریع.
+            </p>
+          </section>
+
+          {/* Quick links */}
+          <section aria-label="دسترسی سریع">
+            <h3 className="mb-3 font-extrabold text-gray-900">دسترسی سریع</h3>
+            <ul className="space-y-3">
+              {quickLinks.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <li key={item.name}>
+                    <Link
+                      href={item.href}
+                      className="inline-flex items-center gap-2 text-sm text-gray-600 transition hover:text-red-600"
+                    >
+                      <Icon className="h-4 w-4" />
+                      {item.name}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
-          )}
-        </section>
+          </section>
 
-        {/* آخرین محصولات - مثل بالا */}
-        <section aria-labelledby="latest-products">
-          <h2
-            id="latest-products"
-            className="text-lg md:text-xl font-bold text-black mb-4 border-b border-red-600 pb-2 w-fit"
+          {/* Contact */}
+          <section
+            aria-label="اطلاعات تماس"
+            className="space-y-3 text-sm text-gray-600"
           >
-            آخرین محصولات
-          </h2>
+            <h3 className="font-extrabold text-gray-900">ارتباط با ما</h3>
 
-          {false && (
-            <ul className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <li key={i}>
-                  <Link
-                    href={`/products/sample-${i}`}
-                    className="flex items-center gap-3 hover:text-black transition"
-                  >
-                    <Image
-                      src="/thumbnails/product-60.jpg"
-                      alt="تصویر محصول"
-                      width={60}
-                      height={60}
-                      className="rounded-lg object-cover"
-                    />
-                    <div>
-                      <h3 className="font-semibold text-sm">محصول نمونه</h3>
-                      <p className="text-xs text-gray-400">توضیح کوتاه...</p>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+            <p className="flex items-start gap-2 leading-7">
+              <MapPin className="mt-1 h-4 w-4 shrink-0 text-[#001A6E]" />
+              کرمان، میدان شهدا، خیابان زینبیه، جنب داروخانه
+            </p>
 
-        {/* اطلاعات شرکت */}
-        <section
-          aria-labelledby="company-info"
-          className="flex flex-col items-center md:items-start text-center md:text-right"
-        >
-          <Link
-            href="/"
-            className="flex items-center mb-4"
-            aria-label="بازگشت به صفحه اصلی"
-          >
-            <Image
-              width={45}
-              height={45}
-              alt="لوگوی کرمان آتاری"
-              src="/atari-seeklogo.svg"
-            />
-            <h2 className="text-black mx-2 font-semibold text-xl hover:scale-105">
-              Kerman Atari
-            </h2>
-          </Link>
-
-          <p className="text-sm text-gray-700 leading-6 mb-2">
-            خرید و فروش بازی‌های پلی‌استیشن، کنسول و اکانت‌های دیجیتالی با
-            بهترین قیمت در کرمان.
-          </p>
-
-          <address className="not-italic text-gray-600 text-sm mb-2 leading-6">
-            <p>آدرس: کرمان، میدان شهدا، خیابان زینبیه، جنب داروخانه</p>
-            <p>
-              شماره تماس:{" "}
-              <a href="tel:09383077225" className="hover:text-black transition">
+            <p className="flex items-center gap-2">
+              <Phone className="h-4 w-4 text-[#001A6E]" />
+              <a href="tel:09383077225" className="hover:text-red-600">
                 09383077225
               </a>
             </p>
-          </address>
-        </section>
-      </div>
 
-      {/* نوار پایینی */}
-      <div className="flex flex-col md:flex-row items-center justify-between border-t border-gray-700 pt-4 text-sm  pb-5 px-5 md:px-10 ">
-        <nav aria-label="منوی فوتر">
-          <ul className="flex flex-wrap items-center gap-4 mb-3 md:mb-0">
-            {menuItems.map((item, i) => {
-              const Icon = item.icon;
-              return (
-                <li key={i} className="cursor-pointer flex items-center">
-                  <Link
-                    href={item.href}
-                    className="flex items-center hover:text-red-500 transition"
-                  >
-                    <Icon className="w-4 h-4 ml-1" />
-                    {item.name}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+            <p className="flex items-center gap-2">
+              <Clock3 className="h-4 w-4 text-[#001A6E]" />
+              همه‌روزه از ساعت ۱۰ تا ۲۲
+            </p>
 
-<p className="text-gray-700 text-xs md:text-sm text-center">
-          © 2025 KermanAtari. کلیه حقوق محفوظ است.
-        </p>
+            <a
+              href="https://instagram.com"
+              className="inline-flex items-center gap-2 text-gray-600 transition hover:text-red-600"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Instagram className="h-4 w-4" />
+              دنبال‌کردن در اینستاگرام
+            </a>
+          </section>
+        </div>
+
+        {/* Bottom bar */}
+        <div className="mt-8 border-t border-gray-200 pt-5 text-center text-xs text-gray-500 md:text-sm">
+          © 2025 KermanAtari. تمامی حقوق برای این مجموعه محفوظ است.
+        </div>
       </div>
     </footer>
   );

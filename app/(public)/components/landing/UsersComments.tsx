@@ -22,7 +22,7 @@ const blogHighlights = [
 ];
 // todo
 // اضافه کردن مقاله واقعی و ادرس مشاهده درست مقااله
-export default async function UsersComments() {
+export default  function UsersComments() {
 
   return (
      <section className="mt-8 rounded-3xl border border-amber-100 bg-amber-50 p-6 md:p-8">

@@ -8,7 +8,8 @@ import Trust from "./components/landing/Trust";
 import Subscribed from "./components/landing/Subscribed";
 import Faq from "./components/landing/Faq";
 import Link from "next/link";
-
+// todo
+// دکمه در موبایل برای صفحه اول بزرگه
 const now = new Date();
 const nextMidnight = new Date(
   now.getFullYear(),
