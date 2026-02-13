@@ -241,3 +241,15 @@ export interface SpecificationItem {
   specificationId: number;
   specification: Specification;
 }
+
+export interface BlogPost {
+  _id: string;
+  title: string;
+  slug: string;
+  excerpt?: string;
+  content: string;
+  coverImage?: string;
+  published: boolean;
+  createdAt: string;
+  updatedAt: string;
+}

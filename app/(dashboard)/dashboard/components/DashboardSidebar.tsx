@@ -13,6 +13,7 @@ import {
   ShoppingBag,
   PlusCircle,
   Plus,
+  Newspaper,
 } from "lucide-react";
 import AddProductDrawer from "./drawers/AddProductDrawer";
 import AddCategoryDrawer from "./drawers/AddCategoryDrawer";
@@ -33,7 +34,7 @@ export const navItems: NavItem[] = [
   { label: "داشبورد", href: "/dashboard", icon: Layers3 },
   { label: "پیام‌ها", href: "/dashboard/inbox", icon: Inbox },
   { label: "کاربران", href: "/dashboard/users", icon: Users },
-
+  { label: "وبلاگ", href: "/dashboard/blogs", icon: Newspaper },
   {
     label: "مدیریت محصولات",
     icon: Plus,
