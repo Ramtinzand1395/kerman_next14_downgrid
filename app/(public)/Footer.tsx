@@ -51,7 +51,7 @@ export default function Footer() {
 // from-[#001A6E]  to-[#377dff]
   return (
     <footer
-      className="mt-14 overflow-hidden rounded-t-[100px] border-t border-[#001A6E] bg-gradient-to-b from-white via-red-50/40 to-white text-gray-700"
+      className="mt-14 overflow-hidden rounded-t-[50px] md:rounded-t-[80px] border-t border-[#001A6E] bg-gradient-to-b from-white via-red-50/40 to-white text-gray-700"
       role="contentinfo"
       aria-label="پاورقی سایت"
     >
@@ -63,7 +63,7 @@ export default function Footer() {
 
       <div className="mx-auto max-w-7xl px-4 pb-8 pt-10 md:px-8">
         {/* Top CTA */}
-        <div className="relative mb-10 rounded-2xl border border-red-100 bg-white/80 p-5 shadow-sm backdrop-blur md:p-7">
+        <div className="relative mb-10 rounded-2xl border border-blue-100 bg-white/80 p-5 shadow-sm backdrop-blur md:p-7">
           <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
               <h2 className="text-lg font-black text-gray-900 md:text-2xl">

@@ -1,22 +1,95 @@
 "use client";
-import { useEffect, useState } from "react";
+
+import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import {
+  BadgeCheck,
+  BadgeDollarSign,
+  Clock3,
+  MapPin,
+  Package,
+  Phone,
+  ShoppingBag,
+  ShieldCheck,
+  Truck,
+  User,
+} from "lucide-react";
+
 import { formatPrice } from "@/helpers/Price";
 import { toPersianDate } from "@/helpers/toPersianDate";
-import Image from "next/image";
 
-const statusMap: any = {
-  pending: {
-    title: "در انتظار پردازش",
-    color: "bg-yellow-100 text-yellow-700",
-  },
-  processing: { title: "در حال پردازش", color: "bg-blue-100 text-blue-700" },
-  shipped: { title: "ارسال شده", color: "bg-purple-100 text-purple-700" },
-  delivered: { title: "تحویل داده شده", color: "bg-green-100 text-green-700" },
-  cancelled: { title: "کنسل شده", color: "bg-red-100 text-red-700" },
+type OrderStatus =
+  | "pending"
+  | "processing"
+  | "shipped"
+  | "delivered"
+  | "cancelled";
+
+type OrderItem = {
+  _id: string;
+  quantity: number;
+  price: number;
+  product: {
+    mainImage: string;
+    title: string;
+    sku: string;
+  };
 };
 
+type Order = {
+  _id: string;
+  status: OrderStatus;
+  paymentStatus: string;
+  createdAt: string;
+  finalPrice: number;
+  user?: { username?: string; mobile?: string };
+  address?: {
+    province?: string;
+    city?: string;
+    plaque?: string;
+    unit?: string;
+    postalCode?: string;
+    address?: string;
+  };
+  items: OrderItem[];
+};
+
+type OrdersResponse = {
+  orders: Order[];
+  pages: number;
+};
+
+const statusMap: Record<OrderStatus, { title: string; color: string; badge: string }> =
+  {
+    pending: {
+      title: "در انتظار پردازش",
+      color: "text-amber-700 border-amber-300 bg-amber-50",
+      badge: "bg-amber-100 text-amber-700",
+    },
+    processing: {
+      title: "در حال پردازش",
+      color: "text-sky-700 border-sky-300 bg-sky-50",
+      badge: "bg-sky-100 text-sky-700",
+    },
+    shipped: {
+      title: "ارسال شده",
+      color: "text-violet-700 border-violet-300 bg-violet-50",
+      badge: "bg-violet-100 text-violet-700",
+    },
+    delivered: {
+      title: "تحویل داده شده",
+      color: "text-emerald-700 border-emerald-300 bg-emerald-50",
+      badge: "bg-emerald-100 text-emerald-700",
+    },
+    cancelled: {
+      title: "کنسل شده",
+      color: "text-rose-700 border-rose-300 bg-rose-50",
+      badge: "bg-rose-100 text-rose-700",
+    },
+  };
+
 export default function Orders() {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<OrdersResponse | null>(null);
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -25,122 +98,356 @@ export default function Orders() {
       .then(setData);
   }, [page]);
 
-  const updateStatus = async (orderId: string, status: string) => {
+  const updateStatus = async (orderId: string, status: OrderStatus) => {
     await fetch("/api/admin/order", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orderId, status }),
     });
-    setData((prev: any) => ({
-      ...prev,
-      orders: prev.orders.map((o: any) =>
-        o._id === orderId ? { ...o, status } : o
-      ),
-    }));
+
+    setData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        orders: prev.orders.map((order) =>
+          order._id === orderId ? { ...order, status } : order
+        ),
+      };
+    });
   };
 
-  if (!data) return null;
+  const summary = useMemo(() => {
+    if (!data?.orders?.length) {
+      return { total: 0, paid: 0, waiting: 0, items: 0 };
+    }
+
+    return data.orders.reduce(
+      (acc, order) => {
+        acc.total += order.finalPrice;
+        acc.items += order.items.length;
+        if (order.paymentStatus === "paid") acc.paid += 1;
+        else acc.waiting += 1;
+        return acc;
+      },
+      { total: 0, paid: 0, waiting: 0, items: 0 }
+    );
+  }, [data]);
+
+  if (!data) {
+    return (
+      <div className="p-4 md:p-6">
+        <div className="h-72 rounded-3xl border border-dashed border-gray-300 animate-pulse bg-gray-50" />
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4 overflow-x-auto">
-      <table className="min-w-[1200px] w-full text-sm border rounded-xl overflow-hidden">
-        <thead className="bg-gray-100">
-          <tr>
-            <th>#</th>
-            <th>کاربر</th>
-            <th>موبایل</th>
-            <th>آدرس</th>
-            <th>محصولات</th>
-            <th>مبلغ</th>
-            <th>پرداخت</th>
-            <th>وضعیت</th>
-            <th>تاریخ</th>
-          </tr>
-        </thead>
+    <section className="p-4 md:p-6 space-y-5 bg-gradient-to-b from-white to-slate-50 min-h-screen">
+      <div className="rounded-3xl border bg-white/80 backdrop-blur-sm p-4 md:p-6 shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-800">
+              سفارش‌ها
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              مدیریت کامل سفارش‌ها با طراحی ریسپانسیو و نمایش سریع جزئیات
+            </p>
+          </div>
+          <span className="self-start md:self-auto rounded-full px-3 py-1 text-xs font-medium bg-gray-100 text-gray-600">
+            صفحه {page} از {data.pages}
+          </span>
+        </div>
 
-        <tbody>
-          {data.orders.map((o: any, i: number) => (
-            <tr key={o._id} className="border-b hover:bg-gray-50 align-top">
-              <td>{(page - 1) * 10 + i + 1}</td>
-              <td>{o.user?.username}</td>
-              <td>{o.user?.mobile}</td>
-              <td className="max-w-[240px] text-xs leading-5">
-                {o.address?.province}، {o.address?.city}، پلاک{" "}
-                {o.address?.plaque}، واحد {o.address?.unit}
-                <div className="text-gray-400">
-                  کدپستی: {o.address?.postalCode}
-                </div>
-                <div>{o.address?.address}</div>
-              </td>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-5">
+          <div className="rounded-2xl border bg-white p-3 flex items-center gap-3">
+            <BadgeDollarSign className="w-5 h-5 text-emerald-600" />
+            <div>
+              <p className="text-xs text-gray-500">جمع مبلغ</p>
+              <p className="font-semibold text-sm">
+                {formatPrice(summary.total)}
+              </p>
+            </div>
+          </div>
 
-              <td className="space-y-2">
-                {o.items.map((i: any) => (
-                  <div key={i._id} className="flex gap-2 items-center">
-                    <Image
-                      src={i.product.mainImage}
-                      width={30}
-                      height={30}
-                      className="rounded"
-                      alt=""
-                    />
-                    <div>
-                      <div className="font-medium">{i.product.title}</div>
-                      <div className="text-xs text-gray-400">
-                        {i.quantity} × {formatPrice(i.price)} | {i.product.sku}
+          <div className="rounded-2xl border bg-white p-3 flex items-center gap-3">
+            <BadgeCheck className="w-5 h-5 text-sky-600" />
+            <div>
+              <p className="text-xs text-gray-500">پرداخت‌شده</p>
+              <p className="font-semibold text-sm">{summary.paid} سفارش</p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border bg-white p-3 flex items-center gap-3">
+            <Clock3 className="w-5 h-5 text-amber-600" />
+            <div>
+              <p className="text-xs text-gray-500">در انتظار پرداخت</p>
+              <p className="font-semibold text-sm">{summary.waiting} سفارش</p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border bg-white p-3 flex items-center gap-3">
+            <ShoppingBag className="w-5 h-5 text-violet-600" />
+            <div>
+              <p className="text-xs text-gray-500">تعداد آیتم‌ها</p>
+              <p className="font-semibold text-sm">{summary.items} آیتم</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden lg:block rounded-3xl border bg-white overflow-x-auto shadow-sm">
+        <table className="min-w-[1150px] w-full text-sm">
+          <thead className="bg-slate-100 text-slate-700">
+            <tr>
+              {[
+                "#",
+                "کاربر",
+                "آدرس",
+                "محصولات",
+                "مبلغ",
+                "پرداخت",
+                "وضعیت",
+                "تاریخ",
+              ].map((title) => (
+                <th key={title} className="text-right py-3 px-4 font-semibold">
+                  {title}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody>
+            {data.orders.map((order, index) => (
+              <tr
+                key={order._id}
+                className="border-t hover:bg-slate-50/70 align-top"
+              >
+                <td className="py-4 px-4 text-gray-500">
+                  {(page - 1) * 10 + index + 1}
+                </td>
+
+                <td className="py-4 px-4 min-w-[180px]">
+                  <p className="font-semibold text-gray-800">
+                    {order.user?.username || "-"}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {order.user?.mobile || "-"}
+                  </p>
+                </td>
+
+                <td className="py-4 px-4 min-w-[250px] text-xs leading-5 text-gray-700">
+                  <p>
+                    {order.address?.province}، {order.address?.city}، پلاک{" "}
+                    {order.address?.plaque}، واحد {order.address?.unit}
+                  </p>
+                  <p className="text-gray-500">
+                    کدپستی: {order.address?.postalCode}
+                  </p>
+                  <p>{order.address?.address}</p>
+                </td>
+
+                <td className="py-4 px-4 min-w-[280px] space-y-2">
+                  {order.items.map((item) => (
+                    <div key={item._id} className="flex gap-2 items-center">
+                      <Image
+                        src={item.product.mainImage}
+                        width={36}
+                        height={36}
+                        className="rounded-md object-cover"
+                        alt={item.product.title}
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">
+                          {item.product.title}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {item.quantity} × {formatPrice(item.price)} |{" "}
+                          {item.product.sku}
+                        </p>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </td>
+                  ))}
+                </td>
 
-              <td>{formatPrice(o.finalPrice)}</td>
+                <td className="py-4 px-4 font-semibold text-gray-800">
+                  {formatPrice(order.finalPrice)}
+                </td>
 
-              <td
-                className={
-                  o.paymentStatus === "paid"
-                    ? "text-green-600"
-                    : "text-orange-500"
-                }
+                <td className="py-4 px-4">
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
+                      order.paymentStatus === "paid"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-orange-100 text-orange-700"
+                    }`}
+                  >
+                    {order.paymentStatus === "paid"
+                      ? "پرداخت شده"
+                      : "در انتظار"}
+                  </span>
+                </td>
+
+                <td className="py-4 px-4">
+                  <select
+                    title="تغییر وضعیت"
+                    value={order.status}
+                    onChange={(e) =>
+                      updateStatus(order._id, e.target.value as OrderStatus)
+                    }
+                    className={`rounded-full text-xs px-3 py-1 border font-medium ${statusMap[order.status].color}`}
+                  >
+                    {Object.entries(statusMap).map(([key, value]) => (
+                      <option key={key} value={key}>
+                        {value.title}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+
+                <td className="py-4 px-4 text-xs text-gray-500 whitespace-nowrap">
+                  {toPersianDate(order.createdAt)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="lg:hidden space-y-3">
+        {data.orders.map((order, index) => (
+          <article
+            key={order._id}
+            className="rounded-2xl border bg-white p-4 shadow-sm space-y-3"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="text-xs text-gray-500">
+                  سفارش #{(page - 1) * 10 + index + 1}
+                </p>
+
+                <p className="font-semibold text-gray-800 mt-1 flex items-center gap-1">
+                  <User className="w-4 h-4 text-gray-400" />
+                  {order.user?.username || "-"}
+                </p>
+
+                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                  <Phone className="w-4 h-4" />
+                  {order.user?.mobile || "-"}
+                </p>
+              </div>
+
+              <span
+                className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${statusMap[order.status].badge}`}
               >
-                {o.paymentStatus === "paid" ? "پرداخت شده" : "در انتظار"}
-              </td>
+                {statusMap[order.status].title}
+              </span>
+            </div>
 
-              <td>
-                <select
-                  title="تغییر وضعیت"
-                  value={o.status}
-                  onChange={(e) => updateStatus(o._id, e.target.value)}
-                  className={`rounded-full text-xs px-3 py-1 border ${
-                    statusMap[o.status].color
+            <div className="text-xs text-gray-600 space-y-1">
+              <p className="flex items-center gap-1 font-medium text-gray-700">
+                <MapPin className="w-4 h-4" /> آدرس
+              </p>
+              <p>
+                {order.address?.province}، {order.address?.city}، پلاک{" "}
+                {order.address?.plaque}، واحد {order.address?.unit}
+              </p>
+              <p>کدپستی: {order.address?.postalCode}</p>
+              <p>{order.address?.address}</p>
+            </div>
+
+            <div className="space-y-2">
+              {order.items.map((item) => (
+                <div
+                  key={item._id}
+                  className="flex gap-2 items-center rounded-xl bg-slate-50 p-2"
+                >
+                  <Image
+                    src={item.product.mainImage}
+                    width={38}
+                    height={38}
+                    className="rounded-md object-cover"
+                    alt={item.product.title}
+                  />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">
+                      {item.product.title}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {item.quantity} × {formatPrice(item.price)} |{" "}
+                      {item.product.sku}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-xl bg-slate-50 p-2 text-xs">
+                <p className="text-gray-500">مبلغ نهایی</p>
+                <p className="font-semibold text-gray-800 mt-1">
+                  {formatPrice(order.finalPrice)}
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-slate-50 p-2 text-xs">
+                <p className="text-gray-500">وضعیت پرداخت</p>
+                <p
+                  className={`font-semibold mt-1 ${
+                    order.paymentStatus === "paid"
+                      ? "text-emerald-600"
+                      : "text-orange-600"
                   }`}
                 >
-                  {Object.entries(statusMap).map(([k, v]: any) => (
-                    <option key={k} value={k}>
-                      {v.title}
-                    </option>
-                  ))}
-                </select>
-              </td>
+                  {order.paymentStatus === "paid"
+                    ? "پرداخت شده"
+                    : "در انتظار"}
+                </p>
+              </div>
+            </div>
 
-              <td>{toPersianDate(o.createdAt)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <div className="text-xs text-gray-500 flex items-center gap-1">
+                <Package className="w-4 h-4" />
+                {toPersianDate(order.createdAt)}
+              </div>
 
-      <div className="flex justify-center gap-2 mt-6">
-        {Array.from({ length: data.pages }).map((_, i) => (
+              <select
+                title="تغییر وضعیت"
+                value={order.status}
+                onChange={(e) =>
+                  updateStatus(order._id, e.target.value as OrderStatus)
+                }
+                className={`rounded-full text-xs px-3 py-1 border font-medium ${statusMap[order.status].color}`}
+              >
+                {Object.entries(statusMap).map(([key, value]) => (
+                  <option key={key} value={key}>
+                    {value.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      {/* Pagination */}
+      <div className="flex flex-wrap justify-center gap-2 pt-1">
+        {Array.from({ length: data.pages }).map((_, index) => (
           <button
-            key={i}
-            onClick={() => setPage(i + 1)}
-            className={`px-3 py-1 rounded ${
-              page === i + 1 ? "bg-black text-white" : "border"
+            key={index}
+            onClick={() => setPage(index + 1)}
+            className={`h-9 min-w-9 px-3 rounded-full text-sm transition-colors ${
+              page === index + 1
+                ? "bg-gray-900 text-white shadow"
+                : "bg-white border text-gray-700 hover:bg-gray-100"
             }`}
           >
-            {i + 1}
+            {index + 1}
           </button>
         ))}
       </div>
-    </div>
+    </section>
   );
 }

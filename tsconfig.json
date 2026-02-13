@@ -37,7 +37,7 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts",
     "next.config.js"
-, "app/api/seed/route.js", "app/(public)/components/.HerobACKUP.tsx", "app/(public)/components/.CategoriesBackup.tsx", "app/(public)/components/landing/.UsersCommentsBackup.tsx", "app/(public)/.FooterBackup.tsx"  ],
+, "app/api/seed/route.js", "app/(public)/components/.HerobACKUP.tsx", "app/(public)/components/.CategoriesBackup.tsx", "app/(public)/components/landing/.UsersCommentsBackup.tsx", "app/(public)/.FooterBackup.tsx", "app/(dashboard)/dashboard/orders/.pageإشزنعح.tsx"  ],
   "exclude": [
     "node_modules"
   ]
