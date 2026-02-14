@@ -155,11 +155,11 @@ export default function UsersPage() {
 
   return (
     <section className="space-y-6 p-4 md:p-6">
-      <header className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 to-slate-700 p-6 text-white shadow-sm">
-        <p className="text-sm text-slate-200">مدیریت کاربران</p>
-        <h1 className="mt-2 text-2xl font-bold md:text-3xl">
-          نمای جدید صفحه کاربران
+      <header className="rounded-2xl border border-slate-200 bg-gradient-to-r from-blue-900 to-blue-700 p-6 text-white shadow-sm">
+        <h1 className="mt-2 text-2xl font-bold md:text-3xl text-white">
+          مدیریت کاربران
         </h1>
+
         <p className="mt-2 text-sm text-slate-200 md:text-base">
           کاربران را جستجو کنید، براساس نقش فیلتر کنید و جزئیات فعالیت هر کاربر
           را سریع‌تر ببینید.
