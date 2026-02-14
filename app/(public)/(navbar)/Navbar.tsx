@@ -86,7 +86,7 @@ const menuItems = [
   },
   {
     name: "وبلاگ",
-    link: "/weblog",
+   link: "/blog",
     icon: <FileText className="w-4 h-4 ml-1" />,
   },
 ];

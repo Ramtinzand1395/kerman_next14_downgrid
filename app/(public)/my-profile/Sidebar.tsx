@@ -1,37 +1,56 @@
-import { User2Icon } from "lucide-react";
+import {
+  BadgeCheck,
+  Gift,
+  ShieldCheck,
+  User2Icon,
+  WalletCards,
+} from "lucide-react";
 
 export default function Sidebar() {
   return (
-    <div className="w-60 bg-white shadow rounded-xl p-4  flex-col gap-4 hidden md:flex text-shadow-sm">
-      <div className="text-sm flex items-center">
-        {/* اگر عکس داشت → نمایش میدم */}
-        <div className="bg-gray-300/50 rounded-full p-5 ml-5">
-          <User2Icon className="w-6 h-6 text-blue-500" />
-        </div>
-        <div className="flex flex-col gap-5">
-          {/* نام کاربر */}
-          <div className="flex items-center justify-around">
-            {/* <span>{session?.user?.name}</span>{" "}
-            <span>{session?.user?.lastName}</span> */}
+    <aside className="hidden lg:flex h-fit sticky top-24 flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm gap-4">
+      <div className="rounded-xl bg-gradient-to-l from-indigo-50 to-cyan-50 p-4">
+        <div className="flex items-center gap-3">
+          <div className="rounded-full bg-white p-3 border border-slate-200">
+            <User2Icon className="w-6 h-6 text-indigo-600" />
           </div>
 
-          <p className="text-xs">حساب کاربری</p>
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-slate-700">کاربر عزیز</p>
+            <p className="text-xs text-slate-500">مدیریت کامل حساب کاربری</p>
+          </div>
         </div>
       </div>
-      <button className="bg-blue-50 p-3 rounded-lg text-blue-600">
-        کیف پول و پرداخت
-      </button>
-      <div className="bg-gray-100 p-4 rounded-lg">باشگاه مشتریان</div>
-      <div className="flex flex-col gap-3">
-        <button className="p-3 rounded-lg bg-white shadow">سفارشات</button>
-        <button className="p-3 rounded-lg bg-white shadow">
-          درخواست های مرجوعی
+
+      <div className="space-y-2">
+        <button className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-right text-sm text-slate-700 hover:border-indigo-300 transition-colors">
+          <span className="flex items-center gap-2">
+            <WalletCards className="w-4 h-4 text-indigo-500" />
+            کیف پول و پرداخت
+          </span>
         </button>
-        <button className="p-3 rounded-lg bg-white shadow">رزرو حضوری</button>
+
+        <button className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-right text-sm text-slate-700 hover:border-indigo-300 transition-colors">
+          <span className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-500" />
+            امنیت حساب
+          </span>
+        </button>
+
+        <button className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-right text-sm text-slate-700 hover:border-indigo-300 transition-colors">
+          <span className="flex items-center gap-2">
+            <BadgeCheck className="w-4 h-4 text-amber-500" />
+            باشگاه مشتریان
+          </span>
+        </button>
       </div>
-      <button className="mt-auto bg-orange-500 text-white rounded-lg py-3 text-center">
-        دعوت از دوستان
+
+      <button className="mt-2 w-full rounded-xl bg-indigo-600 text-white py-3 text-sm font-medium hover:bg-indigo-700 transition-colors">
+        <span className="inline-flex items-center gap-2">
+          <Gift className="w-4 h-4" />
+          دعوت از دوستان
+        </span>
       </button>
-    </div>
+    </aside>
   );
 }
