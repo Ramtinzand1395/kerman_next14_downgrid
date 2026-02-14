@@ -4,23 +4,6 @@ import dbConnect from "@/lib/mongodb";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 
-type GameListDoc = {
-  platform: string;
-  items: { _id: string; name: string }[];
-};
-
-const normalizePlatform = (value: string | null) => {
-  if (!value) return "";
-  return value.trim().toLowerCase();
-};
-
-const filterItems = (items: GameListDoc["items"], search: string) => {
-  if (!search) return items;
-  return items.filter((item) =>
-    item.name.toLowerCase().includes(search.toLowerCase()),
-  );
-};
-
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user)
@@ -32,33 +15,26 @@ export async function GET(req: NextRequest) {
 
   try {
     const { searchParams } = new URL(req.url);
-    const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
-    const limit = Math.max(parseInt(searchParams.get("limit") || "20", 10), 1);
-    const platform = normalizePlatform(searchParams.get("platform"));
-    const search = (searchParams.get("search") || "").trim();
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = 20;
 
-    const query = platform ? { platform } : {};
-    const docs = (await GameList.find(query).lean()) as GameListDoc[];
+    const gameList = await GameList.aggregate([
+      {
+        $project: {
+          platform: 1,
+          items: { $slice: ["$items", (page - 1) * limit, limit] },
+        },
+      },
+    ]);
 
-    const gameList = docs.map((doc) => {
-      const filteredItems = filterItems(doc.items || [], search);
-      const start = (page - 1) * limit;
-      const paginatedItems = filteredItems.slice(start, start + limit);
+    // برای کل صفحات، می‌توان تعداد آیتم‌ها را جداگانه گرفت
+    const counts = await GameList.aggregate([
+      { $project: { platform: 1, totalItems: { $size: "$items" } } },
+    ]);
 
-      return {
-        _id: (doc as { _id?: string })._id,
-        platform: doc.platform,
-        items: paginatedItems,
-      };
-    });
+    const totalPages = counts.map((c) => Math.ceil(c.totalItems / limit));
 
-    const totalPages = docs.reduce<Record<string, number>>((acc, doc) => {
-      const filteredItems = filterItems(doc.items || [], search);
-      acc[doc.platform] = Math.max(Math.ceil(filteredItems.length / limit), 1);
-      return acc;
-    }, {});
-
-    return NextResponse.json({ gameList, totalPages, currentPage: page });
+    return NextResponse.json({ gameList, totalPages });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ message: "server error" }, { status: 500 });
@@ -77,23 +53,23 @@ export async function POST(req: NextRequest) {
   await dbConnect();
 
   try {
-    const body = await req.json();
-    const platform = normalizePlatform(body.platform);
-    const name = body.name?.trim();
-
+    const { platform, name } = await req.json();
     if (!platform || !name) {
       return NextResponse.json({ error: "داده ناقص است" }, { status: 400 });
     }
 
-    const updated = await GameList.findOneAndUpdate(
-      { platform },
-      { $push: { items: { name } } },
-      { new: true, upsert: true },
-    );
+    // بررسی اینکه platform موجود هست یا نه
+    const existingPlatform = await GameList.findOne({ platform });
+
+    const newItem = { name }; // MongoDB خودش _id میده
+
+    // اضافه کردن بازی جدید به آرایه items
+    existingPlatform.items.push(newItem);
+    await existingPlatform.save();
 
     return NextResponse.json({
       message: "بازی جدید اضافه شد",
-      item: updated?.items?.[updated.items.length - 1],
+      item: newItem,
       status: 200,
     });
   } catch (error) {
@@ -120,13 +96,13 @@ export async function PUT(req: NextRequest) {
     }
 
     await GameList.findOneAndUpdate(
-      { platform: normalizePlatform(platform), "items._id": itemId },
+      { platform, "items._id": itemId },
       {
         $set: {
-          "items.$.name": name.trim(),
+          "items.$.name": name,
         },
       },
-      { new: true },
+      { new: true }
     );
 
     return NextResponse.json({
@@ -157,9 +133,9 @@ export async function DELETE(req: NextRequest) {
     }
 
     await GameList.findOneAndUpdate(
-      { platform: normalizePlatform(platform), "items._id": itemId },
+      { platform, "items._id": itemId },
       { $pull: { items: { _id: itemId } } },
-      { new: true },
+      { new: true }
     );
 
     return NextResponse.json({
