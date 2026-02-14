@@ -1,6 +1,6 @@
 "use client";
 // todo
-// از لیست حذف نمیشه با دکمه قلب 
+// از لیست حذف نمیشه با دکمه قلب
 import { useEffect, useState } from "react";
 import { Heart, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
@@ -108,7 +108,16 @@ export default function FavoritesPage() {
               key={product._id}
               className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
             >
-              <Cart game={product.productId} />
+              <Cart
+                game={product.productId}
+                onFavoriteChange={(nextIsFavorite, productId) => {
+                  if (!nextIsFavorite) {
+                    setFavorites((prev) =>
+                      prev.filter((item) => item.productId._id !== productId),
+                    );
+                  }
+                }}
+              />
               <button
                 onClick={() => removeFavorite(product.productId._id)}
                 className="mt-3 flex w-full items-center justify-center gap-1 rounded-xl bg-rose-500 py-2 text-xs font-semibold text-white transition hover:bg-rose-600 sm:text-sm"

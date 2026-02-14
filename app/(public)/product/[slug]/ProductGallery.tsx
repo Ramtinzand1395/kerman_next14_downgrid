@@ -1,14 +1,15 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ZoomIn, Heart, Share2 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "react-toastify";
 import { useSession } from "next-auth/react";
+import useFavoriteStore from "@/stores/favoriteStore";
 interface ProductGalleryProps {
   mainImage: string;
   images: string[];
   title: string;
-  productId: number;
+  productId: string;
 }
 export const ProductGallery = ({
   mainImage,
@@ -19,12 +20,29 @@ export const ProductGallery = ({
   const [activeImage, setActiveImage] = useState(mainImage);
   const [isZoomed, setIsZoomed] = useState(false);
   const { data: session } = useSession();
+  const {
+    favoriteIds,
+    addFavorite,
+    removeFavorite,
+    loadFavorites,
+    clearFavorites,
+  } = useFavoriteStore();
   // Combine main image with gallery images for the list, filtering duplicates if necessary
   const allImages = [
     { id: 0, url: mainImage },
     ...images.map((img, index) => ({ id: index + 1, url: img })),
   ];
-  const [isFavorite, setIsFavorite] = useState(false);
+  const isFavorite = favoriteIds.includes(productId);
+
+  useEffect(() => {
+    if (!session?.user?.id) {
+      clearFavorites();
+
+      return;
+    }
+
+    loadFavorites();
+  }, [session?.user?.id, loadFavorites, clearFavorites]);
   const handleToggleFavorite = async () => {
     if (!session?.user?.id) {
       toast.error("برای افزودن به علاقه‌مندی ابتدا وارد شوید.");
@@ -50,7 +68,7 @@ export const ProductGallery = ({
           return;
         }
 
-        setIsFavorite(false);
+        removeFavorite(productId);
         toast.info("از علاقه‌مندی‌ها حذف شد ❌");
       } else {
         // افزودن
@@ -71,7 +89,7 @@ export const ProductGallery = ({
           return;
         }
 
-        setIsFavorite(true);
+        addFavorite(productId);
         toast.success("به علاقه‌مندی‌ها اضافه شد ❤️");
       }
     } catch (error) {
