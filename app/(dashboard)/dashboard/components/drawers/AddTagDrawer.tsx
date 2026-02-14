@@ -2,18 +2,26 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "react-toastify";
-import { X, Loader2 } from "lucide-react";
-import { Tag } from "@/types"; // فرض بر اینه که تایپ Tag داری
+import { Loader2, Plus, Tag as TagIcon, Trash2, X } from "lucide-react";
+import { Tag } from "@/types";
 
 interface AddTagDrawerProps {
   onClose: () => void;
 }
+
+const slugify = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^\w-]+/g, "");
 
 export default function AddTagDrawer({ onClose }: AddTagDrawerProps) {
   const [tags, setTags] = useState<Tag[]>([]);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const fetchTags = useCallback(async () => {
     try {
@@ -36,23 +44,34 @@ export default function AddTagDrawer({ onClose }: AddTagDrawerProps) {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
+
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
   }, [fetchTags, onClose]);
 
+  const resetForm = () => {
+    setName("");
+    setSlug("");
+  };
+
   const handleAdd = async () => {
-    if (!name || !slug) return toast.warning("نام و اسلاگ الزامی است");
+    if (!name.trim() || !slug.trim()) {
+      toast.warning("نام و اسلاگ الزامی است");
+      return;
+    }
+
     try {
+      setSaving(true);
       const res = await fetch("/api/admin/tag", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, slug }),
+        body: JSON.stringify({ name: name.trim(), slug: slugify(slug) }),
       });
       const data = await res.json();
+
       if (res.ok) {
         toast.success("تگ با موفقیت اضافه شد");
-        setName("");
-        setSlug("");
+        resetForm();
         fetchTags();
       } else {
         toast.error(data.error || "خطا در افزودن تگ");
@@ -60,15 +79,17 @@ export default function AddTagDrawer({ onClose }: AddTagDrawerProps) {
     } catch (err) {
       console.error(err);
       toast.error("خطا در افزودن تگ");
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("آیا از حذف این تگ مطمئن هستید؟")) return;
+
     try {
-      const res = await fetch(`/api/admin/tag/${id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`/api/admin/tag/${id}`, { method: "DELETE" });
+
       if (res.ok) {
         toast.success("تگ حذف شد");
         fetchTags();
@@ -83,83 +104,95 @@ export default function AddTagDrawer({ onClose }: AddTagDrawerProps) {
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-50 flex justify-end"
-    >
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-        aria-label="بستن"
-      />
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex justify-end">
+      <div className="absolute inset-0 bg-slate-950/55 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative bg-indigo-600 text-white w-3/4 md:w-[340px] h-full p-5 shadow-2xl rounded-r-2xl">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-base font-semibold">مدیریت تگ‌ها</h2>
+      <div className="relative h-full w-full max-w-md border-r border-slate-700 bg-slate-900 text-slate-100 shadow-2xl">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-700 bg-slate-900/95 px-5 py-4 backdrop-blur">
+          <div className="flex items-center gap-2">
+            <TagIcon className="h-5 w-5 text-sky-400" />
+            <h2 className="text-sm font-bold">مدیریت تگ‌ها</h2>
+          </div>
           <button
-            aria-label="بستن پنجره"
             onClick={onClose}
-            className="text-gray-300 hover:text-white transition"
+            className="rounded-md p-1 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+            aria-label="بستن پنجره"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Inputs */}
-        <div className="mb-4 space-y-2">
-          <input
-            type="text"
-            placeholder="نام تگ"
-            className="w-full bg-white text-black border border-gray-400 rounded-md p-1.5 text-xs focus:ring-2 focus:ring-blue-400 outline-none"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder="اسلاگ (مثلاً: action)"
-            className="w-full bg-white text-black border border-gray-400 rounded-md p-1.5 text-xs focus:ring-2 focus:ring-blue-400 outline-none"
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-          />
-          <button
-            onClick={handleAdd}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-1.5 rounded-md text-xs transition"
-          >
-            افزودن تگ جدید
-          </button>
-        </div>
-
-        {/* List */}
-        <div className=" bg-white/20 backdrop-blur-md border border-white/30 shadow-lg p-2 rounded-2xl  transition-all duration-300 h-[50vh] overflow-y-auto">
-          {loading ? (
-            <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              در حال بارگذاری...
+        <div className="space-y-5 p-5">
+          <div className="rounded-xl border border-slate-700 bg-slate-800/70 p-4">
+            <p className="mb-3 text-xs text-slate-300">افزودن تگ جدید</p>
+            <div className="space-y-2">
+              <input
+                type="text"
+                placeholder="نام تگ"
+                value={name}
+                onChange={(e) => {
+                  const nextName = e.target.value;
+                  setName(nextName);
+                  if (!slug) setSlug(slugify(nextName));
+                }}
+                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-xs outline-none ring-sky-500 transition placeholder:text-slate-500 focus:ring-2"
+              />
+              <input
+                type="text"
+                placeholder="slug"
+                value={slug}
+                onChange={(e) => setSlug(slugify(e.target.value))}
+                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-xs outline-none ring-sky-500 transition placeholder:text-slate-500 focus:ring-2"
+              />
+              <button
+                onClick={handleAdd}
+                disabled={saving}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-sky-600 py-2 text-xs font-semibold transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                {saving ? "در حال ذخیره..." : "افزودن تگ"}
+              </button>
             </div>
-          ) : tags.length === 0 ? (
-            <p className="text-gray-400 text-xs text-center">
-              هنوز هیچ تگی وجود ندارد.
-            </p>
-          ) : (
-            <ul className="space-y-1 max-h-[50vh] grid grid-cols-2 gap-5">
-              {tags.map((tag) => (
-                <li
-                  key={tag._id}
-                  className="flex justify-between items-center hover:bg-gray-700 p-2 rounded-md text-xs border-2"
-                >
-                  <span className="font-medium">{tag.name}</span>
-                  <button
-                    onClick={() => handleDelete(tag._id)}
-                    className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-[10px] transition cursor-pointer"
+          </div>
+
+          <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-3">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs text-slate-300">لیست تگ‌ها</p>
+              <span className="rounded-full bg-slate-700 px-2 py-1 text-[10px]">{tags.length} مورد</span>
+            </div>
+
+            <div className="max-h-[56vh] space-y-2 overflow-y-auto pr-1">
+              {loading ? (
+                <div className="flex items-center justify-center gap-2 py-8 text-xs text-slate-400">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  در حال بارگذاری...
+                </div>
+              ) : tags.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-slate-700 py-6 text-center text-xs text-slate-500">
+                  هنوز هیچ تگی ثبت نشده است.
+                </p>
+              ) : (
+                tags.map((tag) => (
+                  <div
+                    key={tag._id}
+                    className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-900/70 px-3 py-2"
                   >
-                    حذف
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+                    <div className="flex flex-col">
+                      <span className="text-xs font-semibold">{tag.name}</span>
+                      <span className="text-[10px] text-slate-400">/{tag.slug}</span>
+                    </div>
+                    <button
+                    title="delete"
+                      onClick={() => handleDelete(tag._id)}
+                      className="rounded-md bg-rose-600/90 p-1.5 transition hover:bg-rose-500"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -1,44 +1,61 @@
 "use client";
 
 import * as yup from "yup";
-import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Loader2, PackagePlus, X } from "lucide-react";
 import { toast } from "react-toastify";
 import { Category, Product, ProductForm, Tag } from "@/types";
 import {
+  BasicInfoFields,
   CategorySelector,
   GalleryUploader,
   ImageUploader,
-  TagsSelector,
   SpecificationsEditor,
-  BasicInfoFields,
+  TagsSelector,
 } from "../modals";
 import { productValidationSchema } from "@/validations/validation";
 
 interface Props {
   onClose: () => void;
-  // onSave?: (newProduct: Product) => void;
   onSave?: (newProduct?: Product) => void | Promise<void>;
   product?: Product | null;
 }
 
+const initialForm: ProductForm = {
+  title: "",
+  slug: "",
+  price: 0,
+  discountPrice: null,
+  stock: 0,
+  brand: "",
+  description: "",
+  shortDesc: "",
+  category: "",
+  mainImage: "",
+  galleryImages: [],
+  tags: [],
+  specifications: [],
+};
+
 export default function AddProductDrawer({ onClose, onSave, product }: Props) {
   const [form, setForm] = useState<ProductForm>({
-    title: product?.title || "",
-    slug: product?.slug || "",
-    price: product?.price || 0,
-    discountPrice: product?.discountPrice || null,
-    stock: product?.stock || 0,
-    brand: product?.brand || "",
-    description: product?.description || "",
-    shortDesc: product?.shortDesc || "",
-    category: product?.category?._id || "",
-    mainImage: product?.mainImage || "",
-    galleryImages: product?.images || [],
-    tags: product?.tags?.map((t: Tag) => t._id) || [],
-    specifications: product?.specifications || [],
+    title: product?.title || initialForm.title,
+    slug: product?.slug || initialForm.slug,
+    price: product?.price || initialForm.price,
+    discountPrice: product?.discountPrice ?? initialForm.discountPrice,
+    stock: product?.stock || initialForm.stock,
+    brand: product?.brand || initialForm.brand,
+    description: product?.description || initialForm.description,
+    shortDesc: product?.shortDesc || initialForm.shortDesc,
+    category: product?.category?._id || initialForm.category,
+    mainImage: product?.mainImage || initialForm.mainImage,
+    galleryImages: product?.images || initialForm.galleryImages,
+    tags: product?.tags?.map((t: Tag) => t._id) || initialForm.tags,
+    specifications: product?.specifications || initialForm.specifications,
   });
+
   const [categories, setCategories] = useState<Category[]>([]);
+  const [tagsList, setTagsList] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -48,39 +65,34 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
       .catch(() => toast.error("خطا در دریافت دسته‌بندی‌ها"));
   }, []);
 
-  const updateField = <K extends keyof ProductForm>(
-    key: K,
-    value: ProductForm[K],
-  ) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  };
-  // ---------------------------
-  // ⬆⬆⬆ تگ
-  // ---------------------------
-  const [tagsList, setTagsList] = useState<Tag[]>([]); // لیست تگ‌ها
-
   useEffect(() => {
     fetch("/api/admin/tag")
       .then((res) => res.json())
       .then(setTagsList)
       .catch(() => toast.error("خطا در دریافت تگ‌ها"));
   }, []);
-  // ==========================
-  // 📌 Upadte
-  // ==========================
-  // const handleUpdate = async (): Promise<void> => {
-  const handleUpdate = async (e: React.FormEvent): Promise<void> => {
-    e.preventDefault();
+
+  const updateField = <K extends keyof ProductForm>(key: K, value: ProductForm[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const validateForm = () => {
     try {
       productValidationSchema.validateSync(form, { abortEarly: false });
+      return true;
     } catch (err) {
       if (err instanceof yup.ValidationError) {
-        err.inner.forEach((e) => toast.error(e.message));
+        err.inner.forEach((error) => toast.error(error.message));
       } else {
         toast.error("خطای ناشناخته");
       }
-      return;
+      return false;
     }
+  };
+
+  const handleUpdate = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault();
+    if (!validateForm()) return;
 
     setLoading(true);
     try {
@@ -89,6 +101,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
+
       if (!res.ok) throw new Error();
       const updatedProduct = await res.json();
 
@@ -102,25 +115,12 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
       setLoading(false);
     }
   };
-  // ---------------------------
-  // ⬆⬆⬆ Submit
-  // ---------------------------
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    try {
-      productValidationSchema.validateSync(form, { abortEarly: false });
-    } catch (err) {
-      if (err instanceof yup.ValidationError) {
-        err.inner.forEach((e) => toast.error(e.message));
-      } else {
-        toast.error("خطای ناشناخته");
-      }
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
-
     try {
       const res = await fetch("/api/admin/product", {
         method: "POST",
@@ -129,37 +129,17 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
       });
 
       const data = await res.json();
-      // await onSave?.(data.product);
 
       if (res.ok) {
         await onSave?.(data.product);
         toast.success("محصول با موفقیت اضافه شد");
-
-        setForm({
-          title: "",
-          slug: "",
-          price: 0,
-          discountPrice: undefined,
-          stock: 0,
-          brand: "",
-          description: "",
-          shortDesc: "",
-          category: undefined,
-          mainImage: "",
-          galleryImages: [],
-          specifications: [],
-          tags: [],
-        });
+        setForm(initialForm);
         onClose();
       } else {
         toast.error(data.error || "خطا در اضافه کردن محصول");
-         if (data?.message?.errorResponse?.errmsg) {
-         toast.error(data.message.errorResponse.errmsg);
-       }
-
- 
-
-        console.log(data.error);
+        if (data?.message?.errorResponse?.errmsg) {
+          toast.error(data.message.errorResponse.errmsg);
+        }
       }
     } catch (err) {
       toast.error("خطا در ارتباط با سرور");
@@ -171,69 +151,68 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose}></div>
+      <div className="absolute inset-0 bg-slate-950/55 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative bg-indigo-600  text-white w-96 p-6 overflow-y-auto">
-        <button
-          title="close"
-          onClick={onClose}
-          className="absolute top-4 left-4"
-        >
-          <X className="w-6 h-6" />
-        </button>
+      <div className="relative h-full w-full max-w-2xl overflow-y-auto border-r border-slate-700 bg-slate-900 text-slate-100 shadow-2xl">
+        <div className="sticky top-0 z-10 border-b border-slate-700 bg-slate-900/95 px-6 py-4 backdrop-blur">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <PackagePlus className="h-5 w-5 text-indigo-400" />
+              <h2 className="text-sm font-bold">{product ? "ویرایش محصول" : "افزودن محصول جدید"}</h2>
+            </div>
+            <button
+              title="بستن"
+              onClick={onClose}
+              className="rounded-md p-1 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
 
-        {/* <h2 className="text-xl mb-4 font-bold">افزودن محصول جدید</h2> */}
-    <h2 className="text-xl mb-4 font-bold">
-         {product ? "ویرایش محصول" : "افزودن محصول جدید"}
-       </h2>
-        <form
-          className="flex flex-col gap-3"
-          onSubmit={product ? handleUpdate : handleSubmit}
-        >
-          {/* فیلدهای  */}
+        <form className="space-y-4 p-6" onSubmit={product ? handleUpdate : handleSubmit}>
+          <section className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
+            <p className="mb-3 text-xs text-slate-300">اطلاعات پایه محصول</p>
+            <BasicInfoFields form={form} updateField={updateField} />
+          </section>
 
-          <BasicInfoFields form={form} updateField={updateField} />
-          {/* دسته‌بندی */}
-          <CategorySelector
-            form={form}
-            updateField={updateField}
-            categories={categories}
-          />
+          <section className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
+            <p className="mb-3 text-xs text-slate-300">دسته‌بندی و تگ‌ها</p>
+            <div className="space-y-3">
+              <CategorySelector form={form} updateField={updateField} categories={categories} />
+              <TagsSelector form={form} updateField={updateField} tagsList={tagsList} />
+            </div>
+          </section>
 
-          {/* عکس اصلی */}
-          <GalleryUploader form={form} updateField={updateField} />
+          <section className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
+            <p className="mb-3 text-xs text-slate-300">تصاویر محصول</p>
+            <div className="space-y-3">
+              <GalleryUploader form={form} updateField={updateField} />
+              <ImageUploader form={form} updateField={updateField} />
+            </div>
+          </section>
 
-          {/* گالری */}
-          <ImageUploader form={form} updateField={updateField} />
-          {/* تگ‌ها */}
+          <section className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
+            <p className="mb-3 text-xs text-slate-300">مشخصات فنی</p>
+            <SpecificationsEditor form={form} updateField={updateField} />
+          </section>
 
-          <TagsSelector
-            form={form}
-            updateField={updateField}
-            tagsList={tagsList}
-          />
-
-          {/* مشخصات */}
-          <SpecificationsEditor form={form} updateField={updateField} />
-
-          {/* دکمه ذخیره */}
-          {product ? (
+          <div className="sticky bottom-0 -mx-6 mt-6 border-t border-slate-700 bg-slate-900/95 px-6 py-4 backdrop-blur">
             <button
               type="submit"
               disabled={loading}
-              className="bg-green-600 p-2 rounded"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 py-2 text-sm font-semibold transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {loading ? "در حال آپدیت..." : "آپدیت"}
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {loading
+                ? product
+                  ? "در حال بروزرسانی..."
+                  : "در حال ذخیره..."
+                : product
+                  ? "بروزرسانی محصول"
+                  : "ذخیره محصول"}
             </button>
-          ) : (
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-green-600 p-2 rounded"
-            >
-              {loading ? "در حال ذخیره..." : "ذخیره"}
-            </button>
-          )}
+          </div>
         </form>
       </div>
     </div>

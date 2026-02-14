@@ -108,7 +108,7 @@ export default function DashboardSidebar() {
       <button
         title="باز کردن منو"
         onClick={() => setMobileOpen(true)}
-        className="fixed right-4 top-4 z-50 rounded-xl bg-indigo-600 p-2 text-white shadow-lg md:hidden"
+        className="fixed right-4 top-4 z-50 rounded-xl bg-blue-600 p-2 text-white shadow-lg md:hidden"
       >
         <Menu className="h-5 w-5" />
       </button>
