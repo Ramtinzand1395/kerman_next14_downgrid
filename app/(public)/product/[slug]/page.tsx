@@ -38,6 +38,8 @@ export default async function ProductPage({
         {product.error}
       </div>
     );
+    // todo
+    // محصولات مشابه اضافه بشه
   return (
     <div className="md:container md:mx-auto mx-2">
       {/* Product Top Section */}
