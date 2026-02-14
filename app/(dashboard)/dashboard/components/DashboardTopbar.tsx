@@ -43,7 +43,7 @@ export default function DashboardTopbar() {
           <LayoutDashboard className="h-5 w-5" />
         </span>
         <div>
-          <p className="text-xs text-slate-500">پنل مدیریت دان‌گرید</p>
+          <p className="text-xs text-slate-500">پنل مدیریت کرمان آتاری</p>
           <h1 className="text-lg font-bold">{title}</h1>
         </div>
       </div>

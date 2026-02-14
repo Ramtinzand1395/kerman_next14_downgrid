@@ -1,6 +1,7 @@
 "use client";
+
 import { useState } from "react";
-import { FilterIcon, XIcon } from "lucide-react";
+import { Filter, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 const categories = [
@@ -46,130 +47,136 @@ export default function FilterProducts() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const selectedCategory = searchParams.get("category");
 
   const [mobileOpen, setMobileOpen] = useState(false);
+  const selectedCategory = searchParams.get("category") || "";
 
   const handleFilter = (value: string) => {
     const params = new URLSearchParams(Array.from(searchParams.entries()));
-    params.set("category", value);
+
+    if (!value) {
+      params.delete("category");
+    } else {
+      params.set("category", value);
+    }
+
     params.set("page", "1");
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
-    setMobileOpen(false); // بستن منو بعد از انتخاب
+    setMobileOpen(false);
   };
+
+  const selectedLabel =
+    categories
+      .flatMap((item) => [
+        { name: item.name, slug: item.slug },
+        ...item.subcategories.map((sub) => ({ name: sub.name, slug: sub.slug })),
+      ])
+      .find((item) => item.slug === selectedCategory)?.name || "همه محصولات";
+
+  const FilterBody = () => (
+    <>
+      <button
+        type="button"
+        onClick={() => handleFilter("")}
+        className={`mb-2 w-full rounded-xl px-3 py-2 text-right text-sm font-medium transition-colors ${
+          !selectedCategory
+            ? "bg-blue-600 text-white"
+            : "bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+        }`}
+      >
+        همه محصولات
+      </button>
+
+      <nav className="flex flex-col gap-3">
+        {categories.map((cat) => (
+          <div key={cat.slug}>
+            <button
+              type="button"
+              onClick={() => handleFilter(cat.slug)}
+              className={`mb-1 w-full rounded-xl px-3 py-2 text-right text-sm font-semibold transition-colors ${
+                selectedCategory === cat.slug
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-800 hover:bg-blue-50 hover:text-blue-700"
+              }`}
+            >
+              {cat.name}
+            </button>
+
+            <ul className="space-y-1 pr-2">
+              {cat.subcategories.map((sub) => {
+                const isActive = selectedCategory === sub.slug;
+                return (
+                  <li key={sub.slug}>
+                    <button
+                      type="button"
+                      onClick={() => handleFilter(sub.slug)}
+                      className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${
+                        isActive ? "bg-blue-100 text-blue-700" : "text-gray-600 hover:bg-gray-100"
+                      }`}
+                    >
+                      {sub.name}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </nav>
+    </>
+  );
 
   return (
     <>
-      {/* دکمه موبایل */}
-      <div className="md:hidden fixed top-14 right-4 z-50">
+      <div className="mb-3 flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-3 shadow-sm md:hidden">
+        <div className="text-xs text-gray-500">
+          فیلتر فعال: <span className="font-semibold text-gray-700">{selectedLabel}</span>
+        </div>
         <button
-          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-full shadow-lg"
+          type="button"
           onClick={() => setMobileOpen(true)}
+          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-medium text-white"
         >
-          <FilterIcon size={18} /> دسته‌بندی‌ها
+          <Filter size={16} /> فیلتر
         </button>
       </div>
 
-      {/* Overlay منوی موبایل */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm">
-          <div className="fixed top-0 left-0 w-3/4 max-w-xs h-full bg-white p-4 shadow-xl overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold flex items-center gap-2">
-                <FilterIcon size={18} /> دسته‌بندی‌ها
+        <div className="fixed inset-0 z-50 bg-black/40 md:hidden">
+          <div className="absolute right-0 top-0 h-full w-[82%] max-w-xs overflow-y-auto bg-white p-4 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="inline-flex items-center gap-2 text-base font-bold text-gray-800">
+                <Filter size={17} /> دسته‌بندی محصولات
               </h2>
               <button
+                type="button"
                 title="بستن"
                 onClick={() => setMobileOpen(false)}
-                className="p-2 rounded-md hover:bg-gray-200"
+                className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"
               >
-                <XIcon size={18} />
+                <X size={18} />
               </button>
             </div>
-
-            <nav className="flex flex-col gap-4">
-              {categories.map((cat) => (
-                <div key={cat.slug}>
-                  <p
-                    onClick={() => handleFilter(cat.slug)}
-                    className={`text-sm font-semibold text-gray-700 mb-1 block px-2 py-1.5 rounded-md  cursor-pointer transition-all ${
-                      selectedCategory === cat.slug
-                        ? "bg-blue-500 text-white"
-                        : "text-gray-600 hover:bg-blue-100 hover:text-blue-600"
-                    }`}
-                  >
-                    {cat.name}
-                  </p>
-                  <ul className="ml-2 flex flex-col gap-1">
-                    {cat.subcategories.map((sub) => {
-                      const isActive = selectedCategory === sub.slug;
-                      return (
-                        <li
-                          key={sub.slug}
-                          className={`block px-2 py-1.5 rounded-md text-sm cursor-pointer transition-all ${
-                            isActive
-                              ? "bg-blue-500 text-white"
-                              : "text-gray-600 hover:bg-blue-100 hover:text-blue-600"
-                          }`}
-                          onClick={() => handleFilter(sub.slug)}
-                        >
-                          {sub.name}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              ))}
-            </nav>
+            <FilterBody />
           </div>
-
-          {/* کلیک روی overlay برای بستن */}
-          <div
-            className="w-full h-full"
+          <button
+            type="button"
+            className="h-full w-full"
+            title="بستن"
             onClick={() => setMobileOpen(false)}
-          ></div>
+          />
         </div>
       )}
 
-      {/* منوی دسکتاپ */}
-      <aside className="hidden md:block w-64 bg-gray-50 rounded-2xl shadow-sm p-4 md:sticky md:top-24">
-        <h2 className="text-base font-bold mb-3 flex items-center gap-2">
-          <FilterIcon size={18} /> دسته‌بندی‌ها
+      <aside className="hidden h-fit w-72 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm md:block md:sticky md:top-24">
+        <h2 className="mb-3 inline-flex items-center gap-2 text-base font-bold text-gray-800">
+          <Filter size={17} /> دسته‌بندی محصولات
         </h2>
-        <nav className="flex flex-col gap-2">
-          {categories.map((cat) => (
-            <div key={cat.slug}>
-              <p
-                onClick={() => handleFilter(cat.slug)}
-                className={`text-sm font-semibold text-gray-700 mb-1 block px-2 py-1.5 rounded-md  cursor-pointer transition-all ${
-                  selectedCategory === cat.slug
-                    ? "bg-blue-500 text-white"
-                    : "text-gray-600 hover:bg-blue-100 hover:text-blue-600"
-                }`}
-              >
-                {cat.name}
-              </p>
-              <ul className="ml-2 flex flex-col gap-1">
-                {cat.subcategories.map((sub) => {
-                  const isActive = selectedCategory === sub.slug;
-                  return (
-                    <li
-                      key={sub.slug}
-                      className={`block px-2 py-1.5 rounded-md text-sm cursor-pointer transition-all ${
-                        isActive
-                          ? "bg-blue-500 text-white"
-                          : "text-gray-600 hover:bg-blue-100 hover:text-blue-600"
-                      }`}
-                      onClick={() => handleFilter(sub.slug)}
-                    >
-                      {sub.name}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
-        </nav>
+        <FilterBody />
+
+        <p className="mt-4 rounded-xl bg-gray-50 px-3 py-2 text-xs leading-6 text-gray-500">
+          با انتخاب دسته‌بندی، سریع‌تر به محصولات مرتبط برسید.
+        </p>
       </aside>
     </>
   );

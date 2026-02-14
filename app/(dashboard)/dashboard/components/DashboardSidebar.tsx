@@ -133,7 +133,7 @@ export default function DashboardSidebar() {
           {expanded && (
             <div className="text-right">
               <p className="text-xs text-indigo-100/80">مدیریت فروشگاه</p>
-              <h2 className="font-bold text-white">DownGrid Admin</h2>
+              <h2 className="font-bold text-white">Kerman Atari</h2>
             </div>
           )}
 
