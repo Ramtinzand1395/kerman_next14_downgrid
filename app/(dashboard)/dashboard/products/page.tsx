@@ -1,8 +1,7 @@
-
 "use client";
+
 import Image from "next/image";
-import { Product } from "@/types";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import Skeleton from "react-loading-skeleton";
 
@@ -13,22 +12,32 @@ import {
   MessageSquare,
   Package,
   Plus,
+  RefreshCcw,
+  Search,
   Trash2,
 } from "lucide-react";
+
+import { Product } from "@/types";
+import { formatPrice } from "@/helpers/Price";
 import StatsCard from "../components/StatsCard";
 import AddProductDrawer from "../components/drawers/AddProductDrawer";
-import { formatPrice } from "@/helpers/Price";
 
 type DrawerState = {
   type: "add" | "edit" | null;
   product: Product | null;
 };
 
+type StockFilter = "all" | "low" | "out";
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [query, setQuery] = useState("");
+  const [stockFilter, setStockFilter] = useState<StockFilter>("all");
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const [stats, setStats] = useState({
     total: 0,
@@ -38,14 +47,21 @@ export default function ProductsPage() {
     verifiedComments: 0,
   });
 
-  const fetchProducts = async (page: number) => {
+  const [drawer, setDrawer] = useState<DrawerState>({
+    type: null,
+    product: null,
+  });
+
+  const fetchProducts = async (targetPage: number) => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/admin/product?page=${page}&limit=10`);
+      const res = await fetch(`/api/admin/product?page=${targetPage}&limit=10`);
       if (!res.ok) throw new Error("خطا در دریافت محصولات");
+
       const data = await res.json();
-      setProducts(data.products);
-      setTotalPages(data.totalPages);
+      setProducts(data.products ?? []);
+      setTotalPages(data.totalPages ?? 1);
+      setTotalCount(data.total ?? 0);
       setStats(data.stats);
     } catch (err) {
       console.error(err);
@@ -59,82 +75,127 @@ export default function ProductsPage() {
     fetchProducts(page);
   }, [page]);
 
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      const normalized = query.trim().toLowerCase();
+      const matchesSearch =
+        !normalized ||
+        product.title.toLowerCase().includes(normalized) ||
+        product.sku?.toLowerCase().includes(normalized) ||
+        product.category?.name?.toLowerCase().includes(normalized);
+
+      if (!matchesSearch) return false;
+      if (stockFilter === "low") return product.stock > 0 && product.stock < 10;
+      if (stockFilter === "out") return product.stock <= 0;
+      return true;
+    });
+  }, [products, query, stockFilter]);
+
   const handleDelete = async (id: string) => {
     if (!confirm("آیا از حذف این محصول اطمینان دارید؟")) return;
 
-    setLoading(true);
-
     try {
+      setActionLoadingId(id);
       const res = await fetch(`/api/admin/product/${id}`, {
         method: "DELETE",
       });
 
-      if (!res.ok) throw new Error("خطا در حذف محصول");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error ?? "حذف محصول ناموفق بود");
+      }
 
       toast.success("محصول با موفقیت حذف شد.");
 
-      // حذف از UI بدون رفرش
-      setProducts((prev) => prev.filter((p) => p._id !== id));
-
-      // اگر بخواهی از سرور هم sync شود
-      // router.refresh();
+      const nextCount = products.length - 1;
+      if (nextCount <= 0 && page > 1) {
+        setPage((prev) => prev - 1);
+      } else {
+        await fetchProducts(page);
+      }
     } catch (err) {
-      toast.error("❌ خطا در حذف محصول");
-      console.error(err);
+      const message = err instanceof Error ? err.message : "خطا در حذف محصول";
+      toast.error(message);
     } finally {
-      setLoading(false);
+      setActionLoadingId(null);
     }
   };
 
-  const [drawer, setDrawer] = useState<DrawerState>({
-    type: null,
-    product: null,
-  });
-
-  // باز کردن مدال افزودن
   const openAddDrawer = () => setDrawer({ type: "add", product: null });
-
-  // باز کردن مدال ویرایش
-  const openEditDrawer = (product: Product) =>
-    setDrawer({ type: "edit", product });
-
-  // بستن هر مدال
+  const openEditDrawer = (product: Product) => setDrawer({ type: "edit", product });
   const closeDrawer = () => setDrawer({ type: null, product: null });
-  return (
-    <div className="min-h-screen bg-gray-50 text-right">
-      <main className="p-4 sm:p-6 lg:p-8">
-        {/* Header Section */}
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">لیست محصولات</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              مدیریت موجودی و قیمت‌گذاری محصولات فروشگاه
-            </p>
-          </div>
-          <button
-            onClick={openAddDrawer}
-            className="flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-100 transition-all shadow-sm hover:shadow-md"
-          >
-            <Plus className="h-5 w-5" />
-            افزودن محصول جدید
-          </button>
-        </div>
 
-        {/* Stats Grid */}
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  const refreshAfterSave = async () => {
+    closeDrawer();
+    await fetchProducts(page);
+  };
+
+  const stockBadge = (stock: number) => {
+    if (stock <= 0)
+      return (
+        <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700">
+          ناموجود
+        </span>
+      );
+
+    if (stock < 10)
+      return (
+        <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">
+          موجودی کم
+        </span>
+      );
+
+    return (
+      <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
+        موجود
+      </span>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-right">
+      <main className="mx-auto w-full max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h1 className="text-2xl font-black text-slate-900">مدیریت محصولات</h1>
+              <p className="mt-2 text-sm text-slate-500">
+                صفحه جدید مدیریت محصولات؛ افزودن، ویرایش، حذف و بررسی وضعیت موجودی
+                به‌صورت یکجا.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                onClick={() => fetchProducts(page)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+              >
+                <RefreshCcw className="h-4 w-4" />
+                بروزرسانی لیست
+              </button>
+              <button
+                onClick={openAddDrawer}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700"
+              >
+                <Plus className="h-4 w-4" />
+                افزودن محصول جدید
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatsCard
             title="کل محصولات"
             value={new Intl.NumberFormat("fa-IR").format(stats.total)}
             icon={Package}
             color="blue"
-            trend="+12%"
           />
           <StatsCard
             title="ارزش موجودی"
             value={`${formatPrice(stats.value)} تومان`}
             icon={DollarSign}
             color="green"
-            trend="+5%"
           />
           <StatsCard
             title="موجودی کم"
@@ -143,123 +204,119 @@ export default function ProductsPage() {
             color="amber"
           />
           <StatsCard
-            title=" نظرات"
+            title="نظرات"
             value={new Intl.NumberFormat("fa-IR").format(stats.comments)}
             icon={MessageSquare}
             color="indigo"
-            trend={new Intl.NumberFormat("fa-IR").format(
-              stats.verifiedComments
-            )}
+            trend={`در انتظار تایید: ${new Intl.NumberFormat("fa-IR").format(stats.verifiedComments)}`}
           />
-        </div>
+        </section>
 
-        {/* Table Card */}
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-100 p-4 sm:p-6">
+            <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+              <label className="relative block">
+                <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="جستجو با نام، SKU یا دسته‌بندی"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pr-10 pl-3 text-sm text-slate-700 outline-none ring-indigo-200 transition focus:border-indigo-400 focus:ring"
+                />
+              </label>
+
+              <select
+              title="stockFilter"
+                value={stockFilter}
+                onChange={(e) => setStockFilter(e.target.value as StockFilter)}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none ring-indigo-200 transition focus:border-indigo-400 focus:ring"
+              >
+                <option value="all">همه وضعیت‌ها</option>
+                <option value="low">فقط موجودی کم</option>
+                <option value="out">فقط ناموجود</option>
+              </select>
+            </div>
+          </div>
+
           <div className="overflow-x-auto">
-            <table className="w-full text-right text-sm">
+            <table className="w-full min-w-[950px] text-right text-sm">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="px-6 py-4 font-medium text-gray-500">محصول</th>
-                  <th className="px-6 py-4 font-medium text-gray-500">
-                    دسته‌بندی
-                  </th>
-                  <th className="px-6 py-4 font-medium text-gray-500">وضعیت</th>
-                  <th className="px-6 py-4 font-medium text-gray-500">قیمت</th>
-                  <th className="px-6 py-4 font-medium text-gray-500">
-                    موجودی
-                  </th>
-                  <th className="px-6 py-4 font-medium text-gray-500">
-                    آخرین بروزرسانی
-                  </th>
-                  <th className="px-6 py-4 font-medium text-gray-500">
-                    عملیات
-                  </th>
+                <tr className="border-b border-slate-100 bg-slate-50 text-slate-500">
+                  <th className="px-4 py-3 font-semibold">محصول</th>
+                  <th className="px-4 py-3 font-semibold">SKU</th>
+                  <th className="px-4 py-3 font-semibold">دسته‌بندی</th>
+                  <th className="px-4 py-3 font-semibold">وضعیت</th>
+                  <th className="px-4 py-3 font-semibold">قیمت</th>
+                  <th className="px-4 py-3 font-semibold">موجودی</th>
+                  <th className="px-4 py-3 font-semibold">آخرین بروزرسانی</th>
+                  <th className="px-4 py-3 font-semibold">عملیات</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+
+              <tbody className="divide-y divide-slate-100">
                 {loading
-                  ? Array.from({ length: 5 }).map((_, idx) => (
-                      <tr key={idx} className="border-b border-gray-100">
-                        {Array.from({ length: 6 }).map((_, i) => (
-                          <td key={i} className="px-4 py-3 text-center">
-                            <Skeleton
-                              width={100}
-                              height={20}
-                              baseColor="#dbeafe"
-                              highlightColor="#bfdbfe"
-                              borderRadius={8}
-                            />
-                          </td>
-                        ))}
+                  ? Array.from({ length: 6 }).map((_, idx) => (
+                      <tr key={idx}>
+                        <td className="px-4 py-3" colSpan={8}>
+                          <Skeleton height={28} />
+                        </td>
                       </tr>
                     ))
-                  : products.map((product) => (
-                      <tr
-                        key={product._id}
-                        className="group hover:bg-gray-50/50 transition-colors"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col items-center gap-3">
+                  : filteredProducts.map((product) => (
+                      <tr key={product._id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
                             <Image
                               src={product.mainImage}
                               alt={product.title}
-                              width={50}
-                              height={50}
-                              className="h-10 w-10 rounded-lg object-cover ring-1 ring-gray-100"
+                              width={48}
+                              height={48}
+                              className="h-12 w-12 rounded-xl border border-slate-200 object-cover"
                             />
-                            <span className="font-medium text-gray-900 whitespace-nowrap">
-                              {product.title}
-                            </span>
+                            <div>
+                              <p className="font-semibold text-slate-900">{product.title}</p>
+                              <p className="text-xs text-slate-500">{product.brand || "بدون برند"}</p>
+                            </div>
                           </div>
                         </td>
 
-                        <td className="px-6 py-4 text-gray-600">
-                          {product.category?.parent?.name ?? "مادر"} /{" "}
+                        <td className="px-4 py-3 text-slate-600">{product.sku || "—"}</td>
+
+                        <td className="px-4 py-3 text-slate-600">
+                          {product.category?.parent?.name ?? "بدون دسته مادر"} /{" "}
                           {product.category?.name ?? "—"}
                         </td>
 
-                        <td className="px-6 py-4"></td>
+                        <td className="px-4 py-3">{stockBadge(product.stock)}</td>
 
-                        <td className="px-6 py-4 font-medium text-gray-900">
-                          {formatPrice(product.price)} تومان
+                        <td className="px-4 py-3 font-semibold text-slate-900">
+                          {formatPrice(product.discountPrice || product.price)} تومان
+                          {product.discountPrice ? (
+                            <span className="mr-2 text-xs font-normal text-slate-400 line-through">
+                              {formatPrice(product.price)}
+                            </span>
+                          ) : null}
                         </td>
 
-                        <td className="px-6 py-4 text-gray-600">
-                          <div className="flex items-center gap-2">
-                            <div className="h-1.5 w-16 overflow-hidden rounded-full bg-gray-100">
-                              <div
-                                className={`h-full rounded-full ${
-                                  product.stock < 10
-                                    ? "bg-amber-500"
-                                    : "bg-green-500"
-                                }`}
-                                style={{
-                                  width: `${Math.min(product.stock * 2, 100)}%`,
-                                }}
-                              />
-                            </div>
-                            <span className="text-xs">{product.stock} عدد</span>
-                          </div>
+                        <td className="px-4 py-3 text-slate-600">{product.stock} عدد</td>
+
+                        <td className="px-4 py-3 text-slate-500">
+                          {new Date(product.updatedAt).toLocaleDateString("fa-IR")}
                         </td>
 
-                        <td className="px-6 py-4 text-gray-500">
-                          {new Date(product.updatedAt).toLocaleDateString(
-                            "fa-IR"
-                          )}
-                        </td>
-
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1">
                             <button
                               onClick={() => openEditDrawer(product)}
-                              className="rounded-lg p-2 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                              className="rounded-lg p-2 text-slate-500 transition hover:bg-indigo-50 hover:text-indigo-600"
                               title="ویرایش"
                             >
                               <Edit2 className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => handleDelete(product._id)}
-                              className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                              disabled={actionLoadingId === product._id}
+                              className="rounded-lg p-2 text-slate-500 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                               title="حذف"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -272,50 +329,45 @@ export default function ProductsPage() {
             </table>
           </div>
 
-          {/* Pagination (Visual only) */}
-          <div className="flex items-center justify-between border-t border-gray-100 px-6 py-4">
-            <span className="text-sm text-gray-500">
-              نمایش 1 تا {products.length} از {products.length} نتیجه
+          {!loading && filteredProducts.length === 0 && (
+            <div className="p-8 text-center text-sm text-slate-500">
+              موردی مطابق جستجو یا فیلتر انتخابی پیدا نشد.
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3 border-t border-slate-100 px-4 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <span>
+              صفحه {new Intl.NumberFormat("fa-IR").format(page)} از{" "}
+              {new Intl.NumberFormat("fa-IR").format(totalPages)}
+              <span className="mr-2 text-slate-400">
+                (کل: {new Intl.NumberFormat("fa-IR").format(totalCount)})
+              </span>
             </span>
+
             <div className="flex gap-2">
               <button
-                className="rounded-lg border border-gray-200 px-3 py-1 text-sm text-gray-600 disabled:opacity-50"
-                disabled={page === 1}
+                className="rounded-lg border border-slate-200 px-3 py-1.5 disabled:opacity-50"
+                disabled={page === 1 || loading}
                 onClick={() => setPage((p) => p - 1)}
               >
                 قبلی
               </button>
               <button
-                className="rounded-lg border border-gray-200 px-3 py-1 text-sm text-gray-600 disabled:opacity-50"
-                disabled={page === totalPages}
+                className="rounded-lg border border-slate-200 px-3 py-1.5 disabled:opacity-50"
+                disabled={page === totalPages || loading}
                 onClick={() => setPage((p) => p + 1)}
               >
                 بعدی
               </button>
             </div>
           </div>
-        </div>
+        </section>
       </main>
 
-      {drawer.type === "add" && (
-        <AddProductDrawer
-          onClose={closeDrawer}
-          onSave={(newProduct) => setProducts((prev) => [...prev, newProduct])}
-        />
-      )}
+      {drawer.type === "add" && <AddProductDrawer onClose={closeDrawer} onSave={refreshAfterSave} />}
 
       {drawer.type === "edit" && drawer.product && (
-        <AddProductDrawer
-          onClose={closeDrawer}
-          product={drawer.product}
-          onSave={(updatedProduct) => {
-            setProducts((prev) =>
-              prev.map((p) =>
-                p._id === updatedProduct._id ? updatedProduct : p
-              )
-            );
-          }}
-        />
+        <AddProductDrawer onClose={closeDrawer} product={drawer.product} onSave={refreshAfterSave} />
       )}
     </div>
   );

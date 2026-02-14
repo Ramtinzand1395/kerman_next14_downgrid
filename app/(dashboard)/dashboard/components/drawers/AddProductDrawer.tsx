@@ -17,7 +17,8 @@ import { productValidationSchema } from "@/validations/validation";
 
 interface Props {
   onClose: () => void;
-  onSave?: (newProduct: Product) => void;
+  // onSave?: (newProduct: Product) => void;
+  onSave?: (newProduct?: Product) => void | Promise<void>;
   product?: Product | null;
 }
 
@@ -49,7 +50,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
 
   const updateField = <K extends keyof ProductForm>(
     key: K,
-    value: ProductForm[K]
+    value: ProductForm[K],
   ) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
@@ -67,7 +68,9 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
   // ==========================
   // 📌 Upadte
   // ==========================
-  const handleUpdate = async (): Promise<void> => {
+  // const handleUpdate = async (): Promise<void> => {
+  const handleUpdate = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault();
     try {
       productValidationSchema.validateSync(form, { abortEarly: false });
     } catch (err) {
@@ -126,9 +129,10 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
       });
 
       const data = await res.json();
-      await onSave?.(data.product);
+      // await onSave?.(data.product);
 
       if (res.ok) {
+        await onSave?.(data.product);
         toast.success("محصول با موفقیت اضافه شد");
 
         setForm({
@@ -149,7 +153,11 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
         onClose();
       } else {
         toast.error(data.error || "خطا در اضافه کردن محصول");
-        toast.error(data.message.errorResponse.errmsg);
+         if (data?.message?.errorResponse?.errmsg) {
+         toast.error(data.message.errorResponse.errmsg);
+       }
+
+ 
 
         console.log(data.error);
       }
@@ -174,8 +182,10 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
           <X className="w-6 h-6" />
         </button>
 
-        <h2 className="text-xl mb-4 font-bold">افزودن محصول جدید</h2>
-
+        {/* <h2 className="text-xl mb-4 font-bold">افزودن محصول جدید</h2> */}
+    <h2 className="text-xl mb-4 font-bold">
+         {product ? "ویرایش محصول" : "افزودن محصول جدید"}
+       </h2>
         <form
           className="flex flex-col gap-3"
           onSubmit={product ? handleUpdate : handleSubmit}
