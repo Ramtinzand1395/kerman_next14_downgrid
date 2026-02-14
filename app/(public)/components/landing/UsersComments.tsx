@@ -28,7 +28,7 @@
 //      <section className="mt-8 rounded-3xl border border-blue-100 bg-blue-50 p-6 md:p-8">
 //           <div className="mb-5 flex items-center justify-between">
 //             <h2 className="text-xl font-black text-slate-900 md:text-2xl">مطالب پیشنهادی برای خرید بهتر</h2>
-          
+
 //           </div>
 //           <div className="grid gap-4 md:grid-cols-3">
 //             {blogHighlights.map((post) => (
@@ -45,7 +45,6 @@
 //   );
 // }
 
-
 // !بعد از ادیت دوم
 import { BlogPost } from "@/types";
 import Image from "next/image";
@@ -54,7 +53,9 @@ import Link from "next/link";
 async function getBlogs(): Promise<BlogPost[]> {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const res = await fetch(`${baseUrl}/api/blog?limit=3`, { cache: "no-store" });
+    const res = await fetch(`${baseUrl}/api/blog?limit=3`, {
+      cache: "no-store",
+    });
 
     if (!res.ok) {
       return [];
@@ -93,21 +94,27 @@ export default async function UsersComments() {
             className="overflow-hidden rounded-2xl bg-white shadow-sm"
           >
             <div className="relative h-44 w-full bg-slate-100">
-              {/* todo */}
-              {/* عکس مشکل داره 
-              کلا بلاگ مشکل داره */}
-              {/* {post.coverImage ? (
+              {post.coverImage ? (
                 <Image
-                  src={post.coverImage ? post.coverImage :"/atari-seeklogo.svg"}
+                  src={post.coverImage}
                   alt={post.title}
                   fill
-                  className="object-cover"
+                  className="object-contain"
                 />
-              ) : null} */}
+              ) : (
+                <Image
+                  src="/atari-seeklogo.svg"
+                  alt={post.title}
+                  fill
+                  className="object-contain"
+                />
+              )}
             </div>
 
             <div className="p-5">
-              <h3 className="text-base font-bold text-slate-900">{post.title}</h3>
+              <h3 className="text-base font-bold text-slate-900">
+                {post.title}
+              </h3>
 
               <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
                 {post.excerpt || post.content}
