@@ -4,9 +4,7 @@ import { useState } from "react";
 import DatePicker from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
-import { Pencil, Save } from "lucide-react";
 import { toast } from "react-toastify";
-
 import { Customer } from "@/types";
 import { customerSchema } from "@/validations/CustomerAppValidation";
 
@@ -20,7 +18,6 @@ const fieldLabels = {
 };
 
 type EditableCustomerFields = keyof typeof fieldLabels;
-
 const editableFields: EditableCustomerFields[] = [
   "name",
   "lastName",
@@ -43,7 +40,7 @@ const UpdateUser = ({ customer, setCustomer, closeModal }: UpdateUserProps) => {
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >,
-    field: keyof Customer,
+    field: keyof Customer
   ) => {
     setCustomer((prev) => (prev ? { ...prev, [field]: e.target.value } : prev));
   };
@@ -55,38 +52,29 @@ const UpdateUser = ({ customer, setCustomer, closeModal }: UpdateUserProps) => {
       const res = await fetch(`/api/admin/store-order/customer/${customerId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customer }),
+        body: JSON.stringify({ customer }), // ✅ مهم
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      toast.success(data.message || "اطلاعات مشتری ذخیره شد.");
+      toast.success(data.message);
       setIsEditingCustomer(false);
       closeModal();
     } catch (err) {
       console.error(err);
-      toast.error("خطا در ویرایش اطلاعات مشتری");
+      toast.error("خطا در ویرایش کاربر");
     }
   };
 
   return (
-    <section className="space-y-4 rounded-xl border border-slate-200 p-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-base font-bold text-slate-800">اطلاعات مشتری</h3>
-        <button
-          onClick={() => setIsEditingCustomer((prev) => !prev)}
-          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-          {isEditingCustomer ? "لغو ویرایش" : "ویرایش"}
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+    <div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 border-b-2 pb-4 mb-4">
         {editableFields.map((field) => (
-          <label key={field} className="space-y-1 text-sm text-slate-600">
-            <span>{fieldLabels[field]}</span>
+          <div key={field}>
+            <label className="block text-sm font-medium text-gray-600">
+              {fieldLabels[field]}
+            </label>
 
             {isEditingCustomer ? (
               field === "sex" ? (
@@ -94,7 +82,7 @@ const UpdateUser = ({ customer, setCustomer, closeModal }: UpdateUserProps) => {
                   title="جنسیت"
                   value={customer?.[field] || ""}
                   onChange={(e) => handleCustomerChange(e, field)}
-                  className="h-10 w-full rounded-lg border border-slate-300 px-2"
+                  className="border p-1 rounded-md w-full"
                 >
                   <option value="">انتخاب کنید</option>
                   <option value="مرد">مرد</option>
@@ -107,10 +95,11 @@ const UpdateUser = ({ customer, setCustomer, closeModal }: UpdateUserProps) => {
                   value={customer?.birthday}
                   onChange={(date) =>
                     setCustomer((prev) =>
-                      prev ? { ...prev, birthday: date?.toString() ?? "" } : prev,
+                      prev
+                        ? { ...prev, birthday: date?.toString() ?? "" }
+                        : prev
                     )
                   }
-                  inputClass="h-10 w-full rounded-lg border border-slate-300 px-2"
                   containerStyle={{ width: "100%" }}
                 />
               ) : field === "description" ? (
@@ -118,34 +107,42 @@ const UpdateUser = ({ customer, setCustomer, closeModal }: UpdateUserProps) => {
                   title="توضیحات"
                   value={customer?.description || ""}
                   onChange={(e) => handleCustomerChange(e, field)}
-                  className="min-h-24 w-full rounded-lg border border-slate-300 p-2"
+                  className="border p-1 rounded-md w-full"
                 />
               ) : (
                 <input
-                  title="فیلد"
+                  title="فیلد ها"
                   type="text"
                   value={customer?.[field] || ""}
                   onChange={(e) => handleCustomerChange(e, field)}
-                  className="h-10 w-full rounded-lg border border-slate-300 px-2"
+                  className="border p-1 rounded-md w-full"
                 />
               )
             ) : (
-              <p>{customer?.[field] || "---"}</p>
+              <p className="mt-1">{customer?.[field] || "---"}</p>
             )}
-          </label>
+          </div>
         ))}
-      </div>
 
-      {isEditingCustomer && customer?._id && (
-        <button
-          onClick={() => handleSaveCustomer(customer._id)}
-          className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm text-white hover:bg-emerald-700"
-        >
-          <Save className="h-4 w-4" />
-          ذخیره اطلاعات مشتری
-        </button>
-      )}
-    </section>
+        <div className="col-span-2 lg:col-span-4 flex gap-4 mt-2">
+          <button
+            onClick={() => setIsEditingCustomer((prev) => !prev)}
+            className="bg-blue-500 text-white px-4 py-2 rounded-md"
+          >
+            {isEditingCustomer ? "لغو ویرایش" : "ویرایش اطلاعات کاربر"}
+          </button>
+
+          {isEditingCustomer && customer?._id && (
+            <button
+              onClick={() => handleSaveCustomer(customer?._id)}
+              className="bg-green-500 text-white px-4 py-2 rounded-md"
+            >
+              ذخیره
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 

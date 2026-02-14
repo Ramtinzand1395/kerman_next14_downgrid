@@ -1,5 +1,5 @@
 import { storeOrder } from "@/types";
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface GameDropdownProps {
   Selectedgames: storeOrder | null;
@@ -8,7 +8,6 @@ interface GameDropdownProps {
 
 interface Game {
   name: string;
-  // add other properties for a game if necessary
 }
 
 interface GameData {
@@ -20,79 +19,79 @@ const GameDropdown: React.FC<GameDropdownProps> = ({
   setSelectedgames,
 }) => {
   const [search, setSearch] = useState("");
-  const [loading, setloading] = useState(false);
-
-  const [GameData, setGameData] = useState<GameData>({ items: [] });
+  const [loading, setLoading] = useState(false);
+  const [gameData, setGameData] = useState<GameData>({ items: [] });
 
   useEffect(() => {
-    setloading(true);
-    const getdata = async () => {
+    if (!Selectedgames?.consoleType) {
+      setGameData({ items: [] });
+      return;
+    }
+
+    const getData = async () => {
+      setLoading(true);
       try {
         const res = await fetch(
-          `/api/admin/store-order/game-list?consoleType=${Selectedgames?.consoleType}`
+          `/api/admin/store-order/game-list?consoleType=${Selectedgames.consoleType}`,
         );
 
         const data = await res.json();
-        setGameData(data.gameList[0]);
+        setGameData(data.gameList?.[0] || { items: [] });
       } catch (err) {
-        console.log(err);
+        console.error(err);
       } finally {
-        setloading(false);
+        setLoading(false);
       }
     };
-    getdata();
+
+    getData();
   }, [Selectedgames?.consoleType]);
-  // Ensure items is always an array before calling filter
+
   const filteredGames = useMemo(() => {
-    return GameData?.items?.filter((game) =>
-      game.name.toLowerCase().includes(search.toLowerCase())
+    const list = gameData?.items || [];
+    return list.filter((game) =>
+      game.name.toLowerCase().includes(search.toLowerCase()),
     );
-  }, [search, GameData]);
-  console.log(GameData)
+  }, [search, gameData]);
+
   return (
-    <div className="relative max-w-52">
+    <div className="relative">
       <input
         type="search"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder={`جستجو ${Selectedgames?.consoleType}`}
-        className="w-full p-2 border rounded-xl mt-1"
+        placeholder={
+          Selectedgames?.consoleType ? "جستجوی بازی" : "ابتدا دستگاه را انتخاب کنید"
+        }
+        disabled={!Selectedgames?.consoleType}
+        className="h-10 w-full rounded-xl border border-slate-300 px-3 text-sm outline-none ring-indigo-100 focus:ring-4 disabled:bg-slate-100"
       />
 
-      {loading
-        ? // <Spiner />
-          "loading"
-        : search &&
-          filteredGames?.length > 0 && (
-            <div className="mt-2 space-y-1 absolute top-12 left-0 bg-white border shadow-md z-10 w-full max-h-60 overflow-auto">
-              {filteredGames?.map((game, index) => (
-                <div
-                  key={index}
-                  // onClick={() => {
-                  //   {
-                  //     setSelectedgames((prevOrder) => ({
-                  //       ...prevOrder,
-                  //       list: [...prevOrder.list, game.name],
-                  //     }));
-                  //     setSearch("");
-                  //   }
-                  // }}
-                  onClick={() => {
-                    if (!Selectedgames) return; // guard against null
+      {!loading && search && filteredGames.length > 0 && (
+        <div className="absolute top-11 z-20 max-h-56 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+          {filteredGames.map((game) => (
+            <button
+              key={game.name}
+              type="button"
+              onClick={() => {
+                setSelectedgames((prevOrder) => {
+                  if (!prevOrder) return prevOrder;
+                  if (prevOrder.list.includes(game.name)) return prevOrder;
 
-                    setSelectedgames((prevOrder) => ({
-                      ...prevOrder!,
-                      list: [...prevOrder!.list, game.name],
-                    }));
-                    setSearch("");
-                  }}
-                  className="p-2 hover:bg-gray-100 cursor-pointer"
-                >
-                  {game.name}
-                </div>
-              ))}
-            </div>
-          )}
+                  return {
+                    ...prevOrder,
+                    list: [...prevOrder.list, game.name],
+                  };
+                });
+                setSearch("");
+              }}
+              className="w-full px-3 py-2 text-right text-sm hover:bg-slate-50"
+            >
+              {game.name}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

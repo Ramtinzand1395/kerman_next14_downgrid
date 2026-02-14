@@ -1,88 +1,95 @@
 "use client";
 
+import * as yup from "yup";
+import { Search } from "lucide-react";
+import { toast } from "react-toastify";
+
 import { Customer } from "@/types";
 import { mobileSchema } from "@/validations/validation";
-import { Search } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
-import * as yup from "yup";
 
 interface SearchCustomerProps {
   customerData: Customer;
   setCustomerData: React.Dispatch<React.SetStateAction<Customer>>;
+  onNext: () => void;
 }
 
 const SearchCustomer = ({
   customerData,
   setCustomerData,
+  onNext,
 }: SearchCustomerProps) => {
-  const router = useRouter();
-
   const handleSearch = async () => {
     try {
       mobileSchema.validateSync(customerData.mobile, { abortEarly: false });
     } catch (err) {
       if (err instanceof yup.ValidationError) {
-        err.inner.forEach((e) => toast.error(e.message));
+        err.errors.forEach((message) => toast.error(message));
       } else {
-        toast.error("خطای ناشناخته");
+        toast.error("شماره موبایل معتبر نیست.");
       }
       return;
     }
 
     try {
       const res = await fetch(
-        `/api/admin/store-order/customer?mobile=${customerData.mobile}`
+        `/api/admin/store-order/customer?mobile=${customerData.mobile}`,
       );
-
       const data = await res.json();
 
-      toast.info(data.message);
-      if (data.status === 200) {
-        setCustomerData(data.data);
-      } else {
-        setCustomerData(
-          (prev) =>
-            ({
-              mobile: prev.mobile,
-            } as unknown as Customer)
-        );
+      if (!res.ok) {
+        throw new Error(data?.message || "خطا در جستجوی مشتری");
       }
-      router.push("/dashboard/store-order?step=2", {
-        scroll: false,
-      });
+
+      if (data.status === 200 && data.data) {
+        setCustomerData(data.data);
+        toast.success("اطلاعات مشتری یافت شد.");
+      } else {
+        setCustomerData((prev) => ({
+          ...prev,
+          _id: "",
+          name: "",
+          lastName: "",
+          sex: "",
+          birthday: "",
+          description: "",
+        }));
+        toast.info("مشتری جدید است. لطفا اطلاعات را ثبت کنید.");
+      }
+
+      onNext();
     } catch (err) {
       console.error(err);
-      toast.error("خطای سرور");
+      toast.error("در جستجوی مشتری خطایی رخ داد.");
     }
   };
 
   return (
-    <div className="flex items-center justify-center gap-2">
-      <div className="relative w-[480px] bg-white border rounded-2xl shadow-md p-1.5 transition-all duration-150 ease-in-out hover:scale-105 hover:shadow-lg">
+    <div className="space-y-4">
+      <p className="text-sm text-slate-600">
+        شماره موبایل مشتری را وارد کنید تا اطلاعات قبلی بازیابی شود.
+      </p>
+
+      <div className="flex flex-col gap-3 md:flex-row">
         <input
           dir="rtl"
           type="tel"
           value={customerData.mobile}
           onChange={(e) =>
-            setCustomerData((prev) => ({
-              ...prev,
-              mobile: e.target.value,
-            }))
+            setCustomerData((prev) => ({ ...prev, mobile: e.target.value }))
           }
-          className="w-full pl-2 py-2 pr-8 text-base text-gray-700 bg-transparent rounded-lg focus:outline-none"
-          placeholder="جستجو شماره تلفن"
+          className="h-11 w-full rounded-xl border border-slate-300 px-3 text-base text-slate-700 outline-none ring-indigo-100 transition focus:ring-4"
+          placeholder="09xxxxxxxxx"
         />
-      </div>
 
-      <button
-        title="جستجو"
-        onClick={handleSearch}
-        className="flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-100 transition-all shadow-sm hover:shadow-md"
-      >
-        جستجو
-        <Search className="h-5 w-5" />
-      </button>
+        <button
+          title="جستجو"
+          onClick={handleSearch}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 text-sm font-medium text-white transition hover:bg-indigo-700"
+        >
+          <Search className="h-4 w-4" />
+          جستجو و ادامه
+        </button>
+      </div>
     </div>
   );
 };

@@ -1,26 +1,35 @@
 "use client";
 
-import { storeOrder } from "@/types";
+import { useMemo, useState } from "react";
 import { toast } from "react-toastify";
-import UserInfoModal from "./modals/updateModal/UserInfoModal";
-import { useState } from "react";
-import OrderSkeleton from "./modals/OrderSkeleton";
 
-const statusOrder = ["دریافت از مشتری", "آماده", "تحویل به مشتری"];
+import { storeOrder } from "@/types";
+import OrderSkeleton from "./modals/OrderSkeleton";
+import UserInfoModal from "./modals/updateModal/UserInfoModal";
+
+const statusOrder = ["دریافت از مشتری", "آماده", "تحویل به مشتری"] as const;
+
 type OrdersByConsole = {
   ps5: storeOrder[];
   ps4: storeOrder[];
   xbox: storeOrder[];
   copy: storeOrder[];
 };
+
 interface OrderTableProps {
   header: string;
   Orders: storeOrder[];
   setOrders: React.Dispatch<React.SetStateAction<OrdersByConsole>>;
   consoleKey: "ps5" | "ps4" | "xbox" | "copy";
   isLoading: boolean;
-  setloadingSms:React.Dispatch<React.SetStateAction<boolean>>;
+  setloadingSms: React.Dispatch<React.SetStateAction<boolean>>;
 }
+
+const statusColors: Record<string, string> = {
+  "دریافت از مشتری": "bg-amber-100 text-amber-700 border-amber-300",
+  "آماده": "bg-sky-100 text-sky-700 border-sky-300",
+  "تحویل به مشتری": "bg-emerald-100 text-emerald-700 border-emerald-300",
+};
 
 const OrderTable = ({
   header,
@@ -30,18 +39,26 @@ const OrderTable = ({
   isLoading,
   setloadingSms,
 }: OrderTableProps) => {
-  const [openModal, setOpenModal] = useState<boolean>(false);
   const [selectedOrder, setSelectedOrder] = useState<storeOrder | null>(null);
+
+  const countLabel = useMemo(
+    () => `${Orders.length.toLocaleString("fa-IR")} سفارش`,
+    [Orders.length],
+  );
 
   const changeStatus = async (
     orderId: string,
-    newStatus: storeOrder["deliveryStatus"]
+    newStatus: storeOrder["deliveryStatus"],
   ) => {
     const order = Orders.find((o) => o._id === orderId);
     if (!order) return;
 
-    const currentIndex = statusOrder.indexOf(order.deliveryStatus);
-    const newIndex = statusOrder.indexOf(newStatus);
+    const currentIndex = statusOrder.indexOf(
+      order.deliveryStatus as (typeof statusOrder)[number],
+    );
+    const newIndex = statusOrder.indexOf(
+      newStatus as (typeof statusOrder)[number],
+    );
 
     if (newIndex <= currentIndex) {
       toast.warning("امکان بازگشت یا تکرار وضعیت وجود ندارد.");
@@ -49,9 +66,10 @@ const OrderTable = ({
     }
 
     const confirmChange = window.confirm(
-      `آیا از تغییر وضعیت به "${newStatus}" مطمئن هستید؟`
+      `آیا از تغییر وضعیت به «${newStatus}» مطمئن هستید؟`,
     );
     if (!confirmChange) return;
+
     setloadingSms(true);
     try {
       const res = await fetch(
@@ -60,28 +78,23 @@ const OrderTable = ({
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: newStatus, sendSms: true }),
-        }
+        },
       );
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      // 👇 آپدیت جدول داخل State
       setOrders((prev) => ({
         ...prev,
-        [consoleKey]: prev[consoleKey].map((order) =>
-          order._id === orderId
-            ? { ...order, deliveryStatus: newStatus }
-            : order
+        [consoleKey]: prev[consoleKey].map((item) =>
+          item._id === orderId ? { ...item, deliveryStatus: newStatus } : item,
         ),
       }));
 
-      toast.success(data.message);
+      toast.success(data.message || "وضعیت سفارش با موفقیت تغییر کرد.");
 
       if (data.sms?.status === 200) {
-        toast.success(`پیامک با موفقیت ارسال شد: ${data.sms.body}`);
-      } else {
-        toast.error(`خطا در ارسال پیام: ${data.sms?.body}`);
+        toast.success("پیامک نیز با موفقیت ارسال شد.");
       }
     } catch (err) {
       console.error("Error updating status:", err);
@@ -91,148 +104,97 @@ const OrderTable = ({
     }
   };
 
-  const handleOpenModal = (order: storeOrder) => {
-    setSelectedOrder(order);
-    setOpenModal(true);
-  };
-  const closeModal = () => {
-    setOpenModal(false);
-    setSelectedOrder(null);
-  };
-
   return (
     <>
-      <h2 className="md:text-xl text-sm font-semibold border-b border-gray-400 pb-5">
-        {header}
-      </h2>
+      <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-3">
+        <h2 className="text-base font-bold text-slate-800 md:text-lg">
+          {header}
+        </h2>
+        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-500">
+          {countLabel}
+        </span>
+      </div>
+
       {isLoading ? (
         <OrderSkeleton rows={6} />
+      ) : Orders.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+          سفارشی برای این دستگاه ثبت نشده است.
+        </div>
       ) : (
-        <div className="overflow-x-auto ">
-          <table className="w-full text-sm text-left rtl:text-right text-gray-500 mt-5 border-separate border-spacing-y-2">
-            <thead className="text-gray-500  ">
-              <tr>
-                <th className="text-start text-sm px-2 py-2 whitespace-nowrap">
-                  نام خانوادگی
-                </th>
-                <th className="text-center text-sm w-full px-2  py-2 whitespace-nowrap">
-                  وضعیت
-                </th>
-                <th className="text-start text-sm px-2 py-2 whitespace-nowrap">
-                  کد دریافت
-                </th>
-                <th className="text-center text-sm px-2 py-2 whitespace-nowrap">
-                  توضیحات
-                </th>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[700px] border-separate border-spacing-y-2 text-sm text-slate-600">
+            <thead>
+              <tr className="text-slate-500">
+                <th className="px-2 py-2 text-right">مشتری</th>
+                <th className="px-2 py-2 text-right">وضعیت سفارش</th>
+                <th className="px-2 py-2 text-right">کد دریافت</th>
+                <th className="px-2 py-2 text-right">توضیحات</th>
               </tr>
             </thead>
             <tbody>
-              {Orders ? (
-                Orders.map((order) => (
-                  <tr className="" key={order._id}>
-                    <td className="text-center text-black py-3 ">
-                      <p
-                        onClick={() => handleOpenModal(order)}
-                        className="cursor-pointer hover:text-blue-500 transition duration-300"
-                      >
-                        {typeof order.customer === "string"
-                          ? order?.customer
-                          : order?.customer?.lastName}
-                      </p>
+              {Orders.map((order) => (
+                <tr key={order._id} className="rounded-xl bg-slate-50">
+                  <td className="rounded-r-xl px-2 py-3 text-slate-900">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedOrder(order)}
+                      className="font-medium text-indigo-700 hover:text-indigo-900"
+                    >
+                      {typeof order.customer === "string"
+                        ? order.customer
+                        : order.customer?.lastName || "بدون نام"}
+                    </button>
+                  </td>
 
-                      {openModal && (
-                        <UserInfoModal
-                          closeModal={closeModal}
-                          order={selectedOrder}
-                          setOrders={setOrders}
-                        />
-                      )}
-                    </td>
-                    <td className="flex flex-row items-center justify-around py-3 gap-2 ">
-                      {["دریافت از مشتری", "آماده", "تحویل به مشتری"].map(
-                        (status) => (
-                          <div
-                            className="flex items-start space-x-2"
-                            key={status}
-                          >
-                            <label className="group flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={order.deliveryStatus === status}
-                                onChange={() =>
-                                  changeStatus(
-                                    order._id,
-                                    status as storeOrder["deliveryStatus"]
-                                  )
-                                }
-                                className="hidden peer"
-                              />
-                              <span
-                                className={`relative w-6 h-6 flex justify-center items-center border-2 rounded-md shadow-md transition-all duration-500
-                            ${
-                              order.deliveryStatus === status
-                                ? status === "دریافت از مشتری"
-                                  ? "bg-orange-500 border-orange-500"
-                                  : status === "آماده"
-                                  ? "bg-blue-500 border-blue-500"
-                                  : "bg-green-500 border-green-500"
-                                : "bg-gray-100 border-gray-400"
-                            }`}
-                              >
-                                {order.deliveryStatus === status && (
-                                  <svg
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                    className="w-5 h-5 text-white"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                  >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 10-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>
-                                )}
-                              </span>
-                              <span
-                                className={`mx-1 text-xs font-medium whitespace-nowrap text-gray-700  transition-colors duration-300
-                            ${
-                              status === "دریافت از مشتری"
-                                ? "group-hover:text-orange-500"
-                                : status === "آماده"
-                                ? "group-hover:text-blue-500"
-                                : "group-hover:text-green-500"
-                            }`}
-                              >
-                                {status}
-                              </span>
-                            </label>
-                          </div>
-                        )
-                      )}
-                    </td>
-                    <td className="text-center text-black py-3 ">
-                      {order.deliveryCode}
-                    </td>
-                    <td className="text-start text-black py-3 text-xs">
-                      {order.description.length > 10
-                        ? `${order.description.slice(0, 20)}...`
-                        : order.description}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={2} className="text-center py-5 text-gray-400">
-                    سفارشی یافت نشد.
+                  <td className="px-2 py-3">
+                    <div className="flex flex-wrap gap-1.5">
+                      {statusOrder.map((status) => (
+                        <button
+                          key={status}
+                          type="button"
+                          onClick={() =>
+                            changeStatus(
+                              order._id,
+                              status as storeOrder["deliveryStatus"],
+                            )
+                          }
+                          className={`rounded-lg border px-2 py-1 text-xs transition ${
+                            order.deliveryStatus === status
+                              ? statusColors[status]
+                              : "border-slate-300 bg-white text-slate-500 hover:bg-slate-100"
+                          }`}
+                        >
+                          {status}
+                        </button>
+                      ))}
+                    </div>
+                  </td>
+
+                  <td className="px-2 py-3 text-slate-900">
+                    {order.deliveryCode || "---"}
+                  </td>
+                  <td className="rounded-l-xl px-2 py-3 text-xs text-slate-700">
+                    {order.description?.length > 30
+                      ? `${order.description.slice(0, 30)}...`
+                      : order.description || "---"}
                   </td>
                 </tr>
-              )}
+              ))}
             </tbody>
           </table>
         </div>
       )}
+
+      {selectedOrder && (
+        <UserInfoModal
+          closeModal={() => setSelectedOrder(null)}
+          order={selectedOrder}
+          setOrders={setOrders}
+        />
+      )}
     </>
   );
 };
+
 export default OrderTable;

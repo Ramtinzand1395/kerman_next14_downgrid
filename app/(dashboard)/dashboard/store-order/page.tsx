@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-import { AlertTriangle, DollarSign, Package, Plus } from "lucide-react";
-import AddOrderModal from "./modals/addorder/AddOrderModal";
+import { useEffect, useMemo, useState } from "react";
+import { AlertCircle, Gamepad2, Package, Plus, SendHorizonal } from "lucide-react";
 import { toast } from "react-toastify";
+
 import { storeOrder } from "@/types";
+import AddOrderModal from "./modals/addorder/AddOrderModal";
 import OrderTable from "./OrderTable";
 import StoreOrderCart from "./modals/StoreOrderCart";
 
@@ -16,30 +16,40 @@ type OrdersByConsole = {
   copy: storeOrder[];
 };
 
+const initialOrders: OrdersByConsole = {
+  ps5: [],
+  ps4: [],
+  xbox: [],
+  copy: [],
+};
+
+const consoleSections: Array<{
+  key: keyof OrdersByConsole;
+  title: string;
+  accent: string;
+}> = [
+  { key: "ps5", title: "پلی‌استیشن 5", accent: "border-indigo-200" },
+  { key: "ps4", title: "پلی‌استیشن 4", accent: "border-sky-200" },
+  { key: "xbox", title: "Xbox", accent: "border-emerald-200" },
+  { key: "copy", title: "کپی‌خور", accent: "border-amber-200" },
+];
+
 export default function StoreOrder() {
-  const [OpenAddItem, setOpenAddItem] = useState(false);
-  const [Loading, setLoading] = useState(false);
-  const [loadingSms, setloadingSms] = useState(false);
-
-  const handleOpenModal = () => {
-    setOpenAddItem(!OpenAddItem);
-  };
-  const closeModal = () => setOpenAddItem(false);
-
-  const [orders, setOrders] = useState<OrdersByConsole>({
-    ps5: [],
-    ps4: [],
-    xbox: [],
-    copy: [],
-  });
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSendingSms, setIsSendingSms] = useState(false);
+  const [orders, setOrders] = useState<OrdersByConsole>(initialOrders);
 
   useEffect(() => {
     const fetchOrders = async () => {
-      setLoading(true);
+      setIsLoading(true);
       try {
-        const res = await fetch(`/api/admin/store-order`);
-
+        const res = await fetch("/api/admin/store-order");
         const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.message || "خطا در دریافت سفارش‌ها");
+        }
 
         setOrders({
           ps5: data.ps5 || [],
@@ -49,104 +59,100 @@ export default function StoreOrder() {
         });
       } catch (err) {
         console.error(err);
-        toast.error("خطای سرور");
+        toast.error("در دریافت لیست سفارشات مشکلی پیش آمد.");
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
+
     fetchOrders();
   }, []);
 
-  return (
-    <div className="min-h-screen bg-gray-50 text-right">
-      <main className="p-4 sm:p-6 lg:p-8">
-        {/* Header Section */}
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              لیست سفارشات مشتری
-            </h1>
-            <p className="mt-1 text-sm text-gray-500">
-              مدیریت موجودی و قیمت‌گذاری سفارشات فروشگاه
-            </p>
-          </div>
-          <button
-            onClick={handleOpenModal}
-            className="flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-100 transition-all shadow-sm hover:shadow-md"
-          >
-            <Plus className="h-5 w-5" />
-            افزودن سفارش جدید
-          </button>
-        </div>
+  const totalOrders = useMemo(
+    () => Object.values(orders).reduce((sum, list) => sum + list.length, 0),
+    [orders],
+  );
 
-        {/* Stats Grid */}
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  return (
+    <div className="min-h-screen bg-slate-50 text-right">
+      <main className="mx-auto max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-1">
+              <h1 className="text-2xl font-black text-slate-900 md:text-3xl">
+                مدیریت سفارشات فروشگاه
+              </h1>
+              <p className="text-sm text-slate-500 md:text-base">
+                ثبت، پیگیری و به‌روزرسانی سفارش مشتریان به تفکیک دستگاه
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700">
+                مجموع سفارش‌ها: {totalOrders.toLocaleString("fa-IR")}
+              </div>
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700"
+              >
+                <Plus className="h-4 w-4" />
+                افزودن سفارش جدید
+              </button>
+            </div>
+          </div>
+
+          {isSendingSms && (
+            <div className="mt-4 inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm text-emerald-700">
+              <SendHorizonal className="h-4 w-4 animate-pulse" />
+              ارسال پیامک در حال انجام است...
+            </div>
+          )}
+        </section>
+
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <StoreOrderCart
-            title="کل سفارش ها"
+            title="کل سفارش‌ها"
             icon={Package}
             color="blue"
             link="store-order/all-orders"
           />
           <StoreOrderCart
-            title="لیست بازی ها"
-            icon={DollarSign}
+            title="آرشیو بازی‌ها"
+            icon={Gamepad2}
             color="green"
             link="store-order/all-gamelist"
           />
           <StoreOrderCart
-            title="اطلاعات مشتری"
-            icon={AlertTriangle}
+            title="مدیریت مشتریان"
+            icon={AlertCircle}
             color="amber"
-            link="+5%"
+            link="store-order?step=1"
           />
-        </div>
-        {loadingSms && (
-          <p className="text-green-500 animate-bounce">در حال ارسال پیام</p>
-        )}
-        <div className="grid grid-cols-1 md:grid-cols-2  gap-5 md:gap-2">
-          <div className="bg-white shadow-md rounded-lg p-5">
-            <OrderTable
-              header="پلی استیشن 5"
-              Orders={orders.ps5}
-              setOrders={setOrders}
-              consoleKey="ps5"
-              isLoading={Loading}
-              setloadingSms={setloadingSms}
-            />
-          </div>
-          <div className="bg-white shadow-md rounded-lg p-5">
-            <OrderTable
-              header={"پلی استیشن 4"}
-              Orders={orders.ps4}
-              setOrders={setOrders}
-              consoleKey="ps4"
-              isLoading={Loading}
-              setloadingSms={setloadingSms}
-            />
-          </div>
-          <div className="bg-white shadow-md rounded-lg p-5">
-            <OrderTable
-              header={"کپی خور"}
-              Orders={orders.copy}
-              setOrders={setOrders}
-              consoleKey="xbox"
-              isLoading={Loading}
-              setloadingSms={setloadingSms}
-            />
-          </div>
-          <div className="bg-white shadow-md rounded-lg p-5">
-            <OrderTable
-              header={"Xbox"}
-              Orders={orders.xbox}
-              setOrders={setOrders}
-              consoleKey="copy"
-              isLoading={Loading}
-              setloadingSms={setloadingSms}
-            />
-          </div>
-        </div>
-        {OpenAddItem && (
-          <AddOrderModal closeModal={closeModal} setOrders={setOrders} />
+        </section>
+
+        <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          {consoleSections.map((section) => (
+            <div
+              key={section.key}
+              className={`rounded-2xl border ${section.accent} bg-white p-4 shadow-sm md:p-5`}
+            >
+              <OrderTable
+                header={section.title}
+                Orders={orders[section.key]}
+                setOrders={setOrders}
+                consoleKey={section.key}
+                isLoading={isLoading}
+                setloadingSms={setIsSendingSms}
+              />
+            </div>
+          ))}
+        </section>
+
+        {isAddModalOpen && (
+          <AddOrderModal
+            closeModal={() => setIsAddModalOpen(false)}
+            setOrders={setOrders}
+          />
         )}
       </main>
     </div>

@@ -1,74 +1,70 @@
 "use client";
-import { toPersianDate } from "@/helpers/toPersianDate";
-import { Customer, storeOrder } from "@/types";
-import { X } from "lucide-react";
+
 import { useState } from "react";
-import UpdateUser from "./UpdateUser";
-import UpdateStoreOrder from "./UpdateStoreOrder";
-import { sendPdfToBackend } from "@/helpers/sendPdfToBackend";
+import { Printer, Trash2, X } from "lucide-react";
 import { toast } from "react-toastify";
 
-type consoleType = "ps5" | "ps4" | "xbox" | "copy";
+import { toPersianDate } from "@/helpers/toPersianDate";
+import { sendPdfToBackend } from "@/helpers/sendPdfToBackend";
+import { Customer, storeOrder } from "@/types";
+
+import UpdateStoreOrder from "./UpdateStoreOrder";
+import UpdateUser from "./UpdateUser";
+
+type ConsoleType = "ps5" | "ps4" | "xbox" | "copy";
+
 type OrdersByConsole = {
   ps5: storeOrder[];
   ps4: storeOrder[];
   xbox: storeOrder[];
   copy: storeOrder[];
 };
+
 interface UserInfoModalProps {
   closeModal: () => void;
   order?: storeOrder | null;
   setOrders: React.Dispatch<React.SetStateAction<OrdersByConsole>>;
 }
 
-const UserInfoModal = ({
-  closeModal,
-  order,
-  setOrders,
-}: UserInfoModalProps) => {
+const UserInfoModal = ({ closeModal, order, setOrders }: UserInfoModalProps) => {
   const [userOrder, setUserOrder] = useState<storeOrder | null>(order || null);
 
   const [customer, setCustomer] = useState<Customer | null>(
-    order?.customer && typeof order.customer !== "string"
-      ? order.customer
-      : null,
+    order?.customer && typeof order.customer !== "string" ? order.customer : null,
   );
 
-  const HandleDeleteOrder = async () => {
+  const handleDeleteOrder = async () => {
     if (!userOrder) return;
+    if (!window.confirm("آیا از حذف سفارش مطمئن هستید؟")) return;
 
-    const confirmDelete = window.confirm("آیا از حذف سفارش مطمئنی؟");
-    if (!confirmDelete) return;
     try {
-      // const { data, status } = await deleteOrder(orderId);
       const res = await fetch(`/api/admin/store-order/${userOrder._id}`, {
         method: "DELETE",
       });
       const data = await res.json();
-      if (data.status === 200) {
-        toast.success(data.message);
-        const consoleType = userOrder.consoleType as consoleType;
 
-        setOrders((prev) => ({
-          ...prev,
-          [consoleType]: prev[consoleType].filter(
-            (order) => order._id !== userOrder._id,
-          ),
-        }));
-      }
+      if (!res.ok) throw new Error(data?.message || "خطا در حذف سفارش");
+
+      const consoleType = userOrder.consoleType as ConsoleType;
+      setOrders((prev) => ({
+        ...prev,
+        [consoleType]: prev[consoleType].filter(
+          (item) => item._id !== userOrder._id,
+        ),
+      }));
+
+      toast.success(data.message || "سفارش حذف شد.");
       closeModal();
     } catch (err) {
-      console.log(err);
+      console.error(err);
+      toast.error("حذف سفارش انجام نشد.");
     }
   };
 
-  const HandleNoSms = async () => {
-    if (!customer?._id || !userOrder) return;
-    const confirmNoSms = window.confirm(
-      "آیا از انجام عملیات بدون پیام مطمئنی؟",
-    );
+  const handleCompleteWithoutSms = async () => {
+    if (!userOrder?._id) return;
+    if (!window.confirm("ثبت تحویل بدون ارسال پیامک انجام شود؟")) return;
 
-    if (!confirmNoSms) return;
     try {
       const res = await fetch(
         `/api/admin/store-order/changestatus/${userOrder._id}`,
@@ -77,89 +73,92 @@ const UserInfoModal = ({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             status: "تحویل به مشتری",
-            sendSms: false, // 👈 پیامک ارسال نشه
+            sendSms: false,
           }),
         },
       );
-      const data = await res.json();
-      if (res.status === 200) {
-        toast.success(data.message);
-        const consoleType = userOrder.consoleType as consoleType;
 
-        setOrders((prev) => ({
-          ...prev,
-          [consoleType]: prev[consoleType].filter(
-            (order) => order._id !== userOrder._id,
-          ),
-        }));
-        closeModal();
-      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "خطا در ثبت وضعیت");
+
+      const consoleType = userOrder.consoleType as ConsoleType;
+      setOrders((prev) => ({
+        ...prev,
+        [consoleType]: prev[consoleType].filter(
+          (item) => item._id !== userOrder._id,
+        ),
+      }));
+
+      toast.success(data.message || "سفارش بدون پیامک نهایی شد.");
+      closeModal();
     } catch (err) {
-      console.log(err);
+      console.error(err);
+      toast.error("عملیات انجام نشد.");
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Overlay */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-gray-400/50 backdrop-blur-sm"
-        onClick={() => closeModal()}
-      ></div>
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+        onClick={closeModal}
+      />
 
-      {/* Modal content */}
-      <div className="relative z-50 w-[90vw]  bg-white rounded-2xl  shadow-xl animate-fadeIn h-[80vh] overflow-y-auto">
-        {/* Close Button */}
+      <div className="relative z-10 max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl">
         <button
-          title="btn"
-          onClick={() => closeModal()}
-          className="absolute top-4 right-4 text-gray-500 hover:text-black transition"
+          title="بستن"
+          onClick={closeModal}
+          className="absolute left-4 top-4 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
         >
-          <X color="red" size={18} />
+          <X size={18} />
         </button>
-        {/* ==============body=============== */}
-        {/* Header */}
-        <div className="flex items-center justify-around text-black border-b-2 p-4 rounded-t-2xl">
-          <h2 className="text-xs md:text-xl font-bold">
-            اطلاعات سفارش {customer?.lastName || "نام کاربر"}
+
+        <header className="flex flex-col gap-2 border-b border-slate-200 p-5 md:flex-row md:items-center md:justify-between">
+          <h2 className="text-lg font-bold text-slate-900">
+            اطلاعات سفارش {customer?.lastName ? `(${customer.lastName})` : ""}
           </h2>
-          <div>
-            <p className="mt-1">{toPersianDate(userOrder?.createdAt || "")}</p>
-          </div>
-        </div>
-        <div className="p-6">
+          <span className="text-sm text-slate-500">
+            تاریخ ثبت: {toPersianDate(userOrder?.createdAt || "")}
+          </span>
+        </header>
+
+        <div className="space-y-5 p-5">
           <UpdateUser
             customer={customer}
             setCustomer={setCustomer}
             closeModal={closeModal}
           />
-          {/* Order Info */}
           <UpdateStoreOrder
             userOrder={userOrder}
             setUserOrder={setUserOrder}
             closeModal={closeModal}
           />
         </div>
-        <div className="flex items-center justify-around">
+
+        <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 p-5">
           <button
-            onClick={HandleDeleteOrder}
-            className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition"
+            onClick={handleDeleteOrder}
+            className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
           >
+            <Trash2 className="h-4 w-4" />
             حذف سفارش
           </button>
+
           <button
-            onClick={HandleNoSms}
-            className="bg-yellow-500 text-white px-4 py-2 rounded-md hover:bg-yellow-600 transition"
+            onClick={handleCompleteWithoutSms}
+            className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600"
           >
-            ذخیره بدون پیام
+            ثبت بدون پیامک
           </button>
+
           <button
             onClick={() => sendPdfToBackend(userOrder, customer)}
-            className="bg-purple-500 text-white px-4 py-2 rounded-md hover:bg-purple-600 transition"
+            className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
           >
+            <Printer className="h-4 w-4" />
             پرینت
           </button>
-        </div>
+        </footer>
       </div>
     </div>
   );

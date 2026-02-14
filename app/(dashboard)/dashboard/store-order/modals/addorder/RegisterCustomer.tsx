@@ -1,44 +1,46 @@
 "use client";
+
 import DatePicker from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
-import { ArrowLeft, Smartphone, User } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { ArrowLeft, ArrowRight, Smartphone, User } from "lucide-react";
 import { toast } from "react-toastify";
+
 import { Customer } from "@/types";
 
 interface RegisterCustomerProps {
   customerData: Customer;
   setCustomerData: React.Dispatch<React.SetStateAction<Customer>>;
+  onBack: () => void;
+  onNext: () => void;
 }
 
 const RegisterCustomer = ({
   setCustomerData,
   customerData,
+  onBack,
+  onNext,
 }: RegisterCustomerProps) => {
-  const router = useRouter();
-
   const handleUserChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >,
   ) => {
     const { name, value } = e.target;
-    setCustomerData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setCustomerData((prev) => ({ ...prev, [name]: value }));
   };
-  const inputClasses =
-    "w-full px-8 py-1 text-base text-gray-700 bg-transparent rounded-lg focus:outline-none";
 
-  const wrapperClasses =
-    "relative w-auto bg-white rounded-2xl border shadow-md p-1.5 transition-all duration-150 ease-in-out hover:scale-105 hover:shadow-lg";
+  const handleSubmitCustomer = async () => {
+    if (!customerData.name || !customerData.lastName || !customerData.mobile) {
+      toast.warning("لطفا نام، نام خانوادگی و موبایل را تکمیل کنید.");
+      return;
+    }
 
-  const iconClasses =
-    "absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none";
+    if (customerData._id) {
+      onNext();
+      return;
+    }
 
-  const HandleCustomer = async () => {
     try {
       const res = await fetch("/api/admin/store-order/customer", {
         method: "POST",
@@ -47,136 +49,126 @@ const RegisterCustomer = ({
       });
       const data = await res.json();
 
-      if (res.status === 201) {
-        setCustomerData((prev) => ({ ...prev, _id: data.data._id }));
+      if (!res.ok) {
+        throw new Error(data?.message || "خطا در ثبت مشتری");
       }
-      toast.info(data.message);
-      router.push("/dashboard/store-order?step=3", {
-        scroll: false,
-      });
+
+      setCustomerData((prev) => ({ ...prev, _id: data.data._id }));
+      toast.success(data.message || "مشتری با موفقیت ثبت شد.");
+      onNext();
     } catch (err) {
       console.error(err);
-      toast.error("خطای سرور");
+      toast.error("ثبت مشتری انجام نشد.");
     }
   };
 
   return (
-    <div className="grid md:grid-cols-3 grid-cols-1 gap-5">
-      {/* Name */}
-      <div className={wrapperClasses}>
-        <input
-          type="text"
-          name="name"
-          value={customerData.name}
-          onChange={handleUserChange}
-          className={inputClasses}
-          placeholder="نام را وارد کنید"
-          disabled={!!customerData._id}
-        />
-        <div className={iconClasses}>
-          <User size={16} color="gray" />
-        </div>
+    <div className="space-y-4">
+      <div className="grid gap-3 md:grid-cols-2">
+        <label className="space-y-1 text-sm text-slate-600">
+          <span>نام</span>
+          <div className="relative">
+            <input
+              type="text"
+              name="name"
+              value={customerData.name}
+              onChange={handleUserChange}
+              disabled={!!customerData._id}
+              className="h-10 w-full rounded-xl border border-slate-300 pr-9 pl-3 outline-none ring-indigo-100 focus:ring-4"
+            />
+            <User className="absolute right-3 top-2.5 h-4 w-4 text-slate-400" />
+          </div>
+        </label>
+
+        <label className="space-y-1 text-sm text-slate-600">
+          <span>نام خانوادگی</span>
+          <div className="relative">
+            <input
+              type="text"
+              name="lastName"
+              value={customerData.lastName}
+              onChange={handleUserChange}
+              disabled={!!customerData._id}
+              className="h-10 w-full rounded-xl border border-slate-300 pr-9 pl-3 outline-none ring-indigo-100 focus:ring-4"
+            />
+            <User className="absolute right-3 top-2.5 h-4 w-4 text-slate-400" />
+          </div>
+        </label>
+
+        <label className="space-y-1 text-sm text-slate-600">
+          <span>جنسیت</span>
+          <select
+            title="جنسیت"
+            name="sex"
+            value={customerData.sex}
+            onChange={handleUserChange}
+            className="h-10 w-full rounded-xl border border-slate-300 px-3 outline-none ring-indigo-100 focus:ring-4"
+          >
+            <option value="">انتخاب جنسیت</option>
+            <option value="مرد">مرد</option>
+            <option value="زن">زن</option>
+          </select>
+        </label>
+
+        <label className="space-y-1 text-sm text-slate-600">
+          <span>شماره تماس</span>
+          <div className="relative">
+            <input
+              type="text"
+              name="mobile"
+              value={customerData.mobile}
+              disabled
+              className="h-10 w-full rounded-xl border border-slate-300 bg-slate-50 pr-9 pl-3"
+            />
+            <Smartphone className="absolute right-3 top-2.5 h-4 w-4 text-slate-400" />
+          </div>
+        </label>
+
+        <label className="space-y-1 text-sm text-slate-600">
+          <span>تاریخ تولد</span>
+          <DatePicker
+            calendar={persian}
+            locale={persian_fa}
+            value={customerData.birthday}
+            inputClass="h-10 w-full rounded-xl border border-slate-300 px-3 outline-none"
+            containerStyle={{ width: "100%" }}
+            onChange={(date) =>
+              setCustomerData((prev) => ({
+                ...prev,
+                birthday: date?.toString() || "",
+              }))
+            }
+          />
+        </label>
+
+        <label className="space-y-1 text-sm text-slate-600 md:col-span-2">
+          <span>توضیحات</span>
+          <textarea
+            value={customerData.description}
+            onChange={handleUserChange}
+            name="description"
+            className="min-h-24 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none ring-indigo-100 focus:ring-4"
+          />
+        </label>
       </div>
 
-      {/* Last Name */}
-      <div className={wrapperClasses}>
-        <input
-          type="text"
-          name="lastName"
-          value={customerData.lastName}
-          onChange={handleUserChange}
-          className={inputClasses}
-          placeholder="نام خانوادگی را وارد کنید"
-          disabled={!!customerData._id}
-        />
-        <div className={iconClasses}>
-          <User size={16} color="gray" />
-        </div>
-      </div>
-
-      {/* Sex */}
-      <div className={wrapperClasses}>
-        <select
-          title="sex"
-          name="sex"
-          className={inputClasses}
-          value={customerData.sex}
-          onChange={handleUserChange}
-          disabled={!!customerData.sex}
+      <div className="flex items-center justify-between border-t border-slate-200 pt-4">
+        <button
+          onClick={onBack}
+          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600"
         >
-          <option value="">انتخاب جنسیت</option>
-          <option value="مرد">مرد</option>
-          <option value="زن">زن</option>
-        </select>
-        <div className={iconClasses}>
-          <User size={16} color="gray" />
-        </div>
-      </div>
+          <ArrowRight className="h-4 w-4" />
+          مرحله قبل
+        </button>
 
-      {/* Mobile */}
-      <div className={wrapperClasses}>
-        <input
-          type="text"
-          name="mobile"
-          value={customerData.mobile}
-          onChange={handleUserChange}
-          className={inputClasses}
-          placeholder="شماره تماس"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          disabled
-        />
-        <div className={iconClasses}>
-          <Smartphone size={16} color="gray" />
-        </div>
+        <button
+          onClick={handleSubmitCustomer}
+          className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+        >
+          ادامه
+          <ArrowLeft className="h-4 w-4" />
+        </button>
       </div>
-      {/* birday */}
-      <div className={wrapperClasses}>
-        {/* <label className="">تاریخ  از</label> */}
-        <DatePicker
-          calendarPosition="bottom-left"
-          inputClass={inputClasses}
-          containerStyle={{ width: "100%" }}
-          style={{
-            minWidth: "150px",
-          }}
-          calendar={persian}
-          locale={persian_fa}
-          value={customerData.birthday}
-          placeholder="تاریخ تولد"
-          onChange={(date) => {
-            setCustomerData((prev) => ({
-              ...prev,
-              birthday: date?.toString() || "",
-            }));
-          }}
-        />
-      </div>
-      {/* description */}
-      <div className={wrapperClasses}>
-        <textarea
-          value={customerData.description}
-          onChange={handleUserChange}
-          name="description"
-          id=""
-          placeholder="توضیحات"
-          className="h-6"
-        ></textarea>
-      </div>
-      <button
-        onClick={() =>
-          router.push("/dashboard/store-order?step=1", { scroll: false })
-        }
-      >
-        قبلی
-      </button>
-      <button
-        onClick={HandleCustomer}
-        className="w-full bg-blue-600 hover:bg-blue-700 transition-all duration-300 text-white p-2 rounded-lg cursor-pointer flex items-center justify-center gap-2"
-      >
-        ادامه
-        <ArrowLeft className="w-3 h-3" />
-      </button>
     </div>
   );
 };

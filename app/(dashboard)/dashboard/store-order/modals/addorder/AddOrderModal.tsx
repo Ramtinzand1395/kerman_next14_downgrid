@@ -1,129 +1,114 @@
 "use client";
 
-import { X } from "lucide-react";
-import RegisterCustomer from "./RegisterCustomer";
-import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import SearchCustomer from "./SearchCustomer";
-import AddCustomerOrder from "./AddCustomerOrder";
+import { X } from "lucide-react";
+
 import { Customer, storeOrder } from "@/types";
+import SearchCustomer from "./SearchCustomer";
+import RegisterCustomer from "./RegisterCustomer";
+import AddCustomerOrder from "./AddCustomerOrder";
+
+type OrdersByConsole = {
+  ps5: storeOrder[];
+  ps4: storeOrder[];
+  xbox: storeOrder[];
+  copy: storeOrder[];
+};
+
 interface AddOrderModalProps {
   closeModal: () => void;
-    setOrders: React.Dispatch<
-      React.SetStateAction<{
-        ps5: storeOrder[];
-        ps4: storeOrder[];
-        xbox: storeOrder[];
-        copy: storeOrder[];
-      }>
-    >;
+  setOrders: React.Dispatch<React.SetStateAction<OrdersByConsole>>;
 }
 
-const AddOrderModal = ({ closeModal , setOrders }: AddOrderModalProps) => {
-  const searchParams = useSearchParams();
+const defaultCustomer: Customer = {
+  _id: "",
+  name: "",
+  mobile: "",
+  lastName: "",
+  createdAt: "",
+  updatedAt: "",
+  sex: "",
+  birthday: "",
+  description: "",
+};
 
-  const router = useRouter();
-  const activeStep = parseInt(searchParams.get("step") || "1");
+const steps = [
+  { id: 1, title: "جستجوی مشتری" },
+  { id: 2, title: "تایید/ثبت اطلاعات" },
+  { id: 3, title: "ثبت سفارش" },
+] as const;
 
-  const steps = [
-    {
-      id: 1,
-      title: "جستجو شماره موبایل",
-    },
-    {
-      id: 2,
-      title: "تایید مشخصات",
-    },
-    {
-      id: 3,
-      title: "ثبت سفارش ",
-    },
-  ];
-  const [customerData, setCustomerData] = useState<Customer>({
-    _id: "",
-    name: "",
-    mobile: "",
-    lastName: "",
-    createdAt: "",
-    updatedAt: "",
-    sex: "",
-    birthday: "",
-    description: "",
-  });
+const AddOrderModal = ({ closeModal, setOrders }: AddOrderModalProps) => {
+  const [activeStep, setActiveStep] = useState<number>(1);
+  const [customerData, setCustomerData] = useState<Customer>(defaultCustomer);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Overlay */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={() => {
-          closeModal();
-          router.push("/dashboard/store-order");
-        }}
-      ></div>
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+        onClick={closeModal}
+      />
 
-      {/* Modal content */}
-      <div className="relative z-50 w-[80vw] max-w-3xl bg-white rounded-2xl p-6 shadow-xl animate-fadeIn h-[60vh] overflow-y-auto">
-        {/* Close Button */}
+      <div className="relative z-10 w-full max-w-4xl rounded-2xl border border-slate-200 bg-white p-5 shadow-xl md:p-6">
         <button
-          title="btn"
-          onClick={() => {
-            closeModal();
-            router.push("/dashboard/store-order");
-          }}
-          className="absolute top-4 right-4 text-gray-500 hover:text-black transition"
+          title="بستن"
+          onClick={closeModal}
+          className="absolute left-4 top-4 rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
         >
           <X size={18} />
         </button>
 
-        {/* Modal Body */}
-        <div className="flex lg:flex-row items-start gap-8 lg:gap-16">
-          {steps.map((step) => (
-            <div
-              onClick={() =>
-                router.push(`/dashboard/store-order?step=${step.id}`, {
-                  scroll: false,
-                })
-              }
-              className={`flex items-center gap-2 border-b-2 pb-4 cursor-pointer ${
-                step.id === activeStep ? "border-gray-800" : "border-gray-200"
-              }`}
-              key={step.id}
-            >
-              <div
-                className={`w-6 h-6 rounded-full text-white p-4 flex items-center justify-center ${
-                  step.id === activeStep ? "bg-gray-800" : "bg-gray-400"
-                }`}
-              >
-                {step.id}
-              </div>
-              <p
-                className={`text-sm font-medium ${
-                  step.id === activeStep ? "text-gray-800" : "text-gray-400"
-                }`}
-              >
-                {step.title}
-              </p>
-            </div>
-          ))}
+        <div className="mb-6 border-b border-slate-200 pb-4">
+          <h2 className="text-xl font-bold text-slate-900">افزودن سفارش جدید</h2>
+          <div className="mt-4 grid gap-2 md:grid-cols-3">
+            {steps.map((step) => {
+              const isActive = step.id === activeStep;
+              const isDone = step.id < activeStep;
+
+              return (
+                <div
+                  key={step.id}
+                  className={`flex items-center gap-2 rounded-xl border p-2.5 text-sm ${
+                    isActive
+                      ? "border-indigo-300 bg-indigo-50 text-indigo-700"
+                      : isDone
+                        ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                        : "border-slate-200 bg-slate-50 text-slate-500"
+                  }`}
+                >
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white font-bold">
+                    {step.id}
+                  </div>
+                  <span className="font-medium">{step.title}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
+
         {activeStep === 1 && (
           <SearchCustomer
             customerData={customerData}
             setCustomerData={setCustomerData}
+            onNext={() => setActiveStep(2)}
           />
         )}
+
         {activeStep === 2 && (
           <RegisterCustomer
             customerData={customerData}
             setCustomerData={setCustomerData}
+            onBack={() => setActiveStep(1)}
+            onNext={() => setActiveStep(3)}
           />
         )}
+
         {activeStep === 3 && (
           <AddCustomerOrder
             customerData={customerData}
             closeModal={closeModal}
             setOrders={setOrders}
+            onBack={() => setActiveStep(2)}
           />
         )}
       </div>
