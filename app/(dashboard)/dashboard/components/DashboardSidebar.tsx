@@ -1,4 +1,6 @@
 "use client";
+// todo
+// منو در حالت بسته خوب عمل نمیکنه
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -14,6 +16,9 @@ import {
   PlusCircle,
   Plus,
   Newspaper,
+  ChevronDown,
+  Sparkles,
+  ClipboardList,
 } from "lucide-react";
 import AddProductDrawer from "./drawers/AddProductDrawer";
 import AddCategoryDrawer from "./drawers/AddCategoryDrawer";
@@ -27,70 +32,55 @@ type DrawerAction =
   | "addCategory"
   | "addTag"
   | null;
-// --- Navigation Items ---
-export const navItems: NavItem[] = [
-  { label: "صفحه اصلی ", href: "/", icon: Home },
 
+interface NavItem {
+  label: string;
+  href?: string;
+  icon: typeof Home;
+  action?: DrawerAction;
+  children?: NavItem[];
+}
+
+export const navItems: NavItem[] = [
+  { label: "بازگشت به سایت", href: "/", icon: Home },
   { label: "داشبورد", href: "/dashboard", icon: Layers3 },
   { label: "پیام‌ها", href: "/dashboard/inbox", icon: Inbox },
   { label: "کاربران", href: "/dashboard/users", icon: Users },
   { label: "وبلاگ", href: "/dashboard/blogs", icon: Newspaper },
   {
-    label: "مدیریت محصولات",
-    icon: Plus,
+    label: "محصولات",
+    icon: ShoppingBag,
     children: [
       { label: "لیست محصولات", href: "/dashboard/products", icon: ShoppingBag },
-      { label: "افزودن محصول جدید", action: "addProduct", icon: PlusCircle },
+      { label: "افزودن محصول", action: "addProduct", icon: PlusCircle },
       { label: "دسته‌بندی‌ها", action: "addCategory", icon: Tag },
-      { label: "تگ ها", action: "addTag", icon: Tag },
+      { label: "تگ‌ها", action: "addTag", icon: Sparkles },
     ],
   },
-
   {
     label: "سفارشات",
-    icon: Plus,
-    href: "/dashboard/orders",
+    icon: ClipboardList,
     children: [
-      {
-        label: "ثبت سفارش",
-        href: "/dashboard/store-order",
-        icon: PlusCircle,
-      },
-      {
-        label: "سفارشات محصولات",
-        href: "/dashboard/orders",
-        icon: Layers3,
-      },
+      { label: "سفارشات محصول", href: "/dashboard/orders", icon: Layers3 },
+      { label: "ثبت سفارش دستی", href: "/dashboard/store-order", icon: Plus },
     ],
   },
 ];
-interface NavItem {
-  label: string;
-  href?: string;
-  icon: typeof Home; // Lucide icon type
-  action?: DrawerAction;
-  children?: NavItem[];
-}
 
-// --- Sidebar Component ---
 export default function DashboardSidebar() {
   const pathname = usePathname();
 
   const [expanded, setExpanded] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [UnreadCount, setUnreadCount] = useState(0);
-  // کشویی بودن منوها
-  const [openMenus, setOpenMenus] = useState<string[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [openMenus, setOpenMenus] = useState<string[]>(["محصولات", "سفارشات"]);
+  const [activeDrawer, setActiveDrawer] = useState<DrawerAction>(null);
 
   const toggleMenu = (label: string) => {
     setOpenMenus((prev) =>
-      prev.includes(label) ? prev.filter((i) => i !== label) : [...prev, label],
+      prev.includes(label) ? prev.filter((item) => item !== label) : [...prev, label]
     );
   };
-
-  const [activeDrawer, setActiveDrawer] = useState<
-    null | "addProduct" | "addGame" | "addImage" | "addCategory" | "addTag"
-  >(null);
 
   const handleAction = (action?: DrawerAction) => {
     if (action) setActiveDrawer(action);
@@ -98,175 +88,150 @@ export default function DashboardSidebar() {
 
   const closeDrawer = () => setActiveDrawer(null);
 
-  const countMsg = async () => {
-    try {
-      const res = await fetch("/api/admin/notifications/unread");
-      if (!res.ok) throw new Error("خطا در دریافت پیام‌ها");
-
-      const data = await res.json();
-      setUnreadCount(data);
-    } catch (err) {
-      toast.error("خطا در دریافت پیام‌ها");
-    }
-  };
-
   useEffect(() => {
+    const countMsg = async () => {
+      try {
+        const res = await fetch("/api/admin/notifications/unread");
+        if (!res.ok) throw new Error("خطا در دریافت پیام‌ها");
+        const data = await res.json();
+        setUnreadCount(Number(data) || 0);
+      } catch {
+        toast.error("خطا در دریافت پیام‌ها");
+      }
+    };
+
     countMsg();
   }, []);
+
   return (
     <>
-      {/* Mobile Button */}
       <button
-        title="MobileOpen"
+        title="باز کردن منو"
         onClick={() => setMobileOpen(true)}
-        className="md:hidden fixed top-4 right-4 z-50 bg-indigo-600  text-white p-2 rounded-lg shadow-md"
+        className="fixed right-4 top-4 z-50 rounded-xl bg-indigo-600 p-2 text-white shadow-lg md:hidden"
       >
-        <Menu className="w-5 h-5" />
+        <Menu className="h-5 w-5" />
       </button>
 
-      {/* Backdrop */}
       {mobileOpen && (
         <div
           onClick={() => setMobileOpen(false)}
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm md:hidden"
         />
       )}
 
-      {/* Sidebar */}
       <aside
-        className={`fixed md:static top-0 right-0 h-full bg-indigo-600  text-white shadow-lg flex flex-col z-50
-        transition-all duration-300
-        ${expanded ? "md:w-64" : "md:w-16"}
-        ${
-          mobileOpen
-            ? "w-64 translate-x-0"
-            : "w-0 md:w-auto md:translate-x-0 translate-x-full"
-        }
-        overflow-hidden`}
+        className={`dashboard-sidebar fixed right-0 top-0 z-50 flex h-full flex-col overflow-hidden transition-all duration-300 md:static
+        ${expanded ? "md:w-72" : "md:w-20"}
+        ${mobileOpen ? "w-72 translate-x-0" : "w-0 translate-x-full md:w-auto md:translate-x-0"}`}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-3 border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <button
-              title="Expanded"
-              onClick={() => setExpanded(!expanded)}
-              className="text-white"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
+        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+          <button title="تغییر حالت منو" onClick={() => setExpanded((prev) => !prev)}>
+            <Menu className="h-5 w-5 text-white" />
+          </button>
 
-            {expanded && (
-              <span className="font-semibold text-sm">پنل مدیریت</span>
-            )}
-          </div>
+          {expanded && (
+            <div className="text-right">
+              <p className="text-xs text-indigo-100/80">مدیریت فروشگاه</p>
+              <h2 className="font-bold text-white">DownGrid Admin</h2>
+            </div>
+          )}
 
-          <button
-            title="MobileOpen"
-            onClick={() => setMobileOpen(false)}
-            className="md:hidden"
-          >
-            <X className="w-5 h-5 text-white" />
+          <button title="بستن" onClick={() => setMobileOpen(false)} className="md:hidden">
+            <X className="h-5 w-5 text-white" />
           </button>
         </div>
 
-        {/* Items */}
-        <nav className="flex-1 overflow-y-auto px-2 py-4 text-sm">
-          {navItems.map((item, index) => {
+        <nav className="flex-1 space-y-2 overflow-y-auto px-3 py-4 text-sm">
+          {navItems.map((item) => {
             const isOpen = openMenus.includes(item.label);
+            const directActive = item.href && pathname === item.href;
+            const childActive = item.children?.some((child) => child.href && pathname === child.href);
 
-            return (
-              <div key={index} className="mb-2">
-                {/* اگر آیتم children دارد */}
-                {item.children ? (
+            if (item.children) {
+              return (
+                <div key={item.label} className="rounded-xl bg-white/5 p-1">
                   <button
                     onClick={() => toggleMenu(item.label)}
-                    className="flex items-center justify-between w-full p-2 rounded-lg cursor-pointer hover:bg-[#377dff] transition"
-                  >
-                    <div className="flex items-center gap-3">
-                      <item.icon className="w-4 h-4" />
-                      {expanded && <span>{item.label}</span>}
-                    </div>
-                  </button>
-                ) : (
-                  <Link
-                    href={item.href!}
-                    className={`flex items-center gap-3 p-2 rounded-lg transition relative
-               ${
-                 pathname === item.href
-                   ? "bg-[#0057f9] text-white"
-                   : "hover:bg-[#377dff]"
-               }
-                       `}
-                  >
-                    <item.icon className="w-4 h-4" />
-                    {expanded && <span>{item.label}</span>}
-
-                    {item.label === "پیام‌ها" && UnreadCount > 0 && (
-                      <span
-                        className={`mr-auto bg-red-500 text-white  rounded-full ${expanded ? "relative  px-2 py-0.5 text-xs" : "absolute top-0 right-0 px-0.5 text-[10px]"} `}
-                      >
-                        {UnreadCount}
-                      </span>
-                    )}
-                  </Link>
-                )}
-
-                {/* Submenu */}
-                {item.children && isOpen && (
-                  <div
-                    className={`mt-1 border-r border-white/10 cursor-pointer ${
-                      expanded ? "mr-3" : "mr-0"
+                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 transition ${
+                      childActive ? "bg-white/20 text-white" : "hover:bg-white/10 text-indigo-50"
                     }`}
                   >
-                    {item.children.map((sub, i) => {
-                      const isActive = pathname === sub.href;
+                    <span className="flex items-center gap-3">
+                      <item.icon className="h-4 w-4" />
+                      {expanded && item.label}
+                    </span>
 
-                      // اگر آیتم action داشته باشد → دکمه باشد
-                      if (sub.action) {
+                    {expanded && (
+                      <ChevronDown className={`h-4 w-4 transition ${isOpen ? "rotate-180" : ""}`} />
+                    )}
+                  </button>
+
+                  {isOpen && (
+                    <div className="mt-1 space-y-1 border-r border-white/10 pr-2">
+                      {item.children.map((sub) => {
+                        const isActive = sub.href ? pathname === sub.href : false;
+
+                        if (sub.action) {
+                          return (
+                            <button
+                              key={sub.label}
+                              onClick={() => handleAction(sub.action)}
+                              className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-right text-indigo-100 transition hover:bg-white/10 hover:text-white"
+                            >
+                              <sub.icon className="h-4 w-4" />
+                              {expanded && sub.label}
+                            </button>
+                          );
+                        }
+
                         return (
-                          <button
-                            key={i}
-                            onClick={() => handleAction(sub.action)}
-                            className="flex items-center gap-3 p-2 rounded-md text-gray-300 hover:text-white hover:bg-[#377dff] w-full text-right"
+                          <Link
+                            key={sub.label}
+                            href={sub.href!}
+                            className={`flex items-center gap-3 rounded-md px-3 py-2 transition ${
+                              isActive
+                                ? "bg-indigo-500 text-white"
+                                : "text-indigo-100 hover:bg-white/10 hover:text-white"
+                            }`}
                           >
-                            <sub.icon className="w-4 h-4" />
-                            {expanded && <span>{sub.label}</span>}
-                          </button>
+                            <sub.icon className="h-4 w-4" />
+                            {expanded && sub.label}
+                          </Link>
                         );
-                      }
-
-                      // اگر href دارد → لینک باشد
-                      return (
-                        <Link
-                          key={i}
-                          href={sub.href!}
-                          className={`flex items-center gap-3 p-2 rounded-md transition w-full
-            ${
-              isActive
-                ? "bg-[#0057f9] text-white"
-                : "text-gray-300 hover:text-white hover:bg-[#377dff]"
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
             }
-          `}
-                        >
-                          <sub.icon className="w-4 h-4" />
-                          {expanded && <span>{sub.label}</span>}
-                        </Link>
-                      );
-                    })}
-                  </div>
+
+            return (
+              <Link
+                key={item.label}
+                href={item.href!}
+                className={`relative flex items-center gap-3 rounded-xl px-3 py-2 transition ${
+                  directActive
+                    ? "bg-indigo-500 text-white shadow"
+                    : "text-indigo-100 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                <item.icon className="h-4 w-4" />
+                {expanded && item.label}
+
+                {item.label === "پیام‌ها" && unreadCount > 0 && (
+                  <span className="mr-auto rounded-full bg-rose-500 px-2 py-0.5 text-xs text-white">
+                    {unreadCount}
+                  </span>
                 )}
-              </div>
+              </Link>
             );
           })}
         </nav>
       </aside>
-      {/* دراورها */}
-      {activeDrawer === "addProduct" && (
-        <AddProductDrawer onClose={closeDrawer} />
-      )}
-      {activeDrawer === "addCategory" && (
-        <AddCategoryDrawer onClose={closeDrawer} />
-      )}
+
+      {activeDrawer === "addProduct" && <AddProductDrawer onClose={closeDrawer} />}
+      {activeDrawer === "addCategory" && <AddCategoryDrawer onClose={closeDrawer} />}
       {activeDrawer === "addTag" && <AddTagDrawer onClose={closeDrawer} />}
     </>
   );

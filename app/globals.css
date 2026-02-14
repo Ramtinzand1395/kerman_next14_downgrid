@@ -1,4 +1,4 @@
-@tailwind base;
+/* @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -6,4 +6,86 @@
 body{
     background-color: #f3f4f9 ;
 }
+ */
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #f3f4f9;
+}
+
+.dashboard-shell {
+  background: radial-gradient(
+    circle at top right,
+    #e0e7ff 0%,
+    #f8fafc 38%,
+    #f1f5f9 100%
+  );
+}
+
+.dashboard-sidebar {
+  background: linear-gradient(180deg, #312e81 0%, #3730a3 50%, #4338ca 100%);
+}
+
+.dashboard-main {
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: rgba(248, 250, 252, 0.92);
+  backdrop-filter: blur(8px);
+}
+
+.dashboard-content {
+  padding: 1rem;
+}
+
+.dashboard-panel {
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  padding: 1rem;
+}
+
+.dashboard-stat-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  background: #ffffff;
+  padding: 1rem;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dashboard-content table {
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.dashboard-content h1 {
+  color: #0f172a;
+}
+
+@media (min-width: 768px) {
+  .dashboard-topbar {
+    padding: 1rem 1.5rem;
+  }
+
+  .dashboard-content {
+    padding: 1.5rem;
+  }
+}

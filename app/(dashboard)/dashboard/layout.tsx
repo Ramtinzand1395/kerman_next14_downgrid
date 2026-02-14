@@ -4,7 +4,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AuthProvider from "@/app/AuthProvider";
 import DashboardSidebar from "./components/DashboardSidebar";
-
+import DashboardTopbar from "./components/DashboardTopbar";
 const vazir = localFont({
   src: "./Vazir.woff2",
   display: "swap",
@@ -32,12 +32,15 @@ export default function DashLayout({
         <link rel="icon" href="/favicon.ico" />
       </head>
 
-      <body className="flex h-screen overflow-hidden">
+    <body className="dashboard-shell flex h-screen overflow-hidden">
         <AuthProvider>
           {/* Sidebar ثابت در سمت راست */}
           <DashboardSidebar />
           {/* محتوای صفحات */}
-          <main className="flex-1 overflow-y-auto  ">{children}</main>
+          <main className="dashboard-main flex-1 overflow-y-auto">
+            <DashboardTopbar />
+           <div className="dashboard-content">{children}</div>
+         </main>
         </AuthProvider>
         <ToastContainer
           position="bottom-right"
