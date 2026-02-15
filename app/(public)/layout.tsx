@@ -40,7 +40,7 @@ export const metadata = {
     apple: "/apple-touch-icon.png",
   },
   alternates: {
-    canonical: "https://kermanatari.ir",
+    canonical: "/",
   },
   openGraph: {
     title: "کرمان آتاری | فروشگاه تخصصی بازی و لوازم گیمینگ در کرمان",

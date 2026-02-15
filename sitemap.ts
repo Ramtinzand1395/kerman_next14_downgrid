@@ -29,12 +29,12 @@ const staticRoutes: MetadataRoute.Sitemap = [
     changeFrequency: "monthly",
     priority: 0.6,
   },
-  {
-    url: `${SITE_URL}/cart`,
-    lastModified: new Date(),
-    changeFrequency: "weekly",
-    priority: 0.5,
-  },
+  // {
+  //   url: `${SITE_URL}/cart`,
+  //   lastModified: new Date(),
+  //   changeFrequency: "weekly",
+  //   priority: 0.5,
+  // },
 ];
 
 type ProductSitemapRow = {
