@@ -8,6 +8,7 @@ import Trust from "./components/landing/Trust";
 import Subscribed from "./components/landing/Subscribed";
 import Faq from "./components/landing/Faq";
 import Link from "next/link";
+import MainPageBanners from "./components/landing/MainPageBanners";
 // todo
 // دکمه در موبایل برای صفحه اول بزرگه
 const now = new Date();
@@ -40,6 +41,7 @@ export default async function Home() {
       <Hero />
       <div className="mx-2 md:mx-10">
         {/* اسلایدر تخفیف */}
+         <MainPageBanners />
         <SliderContainer
           games={discountedProducts}
           title="تخفیف امروز"
