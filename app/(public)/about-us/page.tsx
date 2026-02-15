@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     title: "درباره ما | کرمان آتاری",
     description:
       "خرید و فروش بازی‌ها و کنسول‌های پلی‌استیشن در کرمان با قیمت مناسب و گارانتی معتبر از سال ۱۳۴۰",
-    images: ["/about.jpg"],
+    images: ["/1.webp"],
     type: "website",
   },
 };

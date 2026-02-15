@@ -2,7 +2,7 @@ import "@/app/globals.css";
 import "react-loading-skeleton/dist/skeleton.css";
 // todo
 // پاک بشهSpeedInsights
-import { SpeedInsights } from "@vercel/speed-insights/next"
+// import { SpeedInsights } from "@vercel/speed-insights/next"
 import localFont from "next/font/local";
 import Script from "next/script";
 import { ToastContainer } from "react-toastify";
@@ -35,9 +35,8 @@ export const metadata = {
     "کرمان آتاری",
   ],
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
-    apple: "/apple-touch-icon.png",
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
   },
   alternates: {
     canonical: "/",
@@ -75,7 +74,7 @@ export default function RootLayout({
         <AuthProvider>
           <Navbar />
           <main id="content">{children}</main>
-          <SpeedInsights />
+          {/* <SpeedInsights /> */}
           <Footer />
         </AuthProvider>
 
@@ -107,7 +106,7 @@ export default function RootLayout({
                   "@id": "https://kermanatari.ir/#organization",
                   name: "کرمان آتاری",
                   url: "https://kermanatari.ir",
-                  logo: "https://kermanatari.ir/logo.png",
+                  logo: "https://kermanatari.ir/atari-seeklogo.svg",
                   sameAs: [
                     "https://instagram.com/kermanatari",
                     "https://t.me/kermanatari",

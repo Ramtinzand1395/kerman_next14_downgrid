@@ -78,13 +78,6 @@ export default function ContactForm() {
           <span>کرمان، میدان شهدا، خیابان زینبیه، جنب داروخانه</span>
         </div>
 
-        <iframe
-          className="w-full h-64 mt-6 rounded-xl border-0"
-          loading="lazy"
-          allowFullScreen
-          referrerPolicy="no-referrer-when-downgrade"
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3321.249014057633!2d57.063!3d30.283"
-        ></iframe>
       </div>
     </div>
   );

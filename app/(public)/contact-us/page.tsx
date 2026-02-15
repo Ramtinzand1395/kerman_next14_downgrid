@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     title: "تماس با ما | کرمان آتاری",
     description:
       "راه‌های ارتباطی با کرمان آتاری شامل فرم تماس، شماره موبایل و موقعیت مکانی.",
-    images: ["/about.jpg"],
+    images: ["/1.webp"],
     type: "website",
   },
 };

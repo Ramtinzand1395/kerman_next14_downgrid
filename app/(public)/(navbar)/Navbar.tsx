@@ -11,182 +11,165 @@ import {
   ChevronDown,
   FileText,
   Menu,
+  Sparkles,
+  ArrowUpLeft,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import MobileMenu from "./MobileMenu";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import CartDropdown from "./CartDropdown";
 import UserBtn from "./UserBtn";
-
-const categories = [
-  {
-    name: "کنسول‌ها",
-    slug: "consoles",
-    subcategories: [
-      { name: "پلی‌استیشن 5", slug: "playstation-5" },
-      { name: "پلی‌استیشن 4", slug: "playstation-4" },
-      { name: "پلی‌استیشن 3", slug: "playstation-3" },
-    ],
-  },
-  {
-    name: "بازی‌ها",
-    slug: "games",
-    subcategories: [
-      { name: "بازی اکانتی", slug: "account-games" },
-      { name: "بازی دیسکی", slug: "disc-games" },
-      { name: "گیفت کارت", slug: "gift-cards" },
-    ],
-  },
-  {
-    name: "لوازم جانبی",
-    slug: "accessories",
-    subcategories: [
-      { name: "دسته بازی", slug: "controllers" },
-      { name: "هدست و هدفون", slug: "headsets" },
-      { name: "پایه و خنک‌کننده", slug: "stands-coolers" },
-    ],
-  },
-  {
-    name: "خدمات",
-    slug: "services",
-    subcategories: [
-      { name: "نصب بازی", slug: "game-installation" },
-      { name: "اکانت قانونی", slug: "legal-accounts" },
-      { name: "تعمیرات کنسول", slug: "console-repair" },
-    ],
-  },
-  {
-    name: "لوازم گیمینگ",
-    slug: "gaming",
-    subcategories: [
-      { name: "موس", slug: "mouse" },
-      { name: "کیبرد", slug: "keyboard" },
-      { name: "پاوربانک", slug: "powerbank" },
-    ],
-  },
-];
+import { categories } from "../constants/categories";
 
 const menuItems = [
-  { name: "خانه", link: "/", icon: <Home className="w-4 h-4 ml-1" /> },
+  { name: "خانه", link: "/", icon: <Home className="h-4 w-4 ml-1" /> },
   {
     name: "دسته‌بندی‌ها",
     link: "#",
-    icon: <Grid2x2 className="w-4 h-4 ml-1" />,
+    icon: <Grid2x2 className="h-4 w-4 ml-1" />,
   },
   {
     name: "درباره ما",
     link: "/about-us",
-    icon: <Info className="w-4 h-4 ml-1" />,
+    icon: <Info className="h-4 w-4 ml-1" />,
   },
   {
     name: "تماس با ما",
     link: "/contact-us",
-    icon: <Phone className="w-4 h-4 ml-1" />,
+    icon: <Phone className="h-4 w-4 ml-1" />,
   },
   {
     name: "وبلاگ",
-   link: "/blog",
-    icon: <FileText className="w-4 h-4 ml-1" />,
+    link: "/blog",
+    icon: <FileText className="h-4 w-4 ml-1" />,
   },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
 
   const [showCategories, setShowCategories] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<"user" | "cart" | null>(
-    null
+  const [searchValue, setSearchValue] = useState("");
+  const [activeDropdown, setActiveDropdown] = useState<"user" | "cart" | null>(null);
+
+  const quickLinks = useMemo(
+    () =>
+      categories.flatMap((cat) =>
+        cat.subcategories.map((sub) => ({
+          ...sub,
+          parentName: cat.name,
+        }))
+      ),
+    []
   );
+
+  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const query = searchValue.trim();
+    if (!query) {
+      router.push("/products?sort=newest&page=1");
+      return;
+    }
+
+    const params = new URLSearchParams();
+    params.set("q", query);
+    params.set("page", "1");
+    params.set("sort", "newest");
+    router.push(`/products?${params.toString()}`);
+  };
 
   return (
     <>
       <nav
-        className="flex items-center justify-between bg-white p-2 md:px-10 shadow-lg sticky top-0 z-50"
+        className="sticky top-0 z-50 flex items-center justify-between border-b border-slate-200/70 bg-white/95 px-3 py-2 shadow-lg backdrop-blur-md md:px-10"
         role="navigation"
         aria-label="منوی اصلی سایت کرمان آتاری"
       >
-        {/* لوگو */}
-        <Link
-          href="/"
-          className="flex items-center gap-2"
-          aria-label="صفحه اصلی کرمان آتاری"
-        >
+        <Link href="/" className="flex items-center gap-2" aria-label="صفحه اصلی کرمان آتاری">
           <Image
             width={30}
             height={30}
             alt="لوگوی کرمان آتاری"
             src="/atari-seeklogo.svg"
-            className="w-8 h-8"
+            className="h-8 w-8"
             priority
           />
-          <h1 className="text-black font-bold md:text-lg text-base">
+          <h1 className="text-base font-extrabold tracking-tight text-slate-900 md:text-lg">
             Kerman Atari
           </h1>
         </Link>
 
-        {/* منوی اصلی */}
-        <ul className="hidden md:flex text-gray-700 items-center gap-6 relative">
-          {menuItems.map((item, i) => (
+        <ul className="relative hidden items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-2 text-gray-700 shadow-sm md:flex">
+          {menuItems.map((item) => (
             <li
-              key={i}
-              onMouseEnter={() =>
-                item.name === "دسته‌بندی‌ها" && setShowCategories(true)
-              }
-              onMouseLeave={() =>
-                item.name === "دسته‌بندی‌ها" && setShowCategories(false)
-              }
+              key={item.name}
+              onMouseEnter={() => item.name === "دسته‌بندی‌ها" && setShowCategories(true)}
+              onMouseLeave={() => item.name === "دسته‌بندی‌ها" && setShowCategories(false)}
               className="relative"
             >
               <Link
                 href={item.link}
                 aria-label={`رفتن به ${item.name}`}
-                className={`group flex items-center gap-1 text-sm transition relative
-               ${
-                 pathname === item.link ? "text-blue-600" : "text-gray-700"
-               } hover:text-blue-600 `}
+                className={`group relative flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium transition ${
+                  pathname === item.link
+                    ? "bg-blue-50 text-blue-600"
+                    : "text-gray-700 hover:bg-slate-100 hover:text-blue-600"
+                }`}
               >
                 {item.icon}
                 {item.name}
-                {item.name === "دسته‌بندی‌ها" && (
-                  <ChevronDown className="w-5 h-5 ml-1" />
-                )}
-                <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-[#427D9D] transition-all duration-300 group-hover:w-full"></span>
+                {item.name === "دسته‌بندی‌ها" && <ChevronDown className="ml-1 h-4 w-4" />}
+                <span className="absolute -bottom-0 left-3 h-0.5 w-0 bg-[#427D9D] transition-all duration-300 group-hover:w-[calc(100%-24px)]" />
               </Link>
 
               {item.name === "دسته‌بندی‌ها" && (
                 <AnimatePresence>
                   {showCategories && (
                     <motion.div
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 15 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.25 }}
-                      className="fixed left-0 w-screen bg-gray-100/95 shadow-xl rounded-b-xl p-5 text-black flex items-center justify-around z-50"
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.2 }}
+                      className="fixed left-0 z-50 w-screen rounded-b-3xl border-b border-slate-200 bg-gradient-to-b from-white to-slate-100 p-8 text-black shadow-xl"
                       onMouseEnter={() => setShowCategories(true)}
                       onMouseLeave={() => setShowCategories(false)}
                     >
-                      {categories.map((cat) => (
-                        <div key={cat.name}>
-                          <h3 className="font-bold text-[#001A6E] mb-2">
-                            {cat.name}
-                          </h3>
-                          <ul className="space-y-1">
-                            {cat.subcategories.map((sub) => (
-                              <li key={sub.slug}>
-                                <Link
-                                  href={`/products?sort=newest&category=${sub.slug}&page=1`}
-                                  className="text-sm hover:text-blue-600 transition"
-                                  aria-label={`رفتن به ${cat.slug}`}
-                                >
-                                  {sub.name}
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
+                      <div className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-4 lg:grid-cols-5">
+                        {categories.map((cat) => (
+                          <section
+                            key={cat.slug}
+                            className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm"
+                            aria-label={`دسته ${cat.name}`}
+                          >
+                            <Link
+                              href={`/products?sort=newest&category=${cat.slug}&page=1`}
+                              className="mb-2 flex items-center justify-between font-bold text-[#001A6E] hover:text-blue-700"
+                            >
+                              <span className="flex items-center gap-1">
+                                <Sparkles className="h-4 w-4" />
+                                {cat.name}
+                              </span>
+                              <ArrowUpLeft className="h-4 w-4" />
+                            </Link>
+                            <p className="mb-2 text-xs leading-6 text-slate-500">{cat.description}</p>
+                            <ul className="space-y-1">
+                              {cat.subcategories.map((sub) => (
+                                <li key={sub.slug}>
+                                  <Link
+                                    href={`/products?sort=newest&category=${sub.slug}&page=1`}
+                                    className="text-sm text-slate-700 transition hover:text-blue-600"
+                                  >
+                                    {sub.name}
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          </section>
+                        ))}
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -195,44 +178,51 @@ export default function Navbar() {
           ))}
         </ul>
 
-        {/* نوار جستجو */}
-        <div className="items-center lg:w-[20vw] hidden lg:flex bg-white rounded-md px-2 shadow-inner">
+        <form
+          onSubmit={handleSearch}
+          className="hidden items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 shadow-inner lg:flex lg:w-[22vw]"
+          role="search"
+          aria-label="جستجو در محصولات"
+        >
           <input
-            className="bg-transparent flex-1 p-1 text-black outline-none text-sm"
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            className="flex-1 bg-transparent p-1 text-sm text-black outline-none"
             placeholder="جستجو در محصولات..."
             type="search"
-            aria-label="جستجو در محصولات"
+            name="q"
+            autoComplete="off"
           />
-          <Search className="text-black w-4 h-4" />
-        </div>
-
-        {/* کاربر و سبد خرید */}
-        <div className="flex items-center gap-2 md:gap-4 relative">
-          <UserBtn
-            setActiveDropdown={setActiveDropdown}
-            activeDropdown={activeDropdown}
-          />
-
-          {/* سبد خرید */}
-          <CartDropdown
-            setActiveDropdown={setActiveDropdown}
-            activeDropdown={activeDropdown}
-          />
-          {/* منوی موبایل */}
           <button
-            className="md:hidden text-black"
+            type="submit"
+            className="rounded-full p-1 text-slate-500 transition hover:bg-slate-100 hover:text-blue-600"
+            aria-label="اجرای جستجو"
+          >
+            <Search className="h-4 w-4" />
+          </button>
+        </form>
+
+        <div className="relative flex items-center gap-2 md:gap-4">
+          <UserBtn setActiveDropdown={setActiveDropdown} activeDropdown={activeDropdown} />
+
+          <CartDropdown setActiveDropdown={setActiveDropdown} activeDropdown={activeDropdown} />
+
+          <button
+            className="rounded-xl border border-slate-200 bg-white p-2 text-black shadow-sm md:hidden"
             onClick={() => setMobileMenuOpen(true)}
             title="Open_Menu"
           >
-            <Menu className="w-5 h-5 " />
+            <Menu className="h-5 w-5" />
           </button>
         </div>
+
         {mobileMenuOpen && (
           <MobileMenu
             isOpen={mobileMenuOpen}
             onClose={() => setMobileMenuOpen(false)}
             menuItems={menuItems}
             categories={categories}
+            quickLinks={quickLinks}
           />
         )}
       </nav>

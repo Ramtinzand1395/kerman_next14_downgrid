@@ -2,29 +2,35 @@
 
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronDown, User } from "lucide-react";
+import { X, ChevronDown, User, Sparkles, Search } from "lucide-react";
 import { signOut } from "next-auth/react";
-import { useState } from "react";
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface Category {
   name: string;
   slug: string;
+  description: string;
   subcategories: { name: string; slug: string }[];
 }
+
 interface MenuItem {
   name: string;
   link: string;
   icon: React.ReactNode;
 }
+
 interface UserWithRole {
   name?: string | null;
   role?: string;
 }
+
 interface MobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
   menuItems: MenuItem[];
   categories: Category[];
+  quickLinks: { name: string; slug: string; parentName: string }[];
   user?: UserWithRole | null;
 }
 
@@ -33,93 +39,160 @@ export default function MobileMenu({
   onClose,
   menuItems,
   categories,
+  quickLinks,
   user,
 }: MobileMenuProps) {
+  const router = useRouter();
   const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [openUserMenu, setOpenUserMenu] = useState<boolean>(false);
+  const [searchValue, setSearchValue] = useState("");
+
+  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const params = new URLSearchParams();
+    params.set("sort", "newest");
+    params.set("page", "1");
+
+    if (searchValue.trim()) {
+      params.set("q", searchValue.trim());
+    }
+
+    router.push(`/products?${params.toString()}`);
+    onClose();
+  };
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* بک‌دراپ تار */}
           <motion.div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
           />
 
-          {/* منوی اسلایدی */}
           <motion.div
-            className="fixed top-0 right-0 w-3/4 sm:w-1/2 h-full bg-white shadow-xl z-50 overflow-y-auto"
+            className="fixed right-0 top-0 z-50 h-full w-[86%] overflow-y-auto border-l border-slate-200 bg-white shadow-xl sm:w-1/2"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "tween", duration: 0.3 }}
           >
-            {/* هدر */}
-            <div className="flex items-center justify-between border-b border-gray-200 p-4">
-              <h2 className="text-lg font-bold text-[#001A6E]">منوی سایت</h2>
-              <button onClick={onClose} aria-label="بستن منو">
-                <X className="w-6 h-6 text-gray-700" />
-              </button>
+            <div className="sticky top-0 border-b border-gray-200 bg-white/95 p-4 backdrop-blur-sm">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-lg font-extrabold text-[#001A6E]">منوی سایت</h2>
+                <button
+                  onClick={onClose}
+                  aria-label="بستن منو"
+                  className="rounded-lg border border-slate-200 p-1"
+                >
+                  <X className="h-6 w-6 text-gray-700" />
+                </button>
+              </div>
+
+              <form
+                onSubmit={handleSearch}
+                className="flex items-center gap-1 rounded-xl border border-slate-200 px-2 py-1"
+              >
+                <input
+                  type="search"
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  className="w-full bg-transparent py-1 text-sm text-gray-800 outline-none"
+                  placeholder="جستجو در محصولات..."
+                  aria-label="جستجو در محصولات"
+                />
+                <button
+                  type="submit"
+                  className="rounded-lg p-1 text-slate-500 hover:bg-slate-100"
+                >
+                  <Search className="h-4 w-4" />
+                </button>
+              </form>
             </div>
 
-            {/* آیتم‌ها */}
-            <div className="p-4 space-y-4">
+            <div className="space-y-3 p-4">
+              {quickLinks.length > 0 && (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                  <h3 className="text-xs font-bold text-slate-500">دسترسی سریع</h3>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {quickLinks.slice(0, 6).map((link) => (
+                      <Link
+                        key={link.slug}
+                        href={`/products?sort=newest&category=${link.slug}&page=1`}
+                        onClick={onClose}
+                        className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700"
+                      >
+                        {link.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {menuItems.map((item) => (
-                <div key={item.name}>
-                  {/* دسته‌بندی‌ها با کشویی */}
+                <div
+                  key={item.name}
+                  className="rounded-2xl border border-slate-200/70 bg-slate-50/80 px-3 py-2"
+                >
                   {item.name === "دسته‌بندی‌ها" ? (
                     <>
                       <button
                         onClick={() =>
-                          setOpenCategory(
-                            openCategory === item.name ? null : item.name
-                          )
+                          setOpenCategory(openCategory === item.name ? null : item.name)
                         }
-                        className="flex justify-between w-full items-center text-gray-800 text-base font-medium hover:text-blue-600 transition"
+                        className="flex w-full items-center justify-between text-base font-semibold text-gray-800 transition hover:text-blue-600"
+                        aria-expanded={openCategory === item.name}
                       >
-                        <div className="flex items-center gap-2">
+                        <span className="flex items-center gap-2">
                           {item.icon}
                           {item.name}
-                        </div>
+                        </span>
                         <ChevronDown
-                          className={`w-4 h-4 transition-transform ${
+                          className={`h-4 w-4 transition-transform ${
                             openCategory === item.name ? "rotate-180" : ""
                           }`}
                         />
                       </button>
+
                       <AnimatePresence>
                         {openCategory === item.name && (
                           <motion.ul
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            className="pl-5 mt-2 space-y-2 overflow-hidden"
+                            className="mt-2 space-y-3 overflow-hidden rounded-xl border border-slate-200 bg-white p-3"
                           >
                             {categories.map((cat) => (
-                              <div key={cat.slug}>
-                                <p className="text-[#001A6E] font-bold">
+                              <li key={cat.slug} className="space-y-1">
+                                <Link
+                                  href={`/products?sort=newest&category=${cat.slug}&page=1`}
+                                  onClick={onClose}
+                                  className="flex items-center gap-1 font-bold text-[#001A6E]"
+                                >
+                                  <Sparkles className="h-3.5 w-3.5" />
                                   {cat.name}
-                                </p>
-                                <ul className="pl-3 space-y-1">
+                                </Link>
+
+                                <p className="text-xs text-slate-500">{cat.description}</p>
+
+                                <ul className="space-y-1 pr-2">
                                   {cat.subcategories.map((sub) => (
                                     <li key={sub.slug}>
                                       <Link
-                                        aria-label={`رفتن به ${cat.slug}`}
+                                        aria-label={`رفتن به ${sub.name}`}
                                         href={`/products?sort=newest&category=${sub.slug}&page=1`}
                                         onClick={onClose}
-                                        className="block text-gray-600 text-sm hover:text-blue-600 transition"
+                                        className="block text-sm text-gray-600 transition hover:text-blue-600"
                                       >
                                         {sub.name}
                                       </Link>
                                     </li>
                                   ))}
                                 </ul>
-                              </div>
+                              </li>
                             ))}
                           </motion.ul>
                         )}
@@ -129,8 +202,7 @@ export default function MobileMenu({
                     <Link
                       href={item.link}
                       onClick={onClose}
-                      aria-label="بستن"
-                      className="flex items-center gap-2 text-gray-800 text-base font-medium hover:text-blue-600 transition"
+                      className="flex items-center gap-2 py-1 text-base font-semibold text-gray-800 transition hover:text-blue-600"
                     >
                       {item.icon}
                       {item.name}
@@ -139,71 +211,71 @@ export default function MobileMenu({
                 </div>
               ))}
 
-              {/* منوی کاربر لاگین */}
               {user && (
-                <div className="border-t border-gray-200 pt-4 mt-4">
+                <div className="mt-5 rounded-2xl border border-gray-200 bg-white p-3">
                   <button
                     onClick={() => setOpenUserMenu(!openUserMenu)}
-                    className="flex justify-between w-full items-center text-gray-800 text-base font-medium hover:text-blue-600 transition"
+                    className="flex w-full items-center justify-between text-base font-medium text-gray-800 transition hover:text-blue-600"
                   >
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4" /> {user.name || "کاربر"}
-                    </div>
+                    <span className="flex items-center gap-2">
+                      <User className="h-4 w-4" /> {user.name || "کاربر"}
+                    </span>
                     <ChevronDown
-                      className={`w-4 h-4 transition-transform ${
+                      className={`h-4 w-4 transition-transform ${
                         openUserMenu ? "rotate-180" : ""
                       }`}
                     />
                   </button>
+
                   <AnimatePresence>
                     {openUserMenu && (
                       <motion.ul
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        className="pl-5 mt-2 space-y-2 overflow-hidden"
+                        className="mt-2 space-y-2 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-3"
                       >
-                        <div>
+                        <li>
                           <Link
                             href="/my-profile?step=1"
-                            aria-label="پروفایل من"
                             onClick={onClose}
-                            className="block text-gray-600 text-sm hover:text-blue-600 transition"
+                            className="block text-sm text-gray-600 transition hover:text-blue-600"
                           >
                             پروفایل من
                           </Link>
-                        </div>
-                        <div>
+                        </li>
+
+                        <li>
                           <Link
                             href="/my-profile?step=5"
-                            aria-label="سفارش‌ها"
                             onClick={onClose}
-                            className="block text-gray-600 text-sm hover:text-blue-600 transition"
+                            className="block text-sm text-gray-600 transition hover:text-blue-600"
                           >
                             سفارش‌ها
                           </Link>
-                        </div>
-                        <div>
+                        </li>
+
+                        <li>
                           <Link
-                            aria-label=" لیست علاقه‌مندی‌ ها"
                             href="/my-profile?step=2"
                             onClick={onClose}
-                            className="block text-gray-600 text-sm hover:text-blue-600 transition"
+                            className="block text-sm text-gray-600 transition hover:text-blue-600"
                           >
                             لیست علاقه‌مندی‌ها
                           </Link>
-                        </div>
-                        <div>
+                        </li>
+
+                        <li>
                           <button
                             onClick={() => {
                               signOut({ callbackUrl: "/" });
                               onClose();
                             }}
-                            className="w-full text-left text-red-600 hover:text-red-700 text-sm"
+                            className="w-full text-left text-sm text-red-600 hover:text-red-700"
                           >
                             خروج
                           </button>
-                        </div>
+                        </li>
                       </motion.ul>
                     )}
                   </AnimatePresence>
