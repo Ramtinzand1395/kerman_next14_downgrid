@@ -1,4 +1,5 @@
 "use client";
+
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, User } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
@@ -10,10 +11,7 @@ interface UserBtnProps {
   activeDropdown: DropdownType;
 }
 
-export default function UserBtn({
-  setActiveDropdown,
-  activeDropdown,
-}: UserBtnProps) {
+export default function UserBtn({ setActiveDropdown, activeDropdown }: UserBtnProps) {
   const { data: session } = useSession();
 
   return (
@@ -24,11 +22,12 @@ export default function UserBtn({
           onMouseEnter={() => setActiveDropdown("user")}
           onMouseLeave={() => setActiveDropdown(null)}
         >
-          <div className=" items-center gap-2 cursor-pointer flex  whitespace-nowrap ">
-            <span className="text-xs md:text-sm text-black">
+          <div className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-200 bg-white px-2 py-1.5 md:gap-2 md:border-0 md:px-0 md:py-0">
+            <User className="h-4 w-4 text-black md:hidden" />
+            <span className="hidden text-sm text-black md:inline">
               {session.user?.username}
             </span>
-            <ChevronDown className="text-black w-3 h-3" />
+            <ChevronDown className="hidden h-3 w-3 text-black md:block" />
           </div>
 
           <AnimatePresence>
@@ -38,44 +37,45 @@ export default function UserBtn({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.25 }}
-                className="absolute left-0 top-10 w-48 bg-white shadow-lg rounded-xl border border-gray-200 p-3 z-50"
+                className="absolute left-0 top-10 z-50 hidden w-48 rounded-xl border border-gray-200 bg-white p-3 shadow-lg md:block"
               >
                 {session.user && session.user.role === "user" ? (
                   <>
                     <Link
                       href="/my-profile"
-                      className="flex items-center gap-2 text-gray-800 hover:text-blue-600 transition text-sm py-2"
+                      className="flex items-center gap-2 py-2 text-sm text-gray-800 transition hover:text-blue-600"
                     >
-                      <User className="w-4 h-4" /> پروفایل من
+                      <User className="h-4 w-4" /> پروفایل من
                     </Link>
                     <Link
                       href="/my-profile"
-                      className="flex items-center gap-2 text-gray-800 hover:text-blue-600 transition text-sm py-2"
+                      className="flex items-center gap-2 py-2 text-sm text-gray-800 transition hover:text-blue-600"
                     >
-                      <User className="w-4 h-4" /> سفارش ها
+                      <User className="h-4 w-4" /> سفارش ها
                     </Link>
                     <Link
                       href="/my-profile?step=2"
-                      className="flex items-center gap-2 text-gray-800 hover:text-blue-600 transition text-sm py-2"
+                      className="flex items-center gap-2 py-2 text-sm text-gray-800 transition hover:text-blue-600"
                     >
-                      <User className="w-4 h-4" /> لیست علاقه مندی ها
+                      <User className="h-4 w-4" /> لیست علاقه مندی ها
                     </Link>
                   </>
                 ) : (
                   <Link
                     href="/dashboard"
-                    className="flex items-center gap-2 text-gray-800 hover:text-blue-600 transition text-sm py-2"
+                    className="flex items-center gap-2 py-2 text-sm text-gray-800 transition hover:text-blue-600"
                   >
-                    <User className="w-4 h-4" /> داشبورد
+                    <User className="h-4 w-4" /> داشبورد
                   </Link>
                 )}
+
                 <button
                   onClick={() => signOut({ callbackUrl: "/" })}
-                  className="w-full text-left flex items-center gap-2 text-red-600 hover:text-red-700 transition text-sm py-2 cursor-pointer"
+                  className="flex w-full cursor-pointer items-center gap-2 py-2 text-left text-sm text-red-600 transition hover:text-red-700"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="w-4 h-4"
+                    className="h-4 w-4"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -94,8 +94,12 @@ export default function UserBtn({
           </AnimatePresence>
         </div>
       ) : (
-        <Link href="/auth/login" aria-label="ورود به حساب کاربری">
-          <User className="text-black w-5 h-5 hover:text-[#427D9D] transition" />
+        <Link
+          href="/auth/login"
+          aria-label="ورود به حساب کاربری"
+          className="rounded-lg border border-slate-200 bg-white p-1.5 md:border-0 md:bg-transparent md:p-0"
+        >
+          <User className="h-5 w-5 text-black transition hover:text-[#427D9D]" />
         </Link>
       )}
     </>
