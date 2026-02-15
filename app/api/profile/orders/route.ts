@@ -3,6 +3,10 @@ import Order from "@/model/Order";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "../../auth/[...nextauth]/options";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const runtime = "nodejs";
+export const fetchCache = "force-no-store";
 
 export async function GET() {
   await dbConnect();

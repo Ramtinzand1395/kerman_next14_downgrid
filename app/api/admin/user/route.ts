@@ -7,6 +7,10 @@ import "@/model/Order";
 import "@/model/Comment";
 import "@/model/Favorite";
 import "@/model/Address";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const runtime = "nodejs";
+export const fetchCache = "force-no-store";
 
 export async function GET(req: Request) {
   await dbConnect();

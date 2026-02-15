@@ -17,6 +17,7 @@ const vazir = localFont({
 });
 
 export const metadata = {
+  metadataBase: new URL("https://kermanatari.ir"),
   title: {
     default: "کرمان آتاری | فروشگاه بازی و لوازم گیمینگ در کرمان",
     template: "%s | کرمان آتاری",

@@ -3,6 +3,10 @@ import dbConnect from "@/lib/mongodb";
 import StoreOrder from "@/model/StoreOrder";
 import { authOptions } from "../../../auth/[...nextauth]/options";
 import { getServerSession } from "next-auth";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const runtime = "nodejs";
+export const fetchCache = "force-no-store";
 
 export async function GET(req: Request) {
   await dbConnect();
@@ -19,10 +23,18 @@ export async function GET(req: Request) {
   let startDate = new Date();
 
   switch (range) {
-    case "daily": startDate.setDate(now.getDate() - 1); break;
-    case "weekly": startDate.setDate(now.getDate() - 7); break;
-    case "monthly": startDate.setMonth(now.getMonth() - 1); break;
-    case "yearly": startDate.setFullYear(now.getFullYear() - 1); break;
+    case "daily":
+      startDate.setDate(now.getDate() - 1);
+      break;
+    case "weekly":
+      startDate.setDate(now.getDate() - 7);
+      break;
+    case "monthly":
+      startDate.setMonth(now.getMonth() - 1);
+      break;
+    case "yearly":
+      startDate.setFullYear(now.getFullYear() - 1);
+      break;
   }
 
   const orders = await StoreOrder.find({
@@ -30,7 +42,7 @@ export async function GET(req: Request) {
   }).select("createdAt price");
 
   const grouped: Record<string, number> = {};
-  orders.forEach(order => {
+  orders.forEach((order) => {
     const day = order.createdAt.toISOString().split("T")[0];
     if (!grouped[day]) grouped[day] = 0;
     grouped[day] += order.price;
@@ -38,7 +50,7 @@ export async function GET(req: Request) {
 
   const data = Object.keys(grouped)
     .sort()
-    .map(day => ({ date: day, price: grouped[day] }));
+    .map((day) => ({ date: day, price: grouped[day] }));
 
   return NextResponse.json({ data });
 }

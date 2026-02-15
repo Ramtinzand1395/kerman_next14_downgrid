@@ -12,8 +12,12 @@ async function sendSMS({
   to: string;
   args: string[];
 }) {
-  const url =
-    "https://console.melipayamak.com/api/send/shared/cba17fa6705a4348b2e2d10279cf3fb9";
+  // const url =
+  //   "https://console.melipayamak.com/api/send/shared/cba17fa6705a4348b2e2d10279cf3fb9";
+  const url = process.env.MELIPAYAMAK_SHARED_URL;
+  if (!url) {
+    throw new Error("MELIPAYAMAK_SHARED_URL is not configured");
+  }
   const payload = { bodyId, to, args };
   const res = await fetch(url, {
     method: "POST",
@@ -21,6 +25,9 @@ async function sendSMS({
     body: JSON.stringify(payload),
   });
   const text = await res.text();
+   if (!res.ok) {
+    throw new Error(`SMS provider error (${res.status}): ${text}`);
+  }
   return { status: res.status, body: text };
 }
 
@@ -44,5 +51,6 @@ export async function sendOtpToUser(mobile: string) {
     to: mobile,
     args: [otp],
   });
-  return otpDoc.otp;
+  // return otpDoc.otp;
+  return otpDoc._id.toString();
 }

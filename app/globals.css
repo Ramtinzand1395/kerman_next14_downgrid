@@ -67,9 +67,6 @@ body {
   overflow: hidden;
 }
 
-.dashboard-content h1 {
-  color: #0f172a;
-}
 
 @media (min-width: 768px) {
   .dashboard-topbar {
