@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-
+// todo
+// عکس ها فرمت درست بشه و تغییر کنه و انیمیشن
 const banners = [
   {
     title: "پیشنهاد ویژه کنسول",
@@ -16,7 +17,7 @@ const banners = [
     description: "محبوب‌ترین بازی‌ها را همین امروز با تخفیف‌های ویژه تهیه کن.",
     cta: "خرید بازی",
     href: "/products?sort=newest&category=games&page=1",
-    bgImage: "/1.jpg",
+    bgImage: "/3.webp",
     icon: "/icons/game.webp",
     color: "from-fuchsia-900/80 via-purple-900/70 to-rose-900/70",
   },
@@ -25,7 +26,7 @@ const banners = [
     description: "از دسته و هدست تا تجهیزات کامل گیمینگ برای تجربه حرفه‌ای‌تر.",
     cta: "دیدن لوازم جانبی",
     href: "/products?sort=newest&category=accessories&page=1",
-    bgImage: "/2.jpg",
+    bgImage: "/2.webp",
     icon: "/icons/action-figure.webp",
     color: "from-emerald-900/80 via-teal-900/70 to-cyan-900/70",
   },
@@ -34,7 +35,7 @@ const banners = [
     description: "آرشیو بازی‌های اکانتی با تحویل سریع و پشتیبانی خرید.",
     cta: "مشاهده بازی‌های اکانتی",
     href: "/products?sort=newest&category=account-games&page=1",
-    bgImage: "/4.jpg",
+    bgImage: "/4.webp",
     icon: "/icons/tic-tac-toe.webp",
     color: "from-amber-900/80 via-orange-900/70 to-red-900/70",
   },
