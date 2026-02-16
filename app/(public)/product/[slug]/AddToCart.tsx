@@ -24,7 +24,7 @@ export default function AddToCart({ product }: AddToCartProps) {
     <>
       <button
         onClick={() => handleAddToCart()}
-        className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-red-200 transition-all transform active:scale-95 flex-1 max-w-[200px]"
+        className="bg-red-500 hover:bg-red-600 text-white font-bold text-xs sm:text-base py-2 px-4 sm:py-3 sm:px-8 rounded-xl shadow-lg shadow-red-200 transition-all transform active:scale-95 flex-1 max-w-[200px]"
       >
         افزودن به سبد
       </button>

@@ -4,7 +4,8 @@ import Comment from "@/model/Comment";
 import Notification from "@/model/Notification";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../auth/[...nextauth]/options";
-
+import Product from "@/model/Product";
+import { revalidatePath } from "next/cache";
 export async function PUT(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "superadmin")
@@ -16,14 +17,22 @@ export async function PUT(req: NextRequest) {
   const comment = await Comment.findByIdAndUpdate(
     body.id,
     { verified: true },
-    { new: true }
+    { new: true },
   );
 
   // نوتیفیکیشن مربوطه رو خوانده شده کن
   await Notification.updateMany(
     { type: "comment", product: comment?.product },
-    { isRead: true }
+    { isRead: true },
   );
-
+  if (comment?.product) {
+    const product = await Product.findById(comment.product)
+      .select("slug")
+      .lean();
+    if (product?.slug) {
+      revalidatePath(`/product/${product.slug}`);
+      revalidatePath(`/api/products/${product.slug}`);
+    }
+  }
   return NextResponse.json({ success: true, comment });
 }
