@@ -13,7 +13,6 @@ export interface IUser extends Document {
   favorites: mongoose.Types.ObjectId[];
   addresses: mongoose.Types.ObjectId[];
   orders: mongoose.Types.ObjectId[];
-  // products: mongoose.Types.ObjectId[];
   comments: mongoose.Types.ObjectId[];
   tempPayments: mongoose.Types.ObjectId[];
   createdAt: Date;
@@ -31,15 +30,13 @@ const UserSchema = new Schema<IUser>(
       enum: ["user", "admin", "superadmin"],
       default: "user",
     },
-    newsletter: { type: Boolean, default: true },
+    newsletter: { type: Boolean, default: false },
     gender: { type: String },
     birthday: { type: Date },
     nationalCode: { type: String },
-    // رفرنس‌ها به سایر Collectionها
     favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "Favorite" }],
     addresses: [{ type: mongoose.Schema.Types.ObjectId, ref: "Address" }],
     orders: [{ type: mongoose.Schema.Types.ObjectId, ref: "Order" }],
-    // products: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
     comments: [{ type: mongoose.Schema.Types.ObjectId, ref: "Comment" }],
     tempPayments: [
       { type: mongoose.Schema.Types.ObjectId, ref: "TempPayment" },
