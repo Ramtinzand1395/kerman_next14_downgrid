@@ -6,6 +6,7 @@ import Cart from "../components/Cart";
 import FilterProducts from "./components/FilterProducts";
 import Pagination from "./components/Pagination";
 import SortProducts from "./components/SortProducts";
+import ProductsSearch from "./components/ProductsSearch";
 
 export const metadata: Metadata = {
   title: "محصولات",
@@ -30,8 +31,12 @@ export const metadata: Metadata = {
     locale: "fa_IR",
   },
 };
-
-async function getProducts(params: { category?: string; sort?: string; page?: string }) {
+async function getProducts(params: {
+  category?: string;
+  sort?: string;
+  page?: string;
+  q?: string;
+}) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
   const url = new URL(`${baseUrl}/api/products/all_products`);
 
@@ -46,7 +51,9 @@ async function getProducts(params: { category?: string; sort?: string; page?: st
   if (params.page) {
     url.searchParams.append("page", params.page);
   }
-
+  if (params.q) {
+    url.searchParams.append("q", params.q);
+  }
   const res = await fetch(url.toString(), { cache: "no-store" });
 
   if (!res.ok) {
@@ -112,10 +119,13 @@ export default async function ProductsPage({
       />
 
       <header className="mb-6 rounded-3xl bg-gradient-to-l from-blue-600 to-indigo-700 p-5 text-white shadow-lg md:p-8">
-        <h1 className="text-2xl font-extrabold md:text-4xl">همه محصولات فروشگاه</h1>
+        <h1 className="text-2xl font-extrabold md:text-4xl">
+          همه محصولات فروشگاه
+        </h1>
         <p className="mt-2 max-w-3xl text-sm leading-7 text-blue-50 md:text-base">
-          در این صفحه می‌توانید جدیدترین کنسول‌ها، بازی‌ها و لوازم جانبی را مشاهده
-          کنید، فیلتر بگذارید و با سرعت بالا محصول مناسب خودتان را پیدا کنید.
+          در این صفحه می‌توانید جدیدترین کنسول‌ها، بازی‌ها و لوازم جانبی را
+          مشاهده کنید، فیلتر بگذارید و با سرعت بالا محصول مناسب خودتان را پیدا
+          کنید.
         </p>
 
         <div className="mt-4 grid grid-cols-2 gap-2 text-xs sm:max-w-md sm:grid-cols-3 sm:text-sm">
@@ -126,8 +136,8 @@ export default async function ProductsPage({
       </header>
 
       <SortProducts totalProducts={data.total || 0} />
-
-       <div className="mt-5 flex flex-col gap-5 md:flex-row md:items-start">
+      <ProductsSearch initialQuery={searchParams.q || ""} />
+      <div className="mt-5 flex flex-col gap-5 md:flex-row md:items-start">
         <FilterProducts />
 
         <div className="w-full">
@@ -148,11 +158,13 @@ export default async function ProductsPage({
       </div>
 
       <article className="mt-8 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm md:p-6">
-        <h2 className="text-lg font-bold text-gray-800 md:text-xl">راهنمای خرید سریع</h2>
+        <h2 className="text-lg font-bold text-gray-800 md:text-xl">
+          راهنمای خرید سریع
+        </h2>
         <p className="mt-2 text-sm leading-7 text-gray-600">
-          برای رسیدن به نتیجه بهتر، ابتدا دسته‌بندی محصول را انتخاب کنید و سپس با
-          ابزار مرتب‌سازی، کالاها را بر اساس قیمت یا جدیدترین‌ها ببینید. این ساختار
-          باعث می‌شود تجربه کاربری سریع‌تر و نرخ تبدیل بالاتر باشد.
+          برای رسیدن به نتیجه بهتر، ابتدا دسته‌بندی محصول را انتخاب کنید و سپس
+          با ابزار مرتب‌سازی، کالاها را بر اساس قیمت یا جدیدترین‌ها ببینید. این
+          ساختار باعث می‌شود تجربه کاربری سریع‌تر و نرخ تبدیل بالاتر باشد.
         </p>
       </article>
     </section>
