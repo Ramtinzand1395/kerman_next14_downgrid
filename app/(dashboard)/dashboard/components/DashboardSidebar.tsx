@@ -87,7 +87,7 @@ export default function DashboardSidebar() {
   };
 
   const closeDrawer = () => setActiveDrawer(null);
-
+ const handleLinkClick = () => setMobileOpen(false);
   useEffect(() => {
     const countMsg = async () => {
       try {
@@ -102,7 +102,9 @@ export default function DashboardSidebar() {
 
     countMsg();
   }, []);
-
+useEffect(() => {
+    setMobileOpen(false);
+   }, [pathname]);
   return (
     <>
       <button
@@ -210,6 +212,7 @@ export default function DashboardSidebar() {
               <Link
                 key={item.label}
                 href={item.href!}
+                  onClick={handleLinkClick}
                 className={`relative flex items-center gap-3 rounded-xl px-3 py-2 transition ${
                   directActive
                     ? "bg-indigo-500 text-white shadow"
