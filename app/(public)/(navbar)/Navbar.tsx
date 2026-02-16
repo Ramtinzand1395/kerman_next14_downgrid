@@ -56,7 +56,7 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [activeDropdown, setActiveDropdown] = useState<"user" | "cart" | null>(
-    null
+    null,
   );
 
   const quickLinks = useMemo(
@@ -65,9 +65,9 @@ export default function Navbar() {
         cat.subcategories.map((sub) => ({
           ...sub,
           parentName: cat.name,
-        }))
+        })),
       ),
-    []
+    [],
   );
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
@@ -105,7 +105,7 @@ export default function Navbar() {
             className="h-8 w-8"
             priority
           />
-          <h1 className="hidden truncate text-base font-extrabold tracking-tight text-slate-900 sm:block md:text-lg">
+          <h1 className=" truncate text-base font-extrabold tracking-tight text-slate-900 sm:block md:text-lg">
             Kerman Atari
           </h1>
         </Link>
@@ -125,7 +125,7 @@ export default function Navbar() {
               <Link
                 href={item.link}
                 aria-label={`رفتن به ${item.name}`}
-                className={`group relative flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium transition ${
+                className={`group relative flex items-center gap-1 rounded-full px-3 py-2 sm:text-xs lg:text-sm font-medium transition ${
                   pathname === item.link
                     ? "bg-blue-50 text-blue-600"
                     : "text-gray-700 hover:bg-slate-100 hover:text-blue-600"
@@ -146,12 +146,12 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute left-0 top-12 z-50 w-[520px] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
+                    className="absolute right-0 top-12 z-50 w-[720px] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
                   >
                     <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                       <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
                         <Sparkles className="h-4 w-4 text-blue-600" />
-                        دسته‌بندی‌های محبوب
+                        دسته‌بندی‌ها 
                       </div>
 
                       <Link
@@ -159,12 +159,12 @@ export default function Navbar() {
                         className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline"
                         aria-label="مشاهده همه محصولات"
                       >
-                        مشاهده همه
+                       محصولات مشاهده همه
                         <ArrowUpLeft className="h-3 w-3" />
                       </Link>
                     </div>
 
-                    <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="mt-3 grid grid-cols-3 gap-2">
                       {categories.map((cat) => (
                         <div
                           key={cat.name}
@@ -238,22 +238,21 @@ export default function Navbar() {
             <Menu className="h-5 w-5" />
           </button>
         </div>
-
-        {mobileMenuOpen && (
-          <MobileMenu
-            isOpen={mobileMenuOpen}
-            onClose={() => setMobileMenuOpen(false)}
-            menuItems={menuItems}
-            categories={categories}
-            quickLinks={quickLinks}
-            user={
-              session?.user
-                ? { name: session.user.username, role: session.user.role }
-                : null
-            }
-          />
-        )}
       </nav>
+      {mobileMenuOpen && (
+        <MobileMenu
+          isOpen={mobileMenuOpen}
+          onClose={() => setMobileMenuOpen(false)}
+          menuItems={menuItems}
+          categories={categories}
+          quickLinks={quickLinks}
+          user={
+            session?.user
+              ? { name: session.user.username, role: session.user.role }
+              : null
+          }
+        />
+      )}
     </>
   );
 }

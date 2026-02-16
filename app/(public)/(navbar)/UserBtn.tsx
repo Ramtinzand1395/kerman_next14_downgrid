@@ -1,18 +1,140 @@
+// "use client";
+
+// import { AnimatePresence, motion } from "framer-motion";
+// import { ChevronDown, User } from "lucide-react";
+// import { signOut, useSession } from "next-auth/react";
+// import Link from "next/link";
+
+// type DropdownType = "user" | "cart" | null;
+// interface UserBtnProps {
+//   setActiveDropdown: React.Dispatch<React.SetStateAction<DropdownType>>;
+//   activeDropdown: DropdownType;
+// }
+
+// export default function UserBtn({ setActiveDropdown, activeDropdown }: UserBtnProps) {
+//   const { data: session } = useSession();
+
+//   return (
+//     <>
+//       {session ? (
+//         <div
+//           className="relative"
+//           onMouseEnter={() => setActiveDropdown("user")}
+//           onMouseLeave={() => setActiveDropdown(null)}
+//         >
+//           <div className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-200 bg-white px-2 py-1.5 md:gap-2 md:border-0 md:px-0 md:py-0">
+//             <User className="h-4 w-4 text-black" />
+//             {/* <span className="hidden text-sm text-black md:inline">
+//               {session.user?.username}
+//             </span> */}
+//             <ChevronDown className="hidden h-3 w-3 text-black md:block" />
+//           </div>
+
+//           <AnimatePresence>
+//             {activeDropdown === "user" && (
+//               <motion.div
+//                 initial={{ opacity: 0, y: -10 }}
+//                 animate={{ opacity: 1, y: 0 }}
+//                 exit={{ opacity: 0, y: -10 }}
+//                 transition={{ duration: 0.25 }}
+//                 className="absolute left-0 top-10 z-50 hidden w-48 rounded-xl border border-gray-200 bg-white p-3 shadow-lg md:block"
+//               >
+//                 {session.user && session.user.role === "user" ? (
+//                   <>
+//                     <Link
+//                       href="/my-profile"
+//                       className="flex items-center gap-2 py-2 text-sm text-gray-800 transition hover:text-blue-600"
+//                     >
+//                       <User className="h-4 w-4" /> پروفایل من
+//                     </Link>
+//                     <Link
+//                       href="/my-profile"
+//                       className="flex items-center gap-2 py-2 text-sm text-gray-800 transition hover:text-blue-600"
+//                     >
+//                       <User className="h-4 w-4" /> سفارش ها
+//                     </Link>
+//                     <Link
+//                       href="/my-profile?step=2"
+//                       className="flex items-center gap-2 py-2 text-sm text-gray-800 transition hover:text-blue-600"
+//                     >
+//                       <User className="h-4 w-4" /> لیست علاقه مندی ها
+//                     </Link>
+//                   </>
+//                 ) : (
+//                   <Link
+//                     href="/dashboard"
+//                     className="flex items-center gap-2 py-2 text-sm text-gray-800 transition hover:text-blue-600"
+//                   >
+//                     <User className="h-4 w-4" /> داشبورد
+//                   </Link>
+//                 )}
+
+//                 <button
+//                   onClick={() => signOut({ callbackUrl: "/" })}
+//                   className="flex w-full cursor-pointer items-center gap-2 py-2 text-left text-sm text-red-600 transition hover:text-red-700"
+//                 >
+//                   <svg
+//                     xmlns="http://www.w3.org/2000/svg"
+//                     className="h-4 w-4"
+//                     fill="none"
+//                     viewBox="0 0 24 24"
+//                     stroke="currentColor"
+//                   >
+//                     <path
+//                       strokeLinecap="round"
+//                       strokeLinejoin="round"
+//                       strokeWidth={1.8}
+//                       d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 012 2v1"
+//                     />
+//                   </svg>
+//                   خروج از حساب
+//                 </button>
+//               </motion.div>
+//             )}
+//           </AnimatePresence>
+//         </div>
+//       ) : (
+//         <Link
+//           href="/auth/login"
+//           aria-label="ورود به حساب کاربری"
+//           className="rounded-lg border border-slate-200 bg-white p-1.5 md:border-0 md:bg-transparent md:p-0"
+//         >
+//           <User className="h-5 w-5 text-black transition hover:text-[#427D9D]" />
+//         </Link>
+//       )}
+//     </>
+//   );
+// }
+
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, User } from "lucide-react";
+import {
+  ChevronDown,
+  Heart,
+  LayoutDashboard,
+  LogOut,
+  Package,
+  User,
+  UserCircle2,
+} from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 
 type DropdownType = "user" | "cart" | null;
+
 interface UserBtnProps {
   setActiveDropdown: React.Dispatch<React.SetStateAction<DropdownType>>;
   activeDropdown: DropdownType;
 }
 
-export default function UserBtn({ setActiveDropdown, activeDropdown }: UserBtnProps) {
+export default function UserBtn({
+  setActiveDropdown,
+  activeDropdown,
+}: UserBtnProps) {
   const { data: session } = useSession();
+
+  const isUserDropdownOpen = activeDropdown === "user";
 
   return (
     <>
@@ -22,72 +144,83 @@ export default function UserBtn({ setActiveDropdown, activeDropdown }: UserBtnPr
           onMouseEnter={() => setActiveDropdown("user")}
           onMouseLeave={() => setActiveDropdown(null)}
         >
-          <div className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-200 bg-white px-2 py-1.5 md:gap-2 md:border-0 md:px-0 md:py-0">
-            <User className="h-4 w-4 text-black md:hidden" />
-            <span className="hidden text-sm text-black md:inline">
-              {session.user?.username}
-            </span>
-            <ChevronDown className="hidden h-3 w-3 text-black md:block" />
-          </div>
+          <button
+            title="account"
+            type="button"
+            onClick={() =>
+              setActiveDropdown(isUserDropdownOpen ? null : "user")
+            }
+            className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 transition hover:border-slate-300 md:gap-2 md:border-0 md:bg-transparent md:px-0 md:py-0"
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100">
+              <User className="h-4 w-4 text-slate-700" />
+            </div>
+
+            <ChevronDown
+              className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${
+                isUserDropdownOpen ? "rotate-180" : "rotate-0"
+              }`}
+            />
+          </button>
 
           <AnimatePresence>
-            {activeDropdown === "user" && (
+            {isUserDropdownOpen && (
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.25 }}
-                className="absolute left-0 top-10 z-50 hidden w-48 rounded-xl border border-gray-200 bg-white p-3 shadow-lg md:block"
+                initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                transition={{ duration: 0.2 }}
+                className="absolute left-0 top-12 z-50 w-72 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl md:w-80"
               >
-                {session.user && session.user.role === "user" ? (
-                  <>
+                <div className="mb-2 rounded-xl bg-slate-50 px-3 py-2.5">
+                  <p className="text-xs text-slate-500">ورود شده به حساب</p>
+                  <p className="mt-1 truncate text-sm font-semibold text-slate-700">
+                    {session.user?.name || session.user?.email || "کاربر"}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  {session.user && session.user.role === "user" ? (
+                    <>
+                      <Link
+                        href="/my-profile"
+                        className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-slate-700 transition hover:bg-slate-50 hover:text-blue-600"
+                      >
+                        <UserCircle2 className="h-4 w-4" /> پروفایل من
+                      </Link>
+
+                      <Link
+                        href="/my-profile"
+                        className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-slate-700 transition hover:bg-slate-50 hover:text-blue-600"
+                      >
+                        <Package className="h-4 w-4" /> سفارش ها
+                      </Link>
+
+                      <Link
+                        href="/my-profile?step=2"
+                        className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-slate-700 transition hover:bg-slate-50 hover:text-blue-600"
+                      >
+                        <Heart className="h-4 w-4" /> لیست علاقه مندی ها
+                      </Link>
+                    </>
+                  ) : (
                     <Link
-                      href="/my-profile"
-                      className="flex items-center gap-2 py-2 text-sm text-gray-800 transition hover:text-blue-600"
+                      href="/dashboard"
+                      className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-slate-700 transition hover:bg-slate-50 hover:text-blue-600"
                     >
-                      <User className="h-4 w-4" /> پروفایل من
+                      <LayoutDashboard className="h-4 w-4" /> داشبورد
                     </Link>
-                    <Link
-                      href="/my-profile"
-                      className="flex items-center gap-2 py-2 text-sm text-gray-800 transition hover:text-blue-600"
-                    >
-                      <User className="h-4 w-4" /> سفارش ها
-                    </Link>
-                    <Link
-                      href="/my-profile?step=2"
-                      className="flex items-center gap-2 py-2 text-sm text-gray-800 transition hover:text-blue-600"
-                    >
-                      <User className="h-4 w-4" /> لیست علاقه مندی ها
-                    </Link>
-                  </>
-                ) : (
-                  <Link
-                    href="/dashboard"
-                    className="flex items-center gap-2 py-2 text-sm text-gray-800 transition hover:text-blue-600"
-                  >
-                    <User className="h-4 w-4" /> داشبورد
-                  </Link>
-                )}
+                  )}
+                </div>
+
+                <div className="my-2 h-px bg-slate-200" />
 
                 <button
+                  type="button"
                   onClick={() => signOut({ callbackUrl: "/" })}
-                  className="flex w-full cursor-pointer items-center gap-2 py-2 text-left text-sm text-red-600 transition hover:text-red-700"
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-red-600 transition hover:bg-red-50 hover:text-red-700"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.8}
-                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 012 2v1"
-                    />
-                  </svg>
-                  خروج از حساب
+                  <LogOut className="h-4 w-4" /> خروج از حساب
                 </button>
               </motion.div>
             )}
