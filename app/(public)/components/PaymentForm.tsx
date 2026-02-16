@@ -1,129 +1,219 @@
 "use client";
-import useCartStore from "@/stores/cartStore";
+
 import { formatPrice } from "@/helpers/Price";
-import { ArrowLeft } from "lucide-react";
-import { useState } from "react";
-import { toast } from "react-toastify";
+import useCartStore from "@/stores/cartStore";
 import { Address } from "@/types";
+import { ArrowLeft, CreditCard, Loader2, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { toast } from "react-toastify";
+
 interface PaymentFormProps {
   selectedAddress: Address;
 }
+
 export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
   const { cart, clearCart } = useCartStore();
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
   const shippingCost = 0;
 
-  const total = cart.reduce((a, i) => a + i.price * i.quantity, 0);
-  const discount = cart.reduce(
-    (a, i) => a + (i.price - (i.discountPrice ?? i.price)) * i.quantity,
-    0
-  );
-  const final = total - discount + shippingCost;
-  const [Loading, setLoading] = useState(false);
+  const orderSummary = useMemo(() => {
+    const subtotal = cart.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
+
+    const discount = cart.reduce(
+      (sum, item) =>
+        sum + (item.price - (item.discountPrice ?? item.price)) * item.quantity,
+      0,
+    );
+
+    return {
+      subtotal,
+      discount,
+      final: subtotal - discount + shippingCost,
+    };
+  }, [cart]);
+
   const submitOrder = async () => {
+    if (cart.length === 0 || loading) return;
+
     setLoading(true);
 
-    const res = await fetch("/api/order", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        addressId: selectedAddress._id,
-        shippingCost,
-        items: cart.map((i) => ({
-          productId: i.id,
-          price: i.discountPrice ?? i.price,
-          quantity: i.quantity,
-        })),
-      }),
-    });
-
-    if (!res.ok) throw new Error();
-    const resOrder = await res.json();
-    const orderId = resOrder._id;
-
-    toast.success("سفارش با موفقیت ذخیره شد");
-    clearCart();
     try {
-      const res = await fetch(`/api/payment-zarinpal/request`, {
+      const createOrderResponse = await fetch("/api/order", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          orderId,
-          items: cart.map((i) => i.id),
-          finalPrice: final,
+          addressId: selectedAddress._id,
+          shippingCost,
+          items: cart.map((item) => ({
+            productId: item.id,
+            price: item.discountPrice ?? item.price,
+            quantity: item.quantity,
+          })),
         }),
       });
 
-      const data = await res.json();
-
-      if (data.success && data.url) {
-        router.push(data.url);
-      } else {
-        alert("خطا در ایجاد پرداخت:" + (data.error || "نامشخص"));
+      if (!createOrderResponse.ok) {
+        throw new Error("ORDER_CREATE_FAILED");
       }
-    } catch (error) {
-      console.error("خطای واقعی:", error);
-      console.log("مشکل از سمت سرور رخ داده است");
+
+      const order = await createOrderResponse.json();
+
+      const paymentResponse = await fetch("/api/payment-zarinpal/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: order._id,
+          items: cart.map((item) => item.id),
+          finalPrice: orderSummary.final,
+        }),
+      });
+
+      const paymentData = await paymentResponse.json();
+
+      if (!paymentResponse.ok || !paymentData.success || !paymentData.url) {
+        throw new Error("PAYMENT_REQUEST_FAILED");
+      }
+
+      toast.success("در حال انتقال به درگاه پرداخت...");
+      clearCart();
+      router.push(paymentData.url);
+    } catch {
+      toast.error("ایجاد سفارش یا اتصال به درگاه پرداخت ناموفق بود.");
+    } finally {
+      setLoading(false);
     }
   };
-  return (
-    <div className="max-w-5xl mx-auto mt-10 px-4">
-      <div className="bg-white rounded-2xl shadow-xl p-6 md:p-10">
-        <h1 className="text-2xl md:text-3xl font-bold mb-8 text-center text-gray-800">
-          پیش‌فاکتور سفارش
-        </h1>
 
-        {/* ITEMS */}
-        <div className="space-y-4 mb-10">
-          {cart.map((i) => (
-            <div
-              key={i.id}
-              className="flex flex-col md:flex-row items-center justify-between border rounded-xl p-4 hover:shadow transition"
-            >
-              <div className="font-medium">{i.title}</div>
-              <div className="flex gap-4 text-sm mt-2 md:mt-0">
-                <span>تعداد: {i.quantity}</span>
-                <span>قیمت: {formatPrice(i.discountPrice ?? i.price)}</span>
-                <span className="font-semibold text-green-600">
-                  جمع: {formatPrice((i.discountPrice ?? i.price) * i.quantity)}
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">
+            مرور نهایی و پرداخت
+          </h2>
+          <p className="text-sm text-slate-500">
+            اطلاعات سفارش را بررسی کنید و سپس وارد درگاه شوید.
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+          روش پرداخت: درگاه امن زرین‌پال
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        <section className="rounded-2xl border border-slate-200 p-4 lg:col-span-3">
+          <h3 className="mb-3 text-sm font-bold text-slate-800">اقلام سفارش</h3>
+
+          {cart.length === 0 ? (
+            <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">
+              سبد خرید خالی است.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {cart.map((item) => (
+                <article
+                  key={item.id}
+                  className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-semibold text-slate-900">{item.title}</p>
+                    <p className="text-slate-500">× {item.quantity}</p>
+                  </div>
+
+                  <div className="mt-1 flex items-center justify-between text-xs text-slate-600">
+                    <span>
+                      قیمت واحد: {formatPrice(item.discountPrice ?? item.price)}{" "}
+                      تومان
+                    </span>
+                    <span className="font-semibold text-slate-900">
+                      {formatPrice(
+                        (item.discountPrice ?? item.price) * item.quantity,
+                      )}{" "}
+                      تومان
+                    </span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <aside className="space-y-4 lg:col-span-2">
+          <div className="rounded-2xl border border-slate-200 p-4">
+            <h3 className="mb-2 text-sm font-bold text-slate-800">
+              آدرس ارسال
+            </h3>
+
+            <p className="flex items-center gap-1 text-sm font-semibold text-slate-900">
+              <MapPin className="h-4 w-4 text-cyan-700" />
+              {selectedAddress.province}، {selectedAddress.city}
+            </p>
+
+            <p className="mt-2 text-sm text-slate-600">
+              {selectedAddress.address}
+              {selectedAddress.plaque ? `، پلاک ${selectedAddress.plaque}` : ""}
+              {selectedAddress.unit ? `، واحد ${selectedAddress.unit}` : ""}
+            </p>
+
+            <p className="mt-1 text-xs text-slate-500">
+              کد پستی: {selectedAddress.postalCode}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 p-4 text-sm">
+            <div className="flex items-center justify-between text-slate-600">
+              <span>جمع کالاها</span>
+              <span>{formatPrice(orderSummary.subtotal)} تومان</span>
+            </div>
+
+            <div className="mt-2 flex items-center justify-between text-emerald-700">
+              <span>تخفیف</span>
+              <span>{formatPrice(orderSummary.discount)} تومان</span>
+            </div>
+
+            <div className="mt-2 flex items-center justify-between text-slate-600">
+              <span>هزینه ارسال</span>
+              <span>{formatPrice(shippingCost)} تومان</span>
+            </div>
+
+            <div className="mt-3 border-t border-slate-200 pt-3 text-base font-bold text-slate-900">
+              <div className="flex items-center justify-between">
+                <span>قابل پرداخت</span>
+                <span className="text-cyan-700">
+                  {formatPrice(orderSummary.final)} تومان
                 </span>
               </div>
             </div>
-          ))}
-        </div>
-
-        {/* TOTALS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm border-t pt-6">
-          <div className="flex justify-between">
-            <span>جمع کالاها</span>
-            <span>{formatPrice(total)}</span>
           </div>
-          <div className="flex justify-between text-red-500">
-            <span>تخفیف</span>
-            <span>-{formatPrice(discount)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>هزینه ارسال</span>
-            <span>{formatPrice(shippingCost)}</span>
-          </div>
-          <div className="flex justify-between font-bold text-lg">
-            <span>مبلغ نهایی</span>
-            <span className="text-green-600">{formatPrice(final)}</span>
-          </div>
-        </div>
-
-        {/* ACTION */}
-        <button
-          onClick={() => submitOrder()}
-          className="mt-10 w-full bg-blue-600 hover:bg-blue-700 transition text-white py-4 rounded-xl text-lg flex justify-center items-center gap-2"
-        >
-          {Loading ? "در حال انتقال به درگاه پرداخت" : "   ادامه به پرداخت"}
-          <ArrowLeft size={20} />
-        </button>
+        </aside>
       </div>
+
+      <button
+        type="button"
+        onClick={submitOrder}
+        disabled={loading || cart.length === 0}
+        className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-900 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+      >
+        {loading ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            در حال اتصال به درگاه...
+          </>
+        ) : (
+          <>
+            <CreditCard className="h-4 w-4" />
+            پرداخت و تکمیل سفارش
+            <ArrowLeft className="h-4 w-4" />
+          </>
+        )}
+      </button>
     </div>
   );
 }

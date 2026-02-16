@@ -1,135 +1,173 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { Truck, ShieldCheck, RefreshCw, Headphones } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
+
 import { addressSchema } from "@/validations/UserInfoValidation";
-import { Address, Order } from "@/types";
-import Skeleton from "react-loading-skeleton";
-import * as yup from "yup";
+import { Address } from "@/types";
+import { MapPin, PencilLine, ShieldCheck, Trash2, Truck } from "lucide-react";
 import { Iran } from "provinces-and-cities";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Skeleton from "react-loading-skeleton";
+import { toast } from "react-toastify";
+import * as yup from "yup";
 
 interface ShippingFormProps {
   selectedAddress: Address | null;
-  setSelectedAddress: (a: Address) => void;
+  setSelectedAddress: (address: Address) => void;
 }
+
 export default function ShippingForm({
   selectedAddress,
   setSelectedAddress,
 }: ShippingFormProps) {
   const [form, setForm] = useState<Partial<Address>>({});
-
-  const router = useRouter();
-
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const router = useRouter();
   const formRef = useRef<HTMLFormElement | null>(null);
+
+  const selectedProvinceCities = useMemo(
+    () =>
+      form.province
+        ? (Iran.main.find((province) => province.name === form.province)
+            ?.cities ?? [])
+        : [],
+    [form.province],
+  );
 
   const getAddresses = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/profile/address");
-      const data = await res.json();
+      const response = await fetch("/api/profile/address");
+      if (!response.ok) throw new Error();
+
+      const data = await response.json();
       setAddresses(data);
-    } catch (err) {
-      toast.error("خطا در دریافت آدرس‌ها");
-      console.log(err);
+    } catch {
+      toast.error("دریافت آدرس‌ها با مشکل مواجه شد.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    getAddresses();
+  }, []);
+
+  const resetForm = () => setForm({});
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
     try {
       await addressSchema.validate(form, { abortEarly: false });
-    } catch (err) {
-      if (err instanceof yup.ValidationError) {
-        err.inner.forEach((e) => toast.error(e.message));
+    } catch (error) {
+      if (error instanceof yup.ValidationError) {
+        error.inner.forEach((item) => toast.error(item.message));
       } else {
-        toast.error("خطای ناشناخته");
+        toast.error("اطلاعات وارد شده نامعتبر است.");
       }
       return;
     }
+
     try {
       const method = form._id ? "PUT" : "POST";
-      const res = await fetch("/api/profile/address", {
+      const response = await fetch("/api/profile/address", {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-      if (!res.ok) throw new Error();
-      toast.success("آدرس با موفقیت ذخیره شد");
-      setForm({});
-      getAddresses();
+
+      if (!response.ok) throw new Error();
+
+      toast.success(form._id ? "آدرس با موفقیت ویرایش شد." : "آدرس جدید ثبت شد.");
+      resetForm();
+      await getAddresses();
     } catch {
-      toast.error("خطا در ذخیره آدرس");
+      toast.error("ثبت آدرس انجام نشد.");
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("آیا مطمئن هستید می‌خواهید این آدرس را حذف کنید؟")) return;
+    if (!confirm("آیا از حذف این آدرس مطمئن هستید؟")) return;
+
     try {
-      const res = await fetch(`/api/profile/address?id=${id}`, {
+      const response = await fetch(`/api/profile/address?id=${id}`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error();
-      setAddresses((prev) => prev.filter((a) => a._id !== id));
-      toast.info("آدرس حذف شد");
+
+      if (!response.ok) throw new Error();
+
+      setAddresses((current) => current.filter((address) => address._id !== id));
+
+      if (selectedAddress?._id === id) {
+        sessionStorage.removeItem("checkout:selected-address");
+      }
+
+      toast.info("آدرس حذف شد.");
     } catch {
-      toast.error("خطا در حذف آدرس");
+      toast.error("حذف آدرس انجام نشد.");
     }
   };
 
-  const selectedProvinceCities = form.province
-    ? (Iran.main.find((p) => p.name === form.province)?.cities ?? [])
-    : [];
-
-  useEffect(() => {
-    getAddresses();
-  }, []);
   return (
-    <div className="p-6  mx-auto">
-      <h1 className="text-3xl font-bold mb-8 text-gray-800">آدرس‌های من</h1>
+    <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">مرحله آدرس تحویل</h2>
+          <p className="text-sm text-slate-500">
+            آدرس جدید ثبت کنید یا یکی از آدرس‌های قبلی را انتخاب کنید.
+          </p>
+        </div>
 
-      {/* فرم اضافه/ویرایش */}
+        <div className="rounded-xl border border-cyan-100 bg-cyan-50 px-3 py-2 text-xs text-cyan-800">
+          انتخاب آدرس برای ادامه پرداخت الزامی است.
+        </div>
+      </div>
+
       <form
-        onSubmit={handleSubmit}
         ref={formRef}
-        className="bg-white shadow-lg rounded-xl p-8 mb-10 border border-gray-200 w-full"
+        onSubmit={handleSubmit}
+        className="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:p-5"
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-5">
-          <div className="flex flex-col">
-            <label htmlFor="province" className="text-gray-700 text-sm mb-1">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label
+              htmlFor="province"
+              className="mb-1.5 block text-xs font-semibold text-slate-600"
+            >
               استان
             </label>
             <select
               id="province"
               value={form.province || ""}
-              onChange={(e) =>
-                setForm({ ...form, province: e.target.value, city: "" })
+              onChange={(event) =>
+                setForm({ ...form, province: event.target.value, city: "" })
               }
-              className="border-gray-300 border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition w-full"
+              className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm outline-none ring-cyan-500 focus:ring"
               required
             >
               <option value="">انتخاب استان</option>
-              {Iran.main.map((p) => (
-                <option key={p.id} value={p.name}>
-                  {p.name}
+              {Iran.main.map((province) => (
+                <option key={province.id} value={province.name}>
+                  {province.name}
                 </option>
               ))}
             </select>
           </div>
 
-          <div className="flex flex-col">
-            <label htmlFor="city" className="text-gray-700 text-sm mb-1">
+          <div>
+            <label
+              htmlFor="city"
+              className="mb-1.5 block text-xs font-semibold text-slate-600"
+            >
               شهر
             </label>
             <select
               id="city"
               value={form.city || ""}
-              onChange={(e) => setForm({ ...form, city: e.target.value })}
-              className="border-gray-300 border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition w-full"
+              onChange={(event) => setForm({ ...form, city: event.target.value })}
+              className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm outline-none ring-cyan-500 focus:ring"
               required
               disabled={!form.province}
             >
@@ -143,175 +181,212 @@ export default function ShippingForm({
           </div>
         </div>
 
-        <div className="flex flex-col mb-5">
-          <label htmlFor="address" className="text-gray-700 text-sm mb-1">
-            آدرس
+        <div className="mt-4">
+          <label
+            htmlFor="address"
+            className="mb-1.5 block text-xs font-semibold text-slate-600"
+          >
+            آدرس کامل
           </label>
           <input
             id="address"
-            type="text"
-            placeholder="مثال: خیابان ولیعصر، پلاک 10"
             value={form.address || ""}
-            onChange={(e) => setForm({ ...form, address: e.target.value })}
-            className="border-gray-300 border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition w-full"
+            onChange={(event) => setForm({ ...form, address: event.target.value })}
+            className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm outline-none ring-cyan-500 focus:ring"
+            placeholder="مثال: خیابان ولیعصر، پلاک ۱۲، طبقه دوم"
             required
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
-          <div className="flex flex-col">
-            <label htmlFor="plaque" className="text-gray-700 text-sm mb-1">
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div>
+            <label
+              htmlFor="plaque"
+              className="mb-1.5 block text-xs font-semibold text-slate-600"
+            >
               پلاک
             </label>
             <input
               id="plaque"
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]{1,5}"
-              placeholder="مثال: 10"
               value={form.plaque || ""}
-              onChange={(e) => setForm({ ...form, plaque: e.target.value })}
-              className="border-gray-300 border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+              onChange={(event) => setForm({ ...form, plaque: event.target.value })}
+              className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm outline-none ring-cyan-500 focus:ring"
+              inputMode="numeric"
             />
           </div>
 
-          <div className="flex flex-col">
-            <label htmlFor="unit" className="text-gray-700 text-sm mb-1">
+          <div>
+            <label
+              htmlFor="unit"
+              className="mb-1.5 block text-xs font-semibold text-slate-600"
+            >
               واحد
             </label>
             <input
               id="unit"
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]{1,5}"
-              placeholder="مثال: 2"
               value={form.unit || ""}
-              onChange={(e) => setForm({ ...form, unit: e.target.value })}
-              className="border-gray-300 border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+              onChange={(event) => setForm({ ...form, unit: event.target.value })}
+              className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm outline-none ring-cyan-500 focus:ring"
+              inputMode="numeric"
             />
           </div>
 
-          <div className="flex flex-col">
-            <label htmlFor="postalCode" className="text-gray-700 text-sm mb-1">
-              کدپستی
+          <div>
+            <label
+              htmlFor="postalCode"
+              className="mb-1.5 block text-xs font-semibold text-slate-600"
+            >
+              کد پستی
             </label>
             <input
               id="postalCode"
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]{10}"
-              placeholder="مثال: 1234567890"
               value={form.postalCode || ""}
-              onChange={(e) => setForm({ ...form, postalCode: e.target.value })}
-              className="border-gray-300 border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+              onChange={(event) =>
+                setForm({ ...form, postalCode: event.target.value })
+              }
+              className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm outline-none ring-cyan-500 focus:ring"
+              inputMode="numeric"
               required
             />
           </div>
         </div>
 
-        <div className="flex justify-end">
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
+          {form._id && (
+            <button
+              type="button"
+              onClick={resetForm}
+              className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700"
+            >
+              لغو ویرایش
+            </button>
+          )}
+
           <button
             type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg shadow-md transition"
+            className="rounded-xl bg-blue-900 px-5 py-2.5 text-sm font-semibold text-white"
           >
-            {form._id ? "ویرایش آدرس" : "افزودن آدرس"}
+            {form._id ? "ذخیره تغییرات" : "ثبت آدرس جدید"}
           </button>
         </div>
       </form>
 
-      {/* لیست آدرس‌ها */}
-      <div className="flex flex-col gap-6">
-        {loading ? (
-          Array(4)
-            .fill(0)
-            .map((_, i) => (
-              <div
-                key={i}
-                className="border border-gray-200 rounded-xl p-6 bg-gray-50 shadow animate-pulse"
-              >
-                <Skeleton height={20} width={`50%`} className="mb-3" />
-                <Skeleton height={16} width={`80%`} className="mb-2" />
-                <Skeleton height={16} width={`70%`} />
-              </div>
-            ))
-        ) : addresses.length > 0 ? (
-          addresses.map((a) => (
-            <div
-              key={a._id}
-              onClick={() => setSelectedAddress(a)}
-              className={`cursor-pointer rounded-xl p-6 shadow-md border transition
-      ${
-        selectedAddress?._id === a._id
-          ? "border-blue-600 ring-2 ring-blue-400 bg-blue-50"
-          : "border-gray-200 hover:shadow-xl"
-      }`}
-            >
-              <p className="text-sm font-semibold text-gray-700 mb-2">
-                {a.province} - {a.city}
-              </p>
-              <p className="text-sm text-gray-600 mb-1">
-                {a.address} {a.plaque && `پلاک: ${a.plaque}`}{" "}
-                {a.unit && `واحد: ${a.unit}`}
-              </p>
-              <p className="text-xs text-gray-400 mb-3">
-                کدپستی: {a.postalCode}
-              </p>
-              <div className="flex gap-3 justify-end">
-                <button
-                  className="text-blue-600 text-sm font-medium hover:underline"
-                  onClick={() => {
-                    setForm(a);
+      <div className="mt-6">
+        <h3 className="mb-3 text-sm font-bold text-slate-800">
+          آدرس‌های ذخیره‌شده
+        </h3>
 
-                    formRef.current?.scrollIntoView({
-                      behavior: "smooth",
-                      block: "start",
-                    });
-                  }}
-                >
-                  ویرایش
-                </button>
-                <button
-                  className="text-red-600 text-sm font-medium hover:underline"
-                  onClick={() => handleDelete(a._id)}
-                >
-                  حذف
-                </button>
+        {loading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div
+                key={index}
+                className="rounded-2xl border border-slate-200 p-4"
+              >
+                <Skeleton height={18} width="50%" />
+                <Skeleton height={14} width="80%" className="mt-2" />
+                <Skeleton height={14} width="60%" className="mt-2" />
               </div>
-            </div>
-          ))
+            ))}
+          </div>
+        ) : addresses.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
+            هنوز آدرسی ثبت نشده است.
+          </p>
         ) : (
-          <div className="text-center text-gray-400 col-span-2 py-10">
-            هیچ آدرسی ثبت نشده
+          <div className="space-y-3">
+            {addresses.map((address) => {
+              const isSelected = selectedAddress?._id === address._id;
+
+              return (
+                <div
+                  key={address._id}
+                  onClick={() => setSelectedAddress(address)}
+                  className={`cursor-pointer rounded-2xl border p-4 transition ${
+                    isSelected
+                      ? "border-cyan-300 bg-cyan-50 ring-1 ring-cyan-200"
+                      : "border-slate-200 bg-white hover:border-slate-300"
+                  }`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="flex items-center gap-1 text-sm font-semibold text-slate-900">
+                      <MapPin className="h-4 w-4 text-cyan-600" />
+                      {address.province}، {address.city}
+                    </p>
+
+                    {isSelected && (
+                      <span className="rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-semibold text-cyan-800">
+                        انتخاب شده
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="mt-2 text-sm text-slate-600">
+                    {address.address}
+                    {address.plaque ? `، پلاک ${address.plaque}` : ""}
+                    {address.unit ? `، واحد ${address.unit}` : ""}
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    کد پستی: {address.postalCode}
+                  </p>
+
+                  <div className="mt-3 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setForm(address);
+                        formRef.current?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "start",
+                        });
+                      }}
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700"
+                    >
+                      <PencilLine className="h-3.5 w-3.5" />
+                      ویرایش
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleDelete(address._id);
+                      }}
+                      className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      حذف
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* مزایا  */}
-      <div className="mt-12 bg-white p-6 rounded-xl shadow-sm flex flex-wrap justify-center gap-10 text-gray-700 text-sm">
-        <div className="flex flex-col items-center">
-          <ShieldCheck className="text-blue-600 mb-2" /> تضمین اصالت کالا
-        </div>
-        <div className="flex flex-col items-center">
-          <Headphones className="text-blue-600 mb-2" /> پشتیبانی تلفنی
-        </div>
-        <div className="flex flex-col items-center">
-          <RefreshCw className="text-blue-600 mb-2" /> 7 روز بازگشت کالا
-        </div>
-        <div className="flex flex-col items-center">
-          <Truck className="text-blue-600 mb-2" /> ارسال سریع کالا
-        </div>
+      <div className="mt-6 grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 md:grid-cols-3">
+        <p className="flex items-center gap-2">
+          <ShieldCheck className="h-4 w-4 text-cyan-700" />
+          تضمین امنیت اطلاعات ارسال
+        </p>
+
+        <p className="flex items-center gap-2">
+          <Truck className="h-4 w-4 text-cyan-700" />
+          ارسال سریع و قابل رهگیری
+        </p>
+
+        <button
+          type="button"
+          onClick={() => router.push("/cart?step=3", { scroll: false })}
+          disabled={!selectedAddress}
+          className="rounded-xl bg-blue-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+        >
+          ادامه به پرداخت
+        </button>
       </div>
-      <button
-        disabled={!selectedAddress}
-        onClick={() => router.push("/cart?step=3")}
-        className={`w-full p-2 rounded-lg text-white transition ${
-          selectedAddress
-            ? "bg-blue-600 hover:bg-blue-700"
-            : "bg-gray-300 cursor-not-allowed"
-        }`}
-      >
-        ادامه به پرداخت
-      </button>
     </div>
   );
 }
