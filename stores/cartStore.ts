@@ -10,7 +10,7 @@ interface CartStoreActionsType {
       price: number;
       image: string;
       discountPrice: number | null;
-    }
+    },
   ) => void;
   removeFromCart: (product: Partial<CartItem>) => void;
   clearCart: () => void;
@@ -27,7 +27,7 @@ const useCartStore = create<CartStoreActionsType & CartStoreStateType>()(
       addToCart: (product) =>
         set((state) => {
           const existingIndex = state.cart.findIndex(
-            (p) => p.id === product.id
+            (p) => p.id === product.id,
           );
 
           if (existingIndex !== -1) {
@@ -49,17 +49,17 @@ const useCartStore = create<CartStoreActionsType & CartStoreStateType>()(
       increaseQty: (id) =>
         set((state) => ({
           cart: state.cart.map((item) =>
-            item.id === id ? { ...item, quantity: item.quantity + 1 } : item
+            item.id === id ? { ...item, quantity: item.quantity + 1 } : item,
           ),
         })),
 
       decreaseQty: (id) =>
         set((state) => ({
-          cart: state.cart
-            .map((item) =>
-              item.id === id ? { ...item, quantity: item.quantity - 1 } : item
-            )
-            .filter((item) => item.quantity > 0),
+          cart: state.cart.map((item) =>
+            item.id === id
+              ? { ...item, quantity: Math.max(1, item.quantity - 1) }
+              : item,
+          ),
         })),
 
       removeFromCart: (product) =>
@@ -77,8 +77,8 @@ const useCartStore = create<CartStoreActionsType & CartStoreStateType>()(
           state.hasHydrated = true;
         }
       },
-    }
-  )
+    },
+  ),
 );
 
 export default useCartStore;

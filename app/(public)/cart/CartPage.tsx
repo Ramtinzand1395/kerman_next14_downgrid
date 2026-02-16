@@ -204,7 +204,7 @@ export default function CartPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {cart.map((item) => (
+                  {cart.map((item, index) => (
                     <article
                       key={item.id}
                       className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-slate-300"
@@ -265,7 +265,12 @@ export default function CartPage() {
 
                           <button
                             type="button"
-                            onClick={() => removeFromCart(item)}
+                            onClick={() => {
+                              if (activeStep === 1 && index === 0) {
+                                alert("در حال حذف اولین محصول سبد خرید هستید.");
+                              }
+                              removeFromCart(item);
+                            }}
                             className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 text-red-600 hover:bg-red-200"
                             title="حذف از سبد خرید"
                           >
