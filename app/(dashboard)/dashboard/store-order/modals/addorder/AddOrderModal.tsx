@@ -43,13 +43,14 @@ const AddOrderModal = ({ closeModal, setOrders }: AddOrderModalProps) => {
   const [customerData, setCustomerData] = useState<Customer>(defaultCustomer);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-3 pt-6 sm:p-4 sm:pt-10 md:items-center">
       <div
         className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
         onClick={closeModal}
       />
 
-      <div className="relative z-10 w-full max-w-4xl rounded-2xl border border-slate-200 bg-white p-5 shadow-xl md:p-6">
+      <div className="relative z-10 max-h-[calc(100dvh-1.5rem)] w-full max-w-4xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-xl sm:max-h-[calc(100dvh-2rem)] md:p-6">
+        {" "}
         <button
           title="بستن"
           onClick={closeModal}
@@ -57,9 +58,10 @@ const AddOrderModal = ({ closeModal, setOrders }: AddOrderModalProps) => {
         >
           <X size={18} />
         </button>
-
         <div className="mb-6 border-b border-slate-200 pb-4">
-          <h2 className="text-xl font-bold text-slate-900">افزودن سفارش جدید</h2>
+          <h2 className="text-xl font-bold text-slate-900">
+            افزودن سفارش جدید
+          </h2>
           <div className="mt-4 grid gap-2 md:grid-cols-3">
             {steps.map((step) => {
               const isActive = step.id === activeStep;
@@ -85,7 +87,6 @@ const AddOrderModal = ({ closeModal, setOrders }: AddOrderModalProps) => {
             })}
           </div>
         </div>
-
         {activeStep === 1 && (
           <SearchCustomer
             customerData={customerData}
@@ -93,7 +94,6 @@ const AddOrderModal = ({ closeModal, setOrders }: AddOrderModalProps) => {
             onNext={() => setActiveStep(2)}
           />
         )}
-
         {activeStep === 2 && (
           <RegisterCustomer
             customerData={customerData}
@@ -102,7 +102,6 @@ const AddOrderModal = ({ closeModal, setOrders }: AddOrderModalProps) => {
             onNext={() => setActiveStep(3)}
           />
         )}
-
         {activeStep === 3 && (
           <AddCustomerOrder
             customerData={customerData}
