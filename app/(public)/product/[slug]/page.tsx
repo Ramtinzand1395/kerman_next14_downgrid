@@ -4,7 +4,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductGallery } from "./ProductGallery";
 import { ProductInfo } from "./ProductInfo";
-
 import TabSection from "./TabSection";
 import type { Product } from "@/types";
 
@@ -88,7 +87,8 @@ export async function generateMetadata({
     },
     openGraph: {
       title: `${product.title} | کرمان آتاری`,
-      description: product.shortDesc || `مشاهده مشخصات، تصاویر و قیمت ${product.title}`,
+      description:
+        product.shortDesc || `مشاهده مشخصات، تصاویر و قیمت ${product.title}`,
       type: "website",
       url: canonicalUrl,
       images: [
@@ -101,7 +101,8 @@ export async function generateMetadata({
     twitter: {
       card: "summary_large_image",
       title: `${product.title} | کرمان آتاری`,
-      description: product.shortDesc || `قیمت روز و مشخصات کامل ${product.title}`,
+      description:
+        product.shortDesc || `قیمت روز و مشخصات کامل ${product.title}`,
       images: [product.mainImage],
     },
     keywords: [
@@ -156,8 +157,10 @@ export default async function ProductPage({
         ? {
             "@type": "AggregateRating",
             ratingValue:
-              product.comments.reduce((sum, comment) => sum + comment.rating, 0) /
-              product.comments.length,
+              product.comments.reduce(
+                (sum, comment) => sum + comment.rating,
+                0,
+              ) / product.comments.length,
             reviewCount: product.comments.length,
           }
         : undefined,
@@ -197,6 +200,7 @@ export default async function ProductPage({
         <p className="mt-2 text-sm md:text-base text-zinc-600 leading-7 max-w-4xl">
           {product.shortDesc || "بررسی کامل، قیمت روز و مشخصات دقیق این محصول."}
         </p>
+   
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -218,11 +222,13 @@ export default async function ProductPage({
           </div>
 
           <div className="rounded-3xl border border-zinc-200 bg-white p-4 md:p-6">
-            <h2 className="text-lg font-bold text-zinc-900 mb-2">چرا این محصول؟</h2>
+            <h2 className="text-lg font-bold text-zinc-900 mb-2">
+              چرا این محصول؟
+            </h2>
             <p className="text-zinc-600 leading-8 text-sm md:text-base">
               این محصول با تضمین اصالت، ارسال سریع و پشتیبانی کامل ارائه می‌شود.
-              همچنین می‌توانید قبل از خرید، مشخصات فنی، نظرات کاربران و تصاویر محصول
-              را به‌صورت کامل مشاهده کنید.
+              همچنین می‌توانید قبل از خرید، مشخصات فنی، نظرات کاربران و تصاویر
+              محصول را به‌صورت کامل مشاهده کنید.
             </p>
           </div>
 
@@ -239,7 +245,9 @@ export default async function ProductPage({
               </li>
               <li className="flex items-center justify-between">
                 <span>موجودی</span>
-                <span>{product.stock > 0 ? `${product.stock} عدد` : "ناموجود"}</span>
+                <span>
+                  {product.stock > 0 ? `${product.stock} عدد` : "ناموجود"}
+                </span>
               </li>
               <li className="flex items-center justify-between">
                 <span>برند</span>
@@ -249,7 +257,9 @@ export default async function ProductPage({
           </div>
 
           <div className="rounded-2xl border border-zinc-200 bg-white p-4 md:p-5">
-            <h2 className="text-sm font-bold text-zinc-900 mb-4">محصولات مرتبط</h2>
+            <h2 className="text-sm font-bold text-zinc-900 mb-4">
+              محصولات مرتبط
+            </h2>
 
             {relatedProducts.length === 0 ? (
               <p className="text-xs text-zinc-500">محصول مرتبطی پیدا نشد.</p>

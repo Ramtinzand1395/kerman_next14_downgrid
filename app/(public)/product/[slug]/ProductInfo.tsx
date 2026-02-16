@@ -6,6 +6,7 @@ import {
   formatPrice,
   toPersianDigits,
 } from "@/helpers/Price";
+import AddCommentButton from "./AddCommentButton";
 
 interface ProductInfoProps {
   product: Product;
@@ -58,9 +59,7 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
           </span>
         </div>
         <div className="h-4 w-px bg-gray-300"></div>
-        <button className="text-sm text-cyan-600 hover:text-cyan-700">
-          افزودن دیدگاه
-        </button>
+          <AddCommentButton />
       </div>
 
       {/* Features Summary */}
