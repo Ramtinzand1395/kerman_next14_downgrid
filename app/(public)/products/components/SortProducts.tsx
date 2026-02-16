@@ -4,7 +4,7 @@ import { ArrowDownUp } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 const sortOptions = [
-  { label: "پیش‌فرض", value: "" },
+  { label: "محبوب‌ترین", value: "" },
   { label: "بیشترین قیمت", value: "highPrice" },
   { label: "کمترین قیمت", value: "lowPrice" },
   { label: "جدیدترین", value: "newest" },
