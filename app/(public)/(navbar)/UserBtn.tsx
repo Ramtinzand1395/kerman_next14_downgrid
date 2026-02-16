@@ -175,7 +175,7 @@ export default function UserBtn({
                 <div className="mb-2 rounded-xl bg-slate-50 px-3 py-2.5">
                   <p className="text-xs text-slate-500">ورود شده به حساب</p>
                   <p className="mt-1 truncate text-sm font-semibold text-slate-700">
-                    {session.user?.name || session.user?.email || "کاربر"}
+                    {session.user?.username || "کاربر"}
                   </p>
                 </div>
 

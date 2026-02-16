@@ -127,7 +127,7 @@ export default async function ProductsPage({
 
       <SortProducts totalProducts={data.total || 0} />
 
-      <div className="mt-5 flex items-start gap-5">
+       <div className="mt-5 flex flex-col gap-5 md:flex-row md:items-start">
         <FilterProducts />
 
         <div className="w-full">
