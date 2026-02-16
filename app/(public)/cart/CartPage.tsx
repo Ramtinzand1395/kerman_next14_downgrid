@@ -267,8 +267,12 @@ export default function CartPage() {
                             type="button"
                             onClick={() => {
                               if (activeStep === 1 && index === 0) {
-                                alert("در حال حذف اولین محصول سبد خرید هستید.");
+                                const ok = confirm(
+                                  "از حذف محصول مطمعن هستید؟",
+                                );
+                                if (!ok) return;
                               }
+
                               removeFromCart(item);
                             }}
                             className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 text-red-600 hover:bg-red-200"
