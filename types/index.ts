@@ -253,3 +253,4 @@ export interface BlogPost {
   createdAt: string;
   updatedAt: string;
 }
+

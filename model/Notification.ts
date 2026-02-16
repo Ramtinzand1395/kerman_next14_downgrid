@@ -7,13 +7,13 @@ const NotificationSchema = new mongoose.Schema(
     message: String,
     type: {
       type: String,
-      enum: ["order", "comment", "user", "payment"],
+     enum: ["order", "comment", "user", "payment", "contact"],
     },
     isRead: { type: Boolean, default: false },
     target: {
       kind: {
         type: String,
-        enum: ["Product", "Order", "Comment", "User"],
+         enum: ["Product", "Order", "Comment", "User", "ContactMessage"],
         required: true,
       },
       item: {

@@ -19,7 +19,6 @@ interface CartProps {
 export default function Cart({ game, onFavoriteChange }: CartProps) {
   const { addToCart } = useCartStore();
   const { data: session } = useSession();
-  // const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
 
   const {
@@ -214,7 +213,7 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
           )}
         </div>
 
-        <div className="mt-2 flex items-center gap-1 text-xs text-gray-500">
+        <div className="mt-2 flex items-center sm:gap-1 text-xs text-gray-500">
           {[1, 2, 3, 4, 5].map((value) => (
             <Star
               key={value}
@@ -227,7 +226,7 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
             />
           ))}
           <span>{game.comments?.length ? rating.toFixed(1) : "0.0"}</span>
-          <span>({game.comments?.length || 0} نظر)</span>
+          <span className="text-xs">({game.comments?.length || 0} نظر)</span>
         </div>
       </div>
 

@@ -35,16 +35,27 @@ export type Target =
   | { kind: "Comment"; item: Comment }
   | { kind: "User"; item: User }
   | { kind: "Product"; item: Product }
-  | { kind: "Order"; item: Order };
+ | { kind: "Order"; item: Order }
+| { kind: "ContactMessage"; item: ContactMessage };
 
 // Notification اصلی
 export interface Notification {
   _id: string;
   title: string;
   message: string;
-  type: "comment" | "order" | "user" | "payment";
+  type: "comment" | "order" | "user" | "payment"| "contact";
   isRead: boolean;
   for: "admin" | "user";
   createdAt: string;
   target: Target;
+}
+
+export interface ContactMessage {
+  _id: string;
+  name: string;
+  email: string;
+  phone: string;
+  subject: string;
+  message: string;
+  createdAt: string;
 }
