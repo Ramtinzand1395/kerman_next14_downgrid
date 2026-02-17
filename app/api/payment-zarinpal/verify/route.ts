@@ -24,8 +24,9 @@ export async function GET(req:NextRequest) {
     const {  finalPrice, items, orderId } = temp;
 
     // ارسال درخواست تایید به زرین پال
+    // sand
     const verifyRes = await fetch(
-      "https://sandbox.zarinpal.com/pg/v4/payment/verify.json",
+      "https://api.zarinpal.com/pg/v4/payment/verify.json",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -19,7 +19,9 @@ export async function POST(req: NextRequest) {
     const finalPriceWithExtraZero = finalPrice * 10;
     // !sandbox
     const res = await fetch(
-      "https://sandbox.zarinpal.com/pg/v4/payment/request.json",
+      // "https://sandbox.zarinpal.com/pg/v4/payment/request.json",
+      "https://api.zarinpal.com/pg/v4/payment/request.json",
+
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -45,10 +47,10 @@ export async function POST(req: NextRequest) {
         finalPrice: finalPriceWithExtraZero,
         orderId,
       });
-
+// !sand
       return NextResponse.json({
         success: true,
-        url: `https://sandbox.zarinpal.com/pg/StartPay/${authority}`,
+        url: `https://api.zarinpal.com/pg/StartPay/${authority}`,
       });
     } else {
       return NextResponse.json(
