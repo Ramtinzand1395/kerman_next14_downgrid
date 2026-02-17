@@ -1,14 +1,12 @@
 import "@/app/globals.css";
 import "react-loading-skeleton/dist/skeleton.css";
-// todo
-// پاک بشهSpeedInsights
-// import { SpeedInsights } from "@vercel/speed-insights/next"
 import localFont from "next/font/local";
 import Script from "next/script";
 import { ToastContainer } from "react-toastify";
 import AuthProvider from "../AuthProvider";
 import Navbar from "./(navbar)/Navbar";
 import Footer from "./Footer";
+import { SITE_URL } from "@/lib/site";
 
 const vazir = localFont({
   src: "../Vazir.woff2",
@@ -17,7 +15,7 @@ const vazir = localFont({
 });
 
 export const metadata = {
-  metadataBase: new URL("https://kermanatari.ir"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "کرمان آتاری | فروشگاه بازی و لوازم گیمینگ در کرمان",
     template: "%s | کرمان آتاری",
@@ -45,15 +43,12 @@ export const metadata = {
     title: "کرمان آتاری | فروشگاه تخصصی بازی و لوازم گیمینگ در کرمان",
     description:
       "خرید بازی‌های PS4 و PS5، کنسول‌های سونی، هدفون، کیبورد و لوازم جانبی گیمینگ از کرمان آتاری — ارسال سریع و قیمت مناسب.",
-    url: "https://kermanatari.ir",
+   url: SITE_URL,
     siteName: "KermanAtari",
     locale: "fa_IR",
     type: "website",
   },
-  twitter: {
-    card: "summary_large_image",
-    site: "@kermanatari",
-  },
+  
 };
 
 export default function RootLayout({
@@ -103,10 +98,10 @@ export default function RootLayout({
               "@graph": [
                 {
                   "@type": "Organization",
-                  "@id": "https://kermanatari.ir/#organization",
+                  "@id":  `${SITE_URL}/#organization`,
                   name: "کرمان آتاری",
-                  url: "https://kermanatari.ir",
-                  logo: "https://kermanatari.ir/atari-seeklogo.svg",
+                   url: SITE_URL,
+                 logo: `${SITE_URL}/atari-seeklogo.svg`,
                   sameAs: [
                     "https://instagram.com/kermanatari",
                     "https://t.me/kermanatari",
@@ -114,14 +109,14 @@ export default function RootLayout({
                 },
                 {
                   "@type": "WebSite",
-                  "@id": "https://kermanatari.ir/#website",
-                  url: "https://kermanatari.ir",
+                   "@id": `${SITE_URL}/#website`,
+                 url: SITE_URL,
                   name: "کرمان آتاری",
                   inLanguage: "fa",
                   potentialAction: {
                     "@type": "SearchAction",
                     target:
-                      "https://kermanatari.ir/search?q={search_term_string}",
+                      `${SITE_URL}/search?q={search_term_string}`,
                     "query-input": "required name=search_term_string",
                   },
                 },

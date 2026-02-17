@@ -2,8 +2,7 @@ import type { MetadataRoute } from "next";
 import dbConnect from "@/lib/mongodb";
 import Product from "@/model/Product";
 
-const SITE_URL = "https://kermanatari.ir";
-
+import { SITE_URL } from "@/lib/site";
 const staticRoutes: MetadataRoute.Sitemap = [
   {
     url: SITE_URL,
@@ -29,12 +28,6 @@ const staticRoutes: MetadataRoute.Sitemap = [
     changeFrequency: "monthly",
     priority: 0.6,
   },
-  // {
-  //   url: `${SITE_URL}/cart`,
-  //   lastModified: new Date(),
-  //   changeFrequency: "weekly",
-  //   priority: 0.5,
-  // },
 ];
 
 type ProductSitemapRow = {
@@ -51,10 +44,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .exec()) as ProductSitemapRow[];
 
     const productRoutes: MetadataRoute.Sitemap = products
-      .filter((product) => typeof product.slug === "string" && product.slug.length > 0)
+      .filter(
+        (product) =>
+          typeof product.slug === "string" && product.slug.length > 0,
+      )
       .map((product) => ({
         url: `${SITE_URL}/product/${product.slug}`,
-        lastModified: product.updatedAt ? new Date(product.updatedAt) : new Date(),
+        lastModified: product.updatedAt
+          ? new Date(product.updatedAt)
+          : new Date(),
         changeFrequency: "weekly",
         priority: 0.8,
       }));
