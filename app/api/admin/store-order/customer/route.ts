@@ -20,9 +20,17 @@ export async function GET(req: Request) {
     const mobile = searchParams.get("mobile");
 
     if (!mobile) {
+      const customers = await Customer.find({})
+        .sort({ createdAt: -1 })
+        .limit(200);
+
       return NextResponse.json(
-        { message: "شماره موبایل وارد نشده است." },
-        { status: 400 }
+        {
+          message: "لیست مشتریان دریافت شد.",
+          data: customers,
+          status: 200,
+        },
+        { status: 200},
       );
     }
 
@@ -31,7 +39,7 @@ export async function GET(req: Request) {
     if (!customer) {
       return NextResponse.json(
         { message: "خریدار پیدا نشد." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -39,9 +47,9 @@ export async function GET(req: Request) {
       {
         message: "خریدار پیدا شد.",
         data: customer,
-        status: 200
+        status: 200,
       },
-      { status: 200 }
+      { status: 200},
     );
   } catch (err) {
     console.error(err);
@@ -68,7 +76,7 @@ export async function POST(req: Request) {
     if (!mobile) {
       return NextResponse.json(
         { message: "شماره موبایل الزامی است." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -76,7 +84,7 @@ export async function POST(req: Request) {
     if (existingCustomer) {
       return NextResponse.json(
         { message: "خریدار قبلاً ثبت شده است." },
-        { status: 202 }
+        { status: 202 },
       );
     }
 
@@ -100,7 +108,7 @@ export async function POST(req: Request) {
         message: "خریدار اضافه شد.",
         data: customer,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (err) {
     console.error(err);

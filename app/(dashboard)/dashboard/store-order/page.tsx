@@ -126,7 +126,7 @@ export default function StoreOrder() {
             title="مدیریت مشتریان"
             icon={AlertCircle}
             color="amber"
-            link="store-order?step=1"
+            link="store-order/customers"
           />
         </section>
 

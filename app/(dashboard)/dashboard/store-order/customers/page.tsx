@@ -1,0 +1,130 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { Search } from "lucide-react";
+import { toast } from "react-toastify";
+
+import { Customer } from "@/types";
+import UpdateUser from "../modals/updateModal/UpdateUser";
+
+export default function CustomersPage() {
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      setIsLoading(true);
+      try {
+        const res = await fetch("/api/admin/store-order/customer");
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.message || "خطا در دریافت لیست مشتریان");
+        }
+
+        setCustomers(data.data || []);
+      } catch (err) {
+        console.error(err);
+        toast.error("در دریافت لیست مشتریان مشکلی پیش آمد.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCustomers();
+  }, []);
+
+  const filteredCustomers = useMemo(() => {
+    const normalized = query.trim();
+    if (!normalized) return customers;
+
+    return customers.filter((customer) =>
+      [customer.name, customer.lastName, customer.mobile]
+        .join(" ")
+        .includes(normalized),
+    );
+  }, [customers, query]);
+
+  const selectedCustomer = useMemo(
+    () => customers.find((customer) => customer._id === selectedCustomerId) ?? null,
+    [customers, selectedCustomerId],
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-right">
+      <main className="mx-auto max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+          <h1 className="text-2xl font-black text-slate-900 md:text-3xl">مدیریت مشتریان</h1>
+          <p className="mt-2 text-sm text-slate-500 md:text-base">
+            ویرایش اطلاعات مشتریان سفارش دستی از این صفحه انجام می‌شود.
+          </p>
+
+          <label className="relative mt-4 block">
+            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="جست‌وجو با نام، نام خانوادگی یا موبایل"
+              className="h-11 w-full rounded-xl border border-slate-300 pr-10 pl-3 text-sm outline-none ring-indigo-500 focus:ring-2"
+            />
+          </label>
+        </section>
+
+        <section className="grid gap-5 xl:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+            <h2 className="mb-4 text-base font-bold text-slate-800">لیست مشتریان</h2>
+
+            {isLoading ? (
+              <p className="text-sm text-slate-500">در حال دریافت اطلاعات...</p>
+            ) : filteredCustomers.length === 0 ? (
+              <p className="text-sm text-slate-500">مشتری‌ای پیدا نشد.</p>
+            ) : (
+              <div className="space-y-2">
+                {filteredCustomers.map((customer) => (
+                  <button
+                    key={customer._id}
+                    type="button"
+                    onClick={() => setSelectedCustomerId(customer._id)}
+                    className={`w-full rounded-xl border p-3 text-right transition ${
+                      customer._id === selectedCustomerId
+                        ? "border-indigo-300 bg-indigo-50"
+                        : "border-slate-200 bg-white hover:border-indigo-200"
+                    }`}
+                  >
+                    <p className="font-semibold text-slate-800">
+                      {customer.name} {customer.lastName}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">{customer.mobile}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+            {selectedCustomer ? (
+              <UpdateUser
+                customer={selectedCustomer}
+                setCustomer={(updater) => {
+                  setCustomers((prev) =>
+                    prev.map((item) =>
+                      item._id === selectedCustomer._id
+                        ? typeof updater === "function"
+                          ? (updater(item) as Customer)
+                          : updater || item
+                        : item,
+                    ),
+                  );
+                }}
+              />
+            ) : (
+              <p className="text-sm text-slate-500">برای ویرایش، یک مشتری را از لیست انتخاب کنید.</p>
+            )}
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}

@@ -33,7 +33,7 @@ const editableFields: EditableCustomerFields[] = [
 interface UpdateUserProps {
   customer: Customer | null;
   setCustomer: React.Dispatch<React.SetStateAction<Customer | null>>;
-  closeModal: () => void;
+  closeModal?: () => void;
 }
 
 const UpdateUser = ({ customer, setCustomer, closeModal }: UpdateUserProps) => {
@@ -63,7 +63,7 @@ const UpdateUser = ({ customer, setCustomer, closeModal }: UpdateUserProps) => {
 
       toast.success(data.message || "اطلاعات مشتری ذخیره شد.");
       setIsEditingCustomer(false);
-      closeModal();
+     closeModal?.();
     } catch (err) {
       console.error(err);
       toast.error("خطا در ویرایش اطلاعات مشتری");

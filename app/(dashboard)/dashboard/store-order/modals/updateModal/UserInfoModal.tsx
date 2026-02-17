@@ -29,9 +29,10 @@ interface UserInfoModalProps {
 const UserInfoModal = ({ closeModal, order, setOrders }: UserInfoModalProps) => {
   const [userOrder, setUserOrder] = useState<storeOrder | null>(order || null);
 
-  const [customer, setCustomer] = useState<Customer | null>(
-    order?.customer && typeof order.customer !== "string" ? order.customer : null,
-  );
+   const customer =
+   order?.customer && typeof order.customer !== "string" ? order.customer : null;
+
+ 
 
   const handleDeleteOrder = async () => {
     if (!userOrder) return;
@@ -123,11 +124,7 @@ const UserInfoModal = ({ closeModal, order, setOrders }: UserInfoModalProps) => 
         </header>
 
         <div className="space-y-5 p-5">
-          <UpdateUser
-            customer={customer}
-            setCustomer={setCustomer}
-            closeModal={closeModal}
-          />
+        
           <UpdateStoreOrder
             userOrder={userOrder}
             setUserOrder={setUserOrder}
