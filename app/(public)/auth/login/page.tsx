@@ -46,9 +46,11 @@ export default function LoginWithOtp() {
   const [enteredOtp, setEnteredOtp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [otpId, setOtpId] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [timer, setTimer] = useState(0);
 
   const formRef = useRef<HTMLFormElement | null>(null);
+  const lastSubmittedOtpRef = useRef("");
 
   const formatTime = (sec: number) => {
     const m = Math.floor(sec / 60);
@@ -143,6 +145,19 @@ export default function LoginWithOtp() {
     return () => controller.abort();
   }, [otpSent]);
 
+  useEffect(() => {
+    if (!otpSent || enteredOtp.length !== OTP_LENGTH || isVerifying) {
+      return;
+    }
+
+    if (lastSubmittedOtpRef.current === enteredOtp) {
+      return;
+    }
+
+    lastSubmittedOtpRef.current = enteredOtp;
+    formRef.current?.requestSubmit();
+  }, [enteredOtp, isVerifying, otpSent]);
+
   const sendOtp = async () => {
     const savedExpireTime = localStorage.getItem(OTP_EXPIRE_KEY);
     if (savedExpireTime) {
@@ -159,7 +174,7 @@ export default function LoginWithOtp() {
 
     try {
       try {
-        await mobileSchema.validate(mobile, { abortEarly: false });
+         await mobileSchema.validate(mobile, { abortEarly: false });
       } catch (err) {
         if (err instanceof yup.ValidationError) {
           err.inner.forEach((e) => toast.error(e.message));
@@ -201,7 +216,7 @@ export default function LoginWithOtp() {
 
   const handleVerifyOtp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
+if (isVerifying) return;
     if (!otpId) {
       toast.error("اطلاعات تایید ناقص است، دوباره درخواست کد دهید.");
       return;
@@ -209,12 +224,17 @@ export default function LoginWithOtp() {
 
     try {
       await otpSchema.validate(enteredOtp);
-    } catch {
-      toast.error("کد تایید معتبر نیست");
+   } catch (err) {
+     if (err instanceof yup.ValidationError) {
+       toast.error(err.message);
+     } else {
+       toast.error("کد تایید معتبر نیست");
+     }
       return;
     }
 
     try {
+      setIsVerifying(true);
       const res = await fetch("/api/verifyOtp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -240,6 +260,9 @@ export default function LoginWithOtp() {
     } catch (err) {
       console.log(err);
       toast.error("مشکلی در تایید کد پیش آمد");
+       lastSubmittedOtpRef.current = "";
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -353,7 +376,7 @@ export default function LoginWithOtp() {
             >
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  کد تایید پیامک‌شده
+                  کد تایید پیامک‌ شده
                 </label>
                 <input
                   name="otp"
@@ -375,10 +398,11 @@ export default function LoginWithOtp() {
               </div>
 
               <button
+                 disabled={isVerifying}
                 type="submit"
                 className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
               >
-                تایید و ورود
+            {isVerifying ? "در حال بررسی..." : "تایید و ورود"}
               </button>
 
               <button
@@ -386,6 +410,7 @@ export default function LoginWithOtp() {
                 onClick={() => {
                   setOtpSent(false);
                   setEnteredOtp("");
+                   lastSubmittedOtpRef.current = "";
                 }}
                 className="w-full rounded-xl border border-slate-300 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
               >

@@ -75,14 +75,14 @@ export default function UserBtn({
                   {session.user && session.user.role === "user" ? (
                     <>
                       <Link
-                        href="/my-profile"
+                        href="/my-profile?step=1"
                         className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-slate-700 transition hover:bg-slate-50 hover:text-blue-600"
                       >
                         <UserCircle2 className="h-4 w-4" /> پروفایل من
                       </Link>
 
                       <Link
-                        href="/my-profile"
+                        href="/my-profile?step=5"
                         className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-slate-700 transition hover:bg-slate-50 hover:text-blue-600"
                       >
                         <Package className="h-4 w-4" /> سفارش ها
