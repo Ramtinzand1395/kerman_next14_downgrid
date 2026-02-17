@@ -1,7 +1,5 @@
 "use client";
-// todo
-// در موبایل وقتی ویراش زده میشه بره روش
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CalendarDays,
   CheckCircle2,
@@ -24,6 +22,7 @@ export default function Profile() {
 
   const [editField, setEditField] = useState<FieldKey | null>(null);
   const [loading, setLoading] = useState(true);
+  const editorCardRef = useRef<HTMLDivElement | null>(null);
 
   const [formData, setFormData] = useState<ProfileFormPayload>({
     username: "",
@@ -61,7 +60,11 @@ export default function Profile() {
       .finally(() => setLoading(false));
   }, []);
 
-  const fields: ReadonlyArray<{ key: FieldKey; label: string; icon: LucideIcon }> = [
+  const fields: ReadonlyArray<{
+    key: FieldKey;
+    label: string;
+    icon: LucideIcon;
+  }> = [
     { key: "username", label: "نام کاربری", icon: User },
     { key: "email", label: "ایمیل", icon: Mail },
     { key: "mobile", label: "شماره موبایل", icon: Phone },
@@ -77,7 +80,7 @@ export default function Profile() {
   }).length;
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const name = e.target.name as FieldKey;
     setFormData({ ...formData, [name]: e.target.value });
@@ -112,9 +115,20 @@ export default function Profile() {
     }
   };
 
+  useEffect(() => {
+    if (!editField) return;
+    if (!window.matchMedia("(max-width: 1023px)").matches) return;
+
+    editorCardRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, [editField]);
+
   return (
     <section className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:col-span-2">
+      <div className="order-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:order-1 lg:col-span-2">
+        {" "}
         <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-4">
           <div>
             <h2 className="text-base font-bold text-slate-800">
@@ -128,7 +142,6 @@ export default function Profile() {
             {completedFields} از {fields.length} مورد تکمیل شده
           </span>
         </div>
-
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {fields.map((field) => {
             const Icon = field.icon;
@@ -171,8 +184,11 @@ export default function Profile() {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="order-1 space-y-4 lg:order-2">
+        <div
+          ref={editorCardRef}
+          className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+        >
           {!editField ? (
             <>
               <h3 className="mb-2 text-sm font-semibold text-slate-800">

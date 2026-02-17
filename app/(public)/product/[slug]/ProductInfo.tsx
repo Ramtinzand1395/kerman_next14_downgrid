@@ -40,7 +40,7 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
 
       {/* Rating & Reviews */}
       <div className="flex items-center gap-4 mb-6 border-b border-gray-100 pb-6">
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-0 sm:gap-2 text-sm">
           {[1, 2, 3, 4, 5].map((i) => (
             <span
               key={i}
