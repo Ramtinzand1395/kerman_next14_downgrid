@@ -7,6 +7,7 @@ import StoreOrder from "@/model/StoreOrder";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../auth/[...nextauth]/options";
+export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   await dbConnect();
