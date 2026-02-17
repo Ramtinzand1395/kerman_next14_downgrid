@@ -29,6 +29,17 @@ const OTP_META_KEY = "otpMeta";
 const OTP_EXPIRE_KEY = "otpExpireTime";
 const OTP_TOTAL_TIME = 120;
 const OTP_LENGTH = 5;
+
+const normalizeOtpCode = (value: string) => {
+  const faDigits = "۰۱۲۳۴۵۶۷۸۹";
+  const arDigits = "٠١٢٣٤٥٦٧٨٩";
+
+  return value
+    .replace(/[۰-۹]/g, (d) => faDigits.indexOf(d).toString())
+    .replace(/[٠-٩]/g, (d) => arDigits.indexOf(d).toString())
+    .replace(/\D/g, "");
+};
+
 export default function LoginWithOtp() {
   const [mobile, setMobile] = useState("");
   const [otpSent, setOtpSent] = useState(false);
@@ -94,7 +105,11 @@ export default function LoginWithOtp() {
   }, []);
 
   useEffect(() => {
-    if (!otpSent || typeof window === "undefined" || !("OTPCredential" in window)) {
+    if (
+      !otpSent ||
+      typeof window === "undefined" ||
+      !("OTPCredential" in window)
+    ) {
       return;
     }
 
@@ -109,14 +124,14 @@ export default function LoginWithOtp() {
 
         if (!credential?.code) return;
 
-       const otpCode = credential.code.replace(/\D/g, "").slice(0, OTP_LENGTH);
+        const otpCode = normalizeOtpCode(credential.code).slice(0, OTP_LENGTH);
         if (!otpCode) return;
 
         setEnteredOtp(otpCode);
         toast.success("کد پیامک به‌صورت خودکار وارد شد");
 
-      if (otpCode.length === OTP_LENGTH) {
-          formRef.current?.requestSubmit();
+        if (otpCode.length === OTP_LENGTH) {
+          requestAnimationFrame(() => formRef.current?.requestSubmit());
         }
       } catch {
         // در بسیاری از مرورگرها WebOTP پشتیبانی نمی‌شود یا کاربر پیامک را تایید نمی‌کند.
@@ -165,7 +180,10 @@ export default function LoginWithOtp() {
       setTimer(OTP_TOTAL_TIME);
 
       localStorage.setItem(OTP_EXPIRE_KEY, expireTime.toString());
-      localStorage.setItem(OTP_META_KEY, JSON.stringify({ otpId: newOtpId, mobile }));
+      localStorage.setItem(
+        OTP_META_KEY,
+        JSON.stringify({ otpId: newOtpId, mobile }),
+      );
 
       toast.success("کد تایید ارسال شد");
     } catch (err) {
@@ -241,8 +259,9 @@ export default function LoginWithOtp() {
             </div>
             <h1 className="text-2xl font-bold leading-9">ورود سریع و امن</h1>
             <p className="mt-3 text-sm leading-7 text-slate-200">
-              برای ورود فقط شماره موبایل خود را وارد کنید. کد تایید برای شما ارسال
-              می‌شود و در موبایل‌های سازگار به‌صورت خودکار در فرم قرار می‌گیرد.
+              برای ورود فقط شماره موبایل خود را وارد کنید. کد تایید برای شما
+              ارسال می‌شود و در موبایل‌های سازگار به‌صورت خودکار در فرم قرار
+              می‌گیرد.
             </p>
           </div>
 
@@ -264,20 +283,26 @@ export default function LoginWithOtp() {
                 className="object-contain"
               />
             </div>
-            <h1 className="text-xl font-bold text-slate-900">ورود به کرمان آتاری</h1>
+            <h1 className="text-xl font-bold text-slate-900">
+              ورود به کرمان آتاری
+            </h1>
           </div>
 
           <div className="mb-8 flex items-center gap-2 rounded-xl bg-slate-100 p-2 text-xs">
             <div
               className={`flex-1 rounded-lg px-3 py-2 text-center font-semibold transition ${
-                currentStep === "mobile" ? "bg-white text-slate-900 shadow" : "text-slate-500"
+                currentStep === "mobile"
+                  ? "bg-white text-slate-900 shadow"
+                  : "text-slate-500"
               }`}
             >
               ۱) شماره موبایل
             </div>
             <div
               className={`flex-1 rounded-lg px-3 py-2 text-center font-semibold transition ${
-                currentStep === "otp" ? "bg-white text-slate-900 shadow" : "text-slate-500"
+                currentStep === "otp"
+                  ? "bg-white text-slate-900 shadow"
+                  : "text-slate-500"
               }`}
             >
               ۲) کد تایید
@@ -302,7 +327,8 @@ export default function LoginWithOtp() {
               </div>
 
               <p className="text-xs leading-6 text-slate-500">
-                با ورود به کرمان آتاری، شرایط استفاده و قوانین حریم خصوصی را می‌پذیرید.
+                با ورود به کرمان آتاری، شرایط استفاده و قوانین حریم خصوصی را
+                می‌پذیرید.
               </p>
 
               <button
@@ -320,12 +346,17 @@ export default function LoginWithOtp() {
               )}
             </form>
           ) : (
-            <form ref={formRef} onSubmit={handleVerifyOtp} className="space-y-4">
+            <form
+              ref={formRef}
+              onSubmit={handleVerifyOtp}
+              className="space-y-4"
+            >
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
                   کد تایید پیامک‌شده
                 </label>
                 <input
+                  name="otp"
                   type="text"
                   dir="ltr"
                   inputMode="numeric"
@@ -334,9 +365,9 @@ export default function LoginWithOtp() {
                   maxLength={OTP_LENGTH}
                   value={enteredOtp}
                   onChange={(e) =>
-                      setEnteredOtp(
-                   e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH),
-                   )
+                    setEnteredOtp(
+                      normalizeOtpCode(e.target.value).slice(0, OTP_LENGTH),
+                    )
                   }
                   placeholder="-----"
                   className="w-full rounded-xl border border-slate-300 px-4 py-3 text-center text-lg tracking-[0.45em] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
