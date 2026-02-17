@@ -83,23 +83,24 @@ export interface Customer {
   birthday: string;
   description: string;
 }
-type ConsoleType = "ps5" | "ps4" | "xbox" | "copy";
-
-export interface storeOrder {
+export type ConsoleType = "ps5" | "ps4" | "xbox" | "copy";
+export interface StoreOrder  {
   _id: string;
   list: string[];
   price: number | null;
   customer?: Customer | string;
   customerId?: string;
   description: string;
-  consoleType: ConsoleType | string;
+  consoleType: ConsoleType | "";
   deliveryStatus: string;
   createdAt: string;
   updatedAt: string;
   deliveryCode: string;
   deliveryDate: string;
 }
-// !لیست بازی ها
+
+export type storeOrder = StoreOrder;
+
 export interface GameItem {
   _id: string;
   name: string;
@@ -108,7 +109,7 @@ export interface GameItem {
 
 export interface GameList {
   _id: string;
-  platform: "ps5" | "ps4" | "کپی خور" | "xbox";
+  platform: ConsoleType;
   items: GameItem[];
 }
 

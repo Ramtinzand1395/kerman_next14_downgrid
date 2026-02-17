@@ -42,11 +42,11 @@ export async function GET() {
     .populate("customer")
     .lean();
 
-  const parsedOrders = orders.map((o: storeOrder) => ({
+  const parsedOrders: storeOrder[] = orders.map((o: any) => ({
     ...o,
     // list: JSON.parse(o.list),
     deliveryStatus: o.deliveryStatus || "دریافت از مشتری",
-    consoleType: o.consoleType || "unknown",
+   consoleType: (o.consoleType || "") as storeOrder["consoleType"],
   }));
 
   const groupedOrders: Record<string, storeOrder[]> = {};

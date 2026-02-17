@@ -6,12 +6,10 @@ import { toast } from "react-toastify";
 
 import { toPersianDate } from "@/helpers/toPersianDate";
 import { sendPdfToBackend } from "@/helpers/sendPdfToBackend";
-import { Customer, storeOrder } from "@/types";
+import { ConsoleType, storeOrder } from "@/types";
 
 import UpdateStoreOrder from "./UpdateStoreOrder";
-import UpdateUser from "./UpdateUser";
 
-type ConsoleType = "ps5" | "ps4" | "xbox" | "copy";
 
 type OrdersByConsole = {
   ps5: storeOrder[];

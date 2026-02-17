@@ -10,10 +10,8 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 
-import { Customer, storeOrder } from "@/types";
+import { ConsoleType, Customer, storeOrder } from "@/types";
 import GameDropdown from "./GameDropdown";
-
-type ConsoleType = "ps5" | "ps4" | "xbox" | "copy";
 
 type OrdersByConsole = {
   ps5: storeOrder[];
@@ -168,7 +166,9 @@ const AddCustomerOrder = ({
         </h3>
 
         {order?.list.length === 0 ? (
-          <p className="text-xs text-slate-500">هنوز بازی‌ای انتخاب نشده است.</p>
+          <p className="text-xs text-slate-500">
+            هنوز بازی‌ای انتخاب نشده است.
+          </p>
         ) : (
           <ul className="grid gap-2 sm:grid-cols-2">
             {order?.list.map((game) => (
