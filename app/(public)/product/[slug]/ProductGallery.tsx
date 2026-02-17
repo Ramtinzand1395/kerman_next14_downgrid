@@ -97,6 +97,27 @@ export const ProductGallery = ({
       toast.error("خطایی رخ داد");
     }
   };
+  const handleShareProduct = async () => {
+    const shareData = {
+      title,
+      text: `مشاهده محصول ${title}`,
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        return;
+      }
+
+      await navigator.clipboard.writeText(shareData.url);
+      toast.success("لینک محصول کپی شد ✅");
+    } catch (error) {
+      console.error("share product error:", error);
+      toast.error("اشتراک‌گذاری انجام نشد");
+    }
+  };
+
   return (
     <div className="relative">
       {/* Actions Overlay */}
@@ -114,6 +135,7 @@ export const ProductGallery = ({
           />
         </button>
         <button
+        onClick={handleShareProduct}
           className="p-2 bg-white rounded-full shadow-md text-gray-500 hover:text-blue-500 transition-colors hover:bg-blue-50"
           title="اشتراک‌گذاری"
         >
