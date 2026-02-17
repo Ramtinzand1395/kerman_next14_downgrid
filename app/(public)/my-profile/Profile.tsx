@@ -117,9 +117,23 @@ export default function Profile() {
 
   useEffect(() => {
     if (!editField) return;
-    if (!window.matchMedia("(max-width: 1023px)").matches) return;
 
-    editorCardRef.current?.scrollIntoView({
+    const editorCard = editorCardRef.current;
+    if (!editorCard) return;
+
+    editorCard.focus({ preventScroll: true });
+
+    const isMobileViewport = window.matchMedia("(max-width: 1023px)").matches;
+
+    if (isMobileViewport) {
+      window.scrollTo({
+        top: editorCard.getBoundingClientRect().top + window.scrollY - 0,
+        behavior: "smooth",
+      });
+      return;
+    }
+
+    editorCard.scrollIntoView({
       behavior: "smooth",
       block: "start",
     });
@@ -185,10 +199,11 @@ export default function Profile() {
       </div>
 
       <div className="order-1 space-y-4 lg:order-2">
-        <div
-          ref={editorCardRef}
-          className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-        >
+       <div
+         ref={editorCardRef}
+         tabIndex={-1}
+         className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+       >
           {!editField ? (
             <>
               <h3 className="mb-2 text-sm font-semibold text-slate-800">
