@@ -12,7 +12,7 @@ import * as yup from "yup";
 
 interface ShippingFormProps {
   selectedAddress: Address | null;
-  setSelectedAddress: (address: Address) => void;
+  setSelectedAddress: (address: Address | null) => void;
 }
 
 export default function ShippingForm({
@@ -56,6 +56,20 @@ export default function ShippingForm({
 
   const resetForm = () => setForm({});
 
+  useEffect(() => {
+    if (addresses.length === 0) {
+      return;
+    }
+
+    const hasValidSelection = selectedAddress
+      ? addresses.some((address) => address._id === selectedAddress._id)
+      : false;
+
+    if (!hasValidSelection) {
+      setSelectedAddress(addresses[0]);
+    }
+  }, [addresses, selectedAddress, setSelectedAddress]);
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -80,7 +94,9 @@ export default function ShippingForm({
 
       if (!response.ok) throw new Error();
 
-      toast.success(form._id ? "آدرس با موفقیت ویرایش شد." : "آدرس جدید ثبت شد.");
+      toast.success(
+        form._id ? "آدرس با موفقیت ویرایش شد." : "آدرس جدید ثبت شد.",
+      );
       resetForm();
       await getAddresses();
     } catch {
@@ -98,10 +114,14 @@ export default function ShippingForm({
 
       if (!response.ok) throw new Error();
 
-      setAddresses((current) => current.filter((address) => address._id !== id));
+      setAddresses((current) =>
+        current.filter((address) => address._id !== id),
+      );
 
       if (selectedAddress?._id === id) {
-        sessionStorage.removeItem("checkout:selected-address");
+        const nextAddress =
+          addresses.find((address) => address._id !== id) ?? null;
+        setSelectedAddress(nextAddress);
       }
 
       toast.info("آدرس حذف شد.");
@@ -166,7 +186,9 @@ export default function ShippingForm({
             <select
               id="city"
               value={form.city || ""}
-              onChange={(event) => setForm({ ...form, city: event.target.value })}
+              onChange={(event) =>
+                setForm({ ...form, city: event.target.value })
+              }
               className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm outline-none ring-cyan-500 focus:ring"
               required
               disabled={!form.province}
@@ -191,7 +213,9 @@ export default function ShippingForm({
           <input
             id="address"
             value={form.address || ""}
-            onChange={(event) => setForm({ ...form, address: event.target.value })}
+            onChange={(event) =>
+              setForm({ ...form, address: event.target.value })
+            }
             className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm outline-none ring-cyan-500 focus:ring"
             placeholder="مثال: خیابان ولیعصر، پلاک ۱۲، طبقه دوم"
             required
@@ -209,7 +233,9 @@ export default function ShippingForm({
             <input
               id="plaque"
               value={form.plaque || ""}
-              onChange={(event) => setForm({ ...form, plaque: event.target.value })}
+              onChange={(event) =>
+                setForm({ ...form, plaque: event.target.value })
+              }
               className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm outline-none ring-cyan-500 focus:ring"
               inputMode="numeric"
             />
@@ -225,7 +251,9 @@ export default function ShippingForm({
             <input
               id="unit"
               value={form.unit || ""}
-              onChange={(event) => setForm({ ...form, unit: event.target.value })}
+              onChange={(event) =>
+                setForm({ ...form, unit: event.target.value })
+              }
               className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm outline-none ring-cyan-500 focus:ring"
               inputMode="numeric"
             />

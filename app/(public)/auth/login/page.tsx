@@ -28,7 +28,7 @@ declare global {
 const OTP_META_KEY = "otpMeta";
 const OTP_EXPIRE_KEY = "otpExpireTime";
 const OTP_TOTAL_TIME = 120;
-
+const OTP_LENGTH = 5;
 export default function LoginWithOtp() {
   const [mobile, setMobile] = useState("");
   const [otpSent, setOtpSent] = useState(false);
@@ -109,13 +109,13 @@ export default function LoginWithOtp() {
 
         if (!credential?.code) return;
 
-        const otpCode = credential.code.replace(/\D/g, "").slice(0, 6);
+       const otpCode = credential.code.replace(/\D/g, "").slice(0, OTP_LENGTH);
         if (!otpCode) return;
 
         setEnteredOtp(otpCode);
         toast.success("کد پیامک به‌صورت خودکار وارد شد");
 
-        if (otpCode.length === 6) {
+      if (otpCode.length === OTP_LENGTH) {
           formRef.current?.requestSubmit();
         }
       } catch {
@@ -330,13 +330,15 @@ export default function LoginWithOtp() {
                   dir="ltr"
                   inputMode="numeric"
                   autoComplete="one-time-code"
-                  pattern="[0-9]{6}"
-                  maxLength={6}
+                  pattern="[0-9]{5}"
+                  maxLength={OTP_LENGTH}
                   value={enteredOtp}
                   onChange={(e) =>
-                    setEnteredOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                      setEnteredOtp(
+                   e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH),
+                   )
                   }
-                  placeholder="------"
+                  placeholder="-----"
                   className="w-full rounded-xl border border-slate-300 px-4 py-3 text-center text-lg tracking-[0.45em] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                 />
               </div>
