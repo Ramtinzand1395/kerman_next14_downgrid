@@ -111,15 +111,7 @@ export interface GameList {
   platform: "ps5" | "ps4" | "کپی خور" | "xbox";
   items: GameItem[];
 }
-// !پاک بشه
-export interface Favorite {
-  id: number;
-  userId: number;
-  productId: number;
-  createdAt: string;
-  user: User;
-  product: Product;
-}
+
 
 export interface Category {
   _id: string;
