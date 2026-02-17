@@ -8,7 +8,7 @@ import TabSection from "./TabSection";
 import type { Product } from "@/types";
 
 type ProductResponse = Product & {
-  id?: number;
+  id?: string;
   error?: string;
 };
 
@@ -30,7 +30,7 @@ async function getProduct(slug: string): Promise<ProductResponse> {
 }
 
 async function getRelatedProducts(
-  id?: number,
+  id?: string,
 ): Promise<{ relatedProducts: Product[] }> {
   if (!id) {
     return { relatedProducts: [] };
@@ -126,7 +126,7 @@ export default async function ProductPage({
     notFound();
   }
 
-  const { relatedProducts } = await getRelatedProducts(product.id);
+   const { relatedProducts } = await getRelatedProducts(product._id || product.id);
   const finalPrice = product.discountPrice ?? product.price;
   const productUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/product/${product.slug}`;
 
