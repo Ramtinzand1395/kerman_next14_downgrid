@@ -1,6 +1,5 @@
 "use client";
-// todo
-// از لیست حذف نمیشه با دکمه قلب
+
 import { useEffect, useState } from "react";
 import { Heart, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";

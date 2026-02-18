@@ -4,14 +4,12 @@ import jsPDF from "jspdf";
 import { Customer, storeOrder } from "@/types";
 import { toast } from "react-toastify";
 import { toPersianDate } from "./toPersianDate";
-// todo
-// ساعت اشتباه
-// ساعت اس ام اس هم اشتباه برای تحویل اس ام اسی
+
 const isEnglish = (text: string) => /[a-zA-Z]/.test(text);
 
 const generatePDF = (
   userOrder: storeOrder | null,
-  customer: Customer | null
+  customer: Customer | null,
 ) => {
   const fontSize = 12;
   const lineHeight = 6;
@@ -88,7 +86,7 @@ const generatePDF = (
 
 export const sendPdfToBackend = async (
   userOrder: storeOrder | null,
-  customer: Customer | null
+  customer: Customer | null,
 ) => {
   try {
     const pdfBlob = generatePDF(userOrder, customer);

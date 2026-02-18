@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-// todo
-// عکس ها فرمت درست بشه و تغییر کنه و انیمیشن
+
 const banners = [
   {
     title: "پیشنهاد ویژه کنسول",

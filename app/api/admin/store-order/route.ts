@@ -46,7 +46,7 @@ export async function GET() {
     ...o,
     // list: JSON.parse(o.list),
     deliveryStatus: o.deliveryStatus || "دریافت از مشتری",
-   consoleType: (o.consoleType || "") as storeOrder["consoleType"],
+    consoleType: (o.consoleType || "") as storeOrder["consoleType"],
   }));
 
   const groupedOrders: Record<string, storeOrder[]> = {};
@@ -61,8 +61,6 @@ export async function GET() {
 }
 
 /* ================= POST ================= */
-// todo
-// اگه smsنرفت سفارش حذف بشه
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user)
@@ -108,6 +106,6 @@ export async function POST(req: Request) {
   });
   return NextResponse.json(
     { message: "سفارش ایجاد شد.", order, sms: smsResponse },
-    { status: 201 }
+    { status: 201 },
   );
 }

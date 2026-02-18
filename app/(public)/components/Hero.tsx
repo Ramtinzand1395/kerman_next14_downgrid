@@ -3,9 +3,7 @@
 import { Gift } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-// todo
-// بعدا فریمر موشن اضافه بشه
-// مشاوره خرید رایگان بره به تلگرام
+
 const Hero = () => {
   return (
     <motion.section

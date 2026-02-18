@@ -1,6 +1,5 @@
 "use client";
-// todo
-// منو در حالت بسته خوب عمل نمیکنه
+
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";

@@ -17,9 +17,6 @@ export async function GET(
 
   try {
     await dbConnect(); // اتصال به MongoDB
-    // todo
-    // اضافه کردن اسم نویسنده کامنت
-    // جستجو محصول بر اساس slug و populate کردن روابط
     const product = await Product.findOne({ slug })
       .populate("images") // اگر مدل جدا برای تصاویر داری
       .populate({

@@ -23,16 +23,12 @@ export async function GET() {
     if (!session?.user?.mobile) {
       return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
     }
-    // todo اضافه کردن مدل ها و این خط
     const user = await User.findOne({ mobile: session.user.mobile });
-    // .populate(
-    //   "favorites addresses orders products comments tempPayments"
-    // );
 
     if (!user) {
       return NextResponse.json(
         { error: "کاربری با این شماره موبایل یافت نشد" },
-        { status: 404 }
+        { status: 404 },
       );
     }
     // تبدیل تاریخ میلادی به شمسی با اعداد فارسی
@@ -68,7 +64,7 @@ export async function PUT(req: NextRequest) {
     if (data.birthday) {
       const birthdayEn = faToEnNumbers(data.birthday); // تبدیل اعداد فارسی به انگلیسی
       birthdayGregorian = moment(birthdayEn, "jYYYY-jMM-jDD").format(
-        "YYYY-MM-DD"
+        "YYYY-MM-DD",
       );
     }
 
@@ -82,7 +78,7 @@ export async function PUT(req: NextRequest) {
         nationalCode: data.nationalCode,
         newsletter: data.newsletter,
       },
-      { new: true } // بازگرداندن نسخه بروز شده
+      { new: true }, // بازگرداندن نسخه بروز شده
     );
 
     if (!updatedUser) {

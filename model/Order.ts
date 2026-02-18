@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
-// todo
-// farsi beshe
+
 const OrderStatusEnum = [
   "pending",
   "processing",
@@ -71,8 +70,6 @@ const OrderSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
     },
-    // todo
-    // این چیه؟
     invoiceNumber: {
       type: String,
       unique: true,
@@ -81,7 +78,7 @@ const OrderSchema = new mongoose.Schema(
 
     description: String,
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.models.Order || mongoose.model("Order", OrderSchema);

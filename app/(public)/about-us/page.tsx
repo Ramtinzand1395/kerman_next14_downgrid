@@ -121,7 +121,7 @@ export default function AboutUsPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <header className="grid gap-8 rounded-3xl bg-gradient-to-l from-slate-900 to-slate-800 p-6 text-white md:grid-cols-2 md:p-10">
+      <header className="grid gap-8 rounded-3xl bg-gradient-to-l from-blue-900 to-blue-800 p-6 text-white md:grid-cols-2 md:p-10">
         <div className="space-y-5">
           <p className="inline-flex rounded-full border border-white/30 px-3 py-1 text-xs">
             همراه گیمرها، از انتخاب تا بازی

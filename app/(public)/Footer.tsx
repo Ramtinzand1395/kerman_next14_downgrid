@@ -13,10 +13,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-// todo
-// باید تکمیل بشه
-// نماد اعتماد بیاد
-// گذینه ها اضافه بشه مثل اخرین محصولات و مقالات
+
 const quickLinks = [
   { name: "خانه", href: "/", icon: Home },
   { name: "فروشگاه", href: "/products", icon: ShoppingBag },

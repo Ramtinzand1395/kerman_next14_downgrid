@@ -1,66 +1,3 @@
-// import dbConnect from "@/lib/mongodb";
-// import { getServerSession } from "next-auth";
-// import { authOptions } from "../auth/[...nextauth]/options";
-// import { NextResponse } from "next/server";
-// import Order from "@/model/Order";
-// import Notification from "@/model/Notification";
-// import User from "@/model/User";
-
-// interface OrderItem {
-//   productId: string;
-//   price: number;
-//   quantity: number;
-// }
-
-// export async function POST(req: Request) {
-//   await dbConnect();
-//   const session = await getServerSession(authOptions);
-//   if (!session)
-//     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-//   const {
-//     addressId,
-//     items,
-//     shippingCost,
-//   }: { addressId: string; items: OrderItem[]; shippingCost: number } =
-//     await req.json();
-
-//   const totalPrice = items.reduce(
-//     (a: number, i: OrderItem) => a + i.price * i.quantity,
-//     0
-//   );
-//   const finalPrice = totalPrice + shippingCost;
-
-//   const order = await Order.create({
-//     user: session.user.id,
-//     address: addressId,
-//     items: items.map((i) => ({
-//       product: i.productId,
-//       price: i.price,
-//       quantity: i.quantity,
-//       total: i.price * i.quantity,
-//     })),
-//     totalPrice,
-//     shippingCost,
-//     finalPrice,
-//   });
-//   await User.findByIdAndUpdate(session.user.id, {
-//     $push: { orders: order._id },
-//   });
-
-//   await Notification.create({
-//     title: "سفارش جدید",
-//     message: "یک سفارش جدید ثبت شد",
-//     type: "order",
-//     target: {
-//       kind: "Order",
-//       item: order._id,
-//     },
-//   });
-
-//   return NextResponse.json(order);
-// }
-
 import dbConnect from "@/lib/mongodb";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/options";
@@ -83,15 +20,28 @@ export async function POST(req: Request) {
   if (!session)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const payload: { addressId?: string; items?: OrderItem[]; shippingCost?: number } =
-    await req.json();
+  const payload: {
+    addressId?: string;
+    items?: OrderItem[];
+    shippingCost?: number;
+  } = await req.json();
 
-  if (!payload.addressId || !Array.isArray(payload.items) || payload.items.length === 0) {
-    return NextResponse.json({ error: "درخواست سفارش نامعتبر است." }, { status: 400 });
+  if (
+    !payload.addressId ||
+    !Array.isArray(payload.items) ||
+    payload.items.length === 0
+  ) {
+    return NextResponse.json(
+      { error: "درخواست سفارش نامعتبر است." },
+      { status: 400 },
+    );
   }
 
   if (!mongoose.isValidObjectId(payload.addressId)) {
-    return NextResponse.json({ error: "شناسه آدرس معتبر نیست." }, { status: 400 });
+    return NextResponse.json(
+      { error: "شناسه آدرس معتبر نیست." },
+      { status: 400 },
+    );
   }
 
   const address = await Address.findOne({
@@ -100,7 +50,10 @@ export async function POST(req: Request) {
   }).lean();
 
   if (!address) {
-    return NextResponse.json({ error: "آدرس انتخابی معتبر نیست." }, { status: 400 });
+    return NextResponse.json(
+      { error: "آدرس انتخابی معتبر نیست." },
+      { status: 400 },
+    );
   }
 
   const normalizedItems = payload.items
@@ -116,7 +69,10 @@ export async function POST(req: Request) {
     );
 
   if (normalizedItems.length !== payload.items.length) {
-    return NextResponse.json({ error: "اطلاعات اقلام سفارش نامعتبر است." }, { status: 400 });
+    return NextResponse.json(
+      { error: "اطلاعات اقلام سفارش نامعتبر است." },
+      { status: 400 },
+    );
   }
 
   const productIds = normalizedItems.map((item) => item.productId);
@@ -125,10 +81,15 @@ export async function POST(req: Request) {
     .lean();
 
   if (products.length !== productIds.length) {
-    return NextResponse.json({ error: "برخی از محصولات نامعتبر هستند." }, { status: 400 });
+    return NextResponse.json(
+      { error: "برخی از محصولات نامعتبر هستند." },
+      { status: 400 },
+    );
   }
 
-  const productMap = new Map(products.map((product) => [String(product._id), product]));
+  const productMap = new Map(
+    products.map((product) => [String(product._id), product]),
+  );
 
   try {
     const orderItems = normalizedItems.map((item) => {
@@ -154,7 +115,10 @@ export async function POST(req: Request) {
 
     const shippingCost = Number(payload.shippingCost ?? 0);
     if (!Number.isFinite(shippingCost) || shippingCost < 0) {
-      return NextResponse.json({ error: "هزینه ارسال نامعتبر است." }, { status: 400 });
+      return NextResponse.json(
+        { error: "هزینه ارسال نامعتبر است." },
+        { status: 400 },
+      );
     }
 
     const totalPrice = orderItems.reduce((a: number, i) => a + i.total, 0);
@@ -171,7 +135,10 @@ export async function POST(req: Request) {
         finalPrice,
       });
     } catch {
-      return NextResponse.json({ error: "Order could not be created" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Order could not be created" },
+        { status: 500 },
+      );
     }
 
     await User.findByIdAndUpdate(session.user.id, {
@@ -191,10 +158,16 @@ export async function POST(req: Request) {
     return NextResponse.json(order);
   } catch (error) {
     if (error instanceof Error && error.message === "INSUFFICIENT_STOCK") {
-      return NextResponse.json({ error: "موجودی برخی محصولات کافی نیست." }, { status: 409 });
+      return NextResponse.json(
+        { error: "موجودی برخی محصولات کافی نیست." },
+        { status: 409 },
+      );
     }
 
-    return NextResponse.json({ error: "اطلاعات اقلام سفارش نامعتبر است." }, { status: 400 });
+    return NextResponse.json(
+      { error: "اطلاعات اقلام سفارش نامعتبر است." },
+      { status: 400 },
+    );
   }
 }
 

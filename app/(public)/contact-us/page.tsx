@@ -127,7 +127,7 @@ export default function ContactUsPage() {
 
       <ContactForm />
 
-      <section className="mt-12 grid gap-6 rounded-3xl bg-slate-900 p-6 text-white md:grid-cols-3 md:p-8">
+      <section className="mt-12 grid gap-6 rounded-3xl bg-blue-900 p-6 text-white md:grid-cols-3 md:p-8">
         <article>
           <h2 className="text-lg font-bold">مشاوره قبل از خرید</h2>
           <p className="mt-3 text-sm leading-7 text-slate-200">
