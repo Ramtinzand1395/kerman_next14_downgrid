@@ -52,7 +52,7 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
           shippingCost,
           items: cart.map((item) => ({
             productId: item.id,
-            price: item.discountPrice ?? item.price,
+            // price: item.discountPrice ?? item.price,
             quantity: item.quantity,
           })),
         }),
@@ -69,8 +69,8 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orderId: order._id,
-          items: cart.map((item) => item.id),
-          finalPrice: orderSummary.final,
+          // items: cart.map((item) => item.id),
+          // finalPrice: orderSummary.final,
         }),
       });
 
