@@ -35,7 +35,20 @@ const SearchCustomer = ({
         `/api/admin/store-order/customer?mobile=${customerData.mobile}`,
       );
       const data = await res.json();
-
+      if (res.status === 400 && data?.message === "خریدار پیدا نشد.") {
+        setCustomerData((prev) => ({
+          ...prev,
+          _id: "",
+          name: "",
+          lastName: "",
+          sex: "",
+          birthday: "",
+          description: "",
+        }));
+        toast.info("مشتری جدید است. لطفا اطلاعات را ثبت کنید.");
+        onNext();
+        return;
+      }
       if (!res.ok) {
         throw new Error(data?.message || "خطا در جستجوی مشتری");
       }

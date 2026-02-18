@@ -94,6 +94,16 @@ export default function Profile() {
     setFormData({ ...formData, gender: value });
   };
 
+  const scrollPageToTop = () => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+
+    document.documentElement.scrollTop = 0;
+
+    document.body.scrollTop = 0;
+
+    document.scrollingElement?.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  };
+
   async function updateProfileInfo(data: UserProfileForm) {
     const res = await fetch("/api/profile/account", {
       method: "PUT",
@@ -114,6 +124,7 @@ export default function Profile() {
         behavior: "smooth",
       });
       setEditField(null);
+      scrollPageToTop();
     } else {
       toast.error(res.error || "خطا در ذخیره اطلاعات");
     }
@@ -126,21 +137,7 @@ export default function Profile() {
     if (!editorCard) return;
 
     editorCard.focus({ preventScroll: true });
-
-    const isMobileViewport = window.matchMedia("(max-width: 1023px)").matches;
-
-    if (isMobileViewport) {
-      window.scrollTo({
-        top: editorCard.getBoundingClientRect().top + window.scrollY - 0,
-        behavior: "smooth",
-      });
-      return;
-    }
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    requestAnimationFrame(scrollPageToTop);
   }, [editField]);
 
   return (
