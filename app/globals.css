@@ -1,8 +1,9 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
+html {
+  scrollbar-gutter: stable;
+}
 body {
   background-color: #f3f4f9;
 }
@@ -66,7 +67,6 @@ body {
   border-radius: 0.75rem;
   overflow: hidden;
 }
-
 
 @media (min-width: 768px) {
   .dashboard-topbar {

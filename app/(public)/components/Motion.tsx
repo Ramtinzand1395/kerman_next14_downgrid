@@ -36,7 +36,7 @@ const Motion: React.FC<MotionProps> = ({
       controls.start("visible");
     }
   }, [controls, isInView]);
-
+const hasHorizontalMotion = direction === "left" || direction === "right";
   const hiddenState = useMemo(() => {
     switch (direction) {
       case "left":
@@ -76,7 +76,11 @@ const Motion: React.FC<MotionProps> = ({
   }, [direction, distance]);
 
   return (
-    <div ref={ref} className={className}>
+     <div
+      ref={ref}
+      className={className}
+      style={hasHorizontalMotion ? { overflowX: "clip" } : undefined}
+    >
       <motion.div
         variants={{
           hidden: hiddenState,
