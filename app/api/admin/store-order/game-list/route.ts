@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user)
     return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
-  if (session.user.role !== "superadmin")
+  if (session.user.role !== "superadmin" && session.user.role !== "admin")
     return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
 
   await dbConnect();

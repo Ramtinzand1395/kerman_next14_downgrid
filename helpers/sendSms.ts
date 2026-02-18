@@ -44,10 +44,10 @@ export async function sendOtpToUser(mobile: string) {
     otp,
     createdAt: new Date(),
   });
-  // await sendSMS({
-  //   bodyId: 401950,
-  //   to: mobile,
-  //   args: [otp],
-  // });
+  await sendSMS({
+    bodyId: 401950,
+    to: mobile,
+    args: [otp],
+  });
   return otpDoc._id.toString();
 }

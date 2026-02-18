@@ -44,7 +44,7 @@ const banners = [
 export default function MainPageBanners() {
   return (
     <section className="my-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {banners.map((banner) => (
+       {banners.map((banner, index) => (
         <article
           key={banner.title}
           className="group relative min-h-[220px] overflow-hidden rounded-3xl"
@@ -55,6 +55,7 @@ export default function MainPageBanners() {
             fill
             className="object-cover transition duration-500 group-hover:scale-105"
             sizes="(max-width: 640px) 100vw, 50vw"
+              priority={index < 2}
           />
 
           <div

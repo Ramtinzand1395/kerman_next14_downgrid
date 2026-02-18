@@ -17,7 +17,7 @@ const Subscribed = () => {
     }
 
     setIsSubmitting(true);
-      newsletterSchema.validateSync(email, { abortEarly: false });
+      // newsletterSchema.validateSync(email, { abortEarly: false });
 
     try {
       const response = await fetch("/api/newsletter", {

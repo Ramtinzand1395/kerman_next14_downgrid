@@ -96,11 +96,8 @@ export default function Profile() {
 
   const scrollPageToTop = () => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-
     document.documentElement.scrollTop = 0;
-
     document.body.scrollTop = 0;
-
     document.scrollingElement?.scrollTo({ top: 0, left: 0, behavior: "auto" });
   };
 

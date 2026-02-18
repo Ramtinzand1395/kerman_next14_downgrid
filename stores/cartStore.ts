@@ -1,7 +1,7 @@
 import { CartItem, CartStoreStateType } from "@/types";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-// hi
+import { safeJSONStorage } from "./safeStorage";
 interface CartStoreActionsType {
   addToCart: (
     product: Partial<CartItem> & {
@@ -71,7 +71,7 @@ const useCartStore = create<CartStoreActionsType & CartStoreStateType>()(
 
     {
       name: "cart",
-      storage: createJSONStorage(() => localStorage),
+       storage: createJSONStorage(() => safeJSONStorage),
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.hasHydrated = true;

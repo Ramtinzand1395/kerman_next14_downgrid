@@ -8,6 +8,7 @@ interface DiscountTimerProps {
 }
 
 export default function DiscountTimer({ endDate }: DiscountTimerProps) {
+  const [mounted, setMounted] = useState(false);
   const calculateTimeLeft = () => {
     const difference = new Date(endDate).getTime() - new Date().getTime();
     if (difference > 0) {
@@ -22,15 +23,27 @@ export default function DiscountTimer({ endDate }: DiscountTimerProps) {
     }
   };
 
-  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+  const [timeLeft, setTimeLeft] =
+    useState<ReturnType<typeof calculateTimeLeft>>(null);
 
   useEffect(() => {
+    setMounted(true);
+    setTimeLeft(calculateTimeLeft());
     const timer = setInterval(() => {
       setTimeLeft(calculateTimeLeft());
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
-
+  }, [endDate]);
+  if (!mounted) {
+    return (
+      <div
+        className="flex items-center text-xs md:text-base"
+        suppressHydrationWarning
+      >
+        <span className="ml-5 text-red-800">پیشنهاد ویژه:</span>
+      </div>
+    );
+  }
   if (!timeLeft) {
     return (
       <motion.div

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-
+import { safeJSONStorage } from "./safeStorage";
 interface FavoriteStoreState {
   favoriteIds: string[];
   hasHydrated: boolean;
@@ -85,7 +85,7 @@ const useFavoriteStore = create<FavoriteStore>()(
     }),
     {
       name: "favorites",
-      storage: createJSONStorage(() => localStorage),
+        storage: createJSONStorage(() => safeJSONStorage),
       partialize: (state) => ({
         favoriteIds: state.favoriteIds,
       }),

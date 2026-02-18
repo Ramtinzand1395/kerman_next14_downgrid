@@ -31,10 +31,7 @@ const GameDropdown: React.FC<GameDropdownProps> = ({
       try {
         const params = new URLSearchParams();
 
-        if (Selectedgames?.consoleType) {
-          params.set("platform", Selectedgames.consoleType);
-        }
-
+    
         if (search.trim()) {
           params.set("search", search.trim());
           params.set("limit", "100");
@@ -76,7 +73,7 @@ const GameDropdown: React.FC<GameDropdownProps> = ({
 
     getData();
     return () => controller.abort();
-  }, [Selectedgames?.consoleType, search]);
+  }, [ search]);
 
   const filteredGames = useMemo(() => {
     if (!search.trim()) return games;
@@ -92,11 +89,7 @@ const GameDropdown: React.FC<GameDropdownProps> = ({
         type="search"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder={
-          Selectedgames?.consoleType
-            ? "جستجوی بازی همان دستگاه"
-            : "جستجو در همه بازی‌ها"
-        }
+      placeholder="جستجو در همه بازی‌ها"
         disabled={!Selectedgames?.consoleType}
         className="h-10 w-full rounded-xl border border-slate-300 px-3 text-sm outline-none ring-indigo-100 focus:ring-4"
       />

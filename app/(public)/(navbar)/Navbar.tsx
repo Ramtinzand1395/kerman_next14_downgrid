@@ -98,11 +98,11 @@ export default function Navbar() {
           aria-label="صفحه اصلی کرمان آتاری"
         >
           <Image
-            width={30}
-            height={30}
+            width={32}
+            height={32}
             alt="لوگوی کرمان آتاری"
             src="/atari-seeklogo.svg"
-            className="h-8 w-8"
+          
             priority
           />
           <h1 className=" truncate text-base font-extrabold tracking-tight text-slate-900 sm:block md:text-lg">
