@@ -1,5 +1,6 @@
 "use client";
 
+import { newsletterSchema } from "@/validations/validation";
 import { FormEvent, useState } from "react";
 import { toast } from "react-toastify";
 
@@ -16,6 +17,7 @@ const Subscribed = () => {
     }
 
     setIsSubmitting(true);
+      newsletterSchema.validateSync(email, { abortEarly: false });
 
     try {
       const response = await fetch("/api/newsletter", {

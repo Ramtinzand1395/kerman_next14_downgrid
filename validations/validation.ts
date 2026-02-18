@@ -39,3 +39,11 @@ export const productValidationSchema = yup.object().shape({
 
   mainImage: yup.string().required("تصویر اصلی محصول الزامی است"),
 });
+
+export const newsletterSchema = yup.object({
+  email: yup
+    .string()
+    .trim()
+    .required("لطفاً ایمیل خود را وارد کنید.")
+    .email("لطفاً یک ایمیل معتبر وارد کنید."),
+});
