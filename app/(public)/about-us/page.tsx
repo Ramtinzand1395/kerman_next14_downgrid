@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     title: "درباره ما | کرمان آتاری",
     description:
       "آشنایی با تیم، مسیر رشد و تعهدات کرمان آتاری در ارائه بازی و کنسول‌های پلی‌استیشن.",
-    images: ["/banner_1.webp"],
+    images: ["/about-us.webp"],
   },
   robots: {
     index: true,
@@ -150,7 +150,7 @@ export default function AboutUsPage() {
 
         <div className="relative min-h-64 overflow-hidden rounded-2xl">
           <Image
-            src="/banner_3.webp"
+            src="/about-us.webp"
             alt="تیم کرمان آتاری و خدمات فروش بازی و کنسول"
             fill
             priority
