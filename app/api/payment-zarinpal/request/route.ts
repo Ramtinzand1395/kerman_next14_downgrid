@@ -85,10 +85,8 @@ import mongoose from "mongoose";
 export async function POST(req: NextRequest) {
   await dbConnect();
   const session = await getServerSession(authOptions);
-
-  if (!session) {
+  if (!session)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   try {
     const { orderId } = await req.json();
@@ -107,10 +105,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const order = await Order.findOne({
-      _id: orderId,
-      user: session.user.id,
-    }).lean();
+    const order = await Order.findOne({ _id: orderId, user: session.user.id }).lean();
 
     if (!order) {
       return NextResponse.json(
@@ -131,7 +126,6 @@ export async function POST(req: NextRequest) {
     const callback_url = `${process.env.NEXT_PUBLIC_BASE_URL}/api/payment-zarinpal/verify`;
     const finalPriceWithExtraZero = order.finalPrice * 10;
 
-    // !sandbox
     const res = await fetch(
       // "https://sandbox.zarinpal.com/pg/v4/payment/request.json",
       "https://api.zarinpal.com/pg/v4/payment/request.json",
@@ -156,17 +150,14 @@ export async function POST(req: NextRequest) {
       await TempPayment.create({
         authority,
         userId: session.user.id,
-        items: order.items.map(
-          (item: { product: string; quantity: number }) => ({
-            product: item.product,
-            quantity: item.quantity,
-          })
-        ),
+        items: order.items.map((item: { product: string; quantity: number }) => ({
+          product: item.product,
+          quantity: item.quantity,
+        })),
         finalPrice: finalPriceWithExtraZero,
         orderId,
       });
 
-      // !sand
       return NextResponse.json({
         success: true,
         url: `https://api.zarinpal.com/pg/StartPay/${authority}`,
@@ -186,6 +177,9 @@ export async function POST(req: NextRequest) {
       errorMessage = err.message;
     }
 
-    return NextResponse.json({ success: false, error: errorMessage });
+    return NextResponse.json(
+      { success: false, error: errorMessage },
+      { status: 500 }
+    );
   }
 }

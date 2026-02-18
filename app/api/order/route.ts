@@ -61,7 +61,6 @@
 //   return NextResponse.json(order);
 // }
 
-
 import dbConnect from "@/lib/mongodb";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/options";
@@ -81,30 +80,18 @@ interface OrderItem {
 export async function POST(req: Request) {
   await dbConnect();
   const session = await getServerSession(authOptions);
-
-  if (!session) {
+  if (!session)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
-  const payload: {
-    addressId?: string;
-    items?: OrderItem[];
-    shippingCost?: number;
-  } = await req.json();
+  const payload: { addressId?: string; items?: OrderItem[]; shippingCost?: number } =
+    await req.json();
 
-  if (
-    !payload.addressId ||
-    !Array.isArray(payload.items) ||
-    payload.items.length === 0
-  ) {
-    return NextResponse.json(
-      { error: "Invalid request payload" },
-      { status: 400 }
-    );
+  if (!payload.addressId || !Array.isArray(payload.items) || payload.items.length === 0) {
+    return NextResponse.json({ error: "درخواست سفارش نامعتبر است." }, { status: 400 });
   }
 
   if (!mongoose.isValidObjectId(payload.addressId)) {
-    return NextResponse.json({ error: "Invalid address id" }, { status: 400 });
+    return NextResponse.json({ error: "شناسه آدرس معتبر نیست." }, { status: 400 });
   }
 
   const address = await Address.findOne({
@@ -113,7 +100,7 @@ export async function POST(req: Request) {
   }).lean();
 
   if (!address) {
-    return NextResponse.json({ error: "Address not found" }, { status: 404 });
+    return NextResponse.json({ error: "آدرس انتخابی معتبر نیست." }, { status: 400 });
   }
 
   const normalizedItems = payload.items
@@ -125,34 +112,27 @@ export async function POST(req: Request) {
       (item) =>
         mongoose.isValidObjectId(item.productId) &&
         Number.isInteger(item.quantity) &&
-        item.quantity > 0
+        item.quantity > 0,
     );
 
   if (normalizedItems.length !== payload.items.length) {
-    return NextResponse.json({ error: "Invalid order items" }, { status: 400 });
+    return NextResponse.json({ error: "اطلاعات اقلام سفارش نامعتبر است." }, { status: 400 });
   }
 
   const productIds = normalizedItems.map((item) => item.productId);
-
   const products = await Product.find({ _id: { $in: productIds } })
     .select("price discountPrice stock")
     .lean();
 
   if (products.length !== productIds.length) {
-    return NextResponse.json(
-      { error: "Some products were not found" },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: "برخی از محصولات نامعتبر هستند." }, { status: 400 });
   }
 
-  const productMap = new Map(
-    products.map((product) => [String(product._id), product])
-  );
+  const productMap = new Map(products.map((product) => [String(product._id), product]));
 
   try {
     const orderItems = normalizedItems.map((item) => {
       const product = productMap.get(item.productId);
-
       if (!product) {
         throw new Error("PRODUCT_NOT_FOUND");
       }
@@ -174,10 +154,7 @@ export async function POST(req: Request) {
 
     const shippingCost = Number(payload.shippingCost ?? 0);
     if (!Number.isFinite(shippingCost) || shippingCost < 0) {
-      return NextResponse.json(
-        { error: "Invalid shipping cost" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "هزینه ارسال نامعتبر است." }, { status: 400 });
     }
 
     const totalPrice = orderItems.reduce((a: number, i) => a + i.total, 0);
@@ -194,10 +171,7 @@ export async function POST(req: Request) {
         finalPrice,
       });
     } catch {
-      return NextResponse.json(
-        { error: "Order could not be created" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Order could not be created" }, { status: 500 });
     }
 
     await User.findByIdAndUpdate(session.user.id, {
@@ -217,12 +191,13 @@ export async function POST(req: Request) {
     return NextResponse.json(order);
   } catch (error) {
     if (error instanceof Error && error.message === "INSUFFICIENT_STOCK") {
-      return NextResponse.json(
-        { error: "Insufficient product stock" },
-        { status: 409 }
-      );
+      return NextResponse.json({ error: "موجودی برخی محصولات کافی نیست." }, { status: 409 });
     }
 
-    return NextResponse.json({ error: "Invalid order items" }, { status: 400 });
+    return NextResponse.json({ error: "اطلاعات اقلام سفارش نامعتبر است." }, { status: 400 });
   }
+}
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { status: 200 });
 }

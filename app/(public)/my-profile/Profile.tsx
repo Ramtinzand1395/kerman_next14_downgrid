@@ -109,6 +109,10 @@ export default function Profile() {
 
     if (res.success) {
       toast.success("اطلاعات با موفقیت ذخیره شد");
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
       setEditField(null);
     } else {
       toast.error(res.error || "خطا در ذخیره اطلاعات");
@@ -133,9 +137,9 @@ export default function Profile() {
       return;
     }
 
-    editorCard.scrollIntoView({
+    window.scrollTo({
+      top: 0,
       behavior: "smooth",
-      block: "start",
     });
   }, [editField]);
 
@@ -199,11 +203,11 @@ export default function Profile() {
       </div>
 
       <div className="order-1 space-y-4 lg:order-2">
-       <div
-         ref={editorCardRef}
-         tabIndex={-1}
-         className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-       >
+        <div
+          ref={editorCardRef}
+          tabIndex={-1}
+          className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+        >
           {!editField ? (
             <>
               <h3 className="mb-2 text-sm font-semibold text-slate-800">
