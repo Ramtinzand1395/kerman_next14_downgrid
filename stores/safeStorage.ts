@@ -1,4 +1,5 @@
 import { StateStorage } from "zustand/middleware";
+import { safeParseJSON } from "@/helpers/safeParseJSON";
 
 export const safeJSONStorage: StateStorage = {
   getItem: (name) => {
@@ -8,17 +9,17 @@ export const safeJSONStorage: StateStorage = {
       return null;
     }
 
-    try {
-      JSON.parse(value);
-      return value;
-    } catch {
+    const parsed = safeParseJSON(value);
+    if (parsed === null) {
       localStorage.removeItem(name);
       return null;
     }
+    return value;
   },
   setItem: (name, value) => {
     localStorage.setItem(name, value);
   },
+
   removeItem: (name) => {
     localStorage.removeItem(name);
   },

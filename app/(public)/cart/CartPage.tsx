@@ -17,6 +17,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import PaymentForm from "../components/PaymentForm";
 import ShippingForm from "../components/ShippingForm";
+import { safeParseJSON } from "@/helpers/safeParseJSON";
 
 const checkoutSteps = [
   {
@@ -78,11 +79,12 @@ export default function CartPage() {
     const cached = sessionStorage.getItem("checkout:selected-address");
     if (!cached) return;
 
-    try {
-      setSelectedAddress(JSON.parse(cached));
-    } catch {
+    const parsedAddress = safeParseJSON<Address>(cached);
+    if (!parsedAddress) {
       sessionStorage.removeItem("checkout:selected-address");
+      return;
     }
+    setSelectedAddress(parsedAddress);
   }, []);
 
   useEffect(() => {
@@ -267,9 +269,7 @@ export default function CartPage() {
                             type="button"
                             onClick={() => {
                               if (activeStep === 1 && index === 0) {
-                                const ok = confirm(
-                                  "از حذف محصول مطمعن هستید؟",
-                                );
+                                const ok = confirm("از حذف محصول مطمعن هستید؟");
                                 if (!ok) return;
                               }
 

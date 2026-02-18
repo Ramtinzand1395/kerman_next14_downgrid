@@ -5,7 +5,7 @@ import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { toast } from "react-toastify";
 import * as yup from "yup";
-
+import { safeParseJSON } from "@/helpers/safeParseJSON";
 import { CheckPhoneAction } from "@/helpers/CheckPhoneAction";
 import { sendOtpToUser } from "@/helpers/sendSms";
 import { mobileSchema, otpSchema } from "@/validations/validation";
