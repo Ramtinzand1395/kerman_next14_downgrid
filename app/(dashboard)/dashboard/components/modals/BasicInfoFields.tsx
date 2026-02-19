@@ -164,6 +164,7 @@
 
 import { useEffect, useState } from "react";
 import { ProductForm } from "@/types";
+import RichTextEditor from "../RichTextEditor";
 
 interface BasicInfoFieldsProps {
   form: ProductForm;
@@ -266,6 +267,13 @@ const BasicInfoFields = ({ form, updateField }: BasicInfoFieldsProps) => {
           </div>
         )}
       </div>
+        <RichTextEditor
+        className="col-span-2 my-2"
+        label="توضیحات محصول"
+        value={form.description || ""}
+        onChange={(value) => updateField("description", value)}
+        placeholder="توضیحات کامل محصول را وارد کنید..."
+      />
     </div>
   );
 };
