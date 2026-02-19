@@ -1,3 +1,4 @@
+
 # name: Deploy on Production server
 
 # on:
@@ -18,18 +19,20 @@
 #           username: ${{ secrets.SERVER_USERS }}
 #           key: ${{ secrets.PRIVATE_KEY }}
 #           script: |
-
-#           export NVM_DIR="/home/ramtin/.nvm"
-#           source "$NVM_DIR/nvm.sh"
-#           export PATH="$PATH:/home/ramtin/.nvm/versions/node/v22.20.0/bin"
+#             export NVM_DIR="/home/ramtin/.nvm"
+#             source "$NVM_DIR/nvm.sh"
+#             export PATH="$PATH:/home/ramtin/.nvm/versions/node/v24.13.1/bin"
 
 #             cd /home/projects/kerman_next14_downgrid
 #             echo "pulling new changes"
 #             git pull origin main
-#             echo "install models"
+
+#             echo "install modules"
 #             npm install
+
 #             echo "run build"
 #             npm run build
+
 #             echo "restart all"
 #             pm2 restart all
 
@@ -37,8 +40,6 @@ name: Deploy on Production server
 
 on:
   push:
-    branches: ["main"]
-  pull_request:
     branches: ["main"]
 
 jobs:
@@ -53,19 +54,22 @@ jobs:
           username: ${{ secrets.SERVER_USERS }}
           key: ${{ secrets.PRIVATE_KEY }}
           script: |
-            export NVM_DIR="/home/ramtin/.nvm"
-            source "$NVM_DIR/nvm.sh"
-            export PATH="$PATH:/home/ramtin/.nvm/versions/node/v24.13.1/bin"
+            set -e
 
-            cd /home/projects/kerman_next14_downgrid
+            export NVM_DIR="/home/ramtin/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+            cd /home/ramtin/projects/kerman_next14_downgrid
+
             echo "pulling new changes"
-            git pull origin main
+            git fetch --all
+            git reset --hard origin/main
 
             echo "install modules"
-            npm install
+            npm ci
 
             echo "run build"
             npm run build
 
-            echo "restart all"
-            pm2 restart all
+            echo "restart app"
+            pm2 restart kermanAtari --update-env
