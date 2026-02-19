@@ -11,6 +11,7 @@ const slugify = (value: string) =>
     .replace(/\s+/g, "-")
     .replace(/[^\w\u0600-\u06FF-]/g, "")
     .replace(/-+/g, "-");
+    
 const parseFocusKeywords = (value: unknown) => {
   if (Array.isArray(value)) {
     return value

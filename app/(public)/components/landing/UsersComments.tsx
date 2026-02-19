@@ -1,3 +1,4 @@
+import { stripHtmlTags } from "@/helpers/stripHtmlTags";
 import { BlogPost } from "@/types";
 import Image from "next/image";
 import Link from "next/link";
@@ -69,7 +70,7 @@ export default async function UsersComments() {
               </h3>
 
               <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
-             {post.metaDescription || post.excerpt || post.content}
+            {stripHtmlTags(post.metaDescription || post.excerpt || post.content)}
               </p>
 
               <Link
