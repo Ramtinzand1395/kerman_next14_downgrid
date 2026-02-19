@@ -5,4 +5,3 @@ export { default as TagsSelector } from "./TagsSelector";
 export { default as SpecificationsEditor } from "./SpecificationsEditor";
 export { default as BasicInfoFields } from "./BasicInfoFields";
 export { default as SeoFields } from "./SeoFields";
-export { default as FaqEditor } from "./FaqEditor";

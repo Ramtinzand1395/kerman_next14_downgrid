@@ -8,6 +8,8 @@ const blogSchema = new Schema(
     content: { type: String, required: true },
     coverImage: { type: String, default: "" },
     published: { type: Boolean, default: true },
+     metaDescription: { type: String, default: "", trim: true },
+    focusKeyword: { type: [String], default: [] },
   },
   { timestamps: true },
 );

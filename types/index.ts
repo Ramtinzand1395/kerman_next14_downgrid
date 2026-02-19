@@ -73,9 +73,6 @@ export interface ProductForm {
   seoTitle: string;
   metaDescription: string;
   mainImageAlt: string;
-  faq: { question: string; answer: string }[];
-  modelGuide: string;
-  compareText: string;
 }
 
 export interface Customer {
@@ -155,9 +152,6 @@ export interface Product {
   seoTitle: string;
   metaDescription: string;
   mainImageAlt: string;
-  faq: { question: string; answer: string }[];
-  modelGuide?: string;
-  compareText?: string;
 }
 export interface Tag {
   _id: string;
@@ -256,4 +250,6 @@ export interface BlogPost {
   published: boolean;
   createdAt: string;
   updatedAt: string;
+  metaDescription?: string;
+  focusKeyword?: string[];
 }

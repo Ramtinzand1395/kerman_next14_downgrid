@@ -1,7 +1,11 @@
 import { BlogPost } from "@/types";
 import Image from "next/image";
 import Link from "next/link";
-
+import type { Metadata } from "next";
+export const metadata: Metadata = {
+   title: "وبلاگ | کرمان آتاری",
+   description: "جدیدترین مقالات و راهنمای خرید کنسول و بازی در کرمان آتاری.",
+}
 async function getBlogs(): Promise<BlogPost[]> {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
@@ -54,7 +58,7 @@ export default async function BlogPage() {
                 {post.title}
               </h2>
               <p className="mt-2 line-clamp-3 text-sm text-slate-600">
-                {post.excerpt || post.content}
+              {post.metaDescription || post.excerpt || post.content}
               </p>
               <Link
                 href={`/blog/${post.slug}`}

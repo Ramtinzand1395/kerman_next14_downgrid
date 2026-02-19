@@ -12,6 +12,21 @@ const slugify = (value: string) =>
     .replace(/[^\w\u0600-\u06FF-]/g, "")
     .replace(/-+/g, "-");
 
+const parseFocusKeywords = (value: unknown) => {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item || "").trim()).filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    return value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+};
+
 export async function GET() {
   try {
     await dbConnect();
@@ -80,6 +95,8 @@ export async function POST(req: Request) {
       content,
       coverImage: String(body.coverImage || "").trim(),
       published: Boolean(body.published),
+      metaDescription: String(body.metaDescription || "").trim(),
+      focusKeyword: parseFocusKeywords(body.focusKeyword),
     });
 
     return NextResponse.json(blog, { status: 201 });

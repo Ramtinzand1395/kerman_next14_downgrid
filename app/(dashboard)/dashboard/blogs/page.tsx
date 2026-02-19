@@ -414,6 +414,8 @@ const initialForm = {
   content: "",
   coverImage: "",
   published: true,
+  metaDescription: "",
+  focusKeyword: "",
 };
 
 const getValidImage = (value?: string) => {
@@ -515,6 +517,8 @@ export default function BlogsAdminPage() {
       content: blog.content,
       coverImage: getValidImage(blog.coverImage),
       published: blog.published,
+      metaDescription: blog.metaDescription || "",
+      focusKeyword: blog.focusKeyword?.join(", ") || "",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -555,6 +559,10 @@ export default function BlogsAdminPage() {
         body: JSON.stringify({
           ...form,
           coverImage: getValidImage(form.coverImage),
+          focusKeyword: form.focusKeyword
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean),
         }),
       });
 
@@ -646,7 +654,9 @@ export default function BlogsAdminPage() {
             className="min-h-20 rounded-lg border border-gray-300 p-2.5 text-sm"
             placeholder="خلاصه"
             value={form.excerpt}
-            onChange={(e) => setForm((p) => ({ ...p, excerpt: e.target.value }))}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, excerpt: e.target.value }))
+            }
           />
 
           <section className="rounded-xl border border-gray-200 bg-gray-50 p-3">
@@ -655,6 +665,30 @@ export default function BlogsAdminPage() {
               value={form.content}
               onChange={(value) => setForm((p) => ({ ...p, content: value }))}
               placeholder="متن کامل وبلاگ را وارد کنید..."
+            />
+          </section>
+
+          <section className="space-y-3 rounded-xl border border-emerald-100 bg-emerald-50/40 p-3">
+            <h3 className="text-sm font-semibold text-emerald-800">
+              تنظیمات سئو مقاله
+            </h3>
+
+            <textarea
+              className="min-h-20 rounded-lg border border-gray-300 p-2.5 text-sm"
+              placeholder="توضیحات متا (Meta Description)"
+              value={form.metaDescription}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, metaDescription: e.target.value }))
+              }
+            />
+
+            <input
+              className="w-full rounded-lg border border-gray-300 p-2.5 text-sm"
+              placeholder="کلمات کلیدی اصلی (با ویرگول جدا کنید)"
+              value={form.focusKeyword}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, focusKeyword: e.target.value }))
+              }
             />
           </section>
 

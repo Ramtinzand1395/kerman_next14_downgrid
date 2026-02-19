@@ -6,7 +6,10 @@ import type { ProductForm } from "@/types"; // اگر تایپ‌ها جای د�
 
 interface BasicInfoFieldsProps {
   form: ProductForm;
-  updateField: <K extends keyof ProductForm>(key: K, value: ProductForm[K]) => void;
+  updateField: <K extends keyof ProductForm>(
+    key: K,
+    value: ProductForm[K],
+  ) => void;
 }
 
 const fieldLabels: Record<string, string> = {
@@ -25,10 +28,17 @@ const BasicInfoFields = ({ form, updateField }: BasicInfoFieldsProps) => {
   );
 
   useEffect(() => {
-    setIsDiscountEnabled(form.discountPrice !== null && form.discountPrice !== undefined);
+    setIsDiscountEnabled(
+      form.discountPrice !== null && form.discountPrice !== undefined,
+    );
   }, [form.discountPrice]);
 
-  const textFields: (keyof ProductForm)[] = ["title", "slug", "brand", "shortDesc"];
+  const textFields: (keyof ProductForm)[] = [
+    "title",
+    "slug",
+    "brand",
+    "shortDesc",
+  ];
 
   return (
     <div className="grid grid-cols-2 gap-5 rounded-2xl border border-white/30 bg-white/20 p-5 shadow-lg backdrop-blur-md transition-all duration-300">
@@ -92,6 +102,7 @@ const BasicInfoFields = ({ form, updateField }: BasicInfoFieldsProps) => {
           <label className="text-sm font-medium">فعال‌سازی قیمت تخفیف</label>
 
           <button
+            title="button"
             type="button"
             onClick={() => {
               const nextValue = !isDiscountEnabled;

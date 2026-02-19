@@ -69,7 +69,7 @@ export default async function UsersComments() {
               </h3>
 
               <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
-                {post.excerpt || post.content}
+             {post.metaDescription || post.excerpt || post.content}
               </p>
 
               <Link

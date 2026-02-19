@@ -7,13 +7,7 @@ const SpecificationItemSchema = new Schema(
   },
   { _id: false }, // هر آیتم نیاز به _id جدا ندارد
 );
-const FaqItemSchema = new Schema(
-  {
-    question: { type: String, required: true },
-    answer: { type: String, required: true },
-  },
-  { _id: false },
-);
+
 
 const productSchema = new Schema(
   {
@@ -53,19 +47,9 @@ const productSchema = new Schema(
     },
 
     brand: String,
-
     seoTitle: String,
-
     metaDescription: String,
-
     mainImageAlt: String,
-
-    faq: [FaqItemSchema],
-
-    modelGuide: String,
-
-    compareText: String,
-
     mainImage: {
       type: String,
       required: true,

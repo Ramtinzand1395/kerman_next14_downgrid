@@ -4,7 +4,10 @@ import { ProductForm } from "@/types";
 
 interface SeoFieldsProps {
   form: ProductForm;
-  updateField: <K extends keyof ProductForm>(key: K, value: ProductForm[K]) => void;
+  updateField: <K extends keyof ProductForm>(
+    key: K,
+    value: ProductForm[K],
+  ) => void;
 }
 
 export default function SeoFields({ form, updateField }: SeoFieldsProps) {
@@ -33,35 +36,16 @@ export default function SeoFields({ form, updateField }: SeoFieldsProps) {
           <label className="mb-1 block text-xs">ALT تصویر اصلی</label>
         </div>
       </div>
-
       <div>
-        <label className="mb-1 block text-xs">متا توضیحات (حداکثر 160 کاراکتر)</label>
+        <label className="mb-1 block text-xs">
+          متا توضیحات (حداکثر 160 کاراکتر)
+        </label>
         <textarea
           rows={3}
           value={form.metaDescription || ""}
           onChange={(e) => updateField("metaDescription", e.target.value)}
           className="w-full rounded-md border border-slate-300 bg-inherit px-3 py-2 text-sm focus:border-blue-700 focus:outline-none"
           placeholder="خرید PS5 Slim دیسک‌خور با ارسال سریع در کرمان، گارانتی سلامت کالا، پشتیبانی واقعی. بهترین قیمت و موجودی از کرمان آتاری."
-        />
-      </div>
-
-      <div>
-        <label className="mb-1 block text-xs">راهنمای انتخاب مدل</label>
-        <textarea
-          rows={3}
-          value={form.modelGuide || ""}
-          onChange={(e) => updateField("modelGuide", e.target.value)}
-          className="w-full rounded-md border border-slate-300 bg-inherit px-3 py-2 text-sm focus:border-blue-700 focus:outline-none"
-        />
-      </div>
-
-      <div>
-        <label className="mb-1 block text-xs">مقایسه با مدل مشابه</label>
-        <textarea
-          rows={3}
-          value={form.compareText || ""}
-          onChange={(e) => updateField("compareText", e.target.value)}
-          className="w-full rounded-md border border-slate-300 bg-inherit px-3 py-2 text-sm focus:border-blue-700 focus:outline-none"
         />
       </div>
     </div>
