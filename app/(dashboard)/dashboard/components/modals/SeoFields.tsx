@@ -1,7 +1,6 @@
 "use client";
 
 import { ProductForm } from "@/types";
-import RichTextEditor from "./RichTextEditor";
 
 interface SeoFieldsProps {
   form: ProductForm;
@@ -42,12 +41,6 @@ export default function SeoFields({ form, updateField }: SeoFieldsProps) {
           className="w-full rounded-md border border-slate-300 bg-inherit px-3 py-2 text-sm focus:border-blue-700 focus:outline-none"
         />
       </div>
-
-      <RichTextEditor
-        label="نقد و بررسی محصول (Text Editor)"
-        value={form.description || ""}
-        onChange={(value) => updateField("description", value)}
-      />
 
       <div>
         <label className="mb-1 block text-xs">راهنمای انتخاب مدل</label>
