@@ -4,7 +4,23 @@ import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "../../auth/[...nextauth]/options";
 import dbConnect from "@/lib/mongodb";
-import mongoose from "mongoose";
+import mongoose from "mongoose"
+
+function getBaseUrl(req: NextRequest) {
+  const envBaseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+  if (envBaseUrl) {
+    return envBaseUrl.replace(/\/$/, "");
+  }
+
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+  const protocol = req.headers.get("x-forwarded-proto") ?? "https";
+
+  if (!host) {
+    return "http://localhost:3000";
+  }
+
+  return `${protocol}://${host}`;
+}
 
 export async function POST(req: NextRequest) {
   await dbConnect();
@@ -50,9 +66,9 @@ export async function POST(req: NextRequest) {
 
     const description = "پرداخت سفارش کلاس";
     const merchant_id = process.env.ZARINPAL_MERCHANT_ID;
-    const callback_url = `${process.env.NEXT_PUBLIC_BASE_URL}/api/payment-zarinpal/verify`;
+    const callback_url = `${getBaseUrl(req)}/api/payment-zarinpal/verify`;
     const finalPriceWithExtraZero = order.finalPrice * 10;
-
+console.log(callback_url,"callback_url")
     const res = await fetch(
       // "https://sandbox.zarinpal.com/pg/v4/payment/request.json",
       "https://api.zarinpal.com/pg/v4/payment/request.json",
