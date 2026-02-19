@@ -15,6 +15,13 @@ export const productValidationSchema = yup.object().shape({
   title: yup.string().trim().required("عنوان محصول الزامی است"),
 
   slug: yup.string().trim().required("اسلاگ الزامی است"),
+  seoTitle: yup.string().trim().required("عنوان سئو الزامی است"),
+
+  metaDescription: yup
+    .string()
+    .trim()
+    .required("متا توضیحات الزامی است")
+    .max(160, "متا توضیحات باید حداکثر 160 کاراکتر باشد"),
 
   price: yup
     .number()
@@ -38,6 +45,8 @@ export const productValidationSchema = yup.object().shape({
   category: yup.string().required("انتخاب دسته‌بندی الزامی است"),
 
   mainImage: yup.string().required("تصویر اصلی محصول الزامی است"),
+  mainImageAlt: yup.string().trim().required("متن ALT تصویر اصلی الزامی است"),
+  description: yup.string().trim().required("توضیحات محصول الزامی است"),
 });
 
 export const newsletterSchema = yup.object({

@@ -78,10 +78,13 @@ export async function generateMetadata({
   const canonicalUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/product/${product.slug}`;
 
   return {
-    title: `${product.title} | خرید با بهترین قیمت`,
+    title:
+      product.seoTitle ||
+      `${product.title} | ${product.brand || "کرمان آتاری"} | خرید با بهترین قیمت`,
     description:
+      product.metaDescription ||
       product.shortDesc ||
-      `${product.title} با قیمت ${formatPrice(finalPrice)} تومان در فروشگاه کرمان آتاری`,
+      `مشاهده مشخصات، تصاویر و قیمت ${product.title}`,
     alternates: {
       canonical: canonicalUrl,
     },
@@ -94,17 +97,11 @@ export async function generateMetadata({
       images: [
         {
           url: product.mainImage,
-          alt: product.title,
+          alt: product.mainImageAlt || product.title,
         },
       ],
     },
-    twitter: {
-      card: "summary_large_image",
-      title: `${product.title} | کرمان آتاری`,
-      description:
-        product.shortDesc || `قیمت روز و مشخصات کامل ${product.title}`,
-      images: [product.mainImage],
-    },
+
     keywords: [
       product.title,
       product.brand || "",
@@ -126,7 +123,9 @@ export default async function ProductPage({
     notFound();
   }
 
-   const { relatedProducts } = await getRelatedProducts(product._id || product.id);
+  const { relatedProducts } = await getRelatedProducts(
+    product._id || product.id,
+  );
   const finalPrice = product.discountPrice ?? product.price;
   const productUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/product/${product.slug}`;
 
@@ -152,6 +151,18 @@ export default async function ProductPage({
           : "https://schema.org/OutOfStock",
       url: productUrl,
     },
+    shippingDetails: {
+      "@type": "OfferShippingDetails",
+      shippingRate: {
+        "@type": "MonetaryAmount",
+        value: 0,
+        currency: "IRR",
+      },
+      shippingDestination: {
+        "@type": "DefinedRegion",
+        addressCountry: "IR",
+      },
+    },
     aggregateRating:
       product.comments?.length > 0
         ? {
@@ -164,7 +175,28 @@ export default async function ProductPage({
             reviewCount: product.comments.length,
           }
         : undefined,
+    additionalProperty: product.specifications?.flatMap((section) =>
+      (section.items || []).map((item) => ({
+        "@type": "PropertyValue",
+        name: `${section.title} - ${item.key}`,
+        value: item.value,
+      })),
+    ),
   };
+  const faqSchema = product.faq?.length
+    ? {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: product.faq.map((item) => ({
+          "@type": "Question",
+          name: item.question,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: item.answer,
+          },
+        })),
+      }
+    : null;
 
   return (
     <div className="container mx-auto px-3 md:px-6 py-6 md:py-10">
@@ -172,7 +204,12 @@ export default async function ProductPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-
+{faqSchema ? (
+         <script
+           type="application/ld+json"
+           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+       />
+       ) : null}
       <section className="mb-5 rounded-2xl border border-zinc-200 bg-white p-4 md:p-5">
         <nav aria-label="breadcrumb" className="text-sm text-zinc-500">
           <ol className="flex flex-wrap items-center gap-2">
@@ -198,9 +235,8 @@ export default async function ProductPage({
           {product.title}
         </h1>
         <p className="mt-2 text-sm md:text-base text-zinc-600 leading-7 max-w-4xl">
-          {product.shortDesc || "بررسی کامل، قیمت روز و مشخصات دقیق این محصول."}
+           {product.metaDescription || product.shortDesc || "بررسی کامل، قیمت روز و مشخصات دقیق این محصول."}
         </p>
-   
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -227,12 +263,40 @@ export default async function ProductPage({
             </h2>
             <p className="text-zinc-600 leading-8 text-sm md:text-base">
               این محصول با تضمین اصالت، ارسال سریع و پشتیبانی کامل ارائه می‌شود.
-              همچنین می‌توانید قبل از خرید، مشخصات فنی، نظرات کاربران و تصاویر
-              محصول را به‌صورت کامل مشاهده کنید.
             </p>
+             {product.modelGuide ? (
+              <>
+                <h3 className="mt-4 text-base font-bold text-zinc-900">راهنمای انتخاب مدل</h3>
+                <p className="mt-2 text-sm leading-7 text-zinc-600">{product.modelGuide}</p>
+              </>
+            ) : null}
+            {product.compareText ? (
+              <>
+                <h3 className="mt-4 text-base font-bold text-zinc-900">مقایسه با مدل مشابه</h3>
+                <p className="mt-2 text-sm leading-7 text-zinc-600">{product.compareText}</p>
+              </>
+            ) : null}
+            <div className="mt-4">
+              <Link href="/products" className="text-sm text-indigo-600 hover:text-indigo-500">
+                مشاهده همه محصولات مرتبط
+              </Link>
+            </div>
           </div>
 
           <TabSection product={product} />
+            {product.faq?.length ? (
+            <section className="rounded-2xl border border-zinc-200 bg-white p-4 md:p-6">
+              <h2 className="mb-4 text-lg font-bold text-zinc-900">سوالات پرتکرار</h2>
+              <div className="space-y-3">
+                {product.faq.map((item, idx) => (
+                  <details key={`${item.question}-${idx}`} className="rounded-lg border border-zinc-100 p-3">
+                    <summary className="cursor-pointer text-sm font-semibold text-zinc-800">{item.question}</summary>
+                    <p className="mt-2 text-sm leading-7 text-zinc-600">{item.answer}</p>
+                  </details>
+                ))}
+              </div>
+            </section>
+          ) : null}
         </article>
 
         <aside className="lg:col-span-3 space-y-5 lg:sticky lg:top-24 h-fit">

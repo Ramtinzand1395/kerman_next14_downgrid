@@ -148,7 +148,7 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
           <div className="relative flex h-[200px] items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-gray-100 to-gray-50">
             <Image
               src={game.mainImage}
-              alt={game.title}
+               alt={game.mainImageAlt || game.title}
               width={320}
               height={180}
               loading="lazy"
@@ -263,7 +263,7 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
               url: `https://yourdomain.com/product/${game.slug}`,
               priceCurrency: "IRR",
               price: finalPrice,
-              availability: "https://schema.org/InStock",
+               availability: game.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
             },
             aggregateRating: game.comments?.length
               ? {

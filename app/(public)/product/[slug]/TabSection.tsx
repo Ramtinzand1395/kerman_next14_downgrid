@@ -78,7 +78,7 @@ const TabSection = ({ product }: TabSectionProps) => {
               نقد و بررسی تخصصی
             </h2>
             <div className="prose prose-slate max-w-none prose-img:rounded-2xl prose-headings:font-bold prose-a:text-indigo-600">
-              {product.description}
+             <div dangerouslySetInnerHTML={{ __html: product.description || "" }} />
             </div>
           </div>
         )}

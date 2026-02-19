@@ -70,6 +70,12 @@ export interface ProductForm {
   mainImage: string; // فقط URL
   galleryImages: string[]; // URL[]
   specifications: { title: string; items: { key: string; value: string }[] }[];
+  seoTitle: string;
+  metaDescription: string;
+  mainImageAlt: string;
+  faq: { question: string; answer: string }[];
+  modelGuide: string;
+  compareText: string;
 }
 
 export interface Customer {
@@ -84,7 +90,7 @@ export interface Customer {
   description: string;
 }
 export type ConsoleType = "ps5" | "ps4" | "xbox" | "copy";
-export interface StoreOrder  {
+export interface StoreOrder {
   _id: string;
   list: string[];
   price: number | null;
@@ -112,7 +118,6 @@ export interface GameList {
   platform: ConsoleType;
   items: GameItem[];
 }
-
 
 export interface Category {
   _id: string;
@@ -147,6 +152,12 @@ export interface Product {
   OrderItem: OrderItem[];
   category: Category;
   User?: User;
+  seoTitle: string;
+  metaDescription: string;
+  mainImageAlt: string;
+  faq: { question: string; answer: string }[];
+  modelGuide?: string;
+  compareText?: string;
 }
 export interface Tag {
   _id: string;
@@ -246,4 +257,3 @@ export interface BlogPost {
   createdAt: string;
   updatedAt: string;
 }
-
