@@ -229,7 +229,6 @@ import { Category, Product, ProductForm, Tag } from "@/types";
 import {
   BasicInfoFields,
   CategorySelector,
-  FaqEditor,
   GalleryUploader,
   ImageUploader,
   SeoFields,
@@ -237,6 +236,7 @@ import {
   TagsSelector,
 } from "../modals";
 import { productValidationSchema } from "@/validations/validation";
+import FaqEditor from "../modals/FaqEditor";
 
 interface Props {
   onClose: () => void;

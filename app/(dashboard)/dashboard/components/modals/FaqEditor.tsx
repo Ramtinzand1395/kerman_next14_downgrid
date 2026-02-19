@@ -1,57 +1,49 @@
 "use client";
 
-import { useRef } from "react";
+import { ProductForm } from "@/types";
 
-type Command = "bold" | "italic" | "underline" | "insertUnorderedList" | "insertOrderedList";
-
-interface RichTextEditorProps {
-  value: string;
-  onChange: (value: string) => void;
-  label: string;
+interface Props {
+  form: ProductForm;
+  updateField: <K extends keyof ProductForm>(key: K, value: ProductForm[K]) => void;
 }
 
-const buttons: { label: string; command: Command }[] = [
-  { label: "B", command: "bold" },
-  { label: "I", command: "italic" },
-  { label: "U", command: "underline" },
-  { label: "• لیست", command: "insertUnorderedList" },
-  { label: "1. لیست", command: "insertOrderedList" },
-];
+export default function FaqEditor({ form, updateField }: Props) {
+  const faq = form.faq || [];
 
-export default function RichTextEditor({ value, onChange, label }: RichTextEditorProps) {
-  const editorRef = useRef<HTMLDivElement>(null);
-
-  const exec = (command: Command) => {
-    editorRef.current?.focus();
-    document.execCommand(command, false);
-    onChange(editorRef.current?.innerHTML || "");
+  const updateFaqItem = (index: number, key: "question" | "answer", value: string) => {
+    const updated = [...faq];
+    updated[index] = { ...updated[index], [key]: value };
+    updateField("faq", updated as ProductForm["faq"]);
   };
 
   return (
-    <div>
-      <label className="mb-2 block text-xs">{label}</label>
+    <div className="space-y-3">
+      {faq.map((item, index) => (
+        <div key={index} className="rounded-lg border border-slate-600 p-3">
+          <input
+            type="text"
+            value={item.question}
+            onChange={(e) => updateFaqItem(index, "question", e.target.value)}
+            placeholder="سوال متداول"
+            className="mb-2 w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm"
+          />
+          <textarea
+            value={item.answer}
+            onChange={(e) => updateFaqItem(index, "answer", e.target.value)}
+            placeholder="پاسخ سوال"
+            rows={3}
+            className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-sm"
+          />
+        </div>
+      ))}
 
-      <div className="mb-2 flex flex-wrap gap-2 rounded-md border border-slate-300 bg-white p-2">
-        {buttons.map((btn) => (
-          <button
-            key={btn.command}
-            type="button"
-            onClick={() => exec(btn.command)}
-            className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-700 hover:bg-slate-100"
-          >
-            {btn.label}
-          </button>
-        ))}
-      </div>
-
-      <div
-        ref={editorRef}
-        contentEditable
-        suppressContentEditableWarning
-        onInput={(e) => onChange(e.currentTarget.innerHTML)}
-        dangerouslySetInnerHTML={{ __html: value || "" }}
-        className="min-h-[220px] rounded-md border border-slate-300 bg-white p-3 text-black focus:border-blue-700 focus:outline-none"
-      />
+      <button
+        type="button"
+        onClick={() => updateField("faq", [...faq, { question: "", answer: "" }] as ProductForm["faq"])}
+        className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-semibold"
+      >
+        افزودن سوال جدید
+      </button>
     </div>
   );
 }
