@@ -17,6 +17,7 @@ export default function SeoFields({ form, updateField }: SeoFieldsProps) {
             value={form.seoTitle || ""}
             onChange={(e) => updateField("seoTitle", e.target.value)}
             className="w-full rounded-md border border-slate-300 bg-inherit px-3 py-2 text-sm focus:border-blue-700 focus:outline-none"
+            placeholder="خرید PS5 Slim دیسک‌خور | کنسول پلی‌استیشن 5 | کرمان آتاری"
           />
           <label className="mb-1 block text-xs">عنوان سئو (Title Tag)</label>
         </div>
@@ -27,6 +28,7 @@ export default function SeoFields({ form, updateField }: SeoFieldsProps) {
             value={form.mainImageAlt || ""}
             onChange={(e) => updateField("mainImageAlt", e.target.value)}
             className="w-full rounded-md border border-slate-300 bg-inherit px-3 py-2 text-sm focus:border-blue-700 focus:outline-none"
+            placeholder="کنسول PS5 Slim دیسک‌خور با دسته DualSense"
           />
           <label className="mb-1 block text-xs">ALT تصویر اصلی</label>
         </div>
@@ -39,6 +41,7 @@ export default function SeoFields({ form, updateField }: SeoFieldsProps) {
           value={form.metaDescription || ""}
           onChange={(e) => updateField("metaDescription", e.target.value)}
           className="w-full rounded-md border border-slate-300 bg-inherit px-3 py-2 text-sm focus:border-blue-700 focus:outline-none"
+          placeholder="خرید PS5 Slim دیسک‌خور با ارسال سریع در کرمان، گارانتی سلامت کالا، پشتیبانی واقعی. بهترین قیمت و موجودی از کرمان آتاری."
         />
       </div>
 
