@@ -4,3 +4,6 @@ export { default as ImageUploader } from "./ImageUploader";
 export { default as TagsSelector } from "./TagsSelector";
 export { default as SpecificationsEditor } from "./SpecificationsEditor";
 export { default as BasicInfoFields } from "./BasicInfoFields";
+export { default as FaqEditor } from "./FaqEditor";
+export { default as SeoFields } from "./SeoFields";
+export { default as RichTextEditor } from "./RichTextEditor";

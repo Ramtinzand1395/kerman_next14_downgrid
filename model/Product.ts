@@ -5,7 +5,14 @@ const SpecificationItemSchema = new Schema(
     key: { type: String, required: true },
     value: { type: String, required: true },
   },
-  { _id: false } // هر آیتم نیاز به _id جدا ندارد
+  { _id: false }, // هر آیتم نیاز به _id جدا ندارد
+);
+const FaqItemSchema = new Schema(
+  {
+    question: { type: String, required: true },
+    answer: { type: String, required: true },
+  },
+  { _id: false },
 );
 
 const productSchema = new Schema(
@@ -47,6 +54,18 @@ const productSchema = new Schema(
 
     brand: String,
 
+    seoTitle: String,
+
+    metaDescription: String,
+
+    mainImageAlt: String,
+
+    faq: [FaqItemSchema],
+
+    modelGuide: String,
+
+    compareText: String,
+
     mainImage: {
       type: String,
       required: true,
@@ -85,7 +104,8 @@ const productSchema = new Schema(
       },
     ],
   },
-  { timestamps: true }
+
+  { timestamps: true },
 );
 
 export default mongoose.models.Product || model("Product", productSchema);
