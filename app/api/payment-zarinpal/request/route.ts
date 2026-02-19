@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     const merchant_id = process.env.ZARINPAL_MERCHANT_ID;
     const callback_url = `${getBaseUrl(req)}/api/payment-zarinpal/verify`;
     const finalPriceWithExtraZero = order.finalPrice * 10;
-console.log(callback_url,"callback_url")
+
     const res = await fetch(
       // "https://sandbox.zarinpal.com/pg/v4/payment/request.json",
       "https://api.zarinpal.com/pg/v4/payment/request.json",

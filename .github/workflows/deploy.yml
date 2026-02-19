@@ -1,0 +1,29 @@
+name: Deploy on Production server
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to server via ssh
+        uses: appleboy/ssh-action@v1.2.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERS }}
+          key: ${{ secrets.PRIVATE_KEY }}
+          script: |
+            cd /home/projects/kerman_next14_downgrid
+            echo "pulling new changes"
+            git pull origin main
+            echo "install models"
+            npm install
+            echo "run build"
+            npm run build
+            echo "restart all"
+            pm2 restart all
