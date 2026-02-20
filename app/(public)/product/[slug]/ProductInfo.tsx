@@ -105,10 +105,17 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
       {/* Price Box */}
       <div className="mt-auto bg-gray-50 rounded-2xl p-5 border border-gray-100">
         <div className="flex justify-between items-center mb-2">
-          <div className="flex items-center gap-2 text-emerald-700 bg-emerald-100 px-3 py-1 rounded-lg">
-            <Box className="w-4 h-4" />
+  <div
+             className={`flex items-center gap-2 px-3 py-1 rounded-lg ${
+               product.stock > 0
+                 ? "text-emerald-700 bg-emerald-100"
+                 : "text-red-700 bg-red-100"
+             }`}
+           >            <Box className="w-4 h-4" />
             <span className="text-sm font-medium">
-              موجود در انبار ({toPersianDigits(product.stock)} عدد)
+         {product.stock > 0
+                ? `موجود در انبار (${toPersianDigits(product.stock)} عدد)`
+                : "ناموجود در انبار"}
             </span>
           </div>
         </div>

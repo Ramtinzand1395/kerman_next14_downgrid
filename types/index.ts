@@ -6,6 +6,7 @@ export interface CartItem {
   quantity: number;
   discountPrice: number | null;
   sku?: string;
+  stock?: number;
 }
 
 export interface CartStoreStateType {

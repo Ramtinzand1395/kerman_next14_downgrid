@@ -60,6 +60,10 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
   }, [game.comments]);
 
   const handleAddToCart = () => {
+     if (game.stock <= 0) {
+       toast.error("این محصول ناموجود است.");
+      return;
+    }
     addToCart({
       id: game._id,
       title: game.title,
@@ -67,6 +71,7 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
       discountPrice: game.discountPrice ?? null,
       image: game.mainImage,
       quantity: 1,
+       stock: game.stock,
     });
 
     toast.success("به سبد خرید اضافه شد.");
@@ -235,11 +240,11 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
         whileTap={{ scale: 0.98 }}
         whileHover={{ scale: 1.01 }}
         onClick={handleAddToCart}
-        className="mt-4 inline-flex text-xs items-center justify-center gap-2 rounded-lg bg-[#377dff] py-2.5 md:text-sm font-medium text-white transition-colors hover:bg-[#2b67d5] focus:outline-none focus:ring-2 focus:ring-[#377dff]/40"
-        aria-label={`افزودن ${game.title} به سبد خرید`}
+       disabled={game.stock <= 0}
+         className="mt-4 inline-flex text-xs items-center justify-center gap-2 rounded-lg bg-[#377dff] py-2.5 md:text-sm font-medium text-white transition-colors hover:bg-[#2b67d5] focus:outline-none focus:ring-2 focus:ring-[#377dff]/40 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:bg-gray-400"
       >
         <ShoppingCart size={16} />
-        افزودن به سبد خرید
+    {game.stock > 0 ? "افزودن به سبد خرید" : "ناموجود"}
       </motion.button>
 
       <script

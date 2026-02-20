@@ -13,6 +13,7 @@ import {
   Menu,
   Sparkles,
   ArrowUpLeft,
+   Wrench,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FormEvent, useMemo, useState } from "react";
@@ -44,6 +45,11 @@ const menuItems = [
     name: "وبلاگ",
     link: "/blog",
     icon: <FileText className="h-4 w-4 ml-1" />,
+  },
+  {
+    name: "خدمات",
+    link: "/services",
+    icon: <Wrench className="h-4 w-4 ml-1" />,
   },
 ];
 
@@ -105,9 +111,9 @@ export default function Navbar() {
           
             priority
           />
-          <h1 className=" truncate text-base font-extrabold tracking-tight text-slate-900 sm:block md:text-lg">
+          <span className=" truncate text-base font-extrabold tracking-tight text-slate-900 sm:block md:text-lg">
             Kerman Atari
-          </h1>
+          </span>
         </Link>
 
         <ul className="relative hidden items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-2 text-gray-700 shadow-sm md:flex">

@@ -42,9 +42,7 @@ export const categories: CategoryItem[] = [
     description: "تجهیزات جانبی حرفه‌ای برای گیمرها",
     subcategories: [
       { name: "موس", slug: "mouse" },
-      { name: "کیبورد",
-        slug: "keyboard",
-      },
+      { name: "کیبورد", slug: "keyboard" },
       { name: "پاوربانک", slug: "powerbank" },
     ],
   },
@@ -53,9 +51,9 @@ export const categories: CategoryItem[] = [
     slug: "services",
     description: "خدمات تخصصی نصب بازی، تعمیر و پشتیبانی",
     subcategories: [
-      { name: "نصب بازی", slug: "game-installation" },
-      { name: "اکانت قانونی", slug: "legal-accounts" },
-      { name: "تعمیرات کنسول", slug: "console-repair" },
+      { name: "نصب بازی", slug: "services" },
+      { name: "اکانت قانونی", slug: "services" },
+      { name: "تعمیرات کنسول", slug: "services" },
     ],
   },
 ];

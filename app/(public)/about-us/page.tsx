@@ -5,7 +5,7 @@ const SITE_URL = "https://kermanatari.ir";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "درباره ما | کرمان آتاری",
+  title: "درباره ما ",
   description:
     "با داستان، ارزش‌ها، مسیر رشد و خدمات کرمان آتاری آشنا شوید؛ مرجع تخصصی خرید بازی، کنسول و لوازم جانبی پلی‌استیشن در کرمان.",
   keywords: [
