@@ -13,7 +13,8 @@ import {
   Menu,
   Sparkles,
   ArrowUpLeft,
-   Wrench,
+  Wrench,
+ BadgePercent,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FormEvent, useMemo, useState } from "react";
@@ -51,6 +52,11 @@ const menuItems = [
     link: "/services",
     icon: <Wrench className="h-4 w-4 ml-1" />,
   },
+   {
+    name: "باشگاه مشتریان",
+ link: "/club",
+     icon: <BadgePercent className="h-4 w-4 ml-1" />,
+   },
 ];
 
 export default function Navbar() {

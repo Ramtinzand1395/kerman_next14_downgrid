@@ -77,6 +77,23 @@ const OrderSchema = new mongoose.Schema(
     },
 
     description: String,
+
+    // ✅ Loyalty additions
+    deliveredAt: { type: Date, default: null },
+
+    // ✅ اگر خواستی اطلاعات زرین پال را داخل Order ذخیره کنی
+    payment: {
+      provider: { type: String, default: "zarinpal" },
+      authority: { type: String, default: null, index: true },
+      refId: { type: String, default: null, index: true },
+      paidAt: { type: Date, default: null },
+    },
+
+    // ✅ وقتی کاربر از امتیاز استفاده می‌کند
+    loyalty: {
+      pointsSpent: { type: Number, default: 0, min: 0 },
+      discountFromPoints: { type: Number, default: 0, min: 0 }, // تومان
+    },
   },
   { timestamps: true },
 );

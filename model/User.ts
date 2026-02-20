@@ -1,4 +1,5 @@
 import mongoose, { Schema, model, Document } from "mongoose";
+ import { generateUniqueReferralCodeWithModel } from "@/lib/referralCode";
 
 // تعریف interface TypeScript
 export interface IUser extends Document {
@@ -17,6 +18,13 @@ export interface IUser extends Document {
   tempPayments: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
+  // ✅ Loyalty additions
+  referralCode: string;
+  referredBy?: mongoose.Types.ObjectId | null;
+  loyalty?: {
+    pointsBalanceCached: number;
+    lastRecalcAt?: Date | null;
+  };
 }
 
 // تعریف Schema
@@ -44,9 +52,24 @@ const UserSchema = new Schema<IUser>(
   },
   {
     timestamps: true, // ایجاد خودکار createdAt و updatedAt
-  }
+  },
 );
 
+// اگر referralCode خالی بود، خودکار بساز
+
+UserSchema.pre("validate", async function (next) {
+  try {
+    // @ts-ignore
+    if (!this.referralCode) {
+      const UserModel = mongoose.models.User || mongoose.model("User");
+      // @ts-ignore
+      this.referralCode = await generateUniqueReferralCodeWithModel(UserModel, "KA", 6);
+    }
+    next();
+  } catch (err) {
+    next(err as any);
+  }
+});
 // Export مدل
 const User = mongoose.models.User || model<IUser>("User", UserSchema);
 export default User;

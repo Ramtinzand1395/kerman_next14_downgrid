@@ -8,6 +8,7 @@ import User from "@/model/User";
 import Address from "@/model/Address";
 import Product from "@/model/Product";
 import mongoose from "mongoose";
+import { confirmSpendForOrder, createPendingEarnForOrder } from "@/lib/loyalty";
 
 interface OrderItem {
   productId: string;
@@ -154,6 +155,13 @@ export async function POST(req: Request) {
         item: order._id,
       },
     });
+    // todo
+    // جابه جا بشه با پرداخت
+    // 1) امتیاز Pending ایجاد کن
+    await createPendingEarnForOrder(order._id);
+
+    // 2) اگر کاربر امتیاز خرج کرده بود، Spend Pending را Confirm کن
+    await confirmSpendForOrder(order._id);
 
     return NextResponse.json(order);
   } catch (error) {

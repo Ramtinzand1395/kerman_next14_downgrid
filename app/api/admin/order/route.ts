@@ -6,27 +6,7 @@ import { authOptions } from "../../auth/[...nextauth]/options";
 import "@/model/Address";
 import "@/model/User";
 import "@/model/Product";
-
-// export async function GET() {
-//   await dbConnect();
-//   const session = await getServerSession(authOptions);
-
-//   if (!session?.user) {
-//     return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
-//   }
-
-//   if (session.user.role !== "superadmin") {
-//     return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
-//   }
-
-//   const orders = await Order.find()
-//     .populate("items.product")
-//     .populate("address")
-//     .populate("user")
-//     .sort({ createdAt: -1 });
-
-//   return NextResponse.json(orders);
-// }
+import { confirmEarnForOrder } from "@/lib/loyalty";
 
 export async function GET(req: Request) {
   await dbConnect();
@@ -78,7 +58,7 @@ export async function PUT(req: NextRequest) {
   ];
   if (!validStatuses.includes(status))
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
-
+await confirmEarnForOrder(orderId);
   const order = await Order.findByIdAndUpdate(
     orderId,
     { status },
