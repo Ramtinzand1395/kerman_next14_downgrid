@@ -57,7 +57,7 @@ export async function GET(req: Request) {
         path: "addresses",
         select: "province city address plaque unit postalCode",
       })
-      .select("username email mobile role createdAt updatedAt"),
+    .select("username email mobile role createdAt updatedAt referralCode referredBy loyalty"),
     User.countDocuments(),
   ]);
 

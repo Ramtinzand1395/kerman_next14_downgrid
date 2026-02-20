@@ -18,6 +18,7 @@ import {
   ChevronDown,
   Sparkles,
   ClipboardList,
+   Trophy,
 } from "lucide-react";
 import AddProductDrawer from "./drawers/AddProductDrawer";
 import AddCategoryDrawer from "./drawers/AddCategoryDrawer";
@@ -46,6 +47,7 @@ export const navItems: NavItem[] = [
   { label: "پیام‌ها", href: "/dashboard/inbox", icon: Inbox },
   { label: "کاربران", href: "/dashboard/users", icon: Users },
   { label: "وبلاگ", href: "/dashboard/blogs", icon: Newspaper },
+    { label: "باشگاه مشتریان", href: "/dashboard/club", icon: Trophy },
   {
     label: "محصولات",
     icon: ShoppingBag,

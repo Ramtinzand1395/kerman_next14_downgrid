@@ -7,7 +7,13 @@ import { authOptions } from "../../auth/[...nextauth]/options";
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    const userId = session?.user;
+    const userId = session?.user?.id;
+    if (!userId) {
+      return NextResponse.json(
+        { ok: false, error: "UNAUTHORIZED" },
+        { status: 401 },
+      );
+    }
     await dbConnect();
 
     const body = (await req.json().catch(() => null)) as {

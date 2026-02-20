@@ -56,6 +56,12 @@ interface User {
   favorites?: Favorite[];
   comments?: Comment[];
   orders?: Order[];
+  referralCode?: string;
+  referredBy?: string | null;
+  loyalty?: {
+    pointsBalanceCached?: number;
+    lastRecalcAt?: string | null;
+  };
   createdAt: string;
   updatedAt?: string;
 }
@@ -119,9 +125,10 @@ export default function UsersPage() {
         acc[user.role] += 1;
         acc.orders += user.orders?.length || 0;
         acc.comments += user.comments?.length || 0;
+        acc.referral += user.referralCode ? 1 : 0;
         return acc;
       },
-      { user: 0, admin: 0, superadmin: 0, orders: 0, comments: 0 },
+      { user: 0, admin: 0, superadmin: 0, orders: 0, referral: 0 },
     );
 
     return [
@@ -150,6 +157,11 @@ export default function UsersPage() {
         value: totals.comments.toLocaleString(),
         tone: "from-violet-100 to-violet-50",
       },
+      {
+        label: "کاربران کد معرف‌دار",
+        value: totals.referral.toLocaleString(),
+        tone: "from-cyan-100 to-cyan-50",
+      },
     ];
   }, [users]);
 
@@ -166,7 +178,7 @@ export default function UsersPage() {
         </p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
         {loading
           ? Array.from({ length: 5 }).map((_, index) => (
               <div
@@ -245,6 +257,11 @@ export default function UsersPage() {
                     <p className="mt-1 text-sm text-slate-500">
                       {user.email || "ایمیل ثبت نشده"}
                     </p>
+                    {user.referredBy ? (
+                      <p className="mt-1 text-xs text-emerald-600">
+                        از طریق کد معرف ثبت‌نام کرده
+                      </p>
+                    ) : null}
                   </div>
                   <span
                     className={`rounded-full px-3 py-1 text-xs font-semibold ${roleBadge[user.role]}`}
@@ -273,6 +290,21 @@ export default function UsersPage() {
                     </dd>
                   </div>
                 </dl>
+
+                <div className="mt-4 grid grid-cols-2 gap-2 text-center">
+                  <div className="rounded-lg bg-cyan-50 p-2">
+                    <p className="text-xs text-cyan-700">امتیاز باشگاه</p>
+                    <p className="text-base font-bold text-cyan-900">
+                      {user.loyalty?.pointsBalanceCached || 0}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-indigo-50 p-2">
+                    <p className="text-xs text-indigo-700">کد معرف</p>
+                    <p className="text-sm font-bold text-indigo-900">
+                      {user.referralCode || "-"}
+                    </p>
+                  </div>
+                </div>
 
                 <div className="mt-4 space-y-2 text-sm text-slate-600">
                   <p>
