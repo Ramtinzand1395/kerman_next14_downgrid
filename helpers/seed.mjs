@@ -1,22 +1,30 @@
+
 import { MongoClient, ObjectId } from "mongodb";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 
 const uri =
   "mongodb://myappuser:dhycj%24%253jjhds%25@127.0.0.1:27017/myapp?authSource=myapp";
 const dbName = "myapp";
 
-if (!uri || !dbName) {
-  console.error("Missing MONGODB_URI or MONGODB_DBNAME in .env");
-  process.exit(1);
-}
+// ✅ مسیر پوشه‌ی همین فایل seed.mjs
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// فایل -> کالکشن
+// ✅ اگر دیتا کنار seed هست: helpers/data
+// const dataDir = path.join(__dirname, "data");
+
+// ✅ اگر دیتا اینجاست: app/helpers/data  (طبق حرف تو)
+const dataDir = path.join(__dirname, "data");
+
 const collectionsMap = {
   "test.gamelists.json": "gamelists",
-};
+  // !new
+  "test.customerorders.json": "storeorders",
+  "test.customers.json": "customers",
 
-const WIPE_BEFORE_INSERT = true;
+};
 
 function readJsonFile(filePath) {
   const raw = fs.readFileSync(filePath, "utf-8").trim();
@@ -29,20 +37,15 @@ function readJsonFile(filePath) {
     .map((line) => JSON.parse(line));
 }
 
-// تبدیل Extended JSON به ObjectId واقعی
 function convertExtendedJson(value) {
   if (Array.isArray(value)) return value.map(convertExtendedJson);
 
   if (value && typeof value === "object") {
-    // فقط { "$oid": "..." }
     if (Object.keys(value).length === 1 && typeof value.$oid === "string") {
       return new ObjectId(value.$oid);
     }
-
     const out = {};
-    for (const [k, v] of Object.entries(value)) {
-      out[k] = convertExtendedJson(v);
-    }
+    for (const [k, v] of Object.entries(value)) out[k] = convertExtendedJson(v);
     return out;
   }
 
@@ -54,10 +57,11 @@ async function main() {
   await client.connect();
   const db = client.db(dbName);
 
-  const dataDir = path.join(process.cwd(), "data");
-
   for (const [fileName, collectionName] of Object.entries(collectionsMap)) {
     const filePath = path.join(dataDir, fileName);
+
+    // ✅ این خط رو بذار تا دقیقاً ببینی دنبال کجا می‌گرده
+    console.log("Looking for:", filePath);
 
     if (!fs.existsSync(filePath)) {
       console.warn(`Skipped: ${fileName} (not found)`);
@@ -65,21 +69,12 @@ async function main() {
     }
 
     const docsRaw = readJsonFile(filePath);
-
-    if (!Array.isArray(docsRaw) || docsRaw.length === 0) {
-      console.warn(`Skipped: ${fileName} (empty or invalid JSON array)`);
-      continue;
-    }
-
     const docs = docsRaw.map(convertExtendedJson);
 
     const col = db.collection(collectionName);
-
-    if (WIPE_BEFORE_INSERT) {
-      await col.deleteMany({});
-    }
-
+    await col.deleteMany({});
     const res = await col.insertMany(docs, { ordered: false });
+
     console.log(`Imported ${res.insertedCount} docs into "${collectionName}"`);
   }
 
