@@ -10,7 +10,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "node helpers/seed.mjs"
+    "seed": "node helpers/seed.mjs",
+    "fix:mongoexport": "node helpers/fix-mongo-export.mjs"
   },
   "dependencies": {
     "@vercel/speed-insights": "^1.3.1",
