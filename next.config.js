@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  compiler: {
-    removeConsole: process.env.NODE_ENV === "production",
-  },
+  // compiler: {
+  //   removeConsole: process.env.NODE_ENV === "production",
+  // },
 
   images: {
     remotePatterns: [
@@ -22,7 +22,7 @@ const nextConfig = {
   compress: true,
 
   // Vercel + Mongo + API stability
-  output: "standalone",
+  // output: "standalone",
 };
 
 module.exports = nextConfig;
