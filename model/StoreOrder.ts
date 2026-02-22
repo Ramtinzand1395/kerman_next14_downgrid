@@ -1,19 +1,5 @@
 import mongoose from "mongoose";
 
-// new
-// ثبت تاریخ با دیتا جدید
-const normalizeExtendedJsonDate = (value: unknown) => {
-  if (
-    value &&
-    typeof value === "object" &&
-    "$date" in (value as Record<string, unknown>)
-  ) {
-    return (value as { $date: string | number | Date }).$date;
-  }
-
-  return value;
-};
-
 const storeOrderSchema = new mongoose.Schema(
   {
     list: {
@@ -45,14 +31,6 @@ const storeOrderSchema = new mongoose.Schema(
     },
     deliveryDate: { type: String, default: "تحویل داده نشده", required: true },
     deliveryCode: { type: String, unique: true },
-    createdAt: {
-      type: Date,
-      set: normalizeExtendedJsonDate,
-    },
-    updatedAt: {
-      type: Date,
-      set: normalizeExtendedJsonDate,
-    },
   },
   {
     timestamps: true,
