@@ -9,6 +9,7 @@ import FilterOrders from "../modals/FilterOrders";
 import OrderSkeleton from "../modals/OrderSkeleton";
 
 export default function AllStoreOrders() {
+   const ITEMS_PER_PAGE = 10;
   const searchParams = useSearchParams();
   const [orders, setOrders] = useState<storeOrder[]>([]);
   const [page, setPage] = useState(1);
@@ -23,16 +24,15 @@ export default function AllStoreOrders() {
         setLoading(true);
 
         const params = new URLSearchParams(searchParams.toString());
-        params.set("page", page.toString());
- params.set("limit", "all")
+          params.set("limit", ITEMS_PER_PAGE.toString());
         const res = await fetch(
           `/api/admin/store-order/all-orders?${params.toString()}`,
         );
         const data = await res.json();
 
-        setOrders(data.orders);
-        setTotal(data.pagination.total);
-        setTotalPages(data.pagination.totalPages);
+    setOrders(data.orders ?? []);
+         setTotal(data.pagination?.total ?? 0);
+         setTotalPages(data.pagination?.totalPages ?? 1);
       } catch (err) {
         console.error(err);
         toast.error("خطای سرور");
@@ -44,6 +44,9 @@ export default function AllStoreOrders() {
     fetchOrders();
   }, [searchParams, page]);
 
+   const from = total === 0 ? 0 : (page - 1) * ITEMS_PER_PAGE + 1;
+   const to = Math.min(page * ITEMS_PER_PAGE, total);
+ 
   return (
     <div className="w-full md:container md:mx-auto mx-2 my-10">
       <FilterOrders />
@@ -115,10 +118,10 @@ export default function AllStoreOrders() {
       {/* Pagination */}
       <div className="flex items-center justify-between border-t px-6 py-4">
         <span className="text-sm text-gray-500">
-          نمایش {total > 0 ? 1 : 0} تا {total} از {total} نتیجه
+         نمایش {from} تا {to} از {total} نتیجه
         </span>
 
-       <div className="hidden gap-2">
+    <div className="flex gap-2">
           <button
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}

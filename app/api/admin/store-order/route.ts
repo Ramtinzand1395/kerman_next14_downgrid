@@ -44,7 +44,6 @@ export async function GET() {
 
   const parsedOrders: storeOrder[] = orders.map((o: any) => ({
     ...o,
-    // list: JSON.parse(o.list),
     deliveryStatus: o.deliveryStatus || "دریافت از مشتری",
     consoleType: (o.consoleType || "") as storeOrder["consoleType"],
   }));
