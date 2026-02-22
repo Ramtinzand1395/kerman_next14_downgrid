@@ -10,7 +10,6 @@ import { ConsoleType, storeOrder } from "@/types";
 
 import UpdateStoreOrder from "./UpdateStoreOrder";
 
-
 type OrdersByConsole = {
   ps5: storeOrder[];
   ps4: storeOrder[];
@@ -24,13 +23,17 @@ interface UserInfoModalProps {
   setOrders: React.Dispatch<React.SetStateAction<OrdersByConsole>>;
 }
 
-const UserInfoModal = ({ closeModal, order, setOrders }: UserInfoModalProps) => {
+const UserInfoModal = ({
+  closeModal,
+  order,
+  setOrders,
+}: UserInfoModalProps) => {
   const [userOrder, setUserOrder] = useState<storeOrder | null>(order || null);
 
-   const customer =
-   order?.customer && typeof order.customer !== "string" ? order.customer : null;
-
- 
+  const customer =
+    order?.customer && typeof order.customer !== "string"
+      ? order.customer
+      : null;
 
   const handleDeleteOrder = async () => {
     if (!userOrder) return;
@@ -122,7 +125,61 @@ const UserInfoModal = ({ closeModal, order, setOrders }: UserInfoModalProps) => 
         </header>
 
         <div className="space-y-5 p-5">
-        
+          <section className="space-y-3 rounded-xl border border-slate-200 p-4">
+            <h3 className="text-base font-bold text-slate-800">
+              اطلاعات کاربر
+            </h3>
+
+            {customer ? (
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+                  <p className="text-xs text-slate-500">نام</p>
+                  <p className="mt-1 font-medium text-slate-800">
+                    {customer.name || "---"}
+                  </p>
+                </div>
+
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+                  <p className="text-xs text-slate-500">نام خانوادگی</p>
+                  <p className="mt-1 font-medium text-slate-800">
+                    {customer.lastName || "---"}
+                  </p>
+                </div>
+
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+                  <p className="text-xs text-slate-500">شماره موبایل</p>
+                  <p className="mt-1 font-medium text-slate-800" dir="ltr">
+                    {customer.mobile || "---"}
+                  </p>
+                </div>
+
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+                  <p className="text-xs text-slate-500">جنسیت</p>
+                  <p className="mt-1 font-medium text-slate-800">
+                    {customer.sex || "---"}
+                  </p>
+                </div>
+
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+                  <p className="text-xs text-slate-500">تاریخ تولد</p>
+                  <p className="mt-1 font-medium text-slate-800">
+                    {customer.birthday || "---"}
+                  </p>
+                </div>
+
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm md:col-span-2 lg:col-span-1">
+                  <p className="text-xs text-slate-500">توضیحات مشتری</p>
+                  <p className="mt-1 font-medium text-slate-800">
+                    {customer.description || "---"}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3 text-sm text-slate-500">
+                اطلاعات کاربر برای این سفارش ثبت نشده است.
+              </p>
+            )}
+          </section>
           <UpdateStoreOrder
             userOrder={userOrder}
             setUserOrder={setUserOrder}

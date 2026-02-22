@@ -23,8 +23,11 @@ export async function GET(req: Request) {
 
   // pagination
   const page = Number(searchParams.get("page")) || 1;
-  const limit = 10;
-  const skip = (page - 1) * limit;
+  // const limit = 10;
+  // const skip = (page - 1) * limit;
+   const parsedLimit = Number(searchParams.get("limit"));
+  const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : null;
+   const skip = limit ? (page - 1) * limit : 0;
 
   // filters
   const startDate = searchParams.get("startDate"); // 1404/09/15
@@ -90,7 +93,10 @@ export async function GET(req: Request) {
 
     {
       $facet: {
-        data: [{ $skip: skip }, { $limit: limit }],
+        // data: [{ $skip: skip }, { $limit: limit }],
+         data: [
+         ...(limit ? [{ $skip: skip }, { $limit: limit }] : []),
+        ],
         total: [{ $count: "count" }],
       },
     },
@@ -107,7 +113,8 @@ export async function GET(req: Request) {
       page,
       limit,
       total,
-      totalPages: Math.ceil(total / limit),
+      // totalPages: Math.ceil(total / limit),
+       totalPages: limit ? Math.ceil(total / limit) : 1,
     },
   });
 }

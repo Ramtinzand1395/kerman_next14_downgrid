@@ -24,7 +24,7 @@ export default function AllStoreOrders() {
 
         const params = new URLSearchParams(searchParams.toString());
         params.set("page", page.toString());
-
+ params.set("limit", "all")
         const res = await fetch(
           `/api/admin/store-order/all-orders?${params.toString()}`,
         );
@@ -115,11 +115,10 @@ export default function AllStoreOrders() {
       {/* Pagination */}
       <div className="flex items-center justify-between border-t px-6 py-4">
         <span className="text-sm text-gray-500">
-          نمایش {(page - 1) * 10 + 1} تا {Math.min(page * 10, total)} از {total}{" "}
-          نتیجه
+          نمایش {total > 0 ? 1 : 0} تا {total} از {total} نتیجه
         </span>
 
-        <div className="flex gap-2">
+       <div className="hidden gap-2">
           <button
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
