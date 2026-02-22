@@ -16,11 +16,24 @@ export default function CustomersPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   useEffect(() => {
     const fetchCustomers = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch("/api/admin/store-order/customer");
+        // const res = await fetch("/api/admin/store-order/customer");
+
+        const params = new URLSearchParams();
+        params.set("page", page.toString());
+        params.set("limit", ITEMS_PER_PAGE.toString());
+        if (query.trim()) {
+          params.set("query", query.trim());
+        }
+
+        const res = await fetch(
+          `/api/admin/store-order/customer?${params.toString()}`,
+        );
         const data = await res.json();
 
         if (!res.ok) {
@@ -28,6 +41,8 @@ export default function CustomersPage() {
         }
 
         setCustomers(data.data || []);
+        setTotal(data.pagination?.total ?? 0);
+        setTotalPages(data.pagination?.totalPages ?? 1);
       } catch (err) {
         console.error(err);
         toast.error("در دریافت لیست مشتریان مشکلی پیش آمد.");
@@ -37,47 +52,29 @@ export default function CustomersPage() {
     };
 
     fetchCustomers();
-  }, []);
-
-  const filteredCustomers = useMemo(() => {
-    const normalized = query.trim();
-    if (!normalized) return customers;
-
-    return customers.filter((customer) =>
-      [customer.name, customer.lastName, customer.mobile]
-        .join(" ")
-        .includes(normalized),
-    );
-  }, [customers, query]);
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredCustomers.length / ITEMS_PER_PAGE),
-  );
+  }, [page, query]);
 
   useEffect(() => {
     setPage(1);
   }, [query]);
 
   useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
+    if (
+      selectedCustomerId &&
+      !customers.some((customer) => customer._id === selectedCustomerId)
+    ) {
+      setSelectedCustomerId(null);
     }
-  }, [page, totalPages]);
-
-  const paginatedCustomers = useMemo(() => {
-    const start = (page - 1) * ITEMS_PER_PAGE;
-    return filteredCustomers.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredCustomers, page]);
+  }, [customers, selectedCustomerId]);
 
   const selectedCustomer = useMemo(
     () =>
       customers.find((customer) => customer._id === selectedCustomerId) ?? null,
     [customers, selectedCustomerId],
   );
-  const from =
-    filteredCustomers.length === 0 ? 0 : (page - 1) * ITEMS_PER_PAGE + 1;
-  const to = Math.min(page * ITEMS_PER_PAGE, filteredCustomers.length);
+  const from = total === 0 ? 0 : (page - 1) * ITEMS_PER_PAGE + 1;
+  const to = Math.min(page * ITEMS_PER_PAGE, total);
+
   return (
     <div className="min-h-screen bg-slate-50 text-right">
       <main className="mx-auto max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8">
@@ -108,12 +105,12 @@ export default function CustomersPage() {
 
             {isLoading ? (
               <p className="text-sm text-slate-500">در حال دریافت اطلاعات...</p>
-            ) : filteredCustomers.length === 0 ? (
+            ) : customers.length === 0 ? (
               <p className="text-sm text-slate-500">مشتری‌ای پیدا نشد.</p>
             ) : (
               <>
                 <div className="space-y-2">
-                  {paginatedCustomers.map((customer) => (
+                  {customers.map((customer) => (
                     <button
                       key={customer._id}
                       type="button"
@@ -136,7 +133,7 @@ export default function CustomersPage() {
 
                 <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-4">
                   <span className="text-xs text-slate-500">
-                    نمایش {from} تا {to} از {filteredCustomers.length} نتیجه
+                    نمایش {from} تا {to} از نتیجه
                   </span>
                   <div className="flex gap-2">
                     <button
