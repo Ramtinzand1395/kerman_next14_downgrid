@@ -36,9 +36,10 @@ export async function GET(req: Request) {
   const lastName = searchParams.get("lastName");
 
   /* ================= Order Filter ================= */
-  const matchOrder: Filter<storeOrder> = {
-    deliveryStatus: { $ne: "تحویل به مشتری" },
-  };
+  // const matchOrder: Filter<storeOrder> = {
+  //   deliveryStatus: { $ne: "تحویل به مشتری" },
+  // };
+  const matchOrder: Filter<storeOrder> = {};
 
   if (startDate || endDate) {
     matchOrder.createdAt = {};
