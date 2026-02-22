@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 // new
-// بدون پیامک
+// ثبت تاریخ با دیتا جدید
 const normalizeExtendedJsonDate = (value: unknown) => {
   if (
     value &&
@@ -45,6 +45,14 @@ const storeOrderSchema = new mongoose.Schema(
     },
     deliveryDate: { type: String, default: "تحویل داده نشده", required: true },
     deliveryCode: { type: String, unique: true },
+    createdAt: {
+      type: Date,
+      set: normalizeExtendedJsonDate,
+    },
+    updatedAt: {
+      type: Date,
+      set: normalizeExtendedJsonDate,
+    },
   },
   {
     timestamps: true,

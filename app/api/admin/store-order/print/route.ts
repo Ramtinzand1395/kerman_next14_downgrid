@@ -35,7 +35,7 @@ export async function POST(req: Request) {
         ...getAuthHeader(),
       },
       body: JSON.stringify({
-        printerId: 74910088, 
+        printerId: 75151896, 
         title: "Ticket Print",
         contentType: "pdf_base64",
         content: base64Content,
