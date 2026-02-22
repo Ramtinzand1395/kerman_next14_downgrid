@@ -1,5 +1,19 @@
 import mongoose from "mongoose";
 
+// new
+// بدون پیامک
+const normalizeExtendedJsonDate = (value: unknown) => {
+  if (
+    value &&
+    typeof value === "object" &&
+    "$date" in (value as Record<string, unknown>)
+  ) {
+    return (value as { $date: string | number | Date }).$date;
+  }
+
+  return value;
+};
+
 const storeOrderSchema = new mongoose.Schema(
   {
     list: {
@@ -34,11 +48,10 @@ const storeOrderSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 const generateRandomCode = () => Math.floor(10000 + Math.random() * 90000);
-
 
 storeOrderSchema.pre("save", async function () {
   if (!this.deliveryCode) {
@@ -57,5 +70,5 @@ storeOrderSchema.pre("save", async function () {
   }
 });
 
-export default
-  mongoose.models.StoreOrder || mongoose.model("StoreOrder", storeOrderSchema);
+export default mongoose.models.StoreOrder ||
+  mongoose.model("StoreOrder", storeOrderSchema);

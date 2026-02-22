@@ -65,3 +65,63 @@ export async function POST(req: Request) {
     );
   }
 }
+
+// todo
+// این کامتن پاک نشه برای دریافت پرینتر ها برو به ادرس 
+// http://localhost:3000/api/admin/store-order/print
+
+
+export const runtime = "nodejs";
+
+const getAuthHeader2 = () => {
+  const apiKey = process.env.printernode;
+  if (!apiKey) throw new Error("PRINTNODE_API_KEY (یا printernode) تعریف نشده");
+
+  return {
+    Authorization: `Basic ${Buffer.from(`${apiKey}:`).toString("base64")}`,
+  };
+};
+
+export async function GET() {
+  try {
+    const res = await fetch(`${PRINTNODE_BASE}/printers`, {
+      method: "GET",
+      headers: { ...getAuthHeader2() },
+      cache: "no-store",
+    });
+
+    const raw = await res.text();
+
+    if (!res.ok) {
+      return NextResponse.json(
+        { success: false, error: "خطا از PrintNode", details: raw },
+        { status: res.status }
+      );
+    }
+
+    return NextResponse.json({ success: true, printers: JSON.parse(raw) });
+  } catch (err: any) {
+    // مهم: علت دقیق خطا (DNS / TLS / Timeout / ...)
+    const cause = err?.cause
+      ? {
+          name: err.cause.name,
+          code: err.cause.code,
+          message: err.cause.message,
+          errno: err.cause.errno,
+          syscall: err.cause.syscall,
+          address: err.cause.address,
+          port: err.cause.port,
+        }
+      : null;
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: "خطا در گرفتن لیست پرینترها",
+        details: err?.message || String(err),
+        cause,
+      },
+      { status: 500 }
+    );
+  }
+}
