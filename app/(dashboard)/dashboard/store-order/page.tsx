@@ -39,7 +39,7 @@ export default function StoreOrder() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSendingSms, setIsSendingSms] = useState(false);
   const [orders, setOrders] = useState<OrdersByConsole>(initialOrders);
-console.log(orders,"سفارش ها")
+
   useEffect(() => {
     const fetchOrders = async () => {
       setIsLoading(true);

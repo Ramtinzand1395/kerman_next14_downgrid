@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-
+import { getServerSession } from "next-auth";
+ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 const PRINTNODE_BASE = "https://api.printnode.com";
 
 const getAuthHeader = () => {
@@ -13,6 +14,12 @@ const getAuthHeader = () => {
 
 /* ===================== POST : Print PDF ===================== */
 export async function POST(req: Request) {
+    const session = await getServerSession(authOptions);
+ if (!session?.user)
+   return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
+ if (!["admin", "superadmin"].includes(session.user.role))
+   return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
+ 
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;

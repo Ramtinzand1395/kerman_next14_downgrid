@@ -11,7 +11,7 @@ export async function GET(req: Request) {
   if (!session?.user)
     return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
 
-  if (session.user.role !== "superadmin")
+  if (!["admin", "superadmin"].includes(session.user.role))
     return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
   await dbConnect();
 
@@ -20,40 +20,41 @@ export async function GET(req: Request) {
     const mobile = searchParams.get("mobile");
 
     if (!mobile) {
-       const page = Number(searchParams.get("page")) || 1;
-     const parsedLimit = Number(searchParams.get("limit"));
-     const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 10;
-     const query = searchParams.get("query")?.trim();
-     const skip = (page - 1) * limit;
- 
-     const filter = query
-       ? {
-           $or: [
-             { name: { $regex: query, $options: "i" } },
-             { lastName: { $regex: query, $options: "i" } },
-             { mobile: { $regex: query, $options: "i" } },
-           ],
-         }
-       : {};
- 
-     const [customers, total] = await Promise.all([
-       Customer.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
-       Customer.countDocuments(filter),
-     ]);
+      const page = Number(searchParams.get("page")) || 1;
+      const parsedLimit = Number(searchParams.get("limit"));
+      const limit =
+        Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 10;
+      const query = searchParams.get("query")?.trim();
+      const skip = (page - 1) * limit;
+
+      const filter = query
+        ? {
+            $or: [
+              { name: { $regex: query, $options: "i" } },
+              { lastName: { $regex: query, $options: "i" } },
+              { mobile: { $regex: query, $options: "i" } },
+            ],
+          }
+        : {};
+
+      const [customers, total] = await Promise.all([
+        Customer.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+        Customer.countDocuments(filter),
+      ]);
 
       return NextResponse.json(
         {
           message: "لیست مشتریان دریافت شد.",
           data: customers,
-            pagination: {
-           page,
+          pagination: {
+            page,
             limit,
-             total,
+            total,
             totalPages: Math.max(1, Math.ceil(total / limit)),
-           },
+          },
           status: 200,
         },
-        { status: 200},
+        { status: 200 },
       );
     }
 
@@ -72,7 +73,7 @@ export async function GET(req: Request) {
         data: customer,
         status: 200,
       },
-      { status: 200},
+      { status: 200 },
     );
   } catch (err) {
     console.error(err);
@@ -87,7 +88,7 @@ export async function POST(req: Request) {
   if (!session?.user)
     return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
 
-  if (session.user.role !== "superadmin")
+ if (!["admin", "superadmin"].includes(session.user.role))
     return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
 
   await dbConnect();

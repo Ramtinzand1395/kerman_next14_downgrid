@@ -27,7 +27,6 @@ export default function UserBtn({
   const { data: session } = useSession();
 
   const isUserDropdownOpen = activeDropdown === "user";
-
   return (
     <>
       {session ? (
@@ -97,7 +96,11 @@ export default function UserBtn({
                     </>
                   ) : (
                     <Link
-                      href="/dashboard"
+                      href={
+                        session.user?.role === "admin"
+                          ? "/dashboard/store-order"
+                          : "/dashboard"
+                      }
                       className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-slate-700 transition hover:bg-slate-50 hover:text-blue-600"
                     >
                       <LayoutDashboard className="h-4 w-4" /> داشبورد

@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import StoreOrder from "@/model/StoreOrder";
+import { getServerSession } from "next-auth";
+ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ orderId: string }> }
 ) {
+
+   const session = await getServerSession(authOptions);
+ if (!session?.user)
+   return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
+ if (!["admin", "superadmin"].includes(session.user.role))
+   return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
+ 
+
   await dbConnect();
 
   try {
@@ -39,6 +49,14 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ orderId: string }> }
 ) {
+
+   const session = await getServerSession(authOptions);
+  if (!session?.user)
+    return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
+  if (!["admin", "superadmin"].includes(session.user.role))
+    return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
+
+
   await dbConnect();
 
   try {

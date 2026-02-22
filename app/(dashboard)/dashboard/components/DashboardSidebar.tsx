@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
   Home,
@@ -68,7 +69,22 @@ export const navItems: NavItem[] = [
 
 export default function DashboardSidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const role = session?.user?.role;
 
+  const visibleNavItems =
+    role === "admin"
+      ? [
+          { label: "بازگشت به سایت", href: "/", icon: Home },
+          {
+            label: "سفارشات",
+            icon: ClipboardList,
+            children: [
+              { label: "ثبت سفارش دستی", href: "/dashboard/store-order", icon: Plus },
+            ],
+          },
+        ]
+      : navItems;
   const [expanded, setExpanded] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -144,7 +160,7 @@ useEffect(() => {
         </div>
 
         <nav className="flex-1 space-y-2 overflow-y-auto px-3 py-4 text-sm">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const isOpen = openMenus.includes(item.label);
             const directActive = item.href && pathname === item.href;
             const childActive = item.children?.some((child) => child.href && pathname === child.href);

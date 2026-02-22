@@ -8,7 +8,20 @@ export default withAuth(
     const pathname = req.nextUrl.pathname;
 
     // --- مسیر /dashboard فقط برای superadmin ---
-    if (pathname.startsWith("/dashboard") && role !== "superadmin") {
+    const isDashboardPath = pathname.startsWith("/dashboard");
+    const isStoreOrderPath = pathname.startsWith("/dashboard/store-order");
+
+    // superadmin به همه مسیرهای داشبورد دسترسی دارد
+    if (isDashboardPath && role === "superadmin") {
+      return NextResponse.next();
+    }
+
+    // admin فقط به مسیرهای store-order داشبورد دسترسی دارد
+    if (isDashboardPath && role === "admin" && !isStoreOrderPath) {
+      return NextResponse.redirect(new URL("/dashboard/store-order", req.url));
+    }
+
+    if (isDashboardPath && role !== "superadmin" && role !== "admin") {
       return NextResponse.redirect(new URL("/", req.url));
     }
 
@@ -21,7 +34,7 @@ export default withAuth(
     callbacks: {
       authorized: ({ token }) => !!token, // توکن وجود داشته باشد
     },
-  }
+  },
 );
 
 export const config = {

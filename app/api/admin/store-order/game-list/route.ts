@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
   if (!session?.user)
     return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
 
-  if (session.user.role !== "superadmin")
+ if (!["admin", "superadmin"].includes(session.user.role))
     return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
 
   await dbConnect();
@@ -108,7 +108,7 @@ export async function PUT(req: NextRequest) {
   if (!session?.user)
     return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
 
-  if (session.user.role !== "superadmin")
+  if (!["admin", "superadmin"].includes(session.user.role))
     return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
 
   await dbConnect();
@@ -145,7 +145,7 @@ export async function DELETE(req: NextRequest) {
   if (!session?.user)
     return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
 
-  if (session.user.role !== "superadmin")
+if (!["admin", "superadmin"].includes(session.user.role))
     return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
 
   await dbConnect();
