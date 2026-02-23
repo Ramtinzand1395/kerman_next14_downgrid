@@ -11,7 +11,33 @@ import { storeOrder } from "@/types";
 moment.loadPersian({ usePersianDigits: false });
 
 // ====================== FUNCTIONS ======================
+const normalizeOrderList = (value: unknown): string[] => {
+  if (!value) return [];
 
+  const collect = (entry: unknown): string[] => {
+    if (Array.isArray(entry)) {
+      return entry.flatMap(collect);
+    }
+
+    if (typeof entry === "string") {
+      const trimmed = entry.trim();
+      if (!trimmed) return [];
+
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) return parsed.flatMap(collect);
+      } catch {
+        // noop
+      }
+
+      return [trimmed];
+    }
+
+    return [String(entry).trim()].filter(Boolean);
+  };
+
+  return collect(value);
+};
 // تبدیل اعداد
 const toPersianDigits = (str: string) =>
   str.replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[+d]);
@@ -74,9 +100,16 @@ export async function POST(req: Request) {
   const { list, price, customerId, description, consoleType, deliveryStatus } =
     body;
   const persianDate = moment().format("jYYYY/jMM/jDD HH:mm");
+const normalizedList = normalizeOrderList(list);
 
+  if (!normalizedList.length) {
+    return NextResponse.json(
+      { error: "حداقل یک بازی باید انتخاب شود" },
+      { status: 400 },
+    );
+  }
   const order = await StoreOrder.create({
-    list: JSON.stringify(list),
+    list: normalizedList,
     price,
     customer: customerId,
     description,

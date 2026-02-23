@@ -12,12 +12,13 @@ interface UpdateStoreOrderProps {
   closeModal: () => void;
   userOrder?: storeOrder | null;
   setUserOrder: React.Dispatch<React.SetStateAction<storeOrder | null>>;
+  onOrderUpdated?: (updatedOrder: storeOrder) => void;
 }
 
 const UpdateStoreOrder = ({
   userOrder,
   setUserOrder,
-  closeModal,
+  onOrderUpdated,
 }: UpdateStoreOrderProps) => {
   const [isEditingOrder, setIsEditingOrder] = useState(false);
 
@@ -43,10 +44,14 @@ const UpdateStoreOrder = ({
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
+      const updatedOrder = (data?.data as storeOrder) || userOrder;
+      if (updatedOrder) {
+        setUserOrder(updatedOrder);
+        onOrderUpdated?.(updatedOrder);
+      }
 
       toast.success(data.message || "سفارش با موفقیت ویرایش شد.");
       setIsEditingOrder(false);
-      closeModal();
     } catch (err) {
       console.error(err);
       toast.error("خطا در ویرایش سفارش");

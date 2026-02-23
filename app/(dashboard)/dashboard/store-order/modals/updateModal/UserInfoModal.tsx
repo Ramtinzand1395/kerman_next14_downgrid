@@ -31,8 +31,8 @@ const UserInfoModal = ({
   const [userOrder, setUserOrder] = useState<storeOrder | null>(order || null);
 
   const customer =
-    order?.customer && typeof order.customer !== "string"
-      ? order.customer
+    userOrder?.customer && typeof userOrder.customer !== "string"
+      ? userOrder.customer
       : null;
 
   const handleDeleteOrder = async () => {
@@ -184,6 +184,34 @@ const UserInfoModal = ({
             userOrder={userOrder}
             setUserOrder={setUserOrder}
             closeModal={closeModal}
+            onOrderUpdated={(updatedOrder) => {
+              const newConsoleType = updatedOrder.consoleType as ConsoleType;
+              const previousConsoleType = userOrder?.consoleType as
+                | ConsoleType
+                | undefined;
+
+              setOrders((prev) => {
+                if (
+                  !previousConsoleType ||
+                  previousConsoleType === newConsoleType
+                ) {
+                  return {
+                    ...prev,
+                    [newConsoleType]: prev[newConsoleType].map((item) =>
+                      item._id === updatedOrder._id ? updatedOrder : item,
+                    ),
+                  };
+                }
+
+                return {
+                  ...prev,
+                  [previousConsoleType]: prev[previousConsoleType].filter(
+                    (item) => item._id !== updatedOrder._id,
+                  ),
+                  [newConsoleType]: [updatedOrder, ...prev[newConsoleType]],
+                };
+              });
+            }}
           />
         </div>
 
