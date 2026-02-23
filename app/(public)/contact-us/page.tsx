@@ -94,6 +94,7 @@ export default function ContactUsPage() {
     },
     openingHours: "Sa-Th 10:00-22:00",
     priceRange: "$$",
+    sameAs: ["https://www.instagram.com/kermanatari.ir?igsh=MTh4cmd3NnNib2N5dw=="],
   };
 
   return (

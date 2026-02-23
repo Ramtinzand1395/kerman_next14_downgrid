@@ -118,7 +118,6 @@ export default function CartPage() {
       <section className="overflow-hidden rounded-3xl bg-blue-900 p-6 text-white shadow-xl md:p-8">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-xs text-slate-300">Checkout</p>
             <h1 className="mt-1 text-2xl font-bold md:text-3xl">سبد خرید</h1>
           </div>
 

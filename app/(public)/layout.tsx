@@ -7,6 +7,8 @@ import AuthProvider from "../AuthProvider";
 import Navbar from "./(navbar)/Navbar";
 import Footer from "./Footer";
 import { SITE_URL } from "@/lib/site";
+const INSTAGRAM_URL =
+   "https://www.instagram.com/kermanatari.ir?igsh=MTh4cmd3NnNib2N5dw==";
 
 const vazir = localFont({
   src: "../Vazir.woff2",
@@ -103,7 +105,7 @@ export default function RootLayout({
                    url: SITE_URL,
                  logo: `${SITE_URL}/atari-seeklogo.svg`,
                   sameAs: [
-                    "https://instagram.com/kermanatari",
+                      INSTAGRAM_URL,
                     "https://t.me/kermanatari",
                   ],
                 },

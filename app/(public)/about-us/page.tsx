@@ -82,7 +82,7 @@ export default function AboutUsPage() {
         name: "کرمان آتاری",
         url: SITE_URL,
         logo: `${SITE_URL}/favicon.ico`,
-        sameAs: [],
+       sameAs: ["https://www.instagram.com/kermanatari.ir?igsh=MTh4cmd3NnNib2N5dw=="],
         description:
           "مرجع تخصصی خرید بازی، کنسول و لوازم جانبی پلی‌استیشن با رویکرد مشاوره‌محور و پشتیبانی واقعی.",
       },
