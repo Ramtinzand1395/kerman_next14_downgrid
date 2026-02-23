@@ -38,7 +38,7 @@ const contactChannels = [
   {
     icon: MapPin,
     title: "آدرس فروشگاه",
-    value: "کرمان، میدان شهدا، خیابان زینبیه، جنب داروخانه",
+    value: " کرمان - خیابان باهنر (ناصریه) - بین کوچه 2 و 4 - جنب داروخانه مادر",
     href: "https://maps.google.com/?q=Kerman",
     description: "مراجعه حضوری برای تحویل سریع و دریافت مشاوره تخصصی.",
   },

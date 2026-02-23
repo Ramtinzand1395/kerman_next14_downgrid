@@ -23,7 +23,7 @@ const banners = [
   {
     title: "لوازم جانبی حرفه‌ای",
     description: "از دسته و هدست تا تجهیزات کامل گیمینگ برای تجربه حرفه‌ای‌تر.",
-    cta: "دیدن لوازم جانبی",
+    cta: "مشاهده لوازم جانبی",
     href: "/products?sort=newest&category=accessories&page=1",
     bgImage: "/banner_2.webp",
     icon: "/icons/action-figure.webp",

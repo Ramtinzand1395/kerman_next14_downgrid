@@ -7,6 +7,43 @@ import { toPersianDate } from "./toPersianDate";
 
 const isEnglish = (text: string) => /[a-zA-Z]/.test(text);
 
+
+const getGames = (list: unknown): string[] => {
+  if (!list) return [];
+
+  if (Array.isArray(list)) {
+    if (list.length === 1 && typeof list[0] === "string") {
+      const first = list[0].trim();
+      try {
+        const parsed = JSON.parse(first);
+        if (Array.isArray(parsed)) {
+          return parsed.map((x) => String(x).trim()).filter(Boolean);
+        }
+      } catch {
+        return [first].filter(Boolean);
+      }
+    }
+    return list.map((x) => String(x).trim()).filter(Boolean);
+  }
+
+  if (typeof list === "string") {
+    const s = list.trim();
+    try {
+      const parsed = JSON.parse(s);
+      if (Array.isArray(parsed)) {
+        return parsed.map((x) => String(x).trim()).filter(Boolean);
+      }
+    } catch {
+      return s
+        .split(",")
+        .map((x) => x.trim())
+        .filter(Boolean);
+    }
+  }
+
+  return [];
+};
+
 const generatePDF = (
   userOrder: storeOrder | null,
   customer: Customer | null,
@@ -28,7 +65,7 @@ const generatePDF = (
 
   doc.addImage(LogoBase64, "PNG", 30, 2, 10, 10);
 
-  let currentY = padding;
+  let currentY = padding + 12;
 
   const lines: { text: string; align: "right" | "left" }[] = [];
 
@@ -39,10 +76,7 @@ const generatePDF = (
       text: `نام خانوادگی: ${customer.lastName || ""}`,
       align: "right",
     });
-    lines.push({
-      text: `موبایل: ${customer.mobile || ""}`,
-      align: "right",
-    });
+    lines.push({ text: `موبایل: ${customer.mobile || ""}`, align: "right" });
   }
 
   lines.push({ text: "===========================", align: "right" });
@@ -54,30 +88,46 @@ const generatePDF = (
       align: "right",
     });
     lines.push({
-      text: `قیمت: ${userOrder.price?.toLocaleString()} تومان`,
+      text: `قیمت: ${userOrder.price?.toLocaleString() || "0"} تومان`,
       align: "right",
     });
 
     lines.push({ text: "===========================", align: "right" });
 
-    if (userOrder.list?.length) {
+    const games = getGames(userOrder.list);
+
+    if (games.length) {
       lines.push({ text: "لیست بازی‌ها:", align: "right" });
-      userOrder.list.forEach((game) => {
-        lines.push({ text: game, align: "left" });
+
+      games.forEach((game, idx) => {
+        const wrapped = doc.splitTextToSize(`${idx + 1}) ${game}`, 70);
+        wrapped.forEach((wLine: string) => {
+          lines.push({ text: wLine, align: "left" });
+        });
       });
     }
 
     lines.push({ text: "===========================", align: "right" });
-    lines.push({
-      text: `توضیحات: ${userOrder.description || ""}`,
-      align: "right",
+
+    const desc = `توضیحات: ${userOrder.description || ""}`;
+    const descWrapped = doc.splitTextToSize(desc, 70);
+    descWrapped.forEach((wLine: string) => {
+      lines.push({ text: wLine, align: "right" });
     });
+
+    lines.push({ text: "===========================", align: "right" });
+    lines.push({ text: "محل امضا مشتری", align: "right" });
+    lines.push({ text: " ", align: "right" });
+    lines.push({ text: " ", align: "right" });
   }
 
+  // Print lines
   lines.forEach(({ text, align }) => {
     const font = isEnglish(text) ? "Helvetica" : "BNAZANB";
     doc.setFont(font, "normal");
-    doc.text(text, align === "right" ? 75 : 5, currentY, { align });
+
+    const x = align === "right" ? 75 : 5;
+    doc.text(text, x, currentY, { align });
     currentY += lineHeight;
   });
 
@@ -99,11 +149,8 @@ export const sendPdfToBackend = async (
       body: formData,
     });
 
-    if (res.ok) {
-      toast.success("فایل برای چاپ ارسال شد.");
-    } else {
-      toast.error("خطا در ارسال فایل.");
-    }
+    if (res.ok) toast.success("فایل برای چاپ ارسال شد.");
+    else toast.error("خطا در ارسال فایل.");
   } catch (err) {
     console.error(err);
     toast.error("ارسال با خطا مواجه شد.");

@@ -40,12 +40,13 @@ export default function Footer() {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     name: "Kerman Atari",
-    address: "کرمان، میدان شهدا، خیابان زینبیه، جنب داروخانه",
-    telephone: "09383077225",
+    address:
+      " کرمان - خیابان باهنر (ناصریه) - بین کوچه 2 و 4 - جنب داروخانه مادر",
+    telephone: "09383077225 - 09044754897",
     image: "/atari-seeklogo.svg",
     url: "https://kermanatari.ir",
   };
-// from-[#001A6E]  to-[#377dff]
+  // from-[#001A6E]  to-[#377dff]
   return (
     <footer
       className="mt-14 overflow-hidden rounded-t-[50px] md:rounded-t-[80px] border-t border-[#001A6E] bg-gradient-to-b from-white via-red-50/40 to-white text-gray-700"
@@ -162,7 +163,7 @@ export default function Footer() {
 
             <p className="flex items-start gap-2 leading-7">
               <MapPin className="mt-1 h-4 w-4 shrink-0 text-[#001A6E]" />
-              کرمان، میدان شهدا، خیابان زینبیه، جنب داروخانه
+              کرمان - خیابان باهنر (ناصریه) - بین کوچه 2 و 4 - جنب داروخانه مادر
             </p>
 
             <p className="flex items-center gap-2">
@@ -170,15 +171,19 @@ export default function Footer() {
               <a href="tel:09383077225" className="hover:text-red-600">
                 09383077225
               </a>
+              -
+              <a href="tel:09044754897" className="hover:text-red-600">
+                09044754897
+              </a>
             </p>
 
             <p className="flex items-center gap-2">
               <Clock3 className="h-4 w-4 text-[#001A6E]" />
-              همه‌روزه از ساعت ۱۰ تا ۲۲
+              همه‌روزه صبح‌ها از ساعت ۹ تا ۱۲:۳۰ و عصرها از ساعت ۴ تا ۸.{" "}
             </p>
 
             <a
-              href="https://instagram.com"
+              href="https://www.instagram.com/kermanatari.ir?igsh=MTh4cmd3NnNib2N5dw=="
               className="inline-flex items-center gap-2 text-gray-600 transition hover:text-red-600"
               target="_blank"
               rel="noopener noreferrer"

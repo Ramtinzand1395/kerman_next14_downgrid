@@ -31,7 +31,7 @@ const RegisterCustomer = ({
   };
 
   const handleSubmitCustomer = async () => {
-    if (!customerData.name || !customerData.lastName || !customerData.mobile) {
+    if (!customerData.lastName || !customerData.mobile) {
       toast.warning("لطفا نام، نام خانوادگی و موبایل را تکمیل کنید.");
       return;
     }

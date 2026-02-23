@@ -89,7 +89,7 @@ export default function ContactUsPage() {
     address: {
       "@type": "PostalAddress",
       addressLocality: "کرمان",
-      streetAddress: "میدان شهدا، خیابان زینبیه، جنب داروخانه",
+      streetAddress: " کرمان - خیابان باهنر (ناصریه) - بین کوچه 2 و 4 - جنب داروخانه مادر",
       addressCountry: "IR",
     },
     openingHours: "Sa-Th 10:00-22:00",
