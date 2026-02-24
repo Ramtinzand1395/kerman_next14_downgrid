@@ -7,26 +7,6 @@ import "@/model/Address";
 import "@/model/User";
 import "@/model/Product";
 
-// export async function GET() {
-//   await dbConnect();
-//   const session = await getServerSession(authOptions);
-
-//   if (!session?.user) {
-//     return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
-//   }
-
-//   if (session.user.role !== "superadmin") {
-//     return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
-//   }
-
-//   const orders = await Order.find()
-//     .populate("items.product")
-//     .populate("address")
-//     .populate("user")
-//     .sort({ createdAt: -1 });
-
-//   return NextResponse.json(orders);
-// }
 
 export async function GET(req: Request) {
   await dbConnect();

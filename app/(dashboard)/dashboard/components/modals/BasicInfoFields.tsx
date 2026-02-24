@@ -13,6 +13,7 @@ interface BasicInfoFieldsProps {
 }
 
 const fieldLabels: Record<string, string> = {
+  productType: "نوع محصول",
   title: "عنوان محصول",
   slug: "اسلاگ",
   price: "قیمت",
@@ -42,6 +43,33 @@ const BasicInfoFields = ({ form, updateField }: BasicInfoFieldsProps) => {
 
   return (
     <div className="grid grid-cols-2 gap-5 rounded-2xl border border-white/30 bg-white/20 p-5 shadow-lg backdrop-blur-md transition-all duration-300">
+      <div className="col-span-2 relative my-2 w-full">
+        <label
+          htmlFor="product-productType"
+          className="pointer-events-none absolute -top-4 left-0 text-xs"
+        >
+          {fieldLabels.productType}
+        </label>
+        <select
+          id="product-productType"
+          value={form.productType}
+          onChange={(e) =>
+            updateField(
+              "productType",
+              e.target.value as ProductForm["productType"],
+            )
+          }
+          className="w-full border-b border-gray-300 bg-inherit py-2 transition-colors focus:border-b-2 focus:border-blue-700 focus:outline-none"
+        >
+          <option value="single" className="text-black">
+            محصول تکی
+          </option>
+          <option value="multi" className="text-black">
+            محصول چند مدلی
+          </option>
+        </select>
+      </div>
+
       {textFields.map((field) => (
         <div key={field} className="relative my-2 w-full">
           <label
@@ -79,6 +107,93 @@ const BasicInfoFields = ({ form, updateField }: BasicInfoFieldsProps) => {
           className="w-full border-b border-gray-300 bg-inherit py-1 transition-colors focus:border-b-2 focus:border-blue-700 focus:outline-none"
         />
       </div>
+
+      {form.productType === "multi" && (
+        <div className="col-span-2 my-2 rounded-xl border border-white/30 bg-white/10 p-3">
+          <div className="mb-3 flex items-center justify-between">
+            <h4 className="text-sm font-semibold">مدل‌های قابل ساخت</h4>
+            <button
+              type="button"
+              onClick={() =>
+                updateField("variants", [
+                  ...(form.variants || []),
+                  {
+                    title: "",
+                    sku: "",
+                    price: 0,
+                    discountPrice: null,
+                    stock: 0,
+                  },
+                ])
+              }
+              className="rounded-md bg-indigo-600 px-3 py-1 text-xs text-white"
+            >
+              افزودن مدل
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {(form.variants || []).map((variant, index) => (
+              <div
+                key={index}
+                className="grid grid-cols-5 gap-2 rounded-lg border border-white/20 p-2"
+              >
+                <input
+                  type="text"
+                  placeholder="نام مدل"
+                  value={variant.title}
+                  onChange={(e) => {
+                    const next = [...(form.variants || [])];
+                    next[index] = { ...next[index], title: e.target.value };
+                    updateField("variants", next);
+                  }}
+                  className="col-span-2 rounded bg-white/20 px-2 py-1 text-xs"
+                />
+                <input
+                  type="number"
+                  placeholder="قیمت"
+                  value={variant.price}
+                  onChange={(e) => {
+                    const next = [...(form.variants || [])];
+                    next[index] = {
+                      ...next[index],
+                      price: Number(e.target.value),
+                    };
+                    updateField("variants", next);
+                  }}
+                  className="rounded bg-white/20 px-2 py-1 text-xs"
+                />
+                <input
+                  type="number"
+                  placeholder="موجودی"
+                  value={variant.stock}
+                  onChange={(e) => {
+                    const next = [...(form.variants || [])];
+                    next[index] = {
+                      ...next[index],
+                      stock: Number(e.target.value),
+                    };
+                    updateField("variants", next);
+                  }}
+                  className="rounded bg-white/20 px-2 py-1 text-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = (form.variants || []).filter(
+                      (_, i) => i !== index,
+                    );
+                    updateField("variants", next);
+                  }}
+                  className="rounded bg-red-500/80 px-2 py-1 text-xs text-white"
+                >
+                  حذف
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="relative my-2 w-full">
         <label

@@ -225,6 +225,11 @@ export default function CartPage() {
                             <h3 className="truncate text-sm font-semibold text-slate-900 md:text-base">
                               {item.title}
                             </h3>
+                            {item.variantTitle && (
+                        <p className="mt-1 text-xs text-slate-500">
+                          مدل انتخابی: {item.variantTitle}
+                        </p>
+                      )}
                             <p className="mt-1 text-xs text-slate-500">
                               قیمت واحد:{" "}
                               {formatPrice(item.discountPrice ?? item.price)}{" "}

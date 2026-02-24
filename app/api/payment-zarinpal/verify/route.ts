@@ -161,23 +161,29 @@ export async function GET(req: NextRequest) {
     if (!temp) {
       // اگر temp نداریم، ممکنه قبلاً تایید و حذف شده باشه.
       // اگر سفارش قبلاً paid شده، موفق نشان بده تا تجربه کاربر خراب نشه.
-      const alreadyPaidOrder = await Order.findOne({ paymentAuthority: authority, paymentStatus: "paid" }).lean();
+      const alreadyPaidOrder = await Order.findOne({
+        paymentAuthority: authority,
+        paymentStatus: "paid",
+      }).lean();
       return NextResponse.redirect(alreadyPaidOrder ? successUrl : failedUrl);
     }
 
     const { finalPrice, items, orderId, userId } = temp;
 
     // Verify با دامنه درست (Production)
-    const verifyRes = await fetch("https://payment.zarinpal.com/pg/v4/payment/verify.json", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        merchant_id,
-        amount: finalPrice,
-        authority,
-      }),
-      cache: "no-store",
-    });
+    const verifyRes = await fetch(
+      "https://payment.zarinpal.com/pg/v4/payment/verify.json",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          merchant_id,
+          amount: finalPrice,
+          authority,
+        }),
+        cache: "no-store",
+      },
+    );
 
     const result = (await verifyRes.json()) as ZarinpalVerifyResponse;
 
@@ -193,7 +199,10 @@ export async function GET(req: NextRequest) {
     try {
       await session.withTransaction(async () => {
         // اگر سفارش قبلاً paid شده، دیگه موجودی کم نکن
-        const existingOrder = await Order.findOne({ _id: orderId, user: userId }).session(session);
+        const existingOrder = await Order.findOne({
+          _id: orderId,
+          user: userId,
+        }).session(session);
         if (!existingOrder) {
           throw new Error("ORDER_NOT_FOUND");
         }
@@ -204,11 +213,40 @@ export async function GET(req: NextRequest) {
         }
 
         // کاهش موجودی محصولات (با شرط کافی بودن موجودی)
-        for (const item of items as Array<{ product: string; quantity: number }>) {
+        for (const item of items as Array<{
+          product: string;
+          variantId?: string;
+          quantity: number;
+        }>) {
+          if (item.variantId) {
+            const updated = await Product.findOneAndUpdate(
+              {
+                _id: item.product,
+                stock: { $gte: item.quantity },
+                variants: {
+                  $elemMatch: {
+                    _id: item.variantId,
+                    stock: { $gte: item.quantity },
+                  },
+                },
+              },
+              {
+                $inc: {
+                  stock: -item.quantity,
+                  "variants.$.stock": -item.quantity,
+                },
+              },
+              { new: true, session },
+            );
+
+            if (!updated) throw new Error("OUT_OF_STOCK");
+            continue;
+          }
+
           const updated = await Product.findOneAndUpdate(
             { _id: item.product, stock: { $gte: item.quantity } },
             { $inc: { stock: -item.quantity } },
-            { new: true, session }
+            { new: true, session },
           );
           if (!updated) throw new Error("OUT_OF_STOCK");
         }
@@ -221,7 +259,7 @@ export async function GET(req: NextRequest) {
             paymentAuthority: authority,
             paymentRefId: result?.data?.ref_id ?? null,
           },
-          { new: true, session }
+          { new: true, session },
         );
 
         if (!updatedOrder) throw new Error("ORDER_UPDATE_FAILED");

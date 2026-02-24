@@ -212,9 +212,9 @@ export default async function ProductPage({
             <li className="text-zinc-900 font-medium">{product.title}</li>
           </ol>
         </nav>
-        <h1 className="mt-3 text-xl md:text-3xl font-extrabold text-zinc-900">
+        <h2 className="mt-3 text-xl md:text-3xl font-extrabold text-zinc-900">
           {product.title}
-        </h1>
+        </h2>
         <p className="mt-2 text-sm md:text-base text-zinc-600 leading-7 max-w-4xl">
           {product.metaDescription ||
             product.shortDesc ||

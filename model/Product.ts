@@ -8,9 +8,23 @@ const SpecificationItemSchema = new Schema(
   { _id: false }, // هر آیتم نیاز به _id جدا ندارد
 );
 
-
 const productSchema = new Schema(
   {
+    productType: {
+      type: String,
+      enum: ["single", "multi"],
+      default: "single",
+    },
+    variants: [
+      {
+        title: { type: String, required: true },
+        sku: String,
+        price: { type: Number, required: true },
+        discountPrice: Number,
+        stock: { type: Number, default: 0 },
+      },
+    ],
+
     sku: {
       type: String,
       unique: true,

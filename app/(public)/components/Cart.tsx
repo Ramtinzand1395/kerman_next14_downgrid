@@ -60,18 +60,37 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
   }, [game.comments]);
 
   const handleAddToCart = () => {
-     if (game.stock <= 0) {
-       toast.error("این محصول ناموجود است.");
+    const hasVariants =
+      game.productType === "multi" && (game.variants?.length || 0) > 0;
+    const defaultVariant = hasVariants
+      ? game.variants?.find((variant: any) => Number(variant.stock) > 0) ||
+        game.variants?.[0]
+      : null;
+
+    const stock = hasVariants ? Number(defaultVariant?.stock || 0) : game.stock;
+
+    if (stock <= 0) {
+      toast.error("این محصول ناموجود است.");
       return;
     }
+
+    const id = hasVariants ? `${game._id}:${defaultVariant?._id}` : game._id;
+
     addToCart({
-      id: game._id,
-      title: game.title,
-      price: game.price,
-      discountPrice: game.discountPrice ?? null,
+      id,
+      productId: game._id,
+      title: hasVariants
+        ? `${game.title} - ${defaultVariant?.title || "مدل"}`
+        : game.title,
+      price: hasVariants ? Number(defaultVariant?.price || 0) : game.price,
+      discountPrice: hasVariants
+        ? (defaultVariant?.discountPrice ?? null)
+        : (game.discountPrice ?? null),
       image: game.mainImage,
       quantity: 1,
-       stock: game.stock,
+      stock,
+      variantId: hasVariants ? defaultVariant?._id : undefined,
+      variantTitle: hasVariants ? defaultVariant?.title : undefined,
     });
 
     toast.success("به سبد خرید اضافه شد.");
@@ -153,7 +172,7 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
           <div className="relative flex h-[200px] items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-gray-100 to-gray-50">
             <Image
               src={game.mainImage}
-               alt={game.mainImageAlt || game.title}
+              alt={game.mainImageAlt || game.title}
               width={320}
               height={180}
               loading="lazy"
@@ -240,11 +259,11 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
         whileTap={{ scale: 0.98 }}
         whileHover={{ scale: 1.01 }}
         onClick={handleAddToCart}
-       disabled={game.stock <= 0}
-         className="mt-4 inline-flex text-xs items-center justify-center gap-2 rounded-lg bg-[#377dff] py-2.5 md:text-sm font-medium text-white transition-colors hover:bg-[#2b67d5] focus:outline-none focus:ring-2 focus:ring-[#377dff]/40 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:bg-gray-400"
+        disabled={game.stock <= 0}
+        className="mt-4 inline-flex text-xs items-center justify-center gap-2 rounded-lg bg-[#377dff] py-2.5 md:text-sm font-medium text-white transition-colors hover:bg-[#2b67d5] focus:outline-none focus:ring-2 focus:ring-[#377dff]/40 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:bg-gray-400"
       >
         <ShoppingCart size={16} />
-    {game.stock > 0 ? "افزودن به سبد خرید" : "ناموجود"}
+        {game.stock > 0 ? "افزودن به سبد خرید" : "ناموجود"}
       </motion.button>
 
       <script
@@ -268,7 +287,10 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
               url: `https://yourdomain.com/product/${game.slug}`,
               priceCurrency: "IRR",
               price: finalPrice,
-               availability: game.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+              availability:
+                game.stock > 0
+                  ? "https://schema.org/InStock"
+                  : "https://schema.org/OutOfStock",
             },
             aggregateRating: game.comments?.length
               ? {

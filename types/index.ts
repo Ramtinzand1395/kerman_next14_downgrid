@@ -7,6 +7,9 @@ export interface CartItem {
   discountPrice: number | null;
   sku?: string;
   stock?: number;
+  productId: string;
+  variantId?: string;
+  variantTitle?: string;
 }
 
 export interface CartStoreStateType {
@@ -58,6 +61,7 @@ export interface OTP {
 }
 // !برای فرم محصول
 export interface ProductForm {
+  productType: "single" | "multi";
   title: string;
   slug: string;
   price: number;
@@ -74,6 +78,14 @@ export interface ProductForm {
   seoTitle: string;
   metaDescription: string;
   mainImageAlt: string;
+  variants: {
+    _id?: string;
+    title: string;
+    sku?: string;
+    price: number;
+    discountPrice?: number | null;
+    stock: number;
+  }[];
 }
 
 export interface Customer {
@@ -127,6 +139,15 @@ export interface Category {
 }
 
 export interface Product {
+  productType?: "single" | "multi";
+  variants?: {
+    _id?: string;
+    title: string;
+    sku?: string;
+    price: number;
+    discountPrice?: number | null;
+    stock: number;
+  }[];
   _id: string;
   sku: string;
   title: string;
@@ -176,6 +197,8 @@ export interface OrderItem {
   total: number;
   order: Order;
   product: Product;
+  variantId?: string;
+  variantTitle?: string;
 }
 
 export interface Order {

@@ -12,6 +12,7 @@ import mongoose from "mongoose";
 interface OrderItem {
   productId: string;
   quantity: number;
+  variantId?: string;
 }
 
 export async function POST(req: Request) {
@@ -60,10 +61,12 @@ export async function POST(req: Request) {
     .map((item) => ({
       productId: item.productId,
       quantity: Number(item.quantity),
+      variantId: item.variantId,
     }))
     .filter(
       (item) =>
         mongoose.isValidObjectId(item.productId) &&
+        (!item.variantId || mongoose.isValidObjectId(item.variantId)) &&
         Number.isInteger(item.quantity) &&
         item.quantity > 0,
     );
@@ -77,7 +80,7 @@ export async function POST(req: Request) {
 
   const productIds = normalizedItems.map((item) => item.productId);
   const products = await Product.find({ _id: { $in: productIds } })
-    .select("price discountPrice stock")
+    .select("price discountPrice stock productType variants")
     .lean();
 
   if (products.length !== productIds.length) {
@@ -96,6 +99,39 @@ export async function POST(req: Request) {
       const product = productMap.get(item.productId);
       if (!product) {
         throw new Error("PRODUCT_NOT_FOUND");
+      }
+      const hasVariants =
+        product.productType === "multi" && Array.isArray(product.variants);
+
+      if (hasVariants) {
+        const selectedVariant = product.variants?.find(
+          (variant: any) => String(variant._id) === String(item.variantId),
+        );
+
+        if (!selectedVariant) {
+          throw new Error("INVALID_VARIANT");
+        }
+
+        if (Number(selectedVariant.stock || 0) < item.quantity) {
+          throw new Error("INSUFFICIENT_STOCK");
+        }
+
+        const unitPrice =
+          selectedVariant.discountPrice ?? selectedVariant.price;
+
+        return {
+          product: item.productId,
+          variantId: selectedVariant._id,
+          variantTitle: selectedVariant.title,
+          price: Number(selectedVariant.price || 0),
+          discountPrice:
+            selectedVariant.discountPrice === null ||
+            selectedVariant.discountPrice === undefined
+              ? null
+              : Number(selectedVariant.discountPrice),
+          quantity: item.quantity,
+          total: Number(unitPrice || 0) * item.quantity,
+        };
       }
 
       if ((product.stock ?? 0) < item.quantity) {
@@ -161,6 +197,13 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: "موجودی برخی محصولات کافی نیست." },
         { status: 409 },
+      );
+    }
+
+    if (error instanceof Error && error.message === "INVALID_VARIANT") {
+      return NextResponse.json(
+        { error: "مدل انتخابی برای محصول معتبر نیست." },
+        { status: 400 },
       );
     }
 

@@ -31,6 +31,14 @@ const OrderSchema = new mongoose.Schema(
           ref: "Product",
           required: true,
         },
+        variantId: {
+          type: mongoose.Schema.Types.ObjectId,
+          default: null,
+        },
+        variantTitle: {
+          type: String,
+          default: null,
+        },
         price: { type: Number, required: true }, // قیمت واحد
         discountPrice: Number, // قیمت بعد تخفیف
         quantity: { type: Number, required: true },

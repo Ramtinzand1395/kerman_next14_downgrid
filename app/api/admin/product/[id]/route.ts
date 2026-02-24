@@ -3,10 +3,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/mongodb";
 import Product from "@/model/Product";
-
+import mongoose from "mongoose";
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await dbConnect();
@@ -23,27 +23,62 @@ export async function PUT(
       return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
 
     const body = await req.json();
+    const categoryId = String(body?.category || "").trim();
+
+    if (!mongoose.isValidObjectId(categoryId)) {
+      return NextResponse.json(
+        { error: "لطفاً یک دسته‌بندی معتبر انتخاب کنید." },
+        { status: 400 },
+      );
+    }
+    const safeVariants = Array.isArray(body.variants)
+      ? body.variants
+          .filter((v: any) => v?.title)
+          .map((v: any) => ({
+            title: String(v.title),
+            sku: v?.sku ? String(v.sku) : undefined,
+            price: Number(v?.price || 0),
+            discountPrice:
+              v?.discountPrice === null || v?.discountPrice === undefined
+                ? null
+                : Number(v.discountPrice),
+            stock: Number(v?.stock || 0),
+          }))
+      : [];
+
+    const productType = body.productType === "multi" ? "multi" : "single";
+    const totalStock =
+      productType === "multi"
+        ? safeVariants.reduce(
+            (sum: number, v: any) => sum + Number(v.stock || 0),
+            0,
+          )
+        : Number(body.stock || 0);
+
     const productData = {
       ...body,
+      category: categoryId,
+      productType,
+      variants: productType === "multi" ? safeVariants : [],
+      stock: totalStock,
       images: body.galleryImages,
     };
     const Update = await Product.findByIdAndUpdate(id, productData, {
-      new: true, 
+      new: true,
     });
     return NextResponse.json(Update);
   } catch (err) {
     console.error("❌ Product Update Error:", err);
     return NextResponse.json(
       { error: "خطا در بروزرسانی محصول" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
-
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await dbConnect();

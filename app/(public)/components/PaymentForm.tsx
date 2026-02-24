@@ -48,7 +48,8 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
         addressId: selectedAddress._id,
         shippingCost,
         items: cart.map((item) => ({
-          productId: item.id,
+        productId: item.productId,
+           variantId: item.variantId,
           quantity: item.quantity,
         })),
       };
@@ -155,6 +156,11 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
                       تومان
                     </span>
                   </div>
+                    {item.variantTitle && (
+                 <p className="mt-1 text-xs text-slate-500">
+                   مدل انتخابی: {item.variantTitle}
+                 </p>
+               )}
                 </article>
               ))}
             </div>

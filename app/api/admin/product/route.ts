@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 import Comment from "@/model/Comment";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/options";
-
+import mongoose from "mongoose";
 export async function GET(req: Request) {
   await dbConnect();
 
@@ -35,7 +35,7 @@ export async function GET(req: Request) {
     total: total,
     value: products.reduce(
       (acc, p) => acc + Number(p.price || 0) * Number(p.stock || 0),
-      0
+      0,
     ),
     lowStock: products.filter((p) => Number(p.stock) < 5).length,
     comments: await Comment.countDocuments(),
@@ -53,18 +53,54 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   await dbConnect();
-    const session = await getServerSession(authOptions);
-  
-    if (!session?.user) {
-      return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
-    }
-    
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
+  }
+
   const generateSKU = () =>
     `SKU-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   try {
     const body = await req.json();
+    const categoryId = String(body?.category || "").trim();
+
+    if (!mongoose.isValidObjectId(categoryId)) {
+      return NextResponse.json(
+        { error: "لطفاً یک دسته‌بندی معتبر انتخاب کنید." },
+        { status: 400 },
+      );
+    }
+    const safeVariants = Array.isArray(body.variants)
+      ? body.variants
+          .filter((v: any) => v?.title)
+          .map((v: any) => ({
+            title: String(v.title),
+            sku: v?.sku ? String(v.sku) : undefined,
+            price: Number(v?.price || 0),
+            discountPrice:
+              v?.discountPrice === null || v?.discountPrice === undefined
+                ? null
+                : Number(v.discountPrice),
+            stock: Number(v?.stock || 0),
+          }))
+      : [];
+
+    const productType = body.productType === "multi" ? "multi" : "single";
+    const totalStock =
+      productType === "multi"
+        ? safeVariants.reduce(
+            (sum: number, v: any) => sum + Number(v.stock || 0),
+            0,
+          )
+        : Number(body.stock || 0);
+
     const productData = {
       ...body,
+      productType,
+      category: categoryId,
+      variants: productType === "multi" ? safeVariants : [],
+      stock: totalStock,
       images: body.galleryImages,
       sku: generateSKU(),
     };
