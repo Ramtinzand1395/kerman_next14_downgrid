@@ -5,25 +5,41 @@ import { Product } from "@/types";
 import { useMemo } from "react";
 interface AddToCartProps {
   product: Product;
-    selectedVariantId?: string;
+  selectedVariantId?: string;
 }
-export default function AddToCart({ product, selectedVariantId }: AddToCartProps) {
-    const { addToCart } = useCartStore();
+export default function AddToCart({
+  product,
+  selectedVariantId,
+}: AddToCartProps) {
+  const { addToCart } = useCartStore();
+  const BASE_VARIANT_ID = "__base__";
 
   const selectedVariant = useMemo(
-  () =>
-    product.variants?.find(
-      (variant: any) => String(variant._id) === String(selectedVariantId),
-    ),
-  [product.variants, selectedVariantId],
-);
- 
-const isMulti = product.productType === "multi" && (product.variants?.length || 0) > 0;
-const currentStock = isMulti ? Number(selectedVariant?.stock || 0) : product.stock;
-const currentPrice = isMulti ? Number(selectedVariant?.price || 0) : product.price;
-const currentDiscountPrice = isMulti
-  ? selectedVariant?.discountPrice ?? null
-  : product.discountPrice || null;
+    () =>
+      product.variants?.find(
+        (variant: any) => String(variant._id) === String(selectedVariantId),
+      ),
+    [product.variants, selectedVariantId],
+  );
+
+  const isMulti =
+    product.productType === "multi" && (product.variants?.length || 0) > 0;
+  const isBaseSelection = selectedVariantId === BASE_VARIANT_ID;
+  const currentStock = isMulti
+    ? isBaseSelection
+      ? Number(product.stock || 0)
+      : Number(selectedVariant?.stock || 0)
+    : Number(product.stock || 0);
+  const currentPrice = isMulti
+    ? isBaseSelection
+      ? Number(product.price || 0)
+      : Number(selectedVariant?.price || 0)
+    : Number(product.price || 0);
+  const currentDiscountPrice = isMulti
+    ? isBaseSelection
+      ? (product.discountPrice ?? null)
+      : (selectedVariant?.discountPrice ?? null)
+    : (product.discountPrice ?? null);
 
   const handleAddToCart = () => {
     if (isMulti && !selectedVariantId) {
@@ -36,14 +52,16 @@ const currentDiscountPrice = isMulti
       return;
     }
 
-    const cartItemId = isMulti
+    const useVariant = isMulti && !isBaseSelection;
+
+    const cartItemId = useVariant
       ? `${product._id}:${selectedVariantId}`
       : product._id!.toString();
 
     addToCart({
       id: cartItemId,
       productId: product._id!.toString(),
-      title: isMulti
+      title: useVariant
         ? `${product.title} - ${selectedVariant?.title || "مدل"}`
         : product.title,
       price: currentPrice,
@@ -51,16 +69,14 @@ const currentDiscountPrice = isMulti
       image: product.mainImage,
       quantity: 1,
       stock: currentStock,
-      variantId: isMulti ? selectedVariantId : undefined,
-      variantTitle: isMulti ? selectedVariant?.title : undefined,
+      variantId: useVariant ? selectedVariantId : undefined,
+      variantTitle: useVariant ? selectedVariant?.title : undefined,
     });
 
     toast.success("به سبد خرید اضافه شد.");
   };
   return (
     <>
-    
-
       <button
         onClick={handleAddToCart}
         disabled={currentStock <= 0}

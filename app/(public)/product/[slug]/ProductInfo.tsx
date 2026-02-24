@@ -1,5 +1,5 @@
 "use client";
-import { ShieldCheck, Truck, RotateCcw, Box, Store } from "lucide-react";
+import { Truck, RotateCcw, Box, Store } from "lucide-react";
 import { Comment, Product } from "@/types";
 import AddToCart from "./AddToCart";
 import {
@@ -15,9 +15,7 @@ interface ProductInfoProps {
 
 export const ProductInfo = ({ product }: ProductInfoProps) => {
   const BASE_VARIANT_ID = "__base__";
-  const [selectedVariantId, setSelectedVariantId] = useState(
-    product.variants?.[0]?._id || BASE_VARIANT_ID,
-  );
+  const [selectedVariantId, setSelectedVariantId] = useState(BASE_VARIANT_ID);
 
   const selectedVariant = useMemo(
     () =>
@@ -142,14 +140,10 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
               onChange={(e) => setSelectedVariantId(e.target.value)}
               className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm"
             >
-              <option value={BASE_VARIANT_ID}>
-                نوع محصول اول -{" "}
-                {formatPrice(product.discountPrice ?? product.price)} تومان
-              </option>
+              <option value={BASE_VARIANT_ID}>{product.title}</option>
               {product.variants?.map((variant: any) => (
                 <option key={variant._id} value={variant._id}>
-                  {variant.title} -{" "}
-                  {formatPrice(variant.discountPrice ?? variant.price)} تومان
+                  {variant.title}
                 </option>
               ))}
             </select>

@@ -21,7 +21,7 @@ interface Props {
 }
 
 const initialForm: ProductForm = {
-    productType: "single",
+  productType: "single",
   title: "",
   slug: "",
   seoTitle: "",
@@ -38,7 +38,7 @@ const initialForm: ProductForm = {
   galleryImages: [],
   tags: [],
   specifications: [],
-   variants: [],
+  variants: [],
 };
 
 type SectionKey = "basic" | "taxonomy" | "media" | "specs" | "seo";
@@ -80,8 +80,8 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
     title: product?.title || initialForm.title,
     slug: product?.slug || initialForm.slug,
     seoTitle: product?.seoTitle || initialForm.seoTitle,
-     productType: product?.productType || initialForm.productType,
-     variants: product?.variants || initialForm.variants,
+    productType: product?.productType || initialForm.productType,
+    variants: product?.variants || initialForm.variants,
     metaDescription: product?.metaDescription || initialForm.metaDescription,
     price: product?.price || initialForm.price,
     discountPrice: product?.discountPrice ?? initialForm.discountPrice,
@@ -130,9 +130,9 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-      if (!form.category) {
+    if (!form.category) {
       toast.error("لطفاً دسته‌بندی محصول را انتخاب کنید");
-       return;
+      return;
     }
     setLoading(true);
     try {
@@ -140,12 +140,12 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-         ...form,
-         variants:
-           form.productType === "multi"
-             ? form.variants.filter((v) => v.title.trim())
-             : [],
-       }),
+          ...form,
+          variants:
+            form.productType === "multi"
+              ? form.variants.filter((v) => v.title.trim())
+              : [],
+        }),
       });
 
       if (!res.ok) throw new Error("Request failed");
@@ -163,22 +163,22 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-     if (!form.category) {
-     toast.error("لطفاً دسته‌بندی محصول را انتخاب کنید");
+    if (!form.category) {
+      toast.error("لطفاً دسته‌بندی محصول را انتخاب کنید");
       return;
-     }
+    }
     setLoading(true);
     try {
       const res = await fetch(`/api/admin/product/${product?._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-      ...form,
-      variants:
-        form.productType === "multi"
-          ? form.variants.filter((v) => v.title.trim())
-          : [],
-    }),
+        body: JSON.stringify({
+          ...form,
+          variants:
+            form.productType === "multi"
+              ? form.variants.filter((v) => v.title.trim())
+              : [],
+        }),
       });
 
       if (!res.ok) throw new Error("Request failed");

@@ -65,7 +65,6 @@ export async function POST(req: NextRequest) {
       productId,
     });
     await User.findByIdAndUpdate(session.user.id, {
-      // $addToSet: { favorites: favorite },
       $addToSet: { favorites: favorite._id },
     });
     return NextResponse.json(favorite, { status: 201 });
