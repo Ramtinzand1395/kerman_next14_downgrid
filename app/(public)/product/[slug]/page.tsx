@@ -134,7 +134,12 @@ export default async function ProductPage({
     "@type": "Product",
     name: product.title,
     description: product.shortDesc || product.description,
-    image: [product.mainImage, ...(product.images || [])],
+     image: [
+    product.mainImage,
+    ...((product.images || []).map((img) =>
+      typeof img === "string" ? img : img.url,
+    )),
+  ],
     sku: product.sku,
     brand: {
       "@type": "Brand",
@@ -232,6 +237,7 @@ export default async function ProductPage({
                   mainImage={product.mainImage}
                   images={product.images}
                   title={product.title}
+                   mainImageAlt={product.mainImageAlt}
                 />
               </div>
               <div className="xl:col-span-7 xl:border-r xl:pr-8 border-zinc-100">

@@ -38,7 +38,7 @@ type OrdersResponse = {
       product: {
         title: string;
         sku: string;
-        images: string[];
+        images: ({ url: string; alt: string } | string)[];
       };
     }>;
     finalPrice: number;
@@ -47,6 +47,25 @@ type OrdersResponse = {
     createdAt: string;
   }>;
   pages: number;
+};
+
+const getProductImageData = (
+  images: ({ url: string; alt: string } | string)[] = [],
+) => {
+  const firstImage = images?.[0];
+
+  if (!firstImage) {
+    return { src: "/placeholder.png", alt: "تصویر محصول" };
+  }
+
+  if (typeof firstImage === "string") {
+    return { src: firstImage, alt: "تصویر محصول" };
+  }
+
+  return {
+    src: firstImage.url || "/placeholder.png",
+    alt: firstImage.alt || "تصویر محصول",
+  };
 };
 
 const toPersianDate = (date: string) =>
@@ -329,8 +348,11 @@ export default function Orders() {
                   {order.items.map((item) => (
                     <div key={item._id} className="flex gap-2 items-center">
                       <Image
-                        src={item.product.images?.[0] || "/placeholder.png"}
-                        alt={item.product.title}
+                        src={getProductImageData(item.product.images).src}
+                        alt={
+                          getProductImageData(item.product.images).alt ||
+                          item.product.title
+                        }
                         width={36}
                         height={36}
                         className="rounded-lg border bg-white object-cover"
@@ -441,8 +463,11 @@ export default function Orders() {
                 {order.items.map((item) => (
                   <div key={item._id} className="flex items-center gap-2">
                     <Image
-                      src={item.product.images?.[0] || "/placeholder.png"}
-                      alt={item.product.title}
+                      src={getProductImageData(item.product.images).src}
+                      alt={
+                        getProductImageData(item.product.images).alt ||
+                        item.product.title
+                      }
                       width={36}
                       height={36}
                       className="rounded-lg border bg-white object-cover"

@@ -92,7 +92,10 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
     mainImageAlt: product?.mainImageAlt || initialForm.mainImageAlt,
     category: product?.category?._id || initialForm.category,
     mainImage: product?.mainImage || initialForm.mainImage,
-    galleryImages: product?.images || initialForm.galleryImages,
+    galleryImages:
+      product?.images?.map((img: any) =>
+        typeof img === "string" ? { url: img, alt: "" } : img,
+      ) || initialForm.galleryImages,
     tags: product?.tags?.map((t: Tag) => t._id) || initialForm.tags,
     specifications: product?.specifications || initialForm.specifications,
   });

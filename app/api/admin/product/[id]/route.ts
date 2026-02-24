@@ -45,7 +45,24 @@ export async function PUT(
             stock: Number(v?.stock || 0),
           }))
       : [];
+    const safeGalleryImages = Array.isArray(body.galleryImages)
+      ? body.galleryImages
+          .map((img: any) => {
+            if (typeof img === "string") {
+              return { url: img, alt: "" };
+            }
 
+            if (!img?.url) {
+              return null;
+            }
+
+            return {
+              url: String(img.url),
+              alt: img.alt ? String(img.alt) : "",
+            };
+          })
+          .filter(Boolean)
+      : [];
     const productType = body.productType === "multi" ? "multi" : "single";
     const totalStock =
       productType === "multi"
@@ -61,7 +78,7 @@ export async function PUT(
       productType,
       variants: productType === "multi" ? safeVariants : [],
       stock: totalStock,
-      images: body.galleryImages,
+     images: safeGalleryImages,
     };
     const Update = await Product.findByIdAndUpdate(id, productData, {
       new: true,

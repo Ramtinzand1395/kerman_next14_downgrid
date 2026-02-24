@@ -73,7 +73,7 @@ export interface ProductForm {
   category?: string;
   tags: string[];
   mainImage: string; // فقط URL
-  galleryImages: string[]; // URL[]
+  galleryImages: { url: string; alt: string }[];
   specifications: { title: string; items: { key: string; value: string }[] }[];
   seoTitle: string;
   metaDescription: string;
@@ -164,7 +164,7 @@ export interface Product {
   userId?: number;
   categoryId: number;
   tags: Tag[];
-  images: string[];
+  images: ({ url: string; alt: string } | string)[];
   specifications: Specification[];
   comments: Comment[];
   favorites: Favorite[];

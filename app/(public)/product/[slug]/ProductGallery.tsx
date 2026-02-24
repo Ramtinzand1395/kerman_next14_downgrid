@@ -1,23 +1,49 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ZoomIn, Heart, Share2 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "react-toastify";
 import { useSession } from "next-auth/react";
 import useFavoriteStore from "@/stores/favoriteStore";
+
+interface GalleryImage {
+  url: string;
+  alt?: string;
+}
+
 interface ProductGalleryProps {
   mainImage: string;
-  images: string[];
+  mainImageAlt?: string;
+  images: (GalleryImage | string)[];
   title: string;
   productId: string;
 }
+
 export const ProductGallery = ({
   mainImage,
+  mainImageAlt,
   images,
   title,
   productId,
 }: ProductGalleryProps) => {
-  const [activeImage, setActiveImage] = useState(mainImage);
+  const normalizedImages = useMemo(
+    () =>
+      images
+        .map((img) => (typeof img === "string" ? { url: img, alt: "" } : img))
+        .filter((img) => Boolean(img?.url)),
+    [images],
+  );
+
+  const allImages = [
+    { id: 0, url: mainImage, alt: mainImageAlt || title },
+    ...normalizedImages.map((img, index) => ({
+      id: index + 1,
+      url: img.url,
+      alt: img.alt || `گالری ${title} - ${index + 1}`,
+    })),
+  ];
+
+  const [activeImage, setActiveImage] = useState(allImages[0]);
   const [isZoomed, setIsZoomed] = useState(false);
   const { data: session } = useSession();
   const {
@@ -27,22 +53,21 @@ export const ProductGallery = ({
     loadFavorites,
     clearFavorites,
   } = useFavoriteStore();
-  // Combine main image with gallery images for the list, filtering duplicates if necessary
-  const allImages = [
-    { id: 0, url: mainImage },
-    ...images.map((img, index) => ({ id: index + 1, url: img })),
-  ];
+
   const isFavorite = favoriteIds.includes(productId);
+
+  useEffect(() => {
+    setActiveImage(allImages[0]);
+  }, [mainImage, mainImageAlt, title]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!session?.user?.id) {
       clearFavorites();
-
       return;
     }
-
     loadFavorites();
   }, [session?.user?.id, loadFavorites, clearFavorites]);
+
   const handleToggleFavorite = async () => {
     if (!session?.user?.id) {
       toast.error("برای افزودن به علاقه‌مندی ابتدا وارد شوید.");
@@ -50,43 +75,31 @@ export const ProductGallery = ({
     }
     try {
       if (isFavorite) {
-        // حذف
         const res = await fetch("/api/profile/favorites", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ productId }),
         });
 
-        if (res.status === 401) {
-          toast.error("لطفاً دوباره وارد شوید.");
-          return;
-        }
-
+        if (res.status === 401) return toast.error("لطفاً دوباره وارد شوید.");
         if (!res.ok) {
           const err = await res.json().catch(() => null);
-          toast.error(err?.error || "خطا در حذف از علاقه‌مندی‌ها");
-          return;
+          return toast.error(err?.error || "خطا در حذف از علاقه‌مندی‌ها");
         }
 
         removeFavorite(productId);
         toast.info("از علاقه‌مندی‌ها حذف شد ❌");
       } else {
-        // افزودن
         const res = await fetch("/api/profile/favorites", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ productId }),
         });
 
-        if (res.status === 401) {
-          toast.error("لطفاً وارد شوید.");
-          return;
-        }
-
+        if (res.status === 401) return toast.error("لطفاً وارد شوید.");
         if (!res.ok) {
           const err = await res.json().catch(() => null);
-          toast.error(err?.error || "خطا در افزودن به علاقه‌مندی‌ها");
-          return;
+          return toast.error(err?.error || "خطا در افزودن به علاقه‌مندی‌ها");
         }
 
         addFavorite(productId);
@@ -97,19 +110,18 @@ export const ProductGallery = ({
       toast.error("خطایی رخ داد");
     }
   };
+
   const handleShareProduct = async () => {
     const shareData = {
       title,
       text: `مشاهده محصول ${title}`,
       url: window.location.href,
     };
-
     try {
       if (navigator.share) {
         await navigator.share(shareData);
         return;
       }
-
       await navigator.clipboard.writeText(shareData.url);
       toast.success("لینک محصول کپی شد ✅");
     } catch (error) {
@@ -120,7 +132,6 @@ export const ProductGallery = ({
 
   return (
     <div className="relative">
-      {/* Actions Overlay */}
       <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
         <button
           aria-label="Toggle Favorite"
@@ -134,8 +145,9 @@ export const ProductGallery = ({
             }
           />
         </button>
+
         <button
-        onClick={handleShareProduct}
+          onClick={handleShareProduct}
           className="p-2 bg-white rounded-full shadow-md text-gray-500 hover:text-blue-500 transition-colors hover:bg-blue-50"
           title="اشتراک‌گذاری"
         >
@@ -143,7 +155,6 @@ export const ProductGallery = ({
         </button>
       </div>
 
-      {/* Main Image */}
       <div
         className="relative overflow-hidden rounded-2xl bg-white border border-gray-100 mb-4 aspect-square flex items-center justify-center group cursor-crosshair"
         onMouseEnter={() => setIsZoomed(true)}
@@ -152,8 +163,8 @@ export const ProductGallery = ({
         <Image
           width={200}
           height={100}
-          src={activeImage}
-          alt={title}
+          src={activeImage.url}
+          alt={activeImage.alt || title}
           className={`w-full h-[400px] object-contain transition-transform duration-500 ${
             isZoomed ? "scale-110" : "scale-100"
           }`}
@@ -163,25 +174,21 @@ export const ProductGallery = ({
         </div>
       </div>
 
-      {/* Thumbnails */}
       <div className="grid grid-cols-5 gap-2">
         {allImages.map((img) => (
           <button
-            title="activeImage"
-            key={img.url}
-            onClick={() => setActiveImage(img.url)}
-            className={`
-              relative aspect-square rounded-lg overflow-hidden border-2 transition-all
-              ${
-                activeImage === img.url
-                  ? "border-indigo-600 ring-2 ring-indigo-100"
-                  : "border-transparent hover:border-gray-300"
-              }
-            `}
+            title={img.alt || "thumbnail"}
+            key={`${img.url}-${img.id}`}
+            onClick={() => setActiveImage(img)}
+            className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+              activeImage.url === img.url
+                ? "border-indigo-600 ring-2 ring-indigo-100"
+                : "border-transparent hover:border-gray-300"
+            }`}
           >
             <Image
               src={img.url}
-              alt={`Thumbnail`}
+              alt={img.alt || title}
               fill
               className="object-cover"
             />

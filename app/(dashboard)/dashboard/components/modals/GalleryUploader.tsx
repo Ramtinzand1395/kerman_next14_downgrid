@@ -4,13 +4,12 @@ import { ProductForm } from "@/types";
 import Image from "next/image";
 import { useState } from "react";
 import { toast } from "react-toastify";
- 
 
 interface GalleryUploaderProps {
   form: ProductForm;
   updateField: <K extends keyof ProductForm>(
     key: K,
-    value: ProductForm[K]
+    value: ProductForm[K],
   ) => void;
 }
 const GalleryUploader = ({ form, updateField }: GalleryUploaderProps) => {
@@ -21,7 +20,7 @@ const GalleryUploader = ({ form, updateField }: GalleryUploaderProps) => {
     fd.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_PRESET!);
     const res = await fetch(
       `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD}/image/upload`,
-      { method: "POST", body: fd }
+      { method: "POST", body: fd },
     );
     const data = await res.json();
     return data.secure_url;
@@ -46,7 +45,7 @@ const GalleryUploader = ({ form, updateField }: GalleryUploaderProps) => {
           <Image
             width={50}
             height={50}
-            alt={form.title}
+            alt={form.mainImageAlt || form.title || "تصویر اصلی محصول"}
             src={form.mainImage}
             className="w-52 h-32 object-contain mt-2 rounded"
           />
