@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const TempPaymentSchema = new mongoose.Schema(
   {
     authority: { type: String, unique: true, required: true },
-   user: { 
+   userId: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: "User", 
     required: true 
