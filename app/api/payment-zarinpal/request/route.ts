@@ -1,10 +1,18 @@
-import TempPayment from "@/model/TempPayment";
-import Order from "@/model/Order";
-import { getServerSession } from "next-auth";
-import { NextRequest, NextResponse } from "next/server";
-import { authOptions } from "../../auth/[...nextauth]/options";
 import dbConnect from "@/lib/mongodb";
+import Address from "@/model/Address";
+import Order from "@/model/Order";
+import Product from "@/model/Product";
+import TempPayment from "@/model/TempPayment";
+import { authOptions } from "@/app/api/auth/[...nextauth]/options";
+import { getServerSession } from "next-auth";
 import mongoose from "mongoose";
+import { NextRequest, NextResponse } from "next/server";
+
+interface CheckoutItem {
+  productId: string;
+  quantity: number;
+  variantId?: string;
+}
 
 function getBaseUrl(req: NextRequest) {
   const envBaseUrl = process.env.NEXT_PUBLIC_BASE_URL;
@@ -26,7 +34,6 @@ type ZarinpalResponse = {
   errors?: {
     code?: number;
     message?: string;
-    validations?: Record<string, string[]>;
   };
 };
 
@@ -36,39 +43,147 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json(
-   { success: false, error: "Unauthorized" },
-   { status: 401 },
- );
+      { success: false, error: "Unauthorized" },
+      { status: 401 },
+    );
   }
 
   try {
-    const { orderId } = await req.json();
+    const payload: {
+      addressId?: string;
+      items?: CheckoutItem[];
+      shippingCost?: number;
+    } = await req.json();
 
-    if (!orderId || !mongoose.isValidObjectId(orderId)) {
+    if (
+      !payload.addressId ||
+      !Array.isArray(payload.items) ||
+      payload.items.length === 0
+    ) {
       return NextResponse.json(
-        { success: false, error: "شناسه سفارش نامعتبر است" },
+        { success: false, error: "درخواست سفارش نامعتبر است." },
         { status: 400 },
       );
     }
 
-    const order = await Order.findOne({
-      _id: orderId,
-      user: session.user.id,
+    if (!mongoose.isValidObjectId(payload.addressId)) {
+      return NextResponse.json(
+        { success: false, error: "شناسه آدرس معتبر نیست." },
+        { status: 400 },
+      );
+    }
+
+    const address = await Address.findOne({
+      _id: payload.addressId,
+      userId: session.user.id,
     }).lean();
 
-    if (!order) {
+    if (!address) {
       return NextResponse.json(
-        { success: false, error: "سفارش پیدا نشد" },
-        { status: 404 },
+        { success: false, error: "آدرس انتخابی معتبر نیست." },
+        { status: 400 },
       );
     }
 
-    if (order.paymentStatus === "paid") {
+    const normalizedItems = payload.items
+      .map((item) => ({
+        productId: item.productId,
+        quantity: Number(item.quantity),
+        variantId: item.variantId,
+      }))
+      .filter(
+        (item) =>
+          mongoose.isValidObjectId(item.productId) &&
+          (!item.variantId || mongoose.isValidObjectId(item.variantId)) &&
+          Number.isInteger(item.quantity) &&
+          item.quantity > 0,
+      );
+
+    if (normalizedItems.length !== payload.items.length) {
       return NextResponse.json(
-        { success: false, error: "این سفارش قبلاً پرداخت شده است" },
-        { status: 409 },
+        { success: false, error: "اطلاعات اقلام سفارش نامعتبر است." },
+        { status: 400 },
       );
     }
+
+    const productIds = normalizedItems.map((item) => item.productId);
+    const products = await Product.find({ _id: { $in: productIds } })
+      .select("price discountPrice stock productType variants")
+      .lean();
+
+    if (products.length !== productIds.length) {
+      return NextResponse.json(
+        { success: false, error: "برخی از محصولات نامعتبر هستند." },
+        { status: 400 },
+      );
+    }
+
+    const productMap = new Map(
+      products.map((product) => [String(product._id), product]),
+    );
+
+    const checkoutItems = normalizedItems.map((item) => {
+      const product = productMap.get(item.productId);
+      if (!product) throw new Error("PRODUCT_NOT_FOUND");
+
+      const hasVariants =
+        product.productType === "multi" && Array.isArray(product.variants);
+
+      if (hasVariants) {
+        const selectedVariant = product.variants?.find(
+          (variant: any) => String(variant._id) === String(item.variantId),
+        );
+
+        if (!selectedVariant) throw new Error("INVALID_VARIANT");
+        if (Number(selectedVariant.stock || 0) < item.quantity) {
+          throw new Error("INSUFFICIENT_STOCK");
+        }
+
+        const unitPrice = selectedVariant.discountPrice ?? selectedVariant.price;
+
+        return {
+          product: item.productId,
+          variantId: selectedVariant._id,
+          variantTitle: selectedVariant.title,
+          price: Number(selectedVariant.price || 0),
+          discountPrice:
+            selectedVariant.discountPrice === null ||
+            selectedVariant.discountPrice === undefined
+              ? null
+              : Number(selectedVariant.discountPrice),
+          quantity: item.quantity,
+          total: Number(unitPrice || 0) * item.quantity,
+        };
+      }
+
+      if ((product.stock ?? 0) < item.quantity) {
+        throw new Error("INSUFFICIENT_STOCK");
+      }
+
+      const unitPrice = product.discountPrice ?? product.price;
+
+      return {
+        product: item.productId,
+        price: Number(product.price || 0),
+        discountPrice:
+          product.discountPrice === null || product.discountPrice === undefined
+            ? null
+            : Number(product.discountPrice),
+        quantity: item.quantity,
+        total: Number(unitPrice || 0) * item.quantity,
+      };
+    });
+
+    const shippingCost = Number(payload.shippingCost ?? 0);
+    if (!Number.isFinite(shippingCost) || shippingCost < 0) {
+      return NextResponse.json(
+        { success: false, error: "هزینه ارسال نامعتبر است." },
+        { status: 400 },
+      );
+    }
+
+    const totalPrice = checkoutItems.reduce((acc, item) => acc + item.total, 0);
+    const finalPrice = totalPrice + shippingCost;
 
     const merchant_id = process.env.ZARINPAL_MERCHANT_ID?.trim();
     if (!merchant_id) {
@@ -79,10 +194,7 @@ export async function POST(req: NextRequest) {
     }
 
     const callback_url = `${getBaseUrl(req)}/api/payment-zarinpal/verify`;
-    const description = `پرداخت سفارش ${order._id}`;
-
-    // اگر قیمت به تومان ذخیره شده → ضربدر 10
-    const amount = Number(order.finalPrice) * 10;
+    const amount = finalPrice * 10;
 
     if (!Number.isFinite(amount) || amount < 1000) {
       return NextResponse.json(
@@ -91,7 +203,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const response = await fetch(
+    const zarinResponse = await fetch(
       "https://payment.zarinpal.com/pg/v4/payment/request.json",
       {
         method: "POST",
@@ -99,16 +211,16 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           merchant_id,
           amount,
-          description,
+          description: "پرداخت سفارش",
           callback_url,
         }),
         cache: "no-store",
       },
     );
 
-    const result = (await response.json()) as ZarinpalResponse;
+    const result = (await zarinResponse.json()) as ZarinpalResponse;
 
-    if (!response.ok) {
+    if (!zarinResponse.ok) {
       return NextResponse.json(
         {
           success: false,
@@ -118,44 +230,66 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (result.data?.code === 100 && result.data.authority) {
-      const authority = result.data.authority;
-
-      await TempPayment.findOneAndUpdate(
-        { orderId, userId: session.user.id },
+    if (result.data?.code !== 100 || !result.data.authority) {
+      return NextResponse.json(
         {
-          authority,
-          userId: session.user.id,
-          items: order.items,
-          finalPrice: amount,
-          orderId,
-          updatedAt: new Date(),
+          success: false,
+          error:
+            result?.errors?.message ||
+            result?.data?.message ||
+            "خطا در ایجاد پرداخت",
         },
-        { upsert: true },
+        { status: 500 },
       );
-
-      return NextResponse.json({
-        success: true,
-        authority,
-        url: `https://payment.zarinpal.com/pg/StartPay/${authority}`,
-      });
     }
 
-    return NextResponse.json(
+    const authority = result.data.authority;
+
+    await Order.updateMany(
       {
-        success: false,
-        error:
-          result?.errors?.message ||
-          result?.data?.message ||
-          "خطا در ایجاد پرداخت",
+        user: session.user.id,
+        paymentStatus: "unpaid",
+        paymentGateway: "zarinpal",
       },
-      { status: 500 },
+      { $set: { paymentStatus: "failed" } },
     );
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "خطا در سرور";
-    return NextResponse.json(
-      { success: false, error: message },
-      { status: 500 },
+
+    await TempPayment.findOneAndUpdate(
+      { authority },
+      {
+        authority,
+        userId: session.user.id,
+        address: payload.addressId,
+        items: checkoutItems,
+        totalPrice,
+        shippingCost,
+        finalPrice,
+        gatewayAmount: amount,
+      },
+      { upsert: true },
     );
+
+    return NextResponse.json({
+      success: true,
+      authority,
+      url: `https://payment.zarinpal.com/pg/StartPay/${authority}`,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "INSUFFICIENT_STOCK") {
+      return NextResponse.json(
+        { success: false, error: "موجودی برخی محصولات کافی نیست." },
+        { status: 409 },
+      );
+    }
+
+    if (error instanceof Error && error.message === "INVALID_VARIANT") {
+      return NextResponse.json(
+        { success: false, error: "مدل انتخابی برای محصول معتبر نیست." },
+        { status: 400 },
+      );
+    }
+
+    const message = error instanceof Error ? error.message : "خطا در سرور";
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
