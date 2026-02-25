@@ -72,6 +72,43 @@ const OrderSchema = new mongoose.Schema(
       enum: PaymentStatusEnum,
       default: "unpaid",
     },
+    paymentGateway: {
+      type: String,
+      enum: ["zarinpal"],
+      default: null,
+    },
+    paymentAuthority: {
+      type: String,
+      index: true,
+      sparse: true,
+      default: null,
+    },
+    paymentRefId: {
+      type: Number,
+      index: true,
+      sparse: true,
+      default: null,
+    },
+    paymentCardPan: {
+      type: String,
+      default: null,
+    },
+    paymentFeeType: {
+      type: String,
+      default: null,
+    },
+
+    paymentFee: {
+      type: Number,
+
+      default: null,
+    },
+
+    paymentVerifiedAt: {
+      type: Date,
+
+      default: null,
+    },
 
     trackingCode: {
       type: String,

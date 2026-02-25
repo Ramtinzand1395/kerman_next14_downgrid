@@ -32,15 +32,15 @@ export default function DashLayout({
         <link rel="icon" href="/favicon.ico" />
       </head>
 
-    <body className="dashboard-shell flex h-screen overflow-hidden">
+      <body className="dashboard-shell flex h-screen overflow-hidden">
         <AuthProvider>
           {/* Sidebar ثابت در سمت راست */}
           <DashboardSidebar />
           {/* محتوای صفحات */}
           <main className="dashboard-main flex-1 overflow-y-auto">
             <DashboardTopbar />
-           <div className="dashboard-content">{children}</div>
-         </main>
+            <div className="dashboard-content">{children}</div>
+          </main>
         </AuthProvider>
         <ToastContainer
           position="bottom-right"

@@ -62,9 +62,9 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
       </div>
 
       {/* Title */}
-      <h1 className="text-2xl font-bold text-gray-900 leading-snug mb-3">
+      <h2 className="text-2xl font-bold text-gray-900 leading-snug mb-3">
         {product.title}
-      </h1>
+      </h2>
       <span className="text-gray-400 text-sm mb-4 block dir-ltr text-right">
         SKU: {product.sku}
       </span>

@@ -3,7 +3,11 @@ import mongoose from "mongoose";
 const TempPaymentSchema = new mongoose.Schema(
   {
     authority: { type: String, unique: true, required: true },
-    userId: { type: String, required: true }, // userId می‌تواند ObjectId یا string باشد
+   user: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: "User", 
+    required: true 
+  },
     items: [
       {
         product: {
