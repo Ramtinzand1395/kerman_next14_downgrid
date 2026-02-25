@@ -14,6 +14,7 @@ export const categories: CategoryItem[] = [
       { name: "پلی‌استیشن 5", slug: "playstation-5" },
       { name: "پلی‌استیشن 4", slug: "playstation-4" },
       { name: "پلی‌استیشن 3", slug: "playstation-3" },
+      { name: "پلی‌استیشن 2", slug: "playstation-2" },
     ],
   },
   {
@@ -34,6 +35,10 @@ export const categories: CategoryItem[] = [
       { name: "دسته بازی", slug: "controllers" },
       { name: "هدست و هدفون", slug: "headsets" },
       { name: "پایه و خنک‌کننده", slug: "stands-coolers" },
+      // todo
+      // اسم درست بشه
+      { name: "فلش مموری", slug: "flash-memories" },
+
     ],
   },
   {

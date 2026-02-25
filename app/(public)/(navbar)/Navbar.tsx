@@ -183,7 +183,7 @@ export default function Navbar() {
                             {cat.subcategories.slice(0, 5).map((sub) => (
                               <Link
                                 key={sub.name}
-                                href={sub.slug}
+                               href={`/products?sort=newest&category=${sub.slug}&page=1`}
                                 className="rounded-lg px-2 py-1 text-xs text-slate-700 transition hover:bg-white hover:text-blue-600"
                               >
                                 {sub.name}
