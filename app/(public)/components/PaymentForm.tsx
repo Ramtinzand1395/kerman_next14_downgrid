@@ -13,7 +13,7 @@ interface PaymentFormProps {
 }
 
 export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
-  const { cart, clearCart } = useCartStore();
+  const { cart } = useCartStore();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -53,37 +53,37 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
           quantity: item.quantity,
         })),
       };
-      let createOrderResponse = await fetch("/api/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      // let createOrderResponse = await fetch("/api/order", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
 
-        body: JSON.stringify(orderPayload),
-      });
+      //   body: JSON.stringify(orderPayload),
+      // });
 
-      if (
-        (createOrderResponse.status === 404 ||
-          createOrderResponse.status === 405) &&
-        !createOrderResponse.ok
-      ) {
-        createOrderResponse = await fetch("/api/order/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(orderPayload),
-        });
-      }
+      // if (
+      //   (createOrderResponse.status === 404 ||
+      //     createOrderResponse.status === 405) &&
+      //   !createOrderResponse.ok
+      // ) {
+      //   createOrderResponse = await fetch("/api/order/", {
+      //     method: "POST",
+      //     headers: { "Content-Type": "application/json" },
+      //     body: JSON.stringify(orderPayload),
+      //   });
+      // }
 
-      const orderResult = await createOrderResponse.json().catch(() => ({}));
+      // const orderResult = await createOrderResponse.json().catch(() => ({}));
 
-      if (!createOrderResponse.ok) {
-        throw new Error(orderResult.error || "ORDER_CREATE_FAILED");
-      }
+      // if (!createOrderResponse.ok) {
+      //   throw new Error(orderResult.error || "ORDER_CREATE_FAILED");
+      // }
 
       const paymentResponse = await fetch("/api/payment-zarinpal/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId: orderResult._id,
-        }),
+        // body: JSON.stringify({
+        //   orderId: orderResult._id,
+        // }),
       });
 
       const paymentData = await paymentResponse.json().catch(() => ({}));
@@ -93,7 +93,7 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
       }
 
       toast.success("در حال انتقال به درگاه پرداخت...");
-      clearCart();
+      // clearCart();
       router.push(paymentData.url);
     } catch (error) {
       const errorMessage =
