@@ -17,7 +17,7 @@ export async function PUT(req: NextRequest) {
   const comment = await Comment.findByIdAndUpdate(
     body.id,
     { verified: true },
-    { new: true },
+    { returnDocument: "after" },
   );
 
   // نوتیفیکیشن مربوطه رو خوانده شده کن

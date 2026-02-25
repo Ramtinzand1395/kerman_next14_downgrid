@@ -78,7 +78,7 @@ export async function PUT(req: NextRequest) {
         nationalCode: data.nationalCode,
         newsletter: data.newsletter,
       },
-      { new: true }, // بازگرداندن نسخه بروز شده
+    { returnDocument: 'after' },
     );
 
     if (!updatedUser) {

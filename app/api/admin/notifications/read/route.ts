@@ -29,7 +29,7 @@ export async function PUT(req: Request) {
     const notification = await Notification.findByIdAndUpdate(
       id,
       { isRead: true },
-      { new: true },
+     { returnDocument: 'after' },
     );
 
     if (!notification) {

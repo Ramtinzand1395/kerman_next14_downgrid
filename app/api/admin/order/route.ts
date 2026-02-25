@@ -64,7 +64,7 @@ export async function PUT(req: NextRequest) {
   const order = await Order.findByIdAndUpdate(
     orderId,
     { status },
-    { new: true },
+   { returnDocument: 'after' },
   );
 
   return NextResponse.json(order);

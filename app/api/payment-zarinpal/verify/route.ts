@@ -236,7 +236,7 @@ export async function GET(req: NextRequest) {
                   "variants.$.stock": -item.quantity,
                 },
               },
-              { new: true, session },
+              { returnDocument: "after", session },
             );
 
             if (!updated) throw new Error("OUT_OF_STOCK");
@@ -246,7 +246,7 @@ export async function GET(req: NextRequest) {
           const updated = await Product.findOneAndUpdate(
             { _id: item.product, stock: { $gte: item.quantity } },
             { $inc: { stock: -item.quantity } },
-            { new: true, session },
+            { returnDocument: "after", session },
           );
           if (!updated) throw new Error("OUT_OF_STOCK");
         }
@@ -259,7 +259,7 @@ export async function GET(req: NextRequest) {
             paymentAuthority: authority,
             paymentRefId: result?.data?.ref_id ?? null,
           },
-          { new: true, session },
+          { returnDocument: "after", session },
         );
 
         if (!updatedOrder) throw new Error("ORDER_UPDATE_FAILED");

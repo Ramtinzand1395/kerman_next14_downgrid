@@ -72,7 +72,6 @@ export async function PUT(req: NextRequest) {
 
     await dbConnect();
 
-    // const { id, province, city, address, plaque, unit, postalCode } =
     const { id, _id, province, city, address, plaque, unit, postalCode } =
       await req.json();
 
@@ -82,10 +81,9 @@ export async function PUT(req: NextRequest) {
     }
 
     const updated = await Address.findOneAndUpdate(
-      // { _id: id, userId: session.user.id },
       { _id: addressId, userId: session.user.id },
       { province, city, address, plaque, unit, postalCode },
-      { new: true },
+       { returnDocument: 'after' },
     );
     if (!updated) {
       return NextResponse.json(

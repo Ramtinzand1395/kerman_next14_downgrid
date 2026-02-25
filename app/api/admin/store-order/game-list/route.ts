@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
   if (!session?.user)
     return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
 
- if (!["admin", "superadmin"].includes(session.user.role))
+  if (!["admin", "superadmin"].includes(session.user.role))
     return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
 
   await dbConnect();
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
     const updated = await GameList.findOneAndUpdate(
       { platform },
       { $push: { items: { name } } },
-      { new: true, upsert: true },
+       { returnDocument: 'after', upsert: true },
     );
 
     return NextResponse.json({
@@ -126,7 +126,7 @@ export async function PUT(req: NextRequest) {
           "items.$.name": name.trim(),
         },
       },
-      { new: true },
+      { returnDocument: "after" },
     );
 
     return NextResponse.json({
@@ -145,7 +145,7 @@ export async function DELETE(req: NextRequest) {
   if (!session?.user)
     return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
 
-if (!["admin", "superadmin"].includes(session.user.role))
+  if (!["admin", "superadmin"].includes(session.user.role))
     return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
 
   await dbConnect();
@@ -159,7 +159,7 @@ if (!["admin", "superadmin"].includes(session.user.role))
     await GameList.findOneAndUpdate(
       { platform: normalizePlatform(platform), "items._id": itemId },
       { $pull: { items: { _id: itemId } } },
-      { new: true },
+      { returnDocument: 'after' },
     );
 
     return NextResponse.json({

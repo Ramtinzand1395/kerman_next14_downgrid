@@ -92,7 +92,7 @@ export async function PUT(
         metaDescription: String(body.metaDescription || "").trim(),
         focusKeyword: parseFocusKeywords(body.focusKeyword),
       },
-      { new: true },
+     { returnDocument: 'after' },
     );
 
     if (!updated) {
