@@ -7,7 +7,6 @@ import "@/model/Address";
 import "@/model/User";
 import "@/model/Product";
 
-
 export async function GET(req: Request) {
   await dbConnect();
   const session = await getServerSession(authOptions);
@@ -15,6 +14,10 @@ export async function GET(req: Request) {
   if (!session?.user) {
     return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
   }
+  if (session.user.role !== "superadmin") {
+    return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
+  }
+
   const { searchParams } = new URL(req.url);
   const page = Number(searchParams.get("page") || 1);
   const limit = 10;
@@ -39,7 +42,6 @@ export async function GET(req: Request) {
   });
 }
 
-
 export async function PUT(req: NextRequest) {
   await dbConnect();
 
@@ -62,7 +64,7 @@ export async function PUT(req: NextRequest) {
   const order = await Order.findByIdAndUpdate(
     orderId,
     { status },
-    { new: true }
+    { new: true },
   );
 
   return NextResponse.json(order);

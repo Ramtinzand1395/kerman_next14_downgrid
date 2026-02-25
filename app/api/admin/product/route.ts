@@ -8,6 +8,15 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/options";
 import mongoose from "mongoose";
 export async function GET(req: Request) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
+  }
+
+  if (session.user.role !== "superadmin" ) {
+    return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
+  }
   await dbConnect();
 
   const url = new URL(req.url);
@@ -57,6 +66,10 @@ export async function POST(req: Request) {
 
   if (!session?.user) {
     return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
+  }
+
+  if (session.user.role !== "superadmin") {
+    return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
   }
 
   const generateSKU = () =>
@@ -122,7 +135,7 @@ export async function POST(req: Request) {
       category: categoryId,
       variants: productType === "multi" ? safeVariants : [],
       stock: totalStock,
-       images: safeGalleryImages,
+      images: safeGalleryImages,
       sku: generateSKU(),
     };
 

@@ -16,6 +16,9 @@ export async function GET(req: Request) {
   if (!session?.user) {
     return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
   }
+   if (session.user.role !== "superadmin") {
+       return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
+     }
   
   const { searchParams } = new URL(req.url);
   const range = searchParams.get("range") || "monthly";

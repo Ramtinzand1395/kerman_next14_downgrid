@@ -65,6 +65,8 @@ export const revalidate = 0;
 export const runtime = "nodejs";
 export const fetchCache = "force-no-store";
 
+const IRAN_TZ = "Asia/Tehran";
+
 export async function GET(req: Request) {
   await dbConnect();
   const session = await getServerSession(authOptions);
@@ -78,67 +80,53 @@ export async function GET(req: Request) {
 
   const now = new Date();
   const startDate = new Date(now);
-  let groupBy: Record<string, unknown>;
-  let sortStage: Record<string, 1>;
-
+  let dateFormat = "%Y-%m-%d";
   switch (range) {
     case "daily":
       startDate.setHours(0, 0, 0, 0);
-      groupBy = {
-        year: { $year: "$createdAt" },
-        month: { $month: "$createdAt" },
-        day: { $dayOfMonth: "$createdAt" },
-      };
-      sortStage = { "_id.year": 1, "_id.month": 1, "_id.day": 1 };
       break;
     case "weekly":
       startDate.setDate(now.getDate() - 7);
-      groupBy = {
-        year: { $year: "$createdAt" },
-        month: { $month: "$createdAt" },
-        day: { $dayOfMonth: "$createdAt" },
-      };
-      sortStage = { "_id.year": 1, "_id.month": 1, "_id.day": 1 };
+      break;
+    case "monthly":
+      startDate.setHours(0, 0, 0, 0);
       break;
     case "yearly":
       startDate.setFullYear(now.getFullYear() - 1);
-      groupBy = {
-        year: { $year: "$createdAt" },
-        month: { $month: "$createdAt" },
-      };
-      sortStage = { "_id.year": 1, "_id.month": 1 };
+      startDate.setDate(1);
+      startDate.setHours(0, 0, 0, 0);
+      dateFormat = "%Y-%m";
       break;
     case "monthly":
     default:
       startDate.setMonth(now.getMonth() - 1);
-      groupBy = {
-        year: { $year: "$createdAt" },
-        month: { $month: "$createdAt" },
-        day: { $dayOfMonth: "$createdAt" },
-      };
-      sortStage = { "_id.year": 1, "_id.month": 1, "_id.day": 1 };
+      startDate.setHours(0, 0, 0, 0);
       break;
   }
 
   const revenueData = await StoreOrder.aggregate([
     { $match: { createdAt: { $gte: startDate, $lte: now } } },
-    { $group: { _id: groupBy, totalRevenue: { $sum: "$price" } } },
-    { $sort: sortStage },
+    {
+      $group: {
+        _id: {
+          bucket: {
+            $dateToString: {
+              format: dateFormat,
+              date: "$createdAt",
+              timezone: IRAN_TZ,
+            },
+          },
+        },
+        totalRevenue: { $sum: "$price" },
+      },
+    },
+    { $sort: { "_id.bucket": 1 } },
   ]);
 
-  const data = revenueData.map((item) => {
-    if (range === "yearly") {
-      return {
-        date: `${item._id.year}-${String(item._id.month).padStart(2, "0")}`,
-        price: item.totalRevenue,
-      };
-    }
-
-    return {
-      date: `${item._id.year}-${String(item._id.month).padStart(2, "0")}-${String(item._id.day).padStart(2, "0")}`,
-      price: item.totalRevenue,
-    };
-  });
+  const data = revenueData.map((item) => ({
+    date: item._id.bucket,
+    price: item.totalRevenue,
+  }));
 
   return NextResponse.json({ data });
 }
