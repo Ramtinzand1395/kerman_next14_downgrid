@@ -3,6 +3,13 @@ import mongoose from "mongoose";
 const TempPaymentSchema = new mongoose.Schema(
   {
     authority: { type: String, unique: true, required: true },
+    idempotencyKey: { type: String, index: true, default: null },
+    status: {
+      type: String,
+      enum: ["initiated", "paid_pending", "completed", "refund_required"],
+      default: "initiated",
+    },
+    expiresAt: { type: Date, default: null },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -46,6 +53,13 @@ const TempPaymentSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
-
+TempPaymentSchema.index(
+  { userId: 1, idempotencyKey: 1 },
+  {
+    unique: true,
+    sparse: true,
+    partialFilterExpression: { idempotencyKey: { $type: "string" } },
+  },
+);
 export default mongoose.models.TempPayment ||
   mongoose.model("TempPayment", TempPaymentSchema);

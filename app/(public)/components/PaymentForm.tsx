@@ -5,7 +5,7 @@ import useCartStore from "@/stores/cartStore";
 import { Address } from "@/types";
 import { ArrowLeft, CreditCard, Loader2, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 
 interface PaymentFormProps {
@@ -16,7 +16,7 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
   const { cart } = useCartStore();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-
+const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
   const shippingCost = 0;
 
   const orderSummary = useMemo(() => {
@@ -56,8 +56,10 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
      
       const paymentResponse = await fetch("/api/payment-zarinpal/request", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(orderPayload),
+      headers: {
+           "Content-Type": "application/json",
+           "Idempotency-Key": idempotencyKeyRef.current,
+         },
       });
 
       const paymentData = await paymentResponse.json().catch(() => ({}));

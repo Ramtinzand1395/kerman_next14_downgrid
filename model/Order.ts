@@ -8,7 +8,7 @@ const OrderStatusEnum = [
   "cancelled",
 ];
 
-const PaymentStatusEnum = ["unpaid", "paid", "failed"];
+const PaymentStatusEnum = ["unpaid", "paid", "failed", "pending_refund"];
 
 const OrderSchema = new mongoose.Schema(
   {
@@ -39,11 +39,10 @@ const OrderSchema = new mongoose.Schema(
           type: String,
           default: null,
         },
-        price: { type: Number, required: true }, // قیمت واحد
-        discountPrice: Number, // قیمت بعد تخفیف
+       price: { type: Number, required: true },
+        discountPrice: Number,
         quantity: { type: Number, required: true },
-        total: { type: Number, required: true }, // price * quantity
-      },
+    total: { type: Number, required: true },      },
     ],
 
     totalPrice: {
@@ -79,7 +78,7 @@ const OrderSchema = new mongoose.Schema(
     },
     paymentAuthority: {
       type: String,
-      index: true,
+      unique: true,
       sparse: true,
       default: null,
     },

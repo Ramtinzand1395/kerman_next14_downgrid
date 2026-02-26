@@ -1,30 +1,20 @@
 import dbConnect from "@/lib/mongodb";
 import Address from "@/model/Address";
-import Order from "@/model/Order";
+// import Order from "@/model/Order";
 import Product from "@/model/Product";
 import TempPayment from "@/model/TempPayment";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { getServerSession } from "next-auth";
 import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
+import { getSiteUrl } from "@/lib/baseUrl";
 
 interface CheckoutItem {
   productId: string;
   quantity: number;
   variantId?: string;
 }
-
-function getBaseUrl(req: NextRequest) {
-  const envBaseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-  if (envBaseUrl) return envBaseUrl.replace(/\/$/, "");
-
-  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
-  const proto = req.headers.get("x-forwarded-proto") ?? "https";
-
-  if (!host) return "https://kermanatari.ir";
-  return `${proto}://${host}`;
-}
-
+ 
 type ZarinpalResponse = {
   data?: {
     code?: number;
@@ -36,7 +26,7 @@ type ZarinpalResponse = {
     message?: string;
   };
 };
-
+const PENDING_PAYMENT_TTL_MS = 15 * 60 * 1000;
 export async function POST(req: NextRequest) {
   await dbConnect();
 
@@ -54,7 +44,7 @@ export async function POST(req: NextRequest) {
       items?: CheckoutItem[];
       shippingCost?: number;
     } = await req.json();
-
+    const idempotencyKey = req.headers.get("Idempotency-Key")?.trim() || null;
     if (
       !payload.addressId ||
       !Array.isArray(payload.items) ||
@@ -139,7 +129,8 @@ export async function POST(req: NextRequest) {
           throw new Error("INSUFFICIENT_STOCK");
         }
 
-        const unitPrice = selectedVariant.discountPrice ?? selectedVariant.price;
+        const unitPrice =
+          selectedVariant.discountPrice ?? selectedVariant.price;
 
         return {
           product: item.productId,
@@ -193,7 +184,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const callback_url = `${getBaseUrl(req)}/api/payment-zarinpal/verify`;
+    if (idempotencyKey) {
+      const existingPayment = await TempPayment.findOne({
+        userId: session.user.id,
+        idempotencyKey,
+      }).lean();
+
+      if (existingPayment && existingPayment.authority) {
+        return NextResponse.json({
+          success: true,
+          authority: existingPayment.authority,
+          url: `https://payment.zarinpal.com/pg/StartPay/${existingPayment.authority}`,
+          reused: true,
+        });
+      }
+    }
+
+    const callback_url = `${getSiteUrl()}/api/payment-zarinpal/verify`;
     const amount = finalPrice * 10;
 
     if (!Number.isFinite(amount) || amount < 1000) {
@@ -202,7 +209,7 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-console.log("رفت به verify")
+    console.log("رفت به verify");
     const zarinResponse = await fetch(
       "https://payment.zarinpal.com/pg/v4/payment/request.json",
       {
@@ -217,9 +224,9 @@ console.log("رفت به verify")
         cache: "no-store",
       },
     );
-    
+
     const result = (await zarinResponse.json()) as ZarinpalResponse;
-    console.log(result,"result")
+    console.log(result, "result");
 
     if (!zarinResponse.ok) {
       return NextResponse.json(
@@ -246,19 +253,13 @@ console.log("رفت به verify")
 
     const authority = result.data.authority;
 
-    await Order.updateMany(
-      {
-        user: session.user.id,
-        paymentStatus: "unpaid",
-        paymentGateway: "zarinpal",
-      },
-      { $set: { paymentStatus: "failed" } },
-    );
-
     await TempPayment.findOneAndUpdate(
       { authority },
       {
         authority,
+        idempotencyKey,
+        status: "initiated",
+        expiresAt: new Date(Date.now() + PENDING_PAYMENT_TTL_MS),
         userId: session.user.id,
         address: payload.addressId,
         items: checkoutItems,
@@ -267,7 +268,15 @@ console.log("رفت به verify")
         finalPrice,
         gatewayAmount: amount,
       },
-      { upsert: true },
+      { upsert: true, setDefaultsOnInsert: true },
+    );
+
+    console.info(
+      JSON.stringify({
+        event: "payment.request.created",
+        authority,
+        userId: session.user.id,
+      }),
     );
 
     return NextResponse.json({
@@ -291,6 +300,9 @@ console.log("رفت به verify")
     }
 
     const message = error instanceof Error ? error.message : "خطا در سرور";
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: message },
+      { status: 500 },
+    );
   }
 }
