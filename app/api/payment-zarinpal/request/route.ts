@@ -14,7 +14,7 @@ interface CheckoutItem {
   quantity: number;
   variantId?: string;
 }
- 
+
 type ZarinpalResponse = {
   data?: {
     code?: number;
@@ -190,7 +190,11 @@ export async function POST(req: NextRequest) {
         idempotencyKey,
       }).lean();
 
-      if (existingPayment && existingPayment.authority) {
+      if (
+        existingPayment &&
+        existingPayment.authority &&
+        existingPayment.status !== "failed"
+      ) {
         return NextResponse.json({
           success: true,
           authority: existingPayment.authority,
@@ -259,6 +263,7 @@ export async function POST(req: NextRequest) {
         authority,
         idempotencyKey,
         status: "initiated",
+          failedAt: null,
         expiresAt: new Date(Date.now() + PENDING_PAYMENT_TTL_MS),
         userId: session.user.id,
         address: payload.addressId,

@@ -11,9 +11,22 @@ export async function POST(req: NextRequest) {
   }
 
   const now = new Date();
-  const result = await TempPayment.updateMany(
+   const failedResult = await TempPayment.updateMany(
     {
-      status: { $in: ["initiated", "paid_pending"] },
+     status: "initiated",
+     expiresAt: { $lte: now },
+   },
+   {
+     $set: {
+       status: "failed",
+       failedAt: now,
+     },
+   },
+ );
+ 
+ const refundResult = await TempPayment.updateMany(
+   {
+     status: "paid_pending",
       expiresAt: { $lte: now },
     },
     {
@@ -26,14 +39,18 @@ export async function POST(req: NextRequest) {
   console.info(
     JSON.stringify({
       event: "payment.cleanup.expired",
-      matched: result.matchedCount,
-      modified: result.modifiedCount,
+     failedMatched: failedResult.matchedCount,
+    failedModified: failedResult.modifiedCount,
+    refundMatched: refundResult.matchedCount,
+    refundModified: refundResult.modifiedCount,
     }),
   );
 
   return NextResponse.json({
     success: true,
-    matched: result.matchedCount,
-    modified: result.modifiedCount,
+ failedMatched: failedResult.matchedCount,
+  failedModified: failedResult.modifiedCount,
+  refundMatched: refundResult.matchedCount,
+  refundModified: refundResult.modifiedCount,
   });
 }

@@ -6,10 +6,17 @@ const TempPaymentSchema = new mongoose.Schema(
     idempotencyKey: { type: String, index: true, default: null },
     status: {
       type: String,
-      enum: ["initiated", "paid_pending", "completed", "refund_required"],
+      enum: [
+        "initiated",
+        "paid_pending",
+        "completed",
+        "refund_required",
+        "failed",
+      ],
       default: "initiated",
     },
     expiresAt: { type: Date, default: null },
+    failedAt: { type: Date, default: null },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -59,6 +66,13 @@ TempPaymentSchema.index(
     unique: true,
     sparse: true,
     partialFilterExpression: { idempotencyKey: { $type: "string" } },
+  },
+);
+TempPaymentSchema.index(
+  { failedAt: 1 },
+  {
+    expireAfterSeconds: 7 * 24 * 60 * 60,
+    partialFilterExpression: { status: "failed", failedAt: { $type: "date" } },
   },
 );
 export default mongoose.models.TempPayment ||
