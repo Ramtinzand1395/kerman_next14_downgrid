@@ -16,7 +16,7 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
   const { cart } = useCartStore();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
+  const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
   const shippingCost = 0;
 
   const orderSummary = useMemo(() => {
@@ -48,18 +48,19 @@ const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
         addressId: selectedAddress._id,
         shippingCost,
         items: cart.map((item) => ({
-        productId: item.productId,
-           variantId: item.variantId,
+          productId: item.productId,
+          variantId: item.variantId,
           quantity: item.quantity,
         })),
       };
-     
+
       const paymentResponse = await fetch("/api/payment-zarinpal/request", {
         method: "POST",
-      headers: {
-           "Content-Type": "application/json",
-           "Idempotency-Key": idempotencyKeyRef.current,
-         },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKeyRef.current,
+        },
+        body: JSON.stringify(orderPayload),
       });
 
       const paymentData = await paymentResponse.json().catch(() => ({}));
@@ -132,11 +133,11 @@ const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
                       تومان
                     </span>
                   </div>
-                    {item.variantTitle && (
-                 <p className="mt-1 text-xs text-slate-500">
-                   مدل انتخابی: {item.variantTitle}
-                 </p>
-               )}
+                  {item.variantTitle && (
+                    <p className="mt-1 text-xs text-slate-500">
+                      مدل انتخابی: {item.variantTitle}
+                    </p>
+                  )}
                 </article>
               ))}
             </div>
