@@ -15,18 +15,29 @@ interface CartDropdownProps {
   activeDropdown: DropdownType;
 }
 
+const getFinalUnitPrice = (item: CartItem) => {
+  if (typeof item.discountPrice === "number" && item.discountPrice < item.price) {
+    return item.discountPrice;
+  }
+
+  return item.price;
+};
+
 const CartPreviewItem = memo(function CartPreviewItem({
   item,
 }: {
   item: CartItem;
 }) {
-  const lineTotal = item.price * item.quantity;
-
+  const unitFinalPrice = getFinalUnitPrice(item);
+  const hasDiscount = unitFinalPrice < item.price;
+  const lineTotal = unitFinalPrice * item.quantity;
+  const originalLineTotal = item.price * item.quantity;
+const displayTitle = item.variantTitle || item.title;
   return (
     <li className="flex items-center gap-3 border-b border-slate-100 pb-3 last:border-b-0 last:pb-0">
       <Image
         src={item.image}
-        alt={item.title}
+        alt={displayTitle}
         width={56}
         height={56}
         className="h-14 w-14 rounded-lg border border-slate-100 object-cover"
@@ -34,14 +45,19 @@ const CartPreviewItem = memo(function CartPreviewItem({
       />
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-slate-800">
-          {item.title}
-        </p>
+        <p className="truncate text-sm font-medium text-slate-800">   {displayTitle}</p>
         <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
           <span>{item.quantity} عدد</span>
-          <span className="font-semibold text-slate-700">
-            {lineTotal.toLocaleString()} تومان
-          </span>
+          <div className="flex flex-col items-end">
+            <span className="font-semibold text-slate-700">
+              {lineTotal.toLocaleString()} تومان
+            </span>
+            {hasDiscount && (
+              <span className="text-[11px] text-slate-400 line-through">
+                {originalLineTotal.toLocaleString()} تومان
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </li>
@@ -55,21 +71,25 @@ export default function CartDropdown({
   const shouldReduceMotion = useReducedMotion();
   const cart = useCartStore((state) => state.cart);
 
-  const { itemsCount, totalPrice } = useMemo(
+  const { itemsCount, totalPrice, originalTotalPrice } = useMemo(
     () =>
       cart.reduce(
         (acc, item) => {
+          const unitFinalPrice = getFinalUnitPrice(item);
+
           acc.itemsCount += item.quantity;
-          acc.totalPrice += item.price * item.quantity;
+          acc.totalPrice += unitFinalPrice * item.quantity;
+          acc.originalTotalPrice += item.price * item.quantity;
           return acc;
         },
-        { itemsCount: 0, totalPrice: 0 }
+        { itemsCount: 0, totalPrice: 0, originalTotalPrice: 0 },
       ),
-    [cart]
+    [cart],
   );
 
   const hasItems = cart.length > 0;
   const dropdownVisible = activeDropdown === "cart";
+  const hasDiscountedTotal = totalPrice < originalTotalPrice;
 
   return (
     <div
@@ -110,26 +130,29 @@ export default function CartDropdown({
             {hasItems ? (
               <>
                 <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-2">
-                  <p className="text-sm font-semibold text-slate-800">
-                    سبد خرید شما
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {itemsCount.toLocaleString()} کالا
-                  </p>
+                  <p className="text-sm font-semibold text-slate-800">سبد خرید شما</p>
+                  <p className="text-xs text-slate-500">{itemsCount.toLocaleString()} کالا</p>
                 </div>
 
                 <ul className="scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100 max-h-72 space-y-3 overflow-y-auto pl-1">
                   {cart.map((item) => (
-                    <CartPreviewItem key={(item as any).id ?? (item as any).sku} item={item} />
+                    <CartPreviewItem key={item.id ?? item.sku} item={item} />
                   ))}
                 </ul>
 
                 <div className="mt-4 space-y-3 border-t border-slate-100 pt-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-500">مجموع</span>
-                    <span className="font-bold text-slate-800">
-                      {totalPrice.toLocaleString()} تومان
-                    </span>
+                    <div className="flex flex-col items-end">
+                      <span className="font-bold text-slate-800">
+                        {totalPrice.toLocaleString()} تومان
+                      </span>
+                      {hasDiscountedTotal && (
+                        <span className="text-xs text-slate-400 line-through">
+                          {originalTotalPrice.toLocaleString()} تومان
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <Link
@@ -142,9 +165,7 @@ export default function CartDropdown({
               </>
             ) : (
               <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
-                <p className="text-sm text-slate-600">
-                  سبد خرید شما هنوز خالی است
-                </p>
+                <p className="text-sm text-slate-600">سبد خرید شما هنوز خالی است</p>
                 <Link
                   href="/shop"
                   className="mt-3 inline-block text-sm font-semibold text-blue-600 hover:text-blue-700"

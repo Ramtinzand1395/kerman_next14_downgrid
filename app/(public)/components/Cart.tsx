@@ -79,9 +79,7 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
     addToCart({
       id,
       productId: game._id,
-      title: hasVariants
-        ? `${game.title} - ${defaultVariant?.title || "مدل"}`
-        : game.title,
+      title: hasVariants ? `${defaultVariant?.title || "مدل"}` : game.title,
       price: hasVariants ? Number(defaultVariant?.price || 0) : game.price,
       discountPrice: hasVariants
         ? (defaultVariant?.discountPrice ?? null)
