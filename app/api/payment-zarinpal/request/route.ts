@@ -213,7 +213,6 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    console.log("رفت به verify");
     const zarinResponse = await fetch(
       "https://payment.zarinpal.com/pg/v4/payment/request.json",
       {
@@ -230,8 +229,6 @@ export async function POST(req: NextRequest) {
     );
 
     const result = (await zarinResponse.json()) as ZarinpalResponse;
-    console.log(result, "result");
-
     if (!zarinResponse.ok) {
       return NextResponse.json(
         {
@@ -263,7 +260,7 @@ export async function POST(req: NextRequest) {
         authority,
         idempotencyKey,
         status: "initiated",
-          failedAt: null,
+        failedAt: null,
         expiresAt: new Date(Date.now() + PENDING_PAYMENT_TTL_MS),
         userId: session.user.id,
         address: payload.addressId,

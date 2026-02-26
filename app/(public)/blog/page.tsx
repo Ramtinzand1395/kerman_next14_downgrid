@@ -4,16 +4,10 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { stripHtmlTags } from "@/helpers/stripHtmlTags";
 export const metadata: Metadata = {
-   title: "وبلاگ | کرمان آتاری",
-   description: "جدیدترین مقالات و راهنمای خرید کنسول و بازی در کرمان آتاری.",
-}
-// const stripHtmlTags = (value?: string) =>
-//   String(value || "")
-//      .replace(/<[^>]*>/g, " ")
-//      .replace(/&nbsp;/g, " ")
-//     .replace(/\s+/g, " ")
-//      .trim();
- 
+  title: "وبلاگ | کرمان آتاری",
+  description: "جدیدترین مقالات و راهنمای خرید کنسول و بازی در کرمان آتاری.",
+};
+
 async function getBlogs(): Promise<BlogPost[]> {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
@@ -66,7 +60,9 @@ export default async function BlogPage() {
                 {post.title}
               </h2>
               <p className="mt-2 line-clamp-3 text-sm text-slate-600">
-                {stripHtmlTags(post.metaDescription || post.excerpt || post.content)}
+                {stripHtmlTags(
+                  post.metaDescription || post.excerpt || post.content,
+                )}
               </p>
               <Link
                 href={`/blog/${post.slug}`}

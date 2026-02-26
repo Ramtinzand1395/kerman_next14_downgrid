@@ -41,7 +41,7 @@ const statusStyles: Record<string, string> = {
 };
 
 const statusLabels: Record<string, string> = {
-  pending: "در انتظار پرداخت",
+  pending: "در انتظار بررسی",
   processing: "در حال آماده‌سازی",
   shipped: "ارسال شده",
   delivered: "تحویل شده",

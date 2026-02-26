@@ -7,26 +7,29 @@ export async function POST(req: NextRequest) {
 
   const token = req.headers.get("x-cron-token");
   if (!process.env.CRON_SECRET || token !== process.env.CRON_SECRET) {
-    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { success: false, error: "Unauthorized" },
+      { status: 401 },
+    );
   }
 
   const now = new Date();
-   const failedResult = await TempPayment.updateMany(
+  const failedResult = await TempPayment.updateMany(
     {
-     status: "initiated",
-     expiresAt: { $lte: now },
-   },
-   {
-     $set: {
-       status: "failed",
-       failedAt: now,
-     },
-   },
- );
- 
- const refundResult = await TempPayment.updateMany(
-   {
-     status: "paid_pending",
+      status: "initiated",
+      expiresAt: { $lte: now },
+    },
+    {
+      $set: {
+        status: "failed",
+        failedAt: now,
+      },
+    },
+  );
+
+  const refundResult = await TempPayment.updateMany(
+    {
+      status: "paid_pending",
       expiresAt: { $lte: now },
     },
     {
@@ -39,18 +42,18 @@ export async function POST(req: NextRequest) {
   console.info(
     JSON.stringify({
       event: "payment.cleanup.expired",
-     failedMatched: failedResult.matchedCount,
-    failedModified: failedResult.modifiedCount,
-    refundMatched: refundResult.matchedCount,
-    refundModified: refundResult.modifiedCount,
+      failedMatched: failedResult.matchedCount,
+      failedModified: failedResult.modifiedCount,
+      refundMatched: refundResult.matchedCount,
+      refundModified: refundResult.modifiedCount,
     }),
   );
 
   return NextResponse.json({
     success: true,
- failedMatched: failedResult.matchedCount,
-  failedModified: failedResult.modifiedCount,
-  refundMatched: refundResult.matchedCount,
-  refundModified: refundResult.modifiedCount,
+    failedMatched: failedResult.matchedCount,
+    failedModified: failedResult.modifiedCount,
+    refundMatched: refundResult.matchedCount,
+    refundModified: refundResult.modifiedCount,
   });
 }
