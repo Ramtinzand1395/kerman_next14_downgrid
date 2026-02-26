@@ -1,16 +1,39 @@
-const DEFAULT_SITE_URL = "https://kermanatari.ir";
+import dbConnect from "@/lib/mongodb";
+import TempPayment from "@/model/TempPayment";
+import { NextRequest, NextResponse } from "next/server";
 
-export function getSiteUrl() {
-  const configured =
-    process.env.SITE_URL?.trim() || process.env.NEXT_PUBLIC_BASE_URL?.trim();
+export async function POST(req: NextRequest) {
+  await dbConnect();
 
-  if (!configured) {
-    return DEFAULT_SITE_URL;
+  const token = req.headers.get("x-cron-token");
+  if (!process.env.CRON_SECRET || token !== process.env.CRON_SECRET) {
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
   }
 
-  try {
-    return new URL(configured).origin;
-  } catch {
-    return DEFAULT_SITE_URL;
-  }
+  const now = new Date();
+  const result = await TempPayment.updateMany(
+    {
+      status: { $in: ["initiated", "paid_pending"] },
+      expiresAt: { $lte: now },
+    },
+    {
+      $set: {
+        status: "refund_required",
+      },
+    },
+  );
+
+  console.info(
+    JSON.stringify({
+      event: "payment.cleanup.expired",
+      matched: result.matchedCount,
+      modified: result.modifiedCount,
+    }),
+  );
+
+  return NextResponse.json({
+    success: true,
+    matched: result.matchedCount,
+    modified: result.modifiedCount,
+  });
 }
