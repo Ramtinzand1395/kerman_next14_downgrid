@@ -9,7 +9,7 @@ interface Product {
 }
 
 interface OrderItem {
-  id: number;
+  id: string | number;
   quantity: number;
   price: number;
   total: number;
@@ -23,7 +23,7 @@ interface Address {
 }
 
 interface Order {
-  id: number;
+  id: string | number;
   items: OrderItem[];
   totalPrice: number;
   finalPrice: number;
@@ -33,6 +33,9 @@ interface Order {
 }
 
 const statusStyles: Record<string, string> = {
+  initiated: "bg-slate-100 text-slate-700 border-slate-200",
+   paid_pending: "bg-blue-100 text-blue-700 border-blue-200",
+   refund_required: "bg-rose-100 text-rose-700 border-rose-200",
   pending: "bg-amber-100 text-amber-700 border-amber-200",
   processing: "bg-blue-100 text-blue-700 border-blue-200",
   shipped: "bg-purple-100 text-purple-700 border-purple-200",
@@ -46,6 +49,10 @@ const statusLabels: Record<string, string> = {
   shipped: "ارسال شده",
   delivered: "تحویل شده",
   cancelled: "لغو شده",
+
+   initiated: "در انتظار پرداخت",
+   paid_pending: "پرداخت در حال بررسی",
+   refund_required: "نیازمند بررسی بازپرداخت",
 };
 
 function toPrice(value: number) {
