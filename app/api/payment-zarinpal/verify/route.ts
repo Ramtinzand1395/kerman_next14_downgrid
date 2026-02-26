@@ -44,15 +44,18 @@ function withPaymentQuery(
 
 export async function GET(req: NextRequest) {
   await dbConnect();
-
+  console.log("verify");
   const baseUrl = getBaseUrl(req);
   const { searchParams } = new URL(req.url);
-  const authority = searchParams.get("Authority") ?? "";
-  const status = searchParams.get("Status") ?? "";
+  const authority =
+    searchParams.get("Authority") ?? searchParams.get("authority") ?? "";
+  const status = searchParams.get("Status") ?? searchParams.get("status") ?? "";
+  const retried = searchParams.get("retried") ?? "";
 
   const failedUrl = withPaymentQuery(baseUrl, "/payment-failed", {
     authority,
     status,
+    retried: retried === "1" ? "1" : undefined,
   });
 
   try {

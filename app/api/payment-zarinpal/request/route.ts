@@ -202,7 +202,7 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-
+console.log("رفت به verify")
     const zarinResponse = await fetch(
       "https://payment.zarinpal.com/pg/v4/payment/request.json",
       {
@@ -217,8 +217,9 @@ export async function POST(req: NextRequest) {
         cache: "no-store",
       },
     );
-
+    
     const result = (await zarinResponse.json()) as ZarinpalResponse;
+    console.log(result,"result")
 
     if (!zarinResponse.ok) {
       return NextResponse.json(
