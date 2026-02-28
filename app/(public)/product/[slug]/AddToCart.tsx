@@ -11,7 +11,7 @@ export default function AddToCart({
   product,
   selectedVariantId,
 }: AddToCartProps) {
-  const { addToCart } = useCartStore();
+  const { addToCart, cart } = useCartStore();
   const BASE_VARIANT_ID = "__base__";
 
   const selectedVariant = useMemo(
@@ -41,6 +41,15 @@ export default function AddToCart({
       : (selectedVariant?.discountPrice ?? null)
     : (product.discountPrice ?? null);
 
+  const useVariant = isMulti && !isBaseSelection;
+  const cartItemId = useVariant
+    ? `${product._id}:${selectedVariantId}`
+    : product._id!.toString();
+  const currentQuantityInCart =
+    cart.find((item) => item.id === cartItemId)?.quantity || 0;
+  const isAtStockLimit =
+    currentStock > 0 && currentQuantityInCart >= currentStock;
+
   const handleAddToCart = () => {
     if (isMulti && !selectedVariantId) {
       toast.error("لطفاً مدل محصول را انتخاب کنید.");
@@ -52,13 +61,7 @@ export default function AddToCart({
       return;
     }
 
-    const useVariant = isMulti && !isBaseSelection;
-
-    const cartItemId = useVariant
-      ? `${product._id}:${selectedVariantId}`
-      : product._id!.toString();
-
-    addToCart({
+    const addResult = addToCart({
       id: cartItemId,
       productId: product._id!.toString(),
       title: useVariant
@@ -72,17 +75,29 @@ export default function AddToCart({
       variantId: useVariant ? selectedVariantId : undefined,
       variantTitle: useVariant ? selectedVariant?.title : undefined,
     });
+    if (addResult === "out_of_stock") {
+      toast.error("این محصول ناموجود است.");
+      return;
+    }
 
+    if (addResult === "max_reached") {
+      toast.error("تعداد انتخابی از موجودی انبار بیشتر است.");
+      return;
+    }
     toast.success("به سبد خرید اضافه شد.");
   };
   return (
     <>
       <button
         onClick={handleAddToCart}
-        disabled={currentStock <= 0}
+        disabled={currentStock <= 0 || isAtStockLimit}
         className="bg-red-500 hover:bg-red-600 text-white font-bold text-xs sm:text-base py-2 px-4 sm:py-3 sm:px-8 rounded-xl shadow-lg shadow-red-200 transition-all transform active:scale-95 flex-1 max-w-[200px] disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:shadow-none"
       >
-        {currentStock > 0 ? "افزودن به سبد" : "ناموجود"}
+        {currentStock <= 0
+          ? "ناموجود"
+          : isAtStockLimit
+            ? "بیش از موجودی انبار"
+            : "افزودن به سبد"}
       </button>
     </>
   );

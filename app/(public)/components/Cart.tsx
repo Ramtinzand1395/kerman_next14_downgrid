@@ -17,7 +17,7 @@ interface CartProps {
 }
 
 export default function Cart({ game, onFavoriteChange }: CartProps) {
-  const { addToCart } = useCartStore();
+  const { addToCart, cart } = useCartStore();
   const { data: session } = useSession();
   const [favoriteLoading, setFavoriteLoading] = useState(false);
 
@@ -46,6 +46,20 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
     ? Math.round(((game.price - finalPrice) / game.price) * 100)
     : 0;
 
+  const hasVariants =
+    game.productType === "multi" && (game.variants?.length || 0) > 0;
+  const defaultVariant = hasVariants
+    ? game.variants?.find((variant: any) => Number(variant.stock) > 0) ||
+      game.variants?.[0]
+    : null;
+  const stock = hasVariants ? Number(defaultVariant?.stock || 0) : game.stock;
+  const cartItemId = hasVariants
+    ? `${game._id}:${defaultVariant?._id}`
+    : game._id;
+  const currentQuantityInCart =
+    cart.find((item) => item.id === cartItemId)?.quantity || 0;
+  const isAtStockLimit = stock > 0 && currentQuantityInCart >= stock;
+
   const rating = useMemo(() => {
     if (!game.comments?.length) {
       return 0;
@@ -60,24 +74,13 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
   }, [game.comments]);
 
   const handleAddToCart = () => {
-    const hasVariants =
-      game.productType === "multi" && (game.variants?.length || 0) > 0;
-    const defaultVariant = hasVariants
-      ? game.variants?.find((variant: any) => Number(variant.stock) > 0) ||
-        game.variants?.[0]
-      : null;
-
-    const stock = hasVariants ? Number(defaultVariant?.stock || 0) : game.stock;
-
     if (stock <= 0) {
       toast.error("این محصول ناموجود است.");
       return;
     }
 
-    const id = hasVariants ? `${game._id}:${defaultVariant?._id}` : game._id;
-
-    addToCart({
-      id,
+    const addResult = addToCart({
+      id: cartItemId,
       productId: game._id,
       title: hasVariants ? `${defaultVariant?.title || "مدل"}` : game.title,
       price: hasVariants ? Number(defaultVariant?.price || 0) : game.price,
@@ -90,7 +93,16 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
       variantId: hasVariants ? defaultVariant?._id : undefined,
       variantTitle: hasVariants ? defaultVariant?.title : undefined,
     });
+    if (addResult === "out_of_stock") {
+      toast.error("این محصول ناموجود است.");
+      return;
+    }
 
+    if (addResult === "max_reached") {
+      toast.error("تعداد انتخابی از موجودی انبار بیشتر است.");
+
+      return;
+    }
     toast.success("به سبد خرید اضافه شد.");
   };
 
@@ -257,11 +269,15 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
         whileTap={{ scale: 0.98 }}
         whileHover={{ scale: 1.01 }}
         onClick={handleAddToCart}
-        disabled={game.stock <= 0}
+        disabled={stock <= 0 || isAtStockLimit}
         className="mt-4 inline-flex text-xs items-center justify-center gap-2 rounded-lg bg-[#377dff] py-2.5 md:text-sm font-medium text-white transition-colors hover:bg-[#2b67d5] focus:outline-none focus:ring-2 focus:ring-[#377dff]/40 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:bg-gray-400"
       >
         <ShoppingCart size={16} />
-        {game.stock > 0 ? "افزودن به سبد خرید" : "ناموجود"}
+        {stock <= 0
+          ? "ناموجود"
+          : isAtStockLimit
+            ? "بیش از موجودی انبار"
+            : "افزودن به سبد خرید"}
       </motion.button>
 
       <script

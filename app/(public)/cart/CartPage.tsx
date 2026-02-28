@@ -18,6 +18,7 @@ import { useEffect, useMemo, useState } from "react";
 import PaymentForm from "../components/PaymentForm";
 import ShippingForm from "../components/ShippingForm";
 import { safeParseJSON } from "@/helpers/safeParseJSON";
+import { toast } from "react-toastify";
 
 const checkoutSteps = [
   {
@@ -227,10 +228,10 @@ export default function CartPage() {
                               {item.variantTitle || item.title}
                             </h3>
                             {item.variantTitle && (
-                        <p className="mt-1 text-xs text-slate-500">
-                          مدل انتخابی: {item.variantTitle}
-                        </p>
-                      )}
+                              <p className="mt-1 text-xs text-slate-500">
+                                مدل انتخابی: {item.variantTitle}
+                              </p>
+                            )}
                             <p className="mt-1 text-xs text-slate-500">
                               قیمت واحد:{" "}
                               {formatPrice(item.discountPrice ?? item.price)}{" "}
@@ -255,8 +256,23 @@ export default function CartPage() {
 
                             <button
                               type="button"
-                              onClick={() => increaseQty(item.id)}
-                              className="flex h-8 w-8 items-center justify-center rounded-full text-slate-700 hover:bg-slate-100"
+                              onClick={() => {
+                                if (
+                                  typeof item.stock === "number" &&
+                                  item.quantity >= item.stock
+                                ) {
+                                  toast.error(
+                                    "تعداد انتخابی از موجودی انبار بیشتر است.",
+                                  );
+                                  return;
+                                }
+                                increaseQty(item.id);
+                              }}
+                              disabled={
+                                typeof item.stock === "number" &&
+                                item.quantity >= item.stock
+                              }
+                              className="flex h-8 w-8 items-center justify-center rounded-full text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
                             >
                               +
                             </button>

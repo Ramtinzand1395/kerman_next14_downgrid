@@ -15,7 +15,7 @@ interface CartStoreActionsType {
       variantId?: string;
       variantTitle?: string;
     },
-  ) => void;
+  ) => "added" | "out_of_stock" | "max_reached";
   removeFromCart: (product: Partial<CartItem>) => void;
   clearCart: () => void;
 
@@ -28,9 +28,11 @@ const useCartStore = create<CartStoreActionsType & CartStoreStateType>()(
     (set) => ({
       cart: [],
       hasHydrated: false,
-      addToCart: (product) =>
+      addToCart: (product) => {
+        let status: "added" | "out_of_stock" | "max_reached" = "added";
         set((state) => {
           if ((product.stock ?? 1) <= 0) {
+            status = "out_of_stock";
             return state;
           }
 
@@ -48,7 +50,10 @@ const useCartStore = create<CartStoreActionsType & CartStoreStateType>()(
                 : typeof product.stock === "number"
                   ? product.stock
                   : nextQty;
-
+            if (currentItem.quantity >= maxQty) {
+              status = "max_reached";
+              return state;
+            }
             updatedCart[existingIndex].quantity = Math.min(nextQty, maxQty);
             return { cart: updatedCart };
           }
@@ -62,7 +67,10 @@ const useCartStore = create<CartStoreActionsType & CartStoreStateType>()(
               },
             ],
           };
-        }),
+        });
+
+        return status;
+      },
       increaseQty: (id) =>
         set((state) => ({
           cart: state.cart.map((item) => {
