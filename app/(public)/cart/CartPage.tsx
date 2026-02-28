@@ -232,11 +232,19 @@ export default function CartPage() {
                                 مدل انتخابی: {item.variantTitle}
                               </p>
                             )}
-                            <p className="mt-1 text-xs text-slate-500">
-                              قیمت واحد:{" "}
-                              {formatPrice(item.discountPrice ?? item.price)}{" "}
-                              تومان
-                            </p>
+                            <div className="mt-1 flex items-center gap-2 text-xs">
+                              <span className="text-slate-500">قیمت واحد:</span>
+                              <span className="font-semibold text-slate-700">
+                                {formatPrice(item.discountPrice ?? item.price)}
+                                تومان
+                              </span>
+                              {typeof item.discountPrice === "number" &&
+                                item.discountPrice < item.price && (
+                                  <span className="text-slate-400 line-through">
+                                    {formatPrice(item.price)} تومان
+                                  </span>
+                                )}
+                            </div>
                           </div>
                         </div>
 
