@@ -12,7 +12,6 @@ export default function AddToCart({
   selectedVariantId,
 }: AddToCartProps) {
   const { addToCart, cart } = useCartStore();
-  const BASE_VARIANT_ID = "__base__";
 
   const selectedVariant = useMemo(
     () =>
@@ -24,24 +23,17 @@ export default function AddToCart({
 
   const isMulti =
     product.productType === "multi" && (product.variants?.length || 0) > 0;
-  const isBaseSelection = selectedVariantId === BASE_VARIANT_ID;
   const currentStock = isMulti
-    ? isBaseSelection
-      ? Number(product.stock || 0)
-      : Number(selectedVariant?.stock || 0)
+    ? Number(selectedVariant?.stock || 0)
     : Number(product.stock || 0);
   const currentPrice = isMulti
-    ? isBaseSelection
-      ? Number(product.price || 0)
-      : Number(selectedVariant?.price || 0)
+    ? (selectedVariant?.discountPrice ?? null)
     : Number(product.price || 0);
   const currentDiscountPrice = isMulti
-    ? isBaseSelection
-      ? (product.discountPrice ?? null)
-      : (selectedVariant?.discountPrice ?? null)
+    ? Number(selectedVariant?.price || 0)
     : (product.discountPrice ?? null);
 
-  const useVariant = isMulti && !isBaseSelection;
+  const useVariant = isMulti;
   const cartItemId = useVariant
     ? `${product._id}:${selectedVariantId}`
     : product._id!.toString();

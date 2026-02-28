@@ -14,8 +14,20 @@ interface ProductInfoProps {
 }
 
 export const ProductInfo = ({ product }: ProductInfoProps) => {
-  const BASE_VARIANT_ID = "__base__";
-  const [selectedVariantId, setSelectedVariantId] = useState(BASE_VARIANT_ID);
+  const [selectedVariantId, setSelectedVariantId] = useState<string>(() => {
+    if (
+      product.productType !== "multi" ||
+      (product.variants?.length || 0) === 0
+    ) {
+      return "";
+    }
+
+    const inStockVariant = product.variants?.find(
+      (variant: any) => Number(variant.stock) > 0,
+    );
+
+    return String(inStockVariant?._id || product.variants?.[0]?._id || "");
+  });
 
   const selectedVariant = useMemo(
     () =>
@@ -27,21 +39,14 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
 
   const isMulti =
     product.productType === "multi" && (product.variants?.length || 0) > 0;
-  const isBaseSelection = selectedVariantId === BASE_VARIANT_ID;
   const displayStock = isMulti
-    ? isBaseSelection
-      ? Number(product.stock || 0)
-      : Number(selectedVariant?.stock || 0)
+    ? Number(selectedVariant?.stock || 0)
     : Number(product.stock || 0);
   const displayPrice = isMulti
-    ? isBaseSelection
-      ? Number(product.price || 0)
-      : Number(selectedVariant?.price || 0)
+    ? Number(selectedVariant?.price || 0)
     : Number(product.price || 0);
   const displayDiscountPrice = isMulti
-    ? isBaseSelection
-      ? (product.discountPrice ?? null)
-      : (selectedVariant?.discountPrice ?? null)
+    ? (selectedVariant?.discountPrice ?? null)
     : (product.discountPrice ?? null);
 
   const rating = product.comments?.length
@@ -140,7 +145,6 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
               onChange={(e) => setSelectedVariantId(e.target.value)}
               className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm"
             >
-              <option value={BASE_VARIANT_ID}>{product.title}</option>
               {product.variants?.map((variant: any) => (
                 <option key={variant._id} value={variant._id}>
                   {variant.title}

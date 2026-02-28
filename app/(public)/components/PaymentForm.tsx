@@ -121,11 +121,19 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
                     <p className="text-slate-500">× {item.quantity}</p>
                   </div>
 
-                  <div className="mt-1 flex items-center justify-between text-xs text-slate-600">
-                    <span>
-                      قیمت واحد: {formatPrice(item.discountPrice ?? item.price)}{" "}
-                      تومان
-                    </span>
+                  <div className="mt-1 flex items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <span>قیمت واحد:</span>
+                      <span className="font-semibold text-slate-700">
+                        {formatPrice(item.discountPrice ?? item.price)} تومان
+                      </span>
+                      {typeof item.discountPrice === "number" &&
+                        item.discountPrice < item.price && (
+                          <span className="text-slate-400 line-through">
+                            {formatPrice(item.price)} تومان
+                          </span>
+                        )}
+                    </div>
                     <span className="font-semibold text-slate-900">
                       {formatPrice(
                         (item.discountPrice ?? item.price) * item.quantity,
