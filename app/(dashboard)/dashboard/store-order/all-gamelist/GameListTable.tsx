@@ -139,7 +139,7 @@ const GameListTable = ({
 
                   <button
                     title="delete"
-                    onClick={() => handleDelete(item._id)}
+                    onClick={() => handleDelete(item._id!)}
                     disabled={pending}
                     className="rounded-md border border-red-100 p-1.5 text-red-600 disabled:opacity-50"
                   >
