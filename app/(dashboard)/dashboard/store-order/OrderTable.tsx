@@ -21,7 +21,7 @@ interface OrderTableProps {
   header: string;
   Orders: storeOrder[];
   setOrders: React.Dispatch<React.SetStateAction<OrdersByConsole>>;
-  consoleKey: "ps5" | "ps4" | "xbox" | "copy";
+  consoleKey: "ps5" | "ps4" | "xbox" | "copy"|"ps5Copy";
   isLoading: boolean;
   setloadingSms: React.Dispatch<React.SetStateAction<boolean>>;
 }
