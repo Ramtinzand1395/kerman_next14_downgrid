@@ -7,13 +7,13 @@ const NotificationSchema = new mongoose.Schema(
     message: String,
     type: {
       type: String,
-     enum: ["order", "comment", "user", "payment", "contact"],
+     enum: ["order", "comment", "user", "payment", "contact","customerGameOrder"],
     },
     isRead: { type: Boolean, default: false },
     target: {
       kind: {
         type: String,
-         enum: ["Product", "Order", "Comment", "User", "ContactMessage"],
+         enum: ["Product", "Order", "Comment", "User", "ContactMessage","CustomerGameOrder"],
         required: true,
       },
       item: {
@@ -27,6 +27,11 @@ const NotificationSchema = new mongoose.Schema(
       type: String,
       enum: ["admin", "user"],
       default: "admin",
+    },
+     // ارجاع به کاربر مرتبط (برای customerGameOrder بر اساس userId وصل می‌شود)
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
     },
   },
   { timestamps: true }

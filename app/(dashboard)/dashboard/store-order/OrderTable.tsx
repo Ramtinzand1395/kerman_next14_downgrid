@@ -14,6 +14,7 @@ type OrdersByConsole = {
   ps4: storeOrder[];
   xbox: storeOrder[];
   copy: storeOrder[];
+  ps5Copy: storeOrder[];
 };
 
 interface OrderTableProps {
@@ -27,7 +28,7 @@ interface OrderTableProps {
 
 const statusColors: Record<string, string> = {
   "دریافت از مشتری": "bg-amber-100 text-amber-700 border-amber-300",
-  "آماده": "bg-sky-100 text-sky-700 border-sky-300",
+  آماده: "bg-sky-100 text-sky-700 border-sky-300",
   "تحویل به مشتری": "bg-emerald-100 text-emerald-700 border-emerald-300",
 };
 

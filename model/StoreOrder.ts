@@ -2,10 +2,13 @@ import mongoose from "mongoose";
 
 const storeOrderSchema = new mongoose.Schema(
   {
-    list: {
-      type: [String],
-      required: true,
-    },
+    list: [
+      {
+        name: { type: String, required: true },
+        price: { type: Number, required: true },
+        size: { type: Number, required: true },
+      },
+    ],
     price: {
       type: Number,
       required: true,
@@ -20,7 +23,7 @@ const storeOrderSchema = new mongoose.Schema(
     },
     consoleType: {
       type: String,
-      enum: ["ps4", "ps5", "copy", "xbox"],
+      enum: ["ps4", "ps5", "copy", "xbox", "ps5Copy"],
       required: true,
     },
     deliveryStatus: {

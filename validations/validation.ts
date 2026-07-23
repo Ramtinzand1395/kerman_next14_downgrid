@@ -56,3 +56,76 @@ export const newsletterSchema = yup.object({
     .required("لطفاً ایمیل خود را وارد کنید.")
     .email("لطفاً یک ایمیل معتبر وارد کنید."),
 });
+
+
+export const customerGameOrderSchema = yup.object().shape({
+  customerName: yup
+    .string()
+    .trim()
+    .required("نام مشتری الزامی است")
+    .min(2, "نام مشتری باید حداقل ۲ کاراکتر باشد")
+    .max(100, "نام مشتری نباید بیشتر از ۱۰۰ کاراکتر باشد"),
+
+  phone: yup
+    .string()
+    .trim()
+    .required("شماره تماس الزامی است")
+    .matches(/^09\d{9}$/, "شماره تماس باید ۱۱ رقم باشد و با 09 شروع شود"),
+
+ // آدرس از دفترچه آدرس کاربر انتخاب می‌شود
+  addressId: yup
+    .string()
+    .trim()
+    .required("انتخاب یک آدرس الزامی است"),
+    
+  message: yup
+    .string()
+    .trim()
+    .max(1000, "پیام نباید بیشتر از ۱۰۰۰ کاراکتر باشد")
+    .optional()
+    .default(""),
+
+  products: yup
+    .array()
+    .of(
+      yup.object().shape({
+        name: yup.string().trim().required("نام محصول الزامی است"),
+        platform: yup.string().trim().optional().default(""),
+        price: yup.number().positive().optional().default(0),
+        size: yup.number().positive().optional().default(0),
+      }),
+    )
+    .min(1, "حداقل یک محصول باید انتخاب شود")
+    .required("حداقل یک محصول الزامی است"),
+
+  totalPrice: yup
+    .number()
+    .min(0, "مجموع قیمت نمی‌تواند منفی باشد")
+    .required("مجموع قیمت الزامی است"),
+});
+
+export const customerOrderUpdateSchema = yup.object().shape({
+  status: yup
+    .string()
+    .oneOf(["pending", "confirmed", "rejected", "completed"], "وضعیت نامعتبر است")
+    .optional(),
+
+  phone: yup
+    .string()
+    .trim()
+    .matches(/^09\d{9}$/, "شماره تماس باید ۱۱ رقم باشد و با 09 شروع شود")
+    .optional(),
+
+  address: yup
+    .string()
+    .trim()
+    .min(10, "آدرس باید حداقل ۱۰ کاراکتر باشد")
+    .max(500, "آدرس نباید بیشتر از ۵۰۰ کاراکتر باشد")
+    .optional(),
+
+  message: yup
+    .string()
+    .trim()
+    .max(1000, "پیام نباید بیشتر از ۱۰۰۰ کاراکتر باشد")
+    .optional(),
+});

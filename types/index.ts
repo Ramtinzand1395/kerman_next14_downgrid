@@ -99,10 +99,12 @@ export interface Customer {
   birthday: string;
   description: string;
 }
-export type ConsoleType = "ps5" | "ps4" | "xbox" | "copy";
+export type ConsoleType = "ps5" | "ps4" | "xbox" | "copy" | "ps5Copy";
 export interface StoreOrder {
   _id: string;
-  list: string[];
+  list: GameItem[];
+   totalSize?: number;
+  totalPrice?: number;
   price: number | null;
   customer?: Customer | string;
   customerId?: string;
@@ -118,9 +120,10 @@ export interface StoreOrder {
 export type storeOrder = StoreOrder;
 
 export interface GameItem {
-  _id: string;
+  _id?: string;
   name: string;
-  platform?: string;
+  size: number;
+  price: number;
 }
 
 export interface GameList {
@@ -276,4 +279,30 @@ export interface BlogPost {
   updatedAt: string;
   metaDescription?: string;
   focusKeyword?: string[];
+}
+
+export type CustomerOrderStatus =
+  | "pending"
+  | "confirmed"
+  | "rejected"
+  | "completed";
+
+export interface CustomerOrderProduct {
+  name: string;
+  platform?: string;
+  price?: number;
+  size?: number;
+}
+
+export interface CustomerOrder {
+  _id: string;
+  customerName: string;
+  phone: string;
+  address: string;
+  message?: string;
+  products: CustomerOrderProduct[];
+  totalPrice: number;
+  status: CustomerOrderStatus;
+  createdAt: string;
+  updatedAt: string;
 }

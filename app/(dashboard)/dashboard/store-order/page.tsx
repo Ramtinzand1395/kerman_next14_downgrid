@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, Gamepad2, Package, Plus, SendHorizonal } from "lucide-react";
+import {
+  AlertCircle,
+  Gamepad2,
+  Package,
+  Plus,
+  SendHorizonal,
+} from "lucide-react";
 import { toast } from "react-toastify";
 
 import { storeOrder } from "@/types";
@@ -14,6 +20,7 @@ type OrdersByConsole = {
   ps4: storeOrder[];
   xbox: storeOrder[];
   copy: storeOrder[];
+  ps5Copy: storeOrder[];
 };
 
 const initialOrders: OrdersByConsole = {
@@ -21,6 +28,7 @@ const initialOrders: OrdersByConsole = {
   ps4: [],
   xbox: [],
   copy: [],
+  ps5Copy: [],
 };
 
 const consoleSections: Array<{
@@ -29,9 +37,14 @@ const consoleSections: Array<{
   accent: string;
 }> = [
   { key: "ps5", title: "پلی‌استیشن 5", accent: "border-indigo-200" },
+  {
+    key: "ps5Copy",
+    title: "پلی استیشن 5 کپی خور",
+    accent: "border-orange-200",
+  },
   { key: "ps4", title: "پلی‌استیشن 4", accent: "border-sky-200" },
+  { key: "copy", title: "پلی استیشن 4 کپی خور", accent: "border-amber-200" },
   { key: "xbox", title: "Xbox", accent: "border-emerald-200" },
-  { key: "copy", title: "کپی‌خور", accent: "border-amber-200" },
 ];
 
 export default function StoreOrder() {
@@ -56,6 +69,7 @@ export default function StoreOrder() {
           ps4: data.ps4 || [],
           xbox: data.xbox || [],
           copy: data.copy || [],
+          ps5Copy: data.ps5Copy || [],
         });
       } catch (err) {
         console.error(err);

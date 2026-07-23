@@ -4,7 +4,9 @@ import {
   ShieldCheck,
   User2Icon,
   WalletCards,
+  FilePlus,
 } from "lucide-react";
+import Link from "next/link";
 
 export default function Sidebar() {
   return (
@@ -43,8 +45,15 @@ export default function Sidebar() {
             باشگاه مشتریان
           </span>
         </button>
+        <button className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-right text-sm text-slate-700 hover:border-indigo-300 transition-colors">
+          <Link href="/my-profile?step=6">
+            <span className="flex items-center gap-2">
+              <FilePlus className="w-4 h-4 text-fuchsia-500" />
+              ثبت نوبت نصب بازی
+            </span>
+          </Link>
+        </button>
       </div>
-
       <button className="mt-2 w-full rounded-xl bg-indigo-600 text-white py-3 text-sm font-medium hover:bg-indigo-700 transition-colors">
         <span className="inline-flex items-center gap-2">
           <Gift className="w-4 h-4" />

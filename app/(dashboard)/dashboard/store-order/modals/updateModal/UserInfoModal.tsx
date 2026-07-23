@@ -15,6 +15,8 @@ type OrdersByConsole = {
   ps4: storeOrder[];
   xbox: storeOrder[];
   copy: storeOrder[];
+  ps5Copy: storeOrder[];
+
 };
 
 interface UserInfoModalProps {

@@ -9,6 +9,7 @@ import "@/model/Comment";
 import "@/model/Product";
 import "@/model/ContactMessage";
 import "@/model/User";
+import "@/model/CustomerGameOrder";
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "superadmin")
@@ -63,22 +64,12 @@ export async function GET() {
         });
       }
 
-      if (n.type === "order") {
+      if (n.type === "customerGameOrder") {
         return Notification.populate(n, {
           path: "target.item",
-          populate: [
-            {
-              path: "user",
-              select: "username mobile",
-            },
-            {
-              path: "items.product",
-              select: "title mainImage price",
-            },
-          ],
+          model: "CustomerGameOrder",
         });
       }
-
       if (n.type === "contact") {
         return Notification.populate(n, {
           path: "target.item",

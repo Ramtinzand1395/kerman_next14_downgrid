@@ -47,6 +47,7 @@ function getPersianConsoleName(consoleType?: string) {
   if (!consoleType) return "";
   if (consoleType === "ps4" || consoleType === "copy") return "پلی استیشن ۴";
   if (consoleType === "ps5") return "پلی استیشن ۵";
+  if (consoleType === "ps5Copy") return "پلی استیشن ۵";
   if (consoleType === "xbox") return "ایکس باکس";
   return consoleType;
 }
@@ -100,16 +101,16 @@ export async function POST(req: Request) {
   const { list, price, customerId, description, consoleType, deliveryStatus } =
     body;
   const persianDate = moment().format("jYYYY/jMM/jDD HH:mm");
-const normalizedList = normalizeOrderList(list);
 
-  if (!normalizedList.length) {
+  if (!Array.isArray(list) || list.length === 0) {
     return NextResponse.json(
       { error: "حداقل یک بازی باید انتخاب شود" },
       { status: 400 },
     );
   }
+
   const order = await StoreOrder.create({
-    list: normalizedList,
+    list,
     price,
     customer: customerId,
     description,
@@ -118,7 +119,6 @@ const normalizedList = normalizeOrderList(list);
   });
 
   await order.populate("customer");
-
   // ارسال پیامک
   const [datePart, timePart] = persianDate.split(" ");
   const customer = order.customer;
@@ -127,6 +127,7 @@ const normalizedList = normalizeOrderList(list);
 
   smsResponse = await senSMS({
     bodyId: 323165,
+    // bodyId: 323167,
     to: customer.mobile,
     args: [
       customer.sex === "مرد" ? "جناب آقای" : "سرکار خانم",

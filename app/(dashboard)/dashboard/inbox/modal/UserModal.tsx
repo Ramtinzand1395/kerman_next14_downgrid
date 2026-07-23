@@ -26,7 +26,6 @@ interface UserModalProps {
 
 const UserModal = ({ selected, closeModal }: UserModalProps) => {
   const user = selected.target.item;
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div

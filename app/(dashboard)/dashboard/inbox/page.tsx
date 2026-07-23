@@ -16,9 +16,16 @@ import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import CommentModal from "./modal/CommentModal";
 import UserModal from "./modal/UserModal";
-import { ContactMessage, Notification, User, Comment } from "@/types/notifType";
+import {
+  ContactMessage,
+  Notification,
+  User,
+  Comment,
+  CustomerGameOrder,
+} from "@/types/notifType";
 import OrderModal from "./modal/OrderModal";
 import ContactModal from "./modal/ContactModal";
+import CustomerGameOrderModal from "./modal/CustomerGameOrderModal";
 import { Order } from "@/types";
 import { toPersianDate } from "@/helpers/toPersianDate";
 
@@ -111,7 +118,13 @@ export default function AdminNotifications() {
   } {
     return notification.target.kind === "ContactMessage";
   }
-
+  function isCustomerGameOrderNotification(
+    notification: Notification,
+  ): notification is Notification & {
+    target: { kind: "CustomerGameOrder"; item: CustomerGameOrder };
+  } {
+    return notification.target.kind === "CustomerGameOrder";
+  }
   const unreadCount = useMemo(
     () => notifications.filter((item) => !item.isRead).length,
     [notifications],
@@ -142,6 +155,10 @@ export default function AdminNotifications() {
     user: { label: "کاربر", icon: <UserPlus size={14} /> },
     payment: { label: "پرداخت", icon: <Package size={14} /> },
     contact: { label: "تماس با ما", icon: <MessageCircle size={14} /> },
+    customerGameOrder: {
+      label: "سفارش مشتری",
+      icon: <Package size={14} />,
+    },
   };
 
   return (
@@ -308,6 +325,9 @@ export default function AdminNotifications() {
 
       {isModalOpen && selected && isContactNotification(selected) && (
         <ContactModal selected={selected} closeModal={closeModal} />
+      )}
+      {isModalOpen && selected && isCustomerGameOrderNotification(selected) && (
+        <CustomerGameOrderModal selected={selected} closeModal={closeModal} />
       )}
     </div>
   );

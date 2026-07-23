@@ -8,14 +8,15 @@ import GameListTable from "./GameListTable";
 import { GameList } from "@/types";
 
 const LIMIT = 20;
-const PLATFORM_OPTIONS = ["all", "ps5", "ps4", "xbox", "copy"];
+const PLATFORM_OPTIONS = ["all", "ps5", "ps5Copy", "ps4", "xbox", "copy"];
 
 const platformLabel: Record<string, string> = {
   all: "همه پلتفرم‌ها",
   ps5: "PS5",
+  ps5Copy: "پلی استیشن 5 کپی خور",
   ps4: "PS4",
+  copy: "پلی استیشن 4 کپی خور",
   xbox: "Xbox",
-  copy: "کپی خور",
 };
 
 export default function AllGameList() {
@@ -27,7 +28,9 @@ export default function AllGameList() {
 
   // pagination per platform
   const [pageMap, setPageMap] = useState<Record<string, number>>({});
-  const [totalPagesMap, setTotalPagesMap] = useState<Record<string, number>>({});
+  const [totalPagesMap, setTotalPagesMap] = useState<Record<string, number>>(
+    {},
+  );
 
   const fetchGameLists = useCallback(async () => {
     try {
@@ -100,7 +103,9 @@ export default function AllGameList() {
     <section className="mx-2 rounded-2xl bg-white p-4 shadow-sm md:p-6">
       <div className="flex flex-col gap-4 border-b border-gray-100 pb-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-xl font-black text-gray-800">مدیریت لیست بازی‌ها</h1>
+          <h1 className="text-xl font-black text-gray-800">
+            مدیریت لیست بازی‌ها
+          </h1>
           <p className="mt-1 text-sm text-gray-500">
             بازی‌ها را بر اساس پلتفرم مدیریت، جستجو و صفحه‌بندی کنید.
           </p>
@@ -181,13 +186,15 @@ export default function AllGameList() {
               </button>
 
               <span className="rounded-lg bg-white px-3 py-1 text-xs text-gray-600">
-                {pageMap[list.platform] || 1} / {totalPagesMap[list.platform] || 1}
+                {pageMap[list.platform] || 1} /{" "}
+                {totalPagesMap[list.platform] || 1}
               </span>
 
               <button
                 className="rounded-lg border border-gray-200 bg-white px-3 py-1 text-xs text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={
-                  (pageMap[list.platform] || 1) >= (totalPagesMap[list.platform] || 1)
+                  (pageMap[list.platform] || 1) >=
+                  (totalPagesMap[list.platform] || 1)
                 }
                 onClick={() =>
                   handlePageChange(
@@ -204,7 +211,10 @@ export default function AllGameList() {
       </div>
 
       {openModal && (
-        <AddGameListModal setOpenModal={setOpenModal} onAdded={fetchGameLists} />
+        <AddGameListModal
+          setOpenModal={setOpenModal}
+          onAdded={fetchGameLists}
+        />
       )}
     </section>
   );

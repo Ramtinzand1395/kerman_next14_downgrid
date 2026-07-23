@@ -7,6 +7,14 @@ const gameListSchema = new mongoose.Schema({
         type: String,
         required: true,
       },
+      size: {
+        type: Number, // مثلا حجم به گیگ
+        required: false,
+      },
+      price: {
+        type: Number,
+        required: false,
+      },
     },
   ],
   platform: {
@@ -14,5 +22,5 @@ const gameListSchema = new mongoose.Schema({
   },
 });
 
-export default 
-  mongoose.models.GameList || mongoose.model("GameList", gameListSchema);
+export default mongoose.models.GameList ||
+  mongoose.model("GameList", gameListSchema);

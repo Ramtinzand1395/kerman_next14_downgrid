@@ -9,7 +9,7 @@ import { orderSchema } from "@/validations/CustomerAppValidation";
 import GameDropdown from "../addorder/GameDropdown";
 
 interface UpdateStoreOrderProps {
-  closeModal: () => void;
+  closeModal?: () => void;
   userOrder?: storeOrder | null;
   setUserOrder: React.Dispatch<React.SetStateAction<storeOrder | null>>;
   onOrderUpdated?: (updatedOrder: storeOrder) => void;
@@ -22,6 +22,7 @@ const UpdateStoreOrder = ({
 }: UpdateStoreOrderProps) => {
   const [isEditingOrder, setIsEditingOrder] = useState(false);
 
+  /* ================= change handler ================= */
   const handleOrderChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -29,9 +30,11 @@ const UpdateStoreOrder = ({
     field: keyof storeOrder,
   ) => {
     const value = field === "price" ? Number(e.target.value) : e.target.value;
+
     setUserOrder((prev) => (prev ? { ...prev, [field]: value } : prev));
   };
 
+  /* ================= save ================= */
   const handleSaveOrder = async (orderId: string) => {
     try {
       await orderSchema.validate(userOrder, { abortEarly: false });
@@ -44,13 +47,13 @@ const UpdateStoreOrder = ({
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-      const updatedOrder = (data?.data as storeOrder) || userOrder;
-      if (updatedOrder) {
-        setUserOrder(updatedOrder);
-        onOrderUpdated?.(updatedOrder);
-      }
 
-      toast.success(data.message || "سفارش با موفقیت ویرایش شد.");
+      const updatedOrder = (data?.data as storeOrder) || userOrder;
+
+      setUserOrder(updatedOrder);
+      onOrderUpdated?.(updatedOrder);
+
+      toast.success(data.message || "سفارش ویرایش شد");
       setIsEditingOrder(false);
     } catch (err) {
       console.error(err);
@@ -58,28 +61,34 @@ const UpdateStoreOrder = ({
     }
   };
 
+  /* ================= UI ================= */
   return (
-    <section className="space-y-4 rounded-xl border border-slate-200 p-4">
+    <section className="space-y-4 rounded-xl border p-4">
+      {/* header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-bold text-slate-800">جزئیات سفارش</h3>
+        <h3 className="font-bold">جزئیات سفارش</h3>
+
         <button
-          onClick={() => setIsEditingOrder((prev) => !prev)}
-          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs"
+          onClick={() => setIsEditingOrder((p) => !p)}
+          className="flex items-center gap-1 rounded-lg border px-3 py-1 text-xs"
         >
-          <Pencil className="h-3.5 w-3.5" />
-          {isEditingOrder ? "لغو ویرایش" : "ویرایش"}
+          <Pencil className="h-3 w-3" />
+          {isEditingOrder ? "لغو" : "ویرایش"}
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <label className="space-y-1 text-sm text-slate-600">
-          <span>دستگاه</span>
+      {/* form */}
+      <div className="grid gap-3 md:grid-cols-3">
+        {/* console */}
+        <div>
+          <label className="text-sm">دستگاه</label>
+
           {isEditingOrder ? (
             <select
-              title="ویرایش دستگاه"
+              title="consoleType"
               value={userOrder?.consoleType || ""}
               onChange={(e) => handleOrderChange(e, "consoleType")}
-              className="h-10 w-full rounded-lg border border-slate-300 px-2"
+              className="w-full rounded-lg border p-2"
             >
               <option value="">انتخاب کنید</option>
               <option value="ps4">PS4</option>
@@ -90,91 +99,94 @@ const UpdateStoreOrder = ({
           ) : (
             <p>{userOrder?.consoleType || "---"}</p>
           )}
-        </label>
+        </div>
 
-        <label className="space-y-1 text-sm text-slate-600">
-          <span>قیمت</span>
+        {/* price */}
+        <div>
+          <label className="text-sm">قیمت</label>
+
           {isEditingOrder ? (
             <input
-              title="ویرایش قیمت"
+              title="price"
               type="number"
               value={userOrder?.price || 0}
               onChange={(e) => handleOrderChange(e, "price")}
-              className="h-10 w-full rounded-lg border border-slate-300 px-2"
+              className="w-full rounded-lg border p-2"
             />
           ) : (
-            <p>{userOrder?.price?.toLocaleString("fa-IR") || "۰"} تومان</p>
+            <p>{userOrder?.price?.toLocaleString("fa-IR") || 0} تومان</p>
           )}
-        </label>
+        </div>
 
-        <label className="space-y-1 text-sm text-slate-600">
-          <span>توضیحات</span>
+        {/* description */}
+        <div>
+          <label className="text-sm">توضیحات</label>
+
           <textarea
-            title="ویرایش توضیحات"
-            className="min-h-24 w-full rounded-lg border border-slate-300 p-2"
-            readOnly={!isEditingOrder}
+            title="caption"
             value={userOrder?.description || ""}
+            readOnly={!isEditingOrder}
             onChange={(e) => handleOrderChange(e, "description")}
+            className="w-full rounded-lg border p-2"
           />
-        </label>
+        </div>
       </div>
 
-      {userOrder && (
-        <div className="space-y-2">
-          <label className="text-sm text-slate-600">لیست بازی‌ها</label>
+      {/* games */}
+      <div>
+        <label className="text-sm">لیست بازی‌ها</label>
 
-          {isEditingOrder && (
-            <GameDropdown
-              Selectedgames={userOrder}
-              setSelectedgames={setUserOrder}
-            />
+        {isEditingOrder && (
+          <GameDropdown
+            Selectedgames={userOrder}
+            setSelectedgames={setUserOrder}
+          />
+        )}
+
+        <div className="mt-2 grid gap-2 md:grid-cols-3">
+          {userOrder?.list?.length ? (
+            userOrder.list.map((game) => (
+              <div
+                key={game._id}
+                className="flex items-center justify-between rounded-lg border p-2 text-sm"
+              >
+                {/* FIX HERE */}
+                <span>{game.name}</span>
+
+                {isEditingOrder && (
+                  <button
+                    title="close"
+                    onClick={() =>
+                      setUserOrder((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              list: prev.list.filter((g) => g._id !== game._id),
+                            }
+                          : prev,
+                      )
+                    }
+                    className="text-red-500"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-gray-400">لیست خالی است</p>
           )}
-
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
-            {userOrder?.list?.length ? (
-              userOrder.list.map((game, index) => (
-                <div
-                  key={`${game}-${index}`}
-                  className="flex items-center justify-between rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
-                >
-                  <span>{game}</span>
-
-                  {isEditingOrder && (
-                    <button
-                      onClick={() =>
-                        setUserOrder((prev) =>
-                          prev
-                            ? {
-                                ...prev,
-                                list: prev.list.filter((_, i) => i !== index),
-                              }
-                            : prev,
-                        )
-                      }
-                      className="text-rose-500"
-                      title="حذف بازی"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              ))
-            ) : (
-              <span className="text-sm text-slate-400">
-                لیست بازی‌ها خالی است.
-              </span>
-            )}
-          </div>
         </div>
-      )}
+      </div>
 
+      {/* save */}
       {isEditingOrder && userOrder?._id && (
         <button
           onClick={() => handleSaveOrder(userOrder._id)}
-          className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm text-white hover:bg-emerald-700"
+          className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white"
         >
           <Save className="h-4 w-4" />
-          ذخیره تغییرات سفارش
+          ذخیره
         </button>
       )}
     </section>
