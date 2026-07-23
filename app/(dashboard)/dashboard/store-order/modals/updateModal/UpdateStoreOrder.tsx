@@ -10,7 +10,7 @@ import GameDropdown from "../addorder/GameDropdown";
 
 interface UpdateStoreOrderProps {
   closeModal?: () => void;
-  userOrder?: storeOrder | null;
+  userOrder: storeOrder | null;
   setUserOrder: React.Dispatch<React.SetStateAction<storeOrder | null>>;
   onOrderUpdated?: (updatedOrder: storeOrder) => void;
 }
