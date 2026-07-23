@@ -10,6 +10,12 @@ import { customerGameOrderSchema } from "@/validations/validation";
 import { stripHtmlTags } from "@/helpers/stripHtmlTags";
 import mongoose from "mongoose";
 
+ 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const runtime = "nodejs";
+export const fetchCache = "force-no-store";
+
 /* ================= POST ================= */
 // مسیر ثبت سفارش بازی مشتری — فقط کاربران واردشده
 export async function POST(req: NextRequest) {
@@ -26,10 +32,7 @@ export async function POST(req: NextRequest) {
 
     const user = await User.findById(session.user.id);
     if (!user) {
-      return NextResponse.json(
-        { error: "کاربر یافت نشد." },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "کاربر یافت نشد." }, { status: 404 });
     }
 
     const body = await req.json();
@@ -138,6 +141,36 @@ export async function POST(req: NextRequest) {
     console.error("Customer order creation failed:", error);
     return NextResponse.json(
       { error: "خطایی در ثبت سفارش رخ داد. لطفاً دوباره تلاش کنید." },
+      { status: 500 },
+    );
+  }
+}
+
+/* ================= GET ================= */
+// لیست سفارش‌های بازی کاربر واردشده — فقط سفارش‌های خود کاربر برگردانده می‌شود
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "برای مشاهده سفارش‌ها ابتدا وارد شوید." },
+        { status: 401 },
+      );
+    }
+
+    await dbConnect();
+
+    // فیلتر بر اساس کاربر فعلی — هیچ کاربری به سفارش کاربر دیگر دسترسی ندارد
+    const orders = await CustomerGameOrder.find({ user: session.user.id })
+      .populate("addressRef")
+      .lean()
+      .sort({ createdAt: -1 });
+
+    return NextResponse.json(orders);
+  } catch (error) {
+    console.error("Fetch customer game orders failed:", error);
+    return NextResponse.json(
+      { error: "خطایی در دریافت سفارش‌ها رخ داد." },
       { status: 500 },
     );
   }

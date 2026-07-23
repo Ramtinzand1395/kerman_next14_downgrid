@@ -6,7 +6,7 @@ import MyAddresses from "./MyAddresses";
 import MyComments from "./MyComments";
 import MyOrders from "./MyOrders";
 import GameOrderSelector from "./GameOrderSelector";
-
+import MyGameOrders from "./MyGameOrders";
 interface MyProfilePageProps {
   searchParams?: { step?: string };
 }
@@ -32,6 +32,8 @@ export default async function MyProfile({ searchParams }: MyProfilePageProps) {
             {activeStep === 4 && <MyComments />}
             {activeStep === 5 && <MyOrders />}
             {activeStep === 6 && <GameOrderSelector />}
+            {activeStep === 7 && <MyGameOrders />}
+
           </div>
         </section>
       </div>
