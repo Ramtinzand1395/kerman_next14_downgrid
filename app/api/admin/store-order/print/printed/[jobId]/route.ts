@@ -1,54 +1,18 @@
-// // /app/api/admin/store-order/printed/[jobId]/route.ts
-
-// import { NextResponse } from "next/server";
-// import { globalPrintQueue } from "../../route"; // ایمپورت کردن صف از فایل قبلی
-
-// export async function GET(
-//   req: Request,
-//   { params }: { params: { jobId: string } }
-// ) {
-//   try {
-//     const jobId = params.jobId;
-
-//     // پیدا کردن ایندکس آیتم در آرایه
-//     const jobIndex = globalPrintQueue.findIndex((job) => job.id === jobId);
-
-//     if (jobIndex !== -1) {
-//       // حذف آیتم از صف برای همیشه
-//       globalPrintQueue.splice(jobIndex, 1);
-      
-//       console.log(`Job ${jobId} removed from queue successfully.`);
-      
-//       return NextResponse.json({
-//         success: true,
-//         message: "کار با موفقیت از صف حذف شد.",
-//       });
-//     }
-
-//     return NextResponse.json(
-//       { success: false, message: "Job not found" },
-//       { status: 404 }
-//     );
-//   } catch (err: any) {
-//     return NextResponse.json({ error: err.message }, { status: 500 });
-//   }
-// }
-
 // /app/api/admin/store-order/printed/[jobId]/route.ts
 
 import { NextResponse } from "next/server";
-import { globalPrintQueue } from "../../route";
+import { globalPrintQueue } from "@/lib/printQueue";
 
 async function handleJobRemoval(jobId: string) {
   const jobIndex = globalPrintQueue.findIndex((job) => job.id === jobId);
 
   if (jobIndex !== -1) {
-    // حذف آیتم از صف
+    // حذف آیتم از صف مشترک
     globalPrintQueue.splice(jobIndex, 1);
 
     return NextResponse.json({
       success: true,
-      message: `Job ${jobId} with success deleted from queue.`,
+      message: `Job ${jobId} deleted from queue successfully.`,
     });
   }
 
@@ -58,7 +22,7 @@ async function handleJobRemoval(jobId: string) {
   );
 }
 
-// پشتیبانی از متد DELETE (روش اصلی برای ویندوز)
+// متد DELETE
 export async function DELETE(
   _req: Request,
   { params }: { params: { jobId: string } }
@@ -70,7 +34,7 @@ export async function DELETE(
   }
 }
 
-// پشتیبانی از متد GET (جهت تست آسان‌تر در مرورگر)
+// متد GET جهت تست آسان در مرورگر
 export async function GET(
   _req: Request,
   { params }: { params: { jobId: string } }
