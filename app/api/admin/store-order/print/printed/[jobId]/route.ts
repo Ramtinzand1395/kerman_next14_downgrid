@@ -1,46 +1,41 @@
-// /app/api/admin/store-order/printed/[jobId]/route.ts
-
 import { NextResponse } from "next/server";
 import { globalPrintQueue } from "@/lib/printQueue";
 
-async function handleJobRemoval(jobId: string) {
-  const jobIndex = globalPrintQueue.findIndex((job) => job.id === jobId);
+async function removeJob(jobId: string) {
+  const index = globalPrintQueue.findIndex((job) => job.id === jobId);
 
-  if (jobIndex !== -1) {
-    // حذف آیتم از صف مشترک
-    globalPrintQueue.splice(jobIndex, 1);
-
-    return NextResponse.json({
-      success: true,
-      message: `Job ${jobId} deleted from queue successfully.`,
-    });
+  if (index === -1) {
+    return NextResponse.json(
+      { success: false, message: "Job not found" },
+      { status: 404 }
+    );
   }
 
-  return NextResponse.json(
-    { success: false, message: "Job not found or already deleted." },
-    { status: 404 }
-  );
+  globalPrintQueue.splice(index, 1);
+
+  return NextResponse.json({
+    success: true,
+    message: "Job deleted successfully",
+  });
 }
 
-// متد DELETE
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { jobId: string } }
-) {
-  try {
-    return await handleJobRemoval(params.jobId);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
-}
-
-// متد GET جهت تست آسان در مرورگر
 export async function GET(
   _req: Request,
   { params }: { params: { jobId: string } }
 ) {
   try {
-    return await handleJobRemoval(params.jobId);
+    return await removeJob(params.jobId);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: { jobId: string } }
+) {
+  try {
+    return await removeJob(params.jobId);
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
