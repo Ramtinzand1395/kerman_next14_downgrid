@@ -15,6 +15,10 @@ const gameListSchema = new mongoose.Schema({
         type: Number,
         required: false,
       },
+      storage: {
+        type: String,
+        required: false,
+      },
     },
   ],
   platform: {

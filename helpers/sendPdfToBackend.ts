@@ -18,7 +18,7 @@ export const sendPdfToBackend = async (
       ? userOrder.list.map((item: any) => ({
           name: item?.name || "بدون نام",
           sizeGB: item?.size || 0,
-          storage: item?.price || 0, // در صورت نیاز به ذخیره قیمت تک تک بازی‌ها
+          storage: item?.storage || 0, // در صورت نیاز به ذخیره قیمت تک تک بازی‌ها
         }))
       : [];
 
