@@ -1,13 +1,14 @@
+import dbConnect from "@/lib/mongodb";
+import PrintQueue from "@/model/PrintQueue";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/options";
-import { globalPrintQueue, type PrintJob } from "@/lib/printQueue";
-
-export const runtime = "nodejs";
 
 export async function GET() {
   try {
-    const job = globalPrintQueue[0];
+    await dbConnect();
+
+    const job = await PrintQueue.findOne({
+      status: "pending",
+    }).sort({ createdAt: 1 });
 
     if (!job) {
       return NextResponse.json({
@@ -21,7 +22,7 @@ export async function GET() {
       success: true,
       jobExists: true,
       payload: {
-        id: job.id,
+        id: job._id,
         ...job.payload,
       },
     });
@@ -31,27 +32,21 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-
-  if (!["admin", "superadmin"].includes(session?.user?.role ?? "")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
-
   try {
+    await dbConnect();
+
     const body = await req.json();
 
-    const newJob: PrintJob = {
-      id: `job_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    const job = await PrintQueue.create({
       payload: body,
-    };
-
-    globalPrintQueue.push(newJob);
+      status: "pending",
+    });
 
     return NextResponse.json({
       success: true,
       payload: {
-        id: newJob.id,
-        ...body,
+        id: job._id,
+        ...job.payload,
       },
     });
   } catch (err: any) {
