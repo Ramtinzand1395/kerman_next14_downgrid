@@ -52,7 +52,7 @@ export default function StoreOrder() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSendingSms, setIsSendingSms] = useState(false);
   const [orders, setOrders] = useState<OrdersByConsole>(initialOrders);
-console.log(orders,"orders")
+
   useEffect(() => {
     const fetchOrders = async () => {
       setIsLoading(true);

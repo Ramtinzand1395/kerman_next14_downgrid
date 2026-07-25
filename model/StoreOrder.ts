@@ -7,6 +7,7 @@ const storeOrderSchema = new mongoose.Schema(
         name: { type: String, required: true },
         price: { type: Number, required: true },
         size: { type: Number, required: true },
+        storage: { type: String, required: true },
       },
     ],
     price: {
