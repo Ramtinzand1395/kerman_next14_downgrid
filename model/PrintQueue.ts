@@ -8,12 +8,6 @@ const printQueueSchema = new mongoose.Schema(
       type: Object,
       required: true,
     },
-    status: {
-      type: String,
-      enum: ["pending", "printing", "done"],
-      default: "pending",
-      index: true,
-    },
   },
   {
     timestamps: true,

@@ -28,7 +28,7 @@ export const sendPdfToBackend = async (
       gamesList.reduce((acc, game) => acc + game.sizeGB, 0);
 
     const printPayload = {
-      id: userOrder._id,
+      // id: userOrder._id,
       receiptType: userOrder.consoleType || "store_order",
       fullName: customer
         ? `${customer.name || ""} ${customer.lastName || ""}`.trim()

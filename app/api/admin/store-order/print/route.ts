@@ -6,9 +6,7 @@ export async function GET() {
   try {
     await dbConnect();
 
-    const job = await PrintQueue.findOne({
-      status: "pending",
-    }).sort({ createdAt: 1 });
+    const job = await PrintQueue.find();
 
     if (!job) {
       return NextResponse.json({
@@ -21,10 +19,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       jobExists: true,
-      payload: {
-        id: job._id,
-        ...job.payload,
-      },
+      payload: job,
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -39,15 +34,10 @@ export async function POST(req: Request) {
 
     const job = await PrintQueue.create({
       payload: body,
-      status: "pending",
     });
 
     return NextResponse.json({
       success: true,
-      payload: {
-        id: job._id,
-        ...job.payload,
-      },
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
