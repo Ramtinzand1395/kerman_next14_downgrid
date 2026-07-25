@@ -22,46 +22,54 @@ const filterItems = (items: GameListDoc["items"], search: string) => {
 };
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user)
-    return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
-  if (session.user.role !== "superadmin" && session.user.role !== "admin")
-    return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
-
-  await dbConnect();
-
   try {
+    await dbConnect();
+
     const { searchParams } = new URL(req.url);
-    const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
-    const limit = Math.max(parseInt(searchParams.get("limit") || "20", 10), 1);
-    const platform = normalizePlatform(searchParams.get("platform"));
-    const search = (searchParams.get("search") || "").trim();
 
-    const query = platform ? { platform } : {};
-    const docs = (await GameList.find(query).lean()) as GameListDoc[];
+    const search = searchParams.get("search") || "";
+    const platform = searchParams.get("platform") || "";
+    const limit = Number(searchParams.get("limit")) || 100;
 
-    const gameList = docs.map((doc) => {
-      const filteredItems = filterItems(doc.items || [], search);
-      const start = (page - 1) * limit;
-      const paginatedItems = filteredItems.slice(start, start + limit);
+    const filter: any = {};
 
-      return {
-        _id: (doc as { _id?: string })._id,
-        platform: doc.platform,
-        items: paginatedItems,
-      };
+    if (platform) {
+      filter.platform = platform;
+    }
+
+    const gameList = await GameList.find(filter)
+      .select("platform items")
+      .lean();
+
+    let result = gameList;
+
+    if (search) {
+      const keyword = search.toLowerCase();
+
+      result = gameList.map((doc: any) => ({
+        ...doc,
+        items: doc.items.filter((item: any) =>
+          item.name.toLowerCase().includes(keyword),
+        ),
+      }));
+    }
+
+    return NextResponse.json({
+      success: true,
+      gameList: result,
     });
-
-    const totalPages = docs.reduce<Record<string, number>>((acc, doc) => {
-      const filteredItems = filterItems(doc.items || [], search);
-      acc[doc.platform] = Math.max(Math.ceil(filteredItems.length / limit), 1);
-      return acc;
-    }, {});
-
-    return NextResponse.json({ gameList, totalPages, currentPage: page });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ message: "server error" }, { status: 500 });
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: "خطا در دریافت بازی‌ها",
+      },
+      {
+        status: 500,
+      },
+    );
   }
 }
 
@@ -88,7 +96,7 @@ export async function POST(req: NextRequest) {
     const updated = await GameList.findOneAndUpdate(
       { platform },
       { $push: { items: { name } } },
-       { returnDocument: 'after', upsert: true },
+      { returnDocument: "after", upsert: true },
     );
 
     return NextResponse.json({
@@ -159,7 +167,7 @@ export async function DELETE(req: NextRequest) {
     await GameList.findOneAndUpdate(
       { platform: normalizePlatform(platform), "items._id": itemId },
       { $pull: { items: { _id: itemId } } },
-      { returnDocument: 'after' },
+      { returnDocument: "after" },
     );
 
     return NextResponse.json({
