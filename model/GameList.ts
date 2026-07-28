@@ -1,30 +1,54 @@
 import mongoose from "mongoose";
 
-const gameListSchema = new mongoose.Schema({
-  items: [
-    {
-      name: {
-        type: String,
-        required: true,
-      },
-      size: {
-        type: Number, // مثلا حجم به گیگ
-        required: false,
-      },
-      price: {
-        type: Number,
-        required: false,
-      },
-      storage: {
-        type: String,
-        required: false,
-      },
+const gameItemSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
     },
-  ],
-  platform: {
-    type: String,
+
+    size: {
+      type: Number,
+      default: null,
+    },
+
+    price: {
+      type: Number,
+      default: null,
+    },
+
+    storage: {
+      type: String,
+      default: null,
+      trim: true,
+    },
   },
-});
+
+  {
+    _id: true,
+  },
+);
+
+const gameListSchema = new mongoose.Schema(
+  {
+    platform: {
+      type: String,
+
+      required: true,
+
+      unique: true,
+
+      index: true,
+    },
+
+    items: [gameItemSchema],
+  },
+
+  {
+    timestamps: true,
+  },
+);
 
 export default mongoose.models.GameList ||
   mongoose.model("GameList", gameListSchema);

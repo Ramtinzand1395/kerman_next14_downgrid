@@ -1,112 +1,384 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 import { X } from "lucide-react";
-import { useState } from "react";
+
 import { toast } from "react-toastify";
 
-interface AddOrderModalProps {
-  setOpenModal: (value: boolean) => void;
-  onAdded: () => Promise<void>;
+import { GameItem } from "@/types";
+
+interface Props {
+  platform: string;
+
+  editGame: GameItem | null;
+
+  close: () => void;
+
+  refresh: () => Promise<void>;
 }
 
-const AddGameListModal = ({ setOpenModal, onAdded }: AddOrderModalProps) => {
-  const [submitting, setSubmitting] = useState(false);
-  const [newGame, setNewGame] = useState({
-    platform: "",
+const PLATFORM_OPTIONS = [
+  {
+    value: "ps5",
+    label: "PS5",
+  },
+
+  {
+    value: "ps5Copy",
+    label: "PS5 کپی خور",
+  },
+
+  {
+    value: "ps4",
+    label: "PS4",
+  },
+
+  {
+    value: "copy",
+    label: "PS4 کپی خور",
+  },
+
+  {
+    value: "xbox",
+    label: "Xbox",
+  },
+];
+
+export default function GameFormModal({
+  platform,
+
+  editGame,
+
+  close,
+
+  refresh,
+}: Props) {
+  const [loading, setLoading] = useState(false);
+
+  const [form, setForm] = useState({
+    platform,
+
     name: "",
+
+    size: "",
+
+    price: "",
+
+    storage: "",
   });
 
-  const closeModal = () => {
-    if (submitting) return;
-    setOpenModal(false);
-  };
+  useEffect(() => {
+    if (editGame) {
+      setForm({
+        platform,
 
-  const addGameList = async () => {
-    if (!newGame.platform || !newGame.name.trim()) {
-      toast.warning("نام بازی و پلتفرم را کامل کنید");
+        name: editGame.name,
+
+        size: String(editGame.size || ""),
+
+        price: String(editGame.price || ""),
+
+        storage: editGame.storage || "",
+      });
+    }
+  }, [editGame, platform]);
+
+  // const submit = async () => {
+  //   if (!form.name.trim()) {
+  //     toast.warning("نام بازی الزامی است");
+
+  //     return;
+  //   }
+
+  //   try {
+  //     setLoading(true);
+
+  //     const method = editGame ? "PUT" : "POST";
+
+  //     const body = editGame
+  //       ? {
+  //           platform,
+
+  //           itemId: editGame._id,
+
+  //           ...form,
+  //         }
+  //       : form;
+
+  //     const res = await fetch("/api/admin/store-order/game-list", {
+  //       method,
+
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+
+  //       body: JSON.stringify(body),
+  //     });
+
+  //     if (!res.ok) throw new Error();
+
+  //     toast.success(editGame ? "ویرایش شد" : "بازی اضافه شد");
+
+  //     await refresh();
+
+  //     close();
+  //   } catch (error) {
+  //     console.log(error);
+
+  //     toast.error("عملیات انجام نشد");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const submit = async () => {
+    if (!form.name.trim()) {
+      toast.warning("نام بازی الزامی است");
       return;
     }
 
     try {
-      setSubmitting(true);
+      setLoading(true);
+
+      const method = editGame ? "PUT" : "POST";
+
+      const body = editGame
+        ? {
+            itemId: editGame._id,
+            platform: form.platform,
+            name: form.name.trim(),
+            size: form.size ? Number(form.size) : null,
+            price: form.price ? Number(form.price) : null,
+            storage: form.storage || null,
+          }
+        : {
+            platform: form.platform,
+            name: form.name.trim(),
+            size: form.size ? Number(form.size) : null,
+            price: form.price ? Number(form.price) : null,
+            storage: form.storage || null,
+          };
+
       const res = await fetch("/api/admin/store-order/game-list", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newGame),
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
       });
 
-      if (!res.ok) throw new Error("خطا در افزودن بازی");
       const data = await res.json();
 
-      toast.success(data.message || "بازی با موفقیت اضافه شد");
-      await onAdded();
-      setOpenModal(false);
-    } catch (err) {
-      console.log(err);
-      toast.error("ثبت بازی انجام نشد");
+      if (!res.ok) {
+        throw new Error(data.message || "خطا");
+      }
+
+      toast.success(
+        editGame ? "بازی با موفقیت ویرایش شد" : "بازی با موفقیت اضافه شد",
+      );
+
+      await refresh();
+
+      close();
+    } catch (error) {
+      console.log(error);
+      toast.error("عملیات انجام نشد");
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div
+      className="
+fixed
+inset-0
+z-50
+flex
+items-center
+justify-center
+"
+    >
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={closeModal}
-      ></div>
+        className="
+absolute
+inset-0
+bg-black/50
+backdrop-blur-sm
+"
+        onClick={close}
+      />
 
-      <div className="relative z-50 w-[92vw] max-w-xl rounded-2xl bg-white p-6 shadow-xl">
+      <div
+        className="
+relative
+z-50
+w-[95vw]
+max-w-lg
+rounded-3xl
+bg-white
+p-6
+shadow-xl
+"
+      >
         <button
-          title="close"
-          onClick={closeModal}
-          className="absolute top-4 right-4 text-black hover:text-red-500 transition"
+          onClick={close}
+          className="
+absolute
+left-5
+top-5
+text-gray-500
+hover:text-red-500
+"
         >
-          <X size={18} />
+          <X size={20} />
         </button>
 
-        <h3 className="mb-1 text-lg font-extrabold text-gray-800">
-          افزودن بازی جدید
-        </h3>
-        <p className="mb-5 text-xs text-gray-500">
-          بازی را در پلتفرم صحیح ثبت کنید.
-        </p>
+        <h2
+          className="
+text-xl
+font-black
+text-gray-800
+"
+        >
+          {editGame ? "ویرایش بازی" : "افزودن بازی"}
+        </h2>
 
-        <div className="space-y-3">
+        <div
+          className="
+mt-6
+space-y-4
+"
+        >
           <select
-            title="console"
-            value={newGame.platform}
+            value={form.platform}
+            disabled={!!editGame}
             onChange={(e) =>
-              setNewGame((prev) => ({ ...prev, platform: e.target.value }))
+              setForm({
+                ...form,
+
+                platform: e.target.value,
+              })
             }
-            className="h-11 w-full rounded-lg border border-gray-200 px-3 text-sm"
+            className="
+w-full
+rounded-xl
+border
+p-3
+"
           >
-            <option value="">انتخاب کنسول</option>
-            <option value="ps4">PS4</option>
-            <option value="ps5">PS5</option>
-            <option value="copy">کپی خور</option>
-            <option value="xbox">Xbox</option>
+            {PLATFORM_OPTIONS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
           </select>
 
           <input
-            type="text"
-            placeholder="نام بازی"
-            value={newGame.name}
+            placeholder="
+نام بازی
+"
+            value={form.name}
             onChange={(e) =>
-              setNewGame((prev) => ({ ...prev, name: e.target.value }))
-            }
-            className="h-11 w-full rounded-lg border border-gray-200 px-3 text-sm"
-          />
-        </div>
+              setForm({
+                ...form,
 
-        <button
-          disabled={submitting}
-          className="mt-5 rounded-lg bg-emerald-600 px-5 py-2 text-sm font-bold text-white disabled:opacity-50"
-          onClick={addGameList}
-        >
-          {submitting ? "در حال ثبت..." : "افزودن به لیست"}
-        </button>
+                name: e.target.value,
+              })
+            }
+            className="
+w-full
+rounded-xl
+border
+p-3
+"
+          />
+
+          <input
+            type="number"
+            placeholder="
+حجم بازی GB
+"
+            value={form.size}
+            onChange={(e) =>
+              setForm({
+                ...form,
+
+                size: e.target.value,
+              })
+            }
+            className="
+w-full
+rounded-xl
+border
+p-3
+"
+          />
+
+          <input
+            type="number"
+            placeholder="
+قیمت
+"
+            value={form.price}
+            onChange={(e) =>
+              setForm({
+                ...form,
+
+                price: e.target.value,
+              })
+            }
+            className="
+w-full
+rounded-xl
+border
+p-3
+"
+          />
+
+          <input
+            placeholder="
+Storage
+"
+            value={form.storage}
+            onChange={(e) =>
+              setForm({
+                ...form,
+
+                storage: e.target.value,
+              })
+            }
+            className="
+w-full
+rounded-xl
+border
+p-3
+"
+          />
+
+          <button
+            disabled={loading}
+            onClick={submit}
+            className="
+mt-3
+w-full
+rounded-xl
+bg-emerald-600
+py-3
+font-bold
+text-white
+disabled:opacity-50
+"
+          >
+            {loading
+              ? "در حال ثبت..."
+              : editGame
+                ? "ذخیره تغییرات"
+                : "افزودن بازی"}
+          </button>
+        </div>
       </div>
     </div>
   );
-};
-
-export default AddGameListModal;
+}

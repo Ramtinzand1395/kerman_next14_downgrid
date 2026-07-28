@@ -1,219 +1,330 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
 import { Plus, Search } from "lucide-react";
 
-import AddGameListModal from "./AddGameListModal";
+import GameFormModal from "./AddGameListModal";
 import GameListTable from "./GameListTable";
-import { GameList } from "@/types";
+
+import { GameItem, GameList } from "@/types";
 
 const LIMIT = 20;
-const PLATFORM_OPTIONS = ["all", "ps5", "ps5Copy", "ps4", "xbox", "copy"];
+
+const PLATFORM_OPTIONS = ["ps5", "ps5Copy", "ps4", "xbox", "copy"];
 
 const platformLabel: Record<string, string> = {
-  all: "همه پلتفرم‌ها",
-  ps5: "PS5",
-  ps5Copy: "پلی استیشن 5 کپی خور",
-  ps4: "PS4",
-  copy: "پلی استیشن 4 کپی خور",
+  ps5: "PlayStation 5",
+
+  ps5Copy: "PlayStation 5 کپی خور",
+
+  ps4: "PlayStation 4",
+
   xbox: "Xbox",
+
+  copy: "PlayStation 4 کپی خور",
 };
 
 export default function AllGameList() {
-  const [loading, setLoading] = useState(false);
-  const [gameList, setGameList] = useState<GameList[]>([]);
-  const [openModal, setOpenModal] = useState(false);
+  const [platform, setPlatform] = useState("ps5");
+
+  const [data, setData] = useState<GameList | null>(null);
+
+  const [page, setPage] = useState(1);
+
+  const [totalPages, setTotalPages] = useState(1);
+
   const [search, setSearch] = useState("");
-  const [selectedPlatform, setSelectedPlatform] = useState("all");
 
-  // pagination per platform
-  const [pageMap, setPageMap] = useState<Record<string, number>>({});
-  const [totalPagesMap, setTotalPagesMap] = useState<Record<string, number>>(
-    {},
-  );
+  const [loading, setLoading] = useState(false);
 
-  const fetchGameLists = useCallback(async () => {
-    try {
-      setLoading(true);
+  const [openModal, setOpenModal] = useState(false);
 
-      const params = new URLSearchParams({ limit: String(LIMIT) });
-      if (selectedPlatform !== "all") params.set("platform", selectedPlatform);
-      if (search.trim()) params.set("search", search.trim());
+  const [editGame, setEditGame] = useState<GameItem | null>(null);
 
-      const res = await fetch(`/api/admin/store-order/game-list?${params}`);
-      if (!res.ok) throw new Error("خطا در دریافت لیست بازی‌ها");
-
-      const data = await res.json();
-      setGameList(data.gameList || []);
-      setTotalPagesMap(data.totalPages || {});
-
-      const initialPages: Record<string, number> = {};
-      (data.gameList || []).forEach((platformData: GameList) => {
-        initialPages[platformData.platform] = 1;
-      });
-      setPageMap(initialPages);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  }, [search, selectedPlatform]);
-
-  useEffect(() => {
-    fetchGameLists();
-  }, [fetchGameLists]);
-
-  const handlePageChange = async (platform: string, newPage: number) => {
-    if (newPage < 1 || newPage > (totalPagesMap[platform] || 1)) return;
-
+  const fetchGames = useCallback(async () => {
     try {
       setLoading(true);
 
       const params = new URLSearchParams({
         platform,
-        page: String(newPage),
+
+        page: String(page),
+
         limit: String(LIMIT),
       });
-      if (search.trim()) params.set("search", search.trim());
+
+      if (search.trim()) {
+        params.set("search", search.trim());
+      }
 
       const res = await fetch(`/api/admin/store-order/game-list?${params}`);
-      if (!res.ok) throw new Error("خطا در صفحه‌بندی");
 
-      const data = await res.json();
-      const updatedItems = data.gameList?.[0]?.items || [];
+      const result = await res.json();
 
-      setGameList((prev) =>
-        prev.map((list) =>
-          list.platform === platform ? { ...list, items: updatedItems } : list,
-        ),
-      );
+      setData(result.gameList);
 
-      setPageMap((prev) => ({ ...prev, [platform]: newPage }));
-      setTotalPagesMap((prev) => ({ ...prev, ...data.totalPages }));
+      setTotalPages(result.pagination?.totalPages || 1);
     } catch (error) {
       console.log(error);
     } finally {
       setLoading(false);
     }
+  }, [platform, page, search]);
+
+  useEffect(() => {
+    fetchGames();
+  }, [fetchGames]);
+
+  const changePlatform = (value: string) => {
+    setPlatform(value);
+
+    setPage(1);
   };
 
-  const hasData = useMemo(() => gameList.length > 0, [gameList]);
-
   return (
-    <section className="mx-2 rounded-2xl bg-white p-4 shadow-sm md:p-6">
-      <div className="flex flex-col gap-4 border-b border-gray-100 pb-4 md:flex-row md:items-center md:justify-between">
+    <section
+      className="
+mx-3
+rounded-3xl
+bg-white
+p-6
+shadow-sm
+"
+    >
+      {/* Header */}
+
+      <div
+        className="
+flex
+flex-col
+gap-4
+border-b
+pb-5
+md:flex-row
+md:items-center
+md:justify-between
+"
+      >
         <div>
-          <h1 className="text-xl font-black text-gray-800">
+          <h1
+            className="
+text-2xl
+font-black
+text-gray-800
+"
+          >
             مدیریت لیست بازی‌ها
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            بازی‌ها را بر اساس پلتفرم مدیریت، جستجو و صفحه‌بندی کنید.
+
+          <p
+            className="
+mt-2
+text-sm
+text-gray-500
+"
+          >
+            مدیریت قیمت، حجم و اطلاعات بازی‌ها
           </p>
         </div>
 
         <button
-          onClick={() => setOpenModal(true)}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700"
+          onClick={() => {
+            setEditGame(null);
+
+            setOpenModal(true);
+          }}
+          className="
+flex
+items-center
+justify-center
+gap-2
+rounded-xl
+bg-emerald-600
+px-5
+py-3
+font-bold
+text-white
+hover:bg-emerald-700
+transition
+"
         >
-          <Plus size={16} /> افزودن بازی
+          <Plus size={18} />
+          افزودن بازی
         </button>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div className="relative md:col-span-2">
-          <Search
-            size={16}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="جستجو بین نام بازی‌ها..."
-            className="h-11 w-full rounded-xl border border-gray-200 bg-white pr-10 pl-3 text-sm outline-none ring-emerald-500 transition focus:ring"
-          />
-        </div>
+      {/* Platforms */}
 
-        <select
-          title="filter-platform"
-          value={selectedPlatform}
-          onChange={(e) => setSelectedPlatform(e.target.value)}
-          className="h-11 rounded-xl border border-gray-200 bg-white px-3 text-sm outline-none ring-emerald-500 transition focus:ring"
-        >
-          {PLATFORM_OPTIONS.map((platform) => (
-            <option key={platform} value={platform}>
-              {platformLabel[platform]}
-            </option>
-          ))}
-        </select>
-      </div>
+      <div
+        className="
+mt-6
+flex
+flex-wrap
+gap-3
+"
+      >
+        {PLATFORM_OPTIONS.map((item) => (
+          <button
+            key={item}
+            onClick={() => changePlatform(item)}
+            className={`
+rounded-xl
+px-5
+py-2
+text-sm
+font-bold
+transition
 
-      {loading && (
-        <p className="mt-6 text-sm text-gray-500">در حال دریافت اطلاعات...</p>
-      )}
+${
+  platform === item
+    ? "bg-blue-600 text-white"
+    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+}
 
-      {!loading && !hasData && (
-        <div className="mt-8 rounded-xl border border-dashed border-gray-200 p-10 text-center text-sm text-gray-500">
-          نتیجه‌ای پیدا نشد.
-        </div>
-      )}
-
-      <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {gameList.map((list) => (
-          <div
-            key={list.platform}
-            className="rounded-2xl border border-gray-100 bg-gray-50/40 p-3"
+`}
           >
-            <GameListTable
-              title={platformLabel[list.platform] || list.platform}
-              platform={list.platform}
-              list={list.items}
-              onChanged={fetchGameLists}
-            />
-
-            <div className="mt-3 flex items-center justify-center gap-2">
-              <button
-                className="rounded-lg border border-gray-200 bg-white px-3 py-1 text-xs text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={(pageMap[list.platform] || 1) <= 1}
-                onClick={() =>
-                  handlePageChange(
-                    list.platform,
-                    (pageMap[list.platform] || 1) - 1,
-                  )
-                }
-              >
-                قبلی
-              </button>
-
-              <span className="rounded-lg bg-white px-3 py-1 text-xs text-gray-600">
-                {pageMap[list.platform] || 1} /{" "}
-                {totalPagesMap[list.platform] || 1}
-              </span>
-
-              <button
-                className="rounded-lg border border-gray-200 bg-white px-3 py-1 text-xs text-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={
-                  (pageMap[list.platform] || 1) >=
-                  (totalPagesMap[list.platform] || 1)
-                }
-                onClick={() =>
-                  handlePageChange(
-                    list.platform,
-                    (pageMap[list.platform] || 1) + 1,
-                  )
-                }
-              >
-                بعدی
-              </button>
-            </div>
-          </div>
+            {platformLabel[item]}
+          </button>
         ))}
       </div>
 
+      {/* Search */}
+
+      <div
+        className="
+mt-6
+relative
+"
+      >
+        <Search
+          size={18}
+          className="
+absolute
+right-4
+top-3.5
+text-gray-400
+"
+        />
+
+        <input
+          value={search}
+          onChange={(e) => {
+            setPage(1);
+
+            setSearch(e.target.value);
+          }}
+          placeholder="
+جستجو بین بازی‌ها...
+"
+          className="
+h-12
+w-full
+rounded-xl
+border
+border-gray-200
+pr-12
+pl-4
+outline-none
+focus:ring-2
+focus:ring-blue-500
+"
+        />
+      </div>
+
+      {loading && (
+        <div
+          className="
+mt-6
+text-center
+text-gray-500
+"
+        >
+          در حال دریافت اطلاعات...
+        </div>
+      )}
+
+      {!loading && data && (
+        <div
+          className="
+mt-6
+overflow-hidden
+rounded-2xl
+border
+"
+        >
+          <GameListTable
+            title={platformLabel[data.platform]}
+            platform={data.platform}
+            list={data.items}
+            onChanged={fetchGames}
+            onEdit={(game) => {
+              setEditGame(game);
+
+              setOpenModal(true);
+            }}
+          />
+        </div>
+      )}
+
+      {/* Pagination */}
+
+      <div
+        className="
+mt-6
+flex
+items-center
+justify-center
+gap-4
+"
+      >
+        <button
+          disabled={page === 1}
+          onClick={() => setPage((p) => p - 1)}
+          className="
+rounded-xl
+border
+px-5
+py-2
+disabled:opacity-40
+"
+        >
+          قبلی
+        </button>
+
+        <div
+          className="
+rounded-xl
+bg-gray-100
+px-5
+py-2
+font-bold
+"
+        >
+          {page}/{totalPages}
+        </div>
+
+        <button
+          disabled={page === totalPages}
+          onClick={() => setPage((p) => p + 1)}
+          className="
+rounded-xl
+border
+px-5
+py-2
+disabled:opacity-40
+"
+        >
+          بعدی
+        </button>
+      </div>
+
       {openModal && (
-        <AddGameListModal
-          setOpenModal={setOpenModal}
-          onAdded={fetchGameLists}
+        <GameFormModal
+          platform={platform}
+          editGame={editGame}
+          close={() => setOpenModal(false)}
+          refresh={fetchGames}
         />
       )}
     </section>

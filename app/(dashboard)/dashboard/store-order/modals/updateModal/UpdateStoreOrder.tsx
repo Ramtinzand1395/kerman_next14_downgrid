@@ -91,9 +91,11 @@ const UpdateStoreOrder = ({
               className="w-full rounded-lg border p-2"
             >
               <option value="">انتخاب کنید</option>
-              <option value="ps4">PS4</option>
+               <option value="">انتخاب کنید</option>
               <option value="ps5">PS5</option>
-              <option value="copy">کپی خور</option>
+              <option value="ps5Copy"> ps5-copy</option>
+              <option value="ps4">PS4</option>
+              <option value="copy"> ps4-copy</option>
               <option value="xbox">Xbox</option>
             </select>
           ) : (

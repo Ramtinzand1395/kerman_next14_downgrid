@@ -103,7 +103,7 @@ export type ConsoleType = "ps5" | "ps4" | "xbox" | "copy" | "ps5Copy";
 export interface StoreOrder {
   _id: string;
   list: GameItem[];
-   totalSize?: number;
+  totalSize?: number;
   totalPrice?: number;
   price: number | null;
   customer?: Customer | string;
@@ -119,16 +119,34 @@ export interface StoreOrder {
 
 export type storeOrder = StoreOrder;
 
+// export interface GameItem {
+//   _id?: string;
+//   name: string;
+//   size: number;
+//   price: number;
+// }
+
+// export interface GameList {
+//   _id: string;
+//   platform: ConsoleType;
+//   items: GameItem[];
+// }
+// !این دو مورد به جای بالا اضافه شد
 export interface GameItem {
-  _id?: string;
+  _id: string;
+
   name: string;
-  size: number;
-  price: number;
+
+  size?: number;
+
+  price?: number;
+
+  storage?: string;
 }
 
 export interface GameList {
-  _id: string;
-  platform: ConsoleType;
+  platform: string;
+
   items: GameItem[];
 }
 

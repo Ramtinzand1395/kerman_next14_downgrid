@@ -1,25 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import GameList from "@/model/GameList";
+
 import dbConnect from "@/lib/mongodb";
+
 import { getServerSession } from "next-auth";
+
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 
-type GameListDoc = {
-  platform: string;
-  items: { _id: string; name: string }[];
-};
-
-const normalizePlatform = (value: string | null) => {
+const normalizePlatform = (value?: string | null) => {
   if (!value) return "";
-  return value.trim().toLowerCase();
+
+  const map: Record<string, string> = {
+    ps5: "ps5",
+
+    ps5copy: "ps5Copy",
+
+    ps5Copy: "ps5Copy",
+
+    ps4: "ps4",
+
+    xbox: "xbox",
+
+    copy: "copy",
+  };
+
+  return map[value.trim()] || value.trim();
 };
 
-const filterItems = (items: GameListDoc["items"], search: string) => {
-  if (!search) return items;
-  return items.filter((item) =>
-    item.name.toLowerCase().includes(search.toLowerCase()),
-  );
-};
+async function checkAuth() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) return false;
+
+  return ["admin", "superadmin"].includes(session.user.role);
+}
+
+// =========================
+// GET
+// =========================
 
 export async function GET(req: NextRequest) {
   try {
@@ -27,44 +46,93 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
 
-    const search = searchParams.get("search") || "";
-    const platform = searchParams.get("platform") || "";
-    const limit = Number(searchParams.get("limit")) || 100;
+    const platform = normalizePlatform(searchParams.get("platform"));
 
-    const filter: any = {};
+    const search = searchParams.get("search")?.trim() || "";
 
-    if (platform) {
-      filter.platform = platform;
+    const page = Math.max(Number(searchParams.get("page")) || 1, 1);
+
+    const limit = Math.max(Number(searchParams.get("limit")) || 20, 1);
+
+    if (!platform) {
+      return NextResponse.json(
+        {
+          message: "platform required",
+        },
+        {
+          status: 400,
+        },
+      );
     }
 
-    const gameList = await GameList.find(filter)
-      .select("platform items")
-      .lean();
+    const data = await GameList.findOne({
+      platform,
+    }).lean();
 
-    let result = gameList;
+    if (!data) {
+      return NextResponse.json({
+        success: true,
+
+        gameList: {
+          platform,
+          items: [],
+        },
+
+        pagination: {
+          page,
+
+          limit,
+
+          totalItems: 0,
+
+          totalPages: 0,
+        },
+      });
+    }
+
+    let items: any[] = data.items || [];
 
     if (search) {
-      const keyword = search.toLowerCase();
-
-      result = gameList.map((doc: any) => ({
-        ...doc,
-        items: doc.items.filter((item: any) =>
-          item.name.toLowerCase().includes(keyword),
-        ),
-      }));
+      items = items.filter((item) =>
+        item.name.toLowerCase().includes(search.toLowerCase()),
+      );
     }
+
+    const totalItems = items.length;
+
+    const totalPages = Math.ceil(totalItems / limit);
+
+    const result = items.slice(
+      (page - 1) * limit,
+
+      page * limit,
+    );
 
     return NextResponse.json({
       success: true,
-      gameList: result,
+
+      gameList: {
+        platform: data.platform,
+
+        items: result,
+      },
+
+      pagination: {
+        page,
+
+        limit,
+
+        totalItems,
+
+        totalPages,
+      },
     });
   } catch (error) {
-    console.error(error);
+    console.log(error);
 
     return NextResponse.json(
       {
-        success: false,
-        message: "خطا در دریافت بازی‌ها",
+        message: "خطا در دریافت اطلاعات",
       },
       {
         status: 500,
@@ -73,109 +141,214 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// =========================
+// POST
+// =========================
+
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user)
-    return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
-
-  if (!["admin", "superadmin"].includes(session.user.role))
-    return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
-
-  await dbConnect();
+  if (!(await checkAuth())) {
+    return NextResponse.json(
+      {
+        message: "دسترسی غیرمجاز",
+      },
+      {
+        status: 403,
+      },
+    );
+  }
 
   try {
-    const body = await req.json();
-    const platform = normalizePlatform(body.platform);
-    const name = body.name?.trim();
+    await dbConnect();
 
-    if (!platform || !name) {
-      return NextResponse.json({ error: "داده ناقص است" }, { status: 400 });
+    const body = await req.json();
+
+    const platform = normalizePlatform(body.platform);
+
+    if (!platform || !body.name) {
+      return NextResponse.json(
+        {
+          message: "اطلاعات ناقص است",
+        },
+        {
+          status: 400,
+        },
+      );
     }
+
+    const item = {
+      name: body.name.trim(),
+
+      size: body.size ? Number(body.size) : null,
+
+      price: body.price ? Number(body.price) : null,
+
+      storage: body.storage || null,
+    };
 
     const updated = await GameList.findOneAndUpdate(
-      { platform },
-      { $push: { items: { name } } },
-      { returnDocument: "after", upsert: true },
-    );
-
-    return NextResponse.json({
-      message: "بازی جدید اضافه شد",
-      item: updated?.items?.[updated.items.length - 1],
-      status: 200,
-    });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ message: "server error" }, { status: 500 });
-  }
-}
-
-export async function PUT(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user)
-    return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
-
-  if (!["admin", "superadmin"].includes(session.user.role))
-    return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
-
-  await dbConnect();
-
-  try {
-    const { platform, itemId, name } = await req.json();
-    if (!platform || !itemId || !name) {
-      return NextResponse.json({ error: "داده ناقص است" }, { status: 400 });
-    }
-
-    await GameList.findOneAndUpdate(
-      { platform: normalizePlatform(platform), "items._id": itemId },
       {
-        $set: {
-          "items.$.name": name.trim(),
+        platform,
+      },
+
+      {
+        $push: {
+          items: item,
         },
       },
-      { returnDocument: "after" },
+
+      {
+        upsert: true,
+
+        new: true,
+      },
     );
 
     return NextResponse.json({
-      message: "بازی ویرایش شد.",
-      status: 200,
+      success: true,
+
+      message: "بازی اضافه شد",
+
+      item: updated.items.at(-1),
     });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ message: "server error" }, { status: 500 });
+    console.log(error);
+
+    return NextResponse.json(
+      {
+        message: "server error",
+      },
+      {
+        status: 500,
+      },
+    );
   }
 }
 
-export async function DELETE(req: NextRequest) {
-  const session = await getServerSession(authOptions);
+// =========================
+// PUT
+// =========================
 
-  if (!session?.user)
-    return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
-
-  if (!["admin", "superadmin"].includes(session.user.role))
-    return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
-
-  await dbConnect();
+export async function PUT(req: NextRequest) {
+  if (!(await checkAuth())) {
+    return NextResponse.json(
+      {
+        message: "دسترسی غیرمجاز",
+      },
+      {
+        status: 403,
+      },
+    );
+  }
 
   try {
-    const { platform, itemId } = await req.json();
-    if (!platform || !itemId) {
-      return NextResponse.json({ error: "داده ناقص است" }, { status: 400 });
+    await dbConnect();
+
+    const body = await req.json();
+
+    const updated = await GameList.findOneAndUpdate(
+      {
+        platform: normalizePlatform(body.platform),
+
+        "items._id": body.itemId,
+      },
+
+      {
+        $set: {
+          "items.$.name": body.name.trim(),
+
+          "items.$.size": body.size ? Number(body.size) : null,
+
+          "items.$.price": body.price ? Number(body.price) : null,
+
+          "items.$.storage": body.storage || null,
+        },
+      },
+
+      {
+        new: true,
+      },
+    );
+
+    if (!updated) {
+      return NextResponse.json(
+        {
+          message: "بازی پیدا نشد",
+        },
+        {
+          status: 404,
+        },
+      );
     }
 
+    return NextResponse.json({
+      success: true,
+
+      message: "ویرایش شد",
+    });
+  } catch (error) {
+    console.log(error);
+
+    return NextResponse.json(
+      {
+        message: "server error",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+}
+
+// =========================
+// DELETE
+// =========================
+
+export async function DELETE(req: NextRequest) {
+  if (!(await checkAuth())) {
+    return NextResponse.json(
+      {
+        message: "دسترسی غیرمجاز",
+      },
+      {
+        status: 403,
+      },
+    );
+  }
+
+  try {
+    await dbConnect();
+
+    const body = await req.json();
+
     await GameList.findOneAndUpdate(
-      { platform: normalizePlatform(platform), "items._id": itemId },
-      { $pull: { items: { _id: itemId } } },
-      { returnDocument: "after" },
+      {
+        platform: normalizePlatform(body.platform),
+      },
+
+      {
+        $pull: {
+          items: {
+            _id: body.itemId,
+          },
+        },
+      },
     );
 
     return NextResponse.json({
-      message: "بازی حذف شد.",
-      status: 200,
+      success: true,
+
+      message: "حذف شد",
     });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ message: "server error" }, { status: 500 });
+    console.log(error);
+
+    return NextResponse.json(
+      {
+        message: "server error",
+      },
+      {
+        status: 500,
+      },
+    );
   }
 }
