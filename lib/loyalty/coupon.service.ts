@@ -23,7 +23,10 @@ export interface CouponValidation {
   discountAmount?: number;
 }
 
-export function computeDiscount(coupon: Pick<ICoupon, "type" | "value" | "maxDiscountAmount">, orderAmount: number): number {
+export function computeDiscount(
+  coupon: Pick<ICoupon, "type" | "value" | "maxDiscountAmount">,
+  orderAmount: number,
+): number {
   let discount =
     coupon.type === "percent"
       ? Math.floor((orderAmount * coupon.value) / 100)
@@ -34,26 +37,39 @@ export function computeDiscount(coupon: Pick<ICoupon, "type" | "value" | "maxDis
   return Math.max(0, Math.min(discount, orderAmount));
 }
 
-export async function validateCoupon(input: ValidateCouponInput): Promise<CouponValidation> {
+export async function validateCoupon(
+  input: ValidateCouponInput,
+): Promise<CouponValidation> {
   const code = input.code.trim().toUpperCase();
   if (!code) return { ok: false, error: "کد تخفیف را وارد کنید" };
 
   const coupon = await Coupon.findOne({ code });
-  if (!coupon || !coupon.isActive) return { ok: false, error: "کد تخفیف معتبر نیست" };
+  if (!coupon || !coupon.isActive)
+    return { ok: false, error: "کد تخفیف معتبر نیست" };
 
   const now = new Date();
-  if (coupon.startsAt && coupon.startsAt > now) return { ok: false, error: "این کد هنوز فعال نشده است" };
-  if (coupon.expiresAt && coupon.expiresAt < now) return { ok: false, error: "این کد منقضی شده است" };
+  if (coupon.startsAt && coupon.startsAt > now)
+    return { ok: false, error: "این کد هنوز فعال نشده است" };
+  if (coupon.expiresAt && coupon.expiresAt < now)
+    return { ok: false, error: "این کد منقضی شده است" };
 
   // کوپن خصوصی
   if (coupon.scope === "private") {
-    const allowed = coupon.allowedUsers.some((u) => u.toString() === input.userId);
+    // !تغییر با chat
+    // const allowed = coupon.allowedUsers.some((u) => u.toString() === input.userId);
+
+    const allowed = coupon.allowedUsers.some(
+      (u: mongoose.Types.ObjectId) => u.toString() === input.userId,
+    );
     if (!allowed) return { ok: false, error: "این کد برای شما فعال نیست" };
   }
 
   // حداقل مبلغ خرید
   if (input.orderAmount < coupon.minPurchaseAmount) {
-    return { ok: false, error: `حداقل مبلغ خرید برای این کد ${coupon.minPurchaseAmount.toLocaleString("fa-IR")} تومان است` };
+    return {
+      ok: false,
+      error: `حداقل مبلغ خرید برای این کد ${coupon.minPurchaseAmount.toLocaleString("fa-IR")} تومان است`,
+    };
   }
 
   // سقف استفاده کلی
@@ -62,7 +78,10 @@ export async function validateCoupon(input: ValidateCouponInput): Promise<Coupon
   }
 
   // سقف استفاده به‌ازای کاربر
-  const userUses = await CouponUsage.countDocuments({ coupon: coupon._id, user: input.userId });
+  const userUses = await CouponUsage.countDocuments({
+    coupon: coupon._id,
+    user: input.userId,
+  });
   if (userUses >= coupon.perUserLimit) {
     return { ok: false, error: "شما قبلاً از این کد استفاده کرده‌اید" };
   }
@@ -70,14 +89,26 @@ export async function validateCoupon(input: ValidateCouponInput): Promise<Coupon
   // محدودیت محصول/دسته
   if (coupon.products.length || coupon.categories.length) {
     const items = input.items ?? [];
-    const productSet = new Set(coupon.products.map((p) => p.toString()));
-    const categorySet = new Set(coupon.categories.map((c) => c.toString()));
+    // !تغییر با chat
+    // const productSet = new Set(coupon.products.map((p) => p.toString()));
+    // const categorySet = new Set(coupon.categories.map((c) => c.toString()));
+    const productSet = new Set(
+      coupon.products.map((p: mongoose.Types.ObjectId) => p.toString()),
+    );
+
+    const categorySet = new Set(
+      coupon.categories.map((c: mongoose.Types.ObjectId) => c.toString()),
+    );
     const matches = items.some(
       (it) =>
         productSet.has(it.productId) ||
         (it.categoryIds ?? []).some((c) => categorySet.has(c)),
     );
-    if (!matches) return { ok: false, error: "این کد برای محصولات سبد شما قابل استفاده نیست" };
+    if (!matches)
+      return {
+        ok: false,
+        error: "این کد برای محصولات سبد شما قابل استفاده نیست",
+      };
   }
 
   return {
@@ -113,7 +144,8 @@ export async function applyCoupon(input: {
     { $inc: { usedCount: 1 } },
     { new: true },
   );
-  if (!updated) return { ok: false, error: "ظرفیت استفاده از این کد تکمیل شده است" };
+  if (!updated)
+    return { ok: false, error: "ظرفیت استفاده از این کد تکمیل شده است" };
 
   try {
     await CouponUsage.create({
@@ -131,7 +163,11 @@ export async function applyCoupon(input: {
     throw err;
   }
 
-  return { ok: true, coupon: updated, discountAmount: validation.discountAmount };
+  return {
+    ok: true,
+    coupon: updated,
+    discountAmount: validation.discountAmount,
+  };
 }
 
 /** آزادسازی کوپن هنگام لغو سفارش */
