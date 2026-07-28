@@ -22,10 +22,23 @@ const TempPaymentSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    // هدف پرداخت: سفارش فروشگاه یا شارژ کیف پول
+    purpose: {
+      type: String,
+      enum: ["order", "wallet_charge"],
+      default: "order",
+      index: true,
+    },
+    // برای شارژ کیف پول: تراکنش pending مرتبط
+    walletTransaction: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "WalletTransaction",
+      default: null,
+    },
     address: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Address",
-      required: true,
+      default: null, // برای شارژ کیف پول آدرس لازم نیست
     },
 
     items: [
@@ -53,9 +66,9 @@ const TempPaymentSchema = new mongoose.Schema(
         total: { type: Number, required: true },
       },
     ],
-    totalPrice: { type: Number, required: true },
+    totalPrice: { type: Number, default: 0 },
     shippingCost: { type: Number, default: 0 },
-    finalPrice: { type: Number, required: true },
+    finalPrice: { type: Number, default: 0 },
     gatewayAmount: { type: Number, required: true },
   },
   { timestamps: true },

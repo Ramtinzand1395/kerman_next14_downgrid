@@ -1,4 +1,5 @@
 import mongoose, { Schema, model, Document } from "mongoose";
+import { VIP_TIERS, VipTier } from "@/types/loyalty";
 
 // تعریف interface TypeScript
 export interface IUser extends Document {
@@ -15,6 +16,15 @@ export interface IUser extends Document {
   orders: mongoose.Types.ObjectId[];
   comments: mongoose.Types.ObjectId[];
   tempPayments: mongoose.Types.ObjectId[];
+  // ---- باشگاه مشتریان ----
+  /** کد دعوت اختصاصی کاربر (یکتا) */
+  referralCode: string;
+  /** سطح VIP فعلی */
+  vipTier?: VipTier;
+  /** مجموع خرید موفق (تومان) — مبنای ارتقای VIP */
+  totalPurchase: number;
+  /** تعداد سفارش‌های موفق */
+  successfulOrders: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +51,11 @@ const UserSchema = new Schema<IUser>(
     tempPayments: [
       { type: mongoose.Schema.Types.ObjectId, ref: "TempPayment" },
     ],
+    // ---- باشگاه مشتریان ----
+    referralCode: { type: String, unique: true, sparse: true, index: true },
+    vipTier: { type: String, enum: VIP_TIERS },
+    totalPurchase: { type: Number, default: 0, min: 0 },
+    successfulOrders: { type: Number, default: 0, min: 0 },
   },
   {
     timestamps: true, // ایجاد خودکار createdAt و updatedAt

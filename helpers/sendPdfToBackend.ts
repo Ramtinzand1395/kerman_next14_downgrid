@@ -2,6 +2,7 @@
 
 import { Customer, storeOrder } from "@/types";
 import { toast } from "react-toastify";
+import { toPersianDate } from "@/helpers/toPersianDate";
 
 export const sendPdfToBackend = async (
   userOrder: storeOrder | null,
@@ -35,7 +36,7 @@ export const sendPdfToBackend = async (
         ? `${customer.name || ""} ${customer.lastName || ""}`.trim()
         : "مشتری متفرقه",
       mobile: customer?.mobile || "---",
-      date: userOrder.createdAt || new Date().toISOString(),
+      date: toPersianDate(userOrder.createdAt) || new Date().toISOString(),
       games: gamesList,
       price: userOrder.price || 0,
       totalSizeGB: calculatedTotalSize,
