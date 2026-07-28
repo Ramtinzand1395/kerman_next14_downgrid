@@ -1,7 +1,7 @@
 // app/api/admin/loyalty/wallet/transactions/route.ts
 // GET: گزارش تراکنش‌های کیف پول با فیلتر و صفحه‌بندی
 import { NextRequest } from "next/server";
-import WalletTransaction from "@/model/WalletTransaction";
+import WalletTransaction from "@/model/Loyalty Club/WalletTransaction";
 import { ok, requireAdmin } from "@/lib/loyalty/api";
 import { WALLET_TX_TYPES, WalletTxType } from "@/types/loyalty";
 

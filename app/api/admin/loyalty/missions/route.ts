@@ -1,6 +1,6 @@
 // app/api/admin/loyalty/missions/route.ts — لیست/ساخت ماموریت
 import { NextRequest } from "next/server";
-import Mission from "@/model/Mission";
+import Mission from "@/model/Loyalty Club/Mission";
 import { ok, parseBody, requireAdmin } from "@/lib/loyalty/api";
 import { missionSchema } from "@/validations/loyalty.validation";
 

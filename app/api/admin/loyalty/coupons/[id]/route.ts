@@ -1,6 +1,6 @@
 // app/api/admin/loyalty/coupons/[id]/route.ts — مشاهده/ویرایش/حذف کوپن
 import { NextRequest } from "next/server";
-import Coupon from "@/model/Coupon";
+import Coupon from "@/model/Loyalty Club/Coupon";
 import { fail, ok, parseBody, requireAdmin } from "@/lib/loyalty/api";
 import { couponUpdateSchema } from "@/validations/loyalty.validation";
 

@@ -1,6 +1,6 @@
 // app/api/admin/loyalty/coupons/route.ts — لیست/ساخت کوپن
 import { NextRequest } from "next/server";
-import Coupon from "@/model/Coupon";
+import Coupon from "@/model/Loyalty Club/Coupon";
 import { ok, parseBody, requireAdmin } from "@/lib/loyalty/api";
 import { couponCreateSchema } from "@/validations/loyalty.validation";
 

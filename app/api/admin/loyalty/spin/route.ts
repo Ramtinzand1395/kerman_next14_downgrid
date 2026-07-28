@@ -1,5 +1,5 @@
 // app/api/admin/loyalty/spin/route.ts — لیست/ساخت جایزه گردونه
-import { SpinPrize } from "@/model/SpinHistory";
+import { SpinPrize } from "@/model/Loyalty Club/SpinHistory";
 import { ok, parseBody, requireAdmin } from "@/lib/loyalty/api";
 import { spinPrizeSchema } from "@/validations/loyalty.validation";
 

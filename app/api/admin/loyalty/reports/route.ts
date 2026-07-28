@@ -5,9 +5,9 @@ import { NextRequest } from "next/server";
 import mongoose from "mongoose";
 import { ok, requireAdmin, fail } from "@/lib/loyalty/api";
 import User from "@/model/User";
-import WalletTransaction from "@/model/WalletTransaction";
-import Referral from "@/model/Referral";
-import Experience from "@/model/Experience";
+import WalletTransaction from "@/model/Loyalty Club/WalletTransaction";
+import Referral from "@/model/Loyalty Club/Referral";
+import Experience from "@/model/Loyalty Club/Experience";
 
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin();

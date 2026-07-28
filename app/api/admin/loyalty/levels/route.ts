@@ -1,6 +1,6 @@
 // app/api/admin/loyalty/levels/route.ts — مشاهده/ویرایش سطوح Level و VIP
 import { NextRequest } from "next/server";
-import MembershipLevel from "@/model/MembershipLevel";
+import MembershipLevel from "@/model/Loyalty Club/MembershipLevel";
 import { fail, ok, parseBody, requireAdmin } from "@/lib/loyalty/api";
 import { membershipLevelUpdateSchema } from "@/validations/loyalty.validation";
 import { invalidateLevelsCache } from "@/lib/loyalty/experience.service";

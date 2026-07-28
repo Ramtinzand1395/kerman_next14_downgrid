@@ -1,7 +1,7 @@
 // app/api/admin/loyalty/wallet/route.ts
 // GET: جستجو/مشاهده کیف پول کاربران — POST: هدیه اعتبار — PATCH: تعدیل دستی
 import { NextRequest } from "next/server";
-import Wallet from "@/model/Wallet";
+import Wallet from "@/model/Loyalty Club/Wallet";
 import { fail, ok, parseBody, requireAdmin } from "@/lib/loyalty/api";
 import { credit, debit } from "@/lib/loyalty/wallet.service";
 import { adminAdjustSchema, adminGiftSchema } from "@/validations/loyalty.validation";

@@ -1,6 +1,6 @@
 // app/api/admin/loyalty/spin/[id]/route.ts
 import { NextRequest } from "next/server";
-import { SpinPrize } from "@/model/SpinHistory";
+import { SpinPrize } from "@/model/Loyalty Club/SpinHistory";
 import { fail, ok, parseBody, requireAdmin } from "@/lib/loyalty/api";
 import { spinPrizeUpdateSchema } from "@/validations/loyalty.validation";
 

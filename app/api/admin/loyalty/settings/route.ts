@@ -1,5 +1,5 @@
 // app/api/admin/loyalty/settings/route.ts — مشاهده/ویرایش تنظیمات سراسری
-import LoyaltySettings from "@/model/LoyaltySettings";
+import LoyaltySettings from "@/model/Loyalty Club/LoyaltySettings";
 import { ok, parseBody, requireAdmin } from "@/lib/loyalty/api";
 import { loyaltySettingsSchema } from "@/validations/loyalty.validation";
 import { getSettings, invalidateSettingsCache } from "@/lib/loyalty/experience.service";

@@ -1,6 +1,6 @@
 // app/api/admin/loyalty/achievements/[id]/route.ts
 import { NextRequest } from "next/server";
-import Achievement from "@/model/Achievement";
+import Achievement from "@/model/Loyalty Club/Achievement";
 import { fail, ok, parseBody, requireAdmin } from "@/lib/loyalty/api";
 import { achievementUpdateSchema } from "@/validations/loyalty.validation";
 

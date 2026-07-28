@@ -1,6 +1,6 @@
 // app/api/admin/loyalty/cashback/[id]/route.ts
 import { NextRequest } from "next/server";
-import CashbackRule from "@/model/Cashback";
+import CashbackRule from "@/model/Loyalty Club/Cashback";
 import { fail, ok, parseBody, requireAdmin } from "@/lib/loyalty/api";
 import { cashbackRuleUpdateSchema } from "@/validations/loyalty.validation";
 

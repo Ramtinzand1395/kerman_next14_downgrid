@@ -1,7 +1,7 @@
 // app/api/admin/loyalty/wallet/logs/route.ts
 // GET: لاگ حسابرسی عملیات مالی
 import { NextRequest } from "next/server";
-import WalletLog from "@/model/WalletLog";
+import WalletLog from "@/model/Loyalty Club/WalletLog";
 import { ok, requireAdmin } from "@/lib/loyalty/api";
 
 export async function GET(req: NextRequest) {

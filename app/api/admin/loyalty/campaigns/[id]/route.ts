@@ -1,6 +1,6 @@
 // app/api/admin/loyalty/campaigns/[id]/route.ts
 import { NextRequest } from "next/server";
-import Campaign from "@/model/Campaign";
+import Campaign from "@/model/Loyalty Club/Campaign";
 import { fail, ok, parseBody, requireAdmin } from "@/lib/loyalty/api";
 import { campaignUpdateSchema } from "@/validations/loyalty.validation";
 

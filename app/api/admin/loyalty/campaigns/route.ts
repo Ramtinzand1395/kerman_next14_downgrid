@@ -1,5 +1,5 @@
 // app/api/admin/loyalty/campaigns/route.ts — لیست/ساخت کمپین
-import Campaign from "@/model/Campaign";
+import Campaign from "@/model/Loyalty Club/Campaign";
 import { ok, parseBody, requireAdmin } from "@/lib/loyalty/api";
 import { campaignSchema } from "@/validations/loyalty.validation";
 

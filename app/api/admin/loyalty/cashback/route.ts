@@ -1,5 +1,5 @@
 // app/api/admin/loyalty/cashback/route.ts — لیست/ساخت قاعده کش‌بک
-import CashbackRule from "@/model/Cashback";
+import CashbackRule from "@/model/Loyalty Club/Cashback";
 import { ok, parseBody, requireAdmin } from "@/lib/loyalty/api";
 import { cashbackRuleSchema } from "@/validations/loyalty.validation";
 

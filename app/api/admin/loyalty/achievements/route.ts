@@ -1,5 +1,5 @@
 // app/api/admin/loyalty/achievements/route.ts — لیست/ساخت نشان
-import Achievement from "@/model/Achievement";
+import Achievement from "@/model/Loyalty Club/Achievement";
 import { ok, parseBody, requireAdmin } from "@/lib/loyalty/api";
 import { achievementSchema } from "@/validations/loyalty.validation";
 

@@ -1,6 +1,6 @@
 // app/api/admin/loyalty/missions/[id]/route.ts — ویرایش/حذف ماموریت
 import { NextRequest } from "next/server";
-import Mission from "@/model/Mission";
+import Mission from "@/model/Loyalty Club/Mission";
 import { fail, ok, parseBody, requireAdmin } from "@/lib/loyalty/api";
 import { missionUpdateSchema } from "@/validations/loyalty.validation";
 

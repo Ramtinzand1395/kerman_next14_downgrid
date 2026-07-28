@@ -3,7 +3,7 @@
 // POST: چرخاندن گردونه — روزانه یک بار
 import { ok, requireUser, withRateLimit } from "@/lib/loyalty/api";
 import { getSpinStatus, spin } from "@/lib/loyalty/spin.service";
-import { SpinPrize } from "@/model/SpinHistory";
+import { SpinPrize } from "@/model/Loyalty Club/SpinHistory";
 import { fail } from "@/lib/loyalty/api";
 
 export async function GET() {
