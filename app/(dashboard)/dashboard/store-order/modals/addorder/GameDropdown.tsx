@@ -66,11 +66,10 @@ const GameDropdown: React.FC<GameDropdownProps> = ({
         }
 
         const data = await res.json();
+// !تغییر با chat
+        const gameList = data.gameList as GameData | undefined;
 
-        const gameList = (data.gameList || []) as GameData[];
-
-        const allGames = gameList.flatMap((item) => item.items || []);
-
+        const allGames = gameList?.items ?? [];
         const uniqueGames = Array.from(
           new Map(
             allGames.map((game) => [game._id ?? normalize(game.name), game]),
