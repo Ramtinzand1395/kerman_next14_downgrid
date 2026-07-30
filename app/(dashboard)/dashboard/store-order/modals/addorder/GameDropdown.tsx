@@ -147,7 +147,7 @@ const GameDropdown: React.FC<GameDropdownProps> = ({
             >
               {game.name}
               <span className="mr-2 text-xs text-gray-500">
-                ({game.size} MB)
+                ({game.size} GB)
               </span>
             </button>
           ))}

@@ -227,7 +227,7 @@ const AddCustomerOrder = ({
                   </p>
 
                   <div className="mt-1 flex items-center gap-3 text-xs text-slate-500">
-                    <span>{(game.size || 0).toLocaleString("en-US")} MB</span>
+                    <span>{(game.size || 0).toLocaleString("en-US")} GB</span>
                     <span>
                       {(game.price || 0).toLocaleString("en-US")} تومان
                     </span>
@@ -258,7 +258,7 @@ const AddCustomerOrder = ({
           <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
             <p className="text-xs text-slate-500">مجموع حجم</p>
             <p className="text-sm font-semibold text-slate-700">
-              {(order?.totalSize ?? 0).toLocaleString("en-US")} MB
+              {(order?.totalSize ?? 0).toLocaleString("en-US")} GB
             </p>
           </div>
 
