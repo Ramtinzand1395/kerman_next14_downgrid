@@ -3,7 +3,7 @@
 // بدنه: { missionId, periodKey }
 import { fail, ok, parseBody, requireUser, withRateLimit } from "@/lib/loyalty/api";
 import { claimMissionReward } from "@/lib/loyalty/mission.service";
-import Mission from "@/model/Mission";
+import Mission from "@/model/Loyalty Club/Mission";
 import { z } from "zod";
 
 const claimSchema = z.object({
