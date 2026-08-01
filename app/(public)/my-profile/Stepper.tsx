@@ -7,6 +7,9 @@ import {
   MessageSquareText,
   ShoppingBasket,
   UserRound,
+  Dices,
+  WalletCards,
+  Trophy,
 } from "lucide-react";
 
 export default function Stepper({ activeStep }: { activeStep: number }) {
@@ -16,6 +19,9 @@ export default function Stepper({ activeStep }: { activeStep: number }) {
     { id: 3, title: "آدرس‌ها", icon: MapPinHouse },
     { id: 4, title: "نظرات من", icon: MessageSquareText },
     { id: 5, title: "سفارش‌ها", icon: ShoppingBasket },
+    { id: 8, title: "کیف پول", icon: WalletCards },
+    { id: 9, title: "باشگاه مشتریان", icon: Trophy },
+    { id: 10, title: "گردونه شانس", icon: Dices },
   ];
 
   const router = useRouter();
@@ -29,7 +35,9 @@ export default function Stepper({ activeStep }: { activeStep: number }) {
         return (
           <button
             type="button"
-            onClick={() => router.push(`?step=${Number(step.id)}`, { scroll: false })}
+            onClick={() =>
+              router.push(`?step=${Number(step.id)}`, { scroll: false })
+            }
             className={`flex items-center gap-2 shrink-0 rounded-xl border px-3 md:px-4 py-2.5 transition-all text-xs md:text-sm ${
               isActive
                 ? "bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-300"
