@@ -57,10 +57,10 @@ export default function XpVipTab() {
       {/* اعطای XP */}
       <form
         onSubmit={grantXp}
-        className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-5"
+        className="space-y-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
       >
-        <div className="flex items-center gap-2 text-white">
-          <Sparkles className="h-5 w-5 text-indigo-400" />
+        <div className="flex items-center gap-2 text-slate-800">
+          <Sparkles className="h-5 w-5 text-indigo-500" />
           <h3 className="font-bold">اعطای امتیاز (XP) دستی</h3>
         </div>
         <Field label="شناسه کاربر (ObjectId)">
@@ -98,10 +98,10 @@ export default function XpVipTab() {
       {/* تغییر VIP */}
       <form
         onSubmit={changeVip}
-        className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-5"
+        className="space-y-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
       >
-        <div className="flex items-center gap-2 text-white">
-          <Crown className="h-5 w-5 text-amber-400" />
+        <div className="flex items-center gap-2 text-slate-800">
+          <Crown className="h-5 w-5 text-amber-500" />
           <h3 className="font-bold">تغییر سطح VIP کاربر</h3>
         </div>
         <Field label="شناسه کاربر (ObjectId)">
@@ -127,7 +127,7 @@ export default function XpVipTab() {
             <option value="">بدون VIP</option>
           </select>
         </Field>
-        <p className="text-xs leading-5 text-slate-400">
+        <p className="text-xs leading-5 text-slate-500">
           تغییر VIP در MembershipHistory ثبت و برای کاربر اعلان ارسال می‌شود. سطح VIP به‌صورت
           خودکار نیز بر اساس مجموع خرید کاربر به‌روز می‌شود.
         </p>

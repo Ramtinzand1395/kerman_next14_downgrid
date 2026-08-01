@@ -128,14 +128,14 @@ export function AchievementsTab() {
         {items?.map((a) => (
           <tr key={a._id}>
             <Td className="font-mono text-xs">{a.code}</Td>
-            <Td className="font-medium text-white">{a.title}</Td>
+            <Td className="font-medium text-slate-800">{a.title}</Td>
             <Td>{METRIC_FA[a.metric]}</Td>
             <Td>{faNum(a.target)}</Td>
             <Td>{a.xpReward ? faNum(a.xpReward) : "—"}</Td>
             <Td>
               <span
                 className={`rounded-full px-2 py-0.5 text-xs ${
-                  a.isActive ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-500/20 text-slate-400"
+                  a.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
                 }`}
               >
                 {a.isActive ? "فعال" : "غیرفعال"}
@@ -354,7 +354,7 @@ export function CampaignsTab() {
       >
         {items?.map((c) => (
           <tr key={c._id}>
-            <Td className="font-medium text-white">{c.title}</Td>
+            <Td className="font-medium text-slate-800">{c.title}</Td>
             <Td>×{c.xpMultiplier}</Td>
             <Td>{c.participationXp ? faNum(c.participationXp) : "—"}</Td>
             <Td className="text-xs">{toPersianDate(c.startsAt)}</Td>
@@ -362,7 +362,7 @@ export function CampaignsTab() {
             <Td>
               <span
                 className={`rounded-full px-2 py-0.5 text-xs ${
-                  c.isActive ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-500/20 text-slate-400"
+                  c.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
                 }`}
               >
                 {c.isActive ? "فعال" : "غیرفعال"}

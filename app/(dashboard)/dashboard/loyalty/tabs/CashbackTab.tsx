@@ -138,7 +138,7 @@ export default function CashbackTab() {
       >
         {items?.map((r) => (
           <tr key={r._id}>
-            <Td className="font-medium text-white">{r.title}</Td>
+            <Td className="font-medium text-slate-800">{r.title}</Td>
             <Td>{faNum(r.percent)}٪</Td>
             <Td>{r.maxAmount ? toman(r.maxAmount) : "—"}</Td>
             <Td>{r.minOrderAmount ? toman(r.minOrderAmount) : "—"}</Td>
@@ -149,7 +149,7 @@ export default function CashbackTab() {
             <Td>
               <span
                 className={`rounded-full px-2 py-0.5 text-xs ${
-                  r.isActive ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-500/20 text-slate-400"
+                  r.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
                 }`}
               >
                 {r.isActive ? "فعال" : "غیرفعال"}
@@ -214,7 +214,7 @@ export default function CashbackTab() {
               </Field>
             </div>
             <div>
-              <span className="mb-1 block text-xs text-slate-400">
+              <span className="mb-1 block text-xs text-slate-500">
                 محدود به سطوح VIP (هیچکدام = همه کاربران)
               </span>
               <div className="flex flex-wrap gap-2">
@@ -225,8 +225,8 @@ export default function CashbackTab() {
                     onClick={() => toggleTier(t)}
                     className={`rounded-lg border px-3 py-1.5 text-xs transition ${
                       form.vipTiers.includes(t)
-                        ? "border-indigo-400 bg-indigo-500/20 text-indigo-200"
-                        : "border-white/10 text-slate-400 hover:border-white/30"
+                        ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                        : "border-slate-300 text-slate-500 hover:border-slate-400"
                     }`}
                   >
                     {VIP_TIER_FA[t]}

@@ -110,7 +110,7 @@ export default function SpinTab() {
         >
           <Plus className="h-4 w-4" /> جایزه جدید
         </button>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-500">
           مجموع وزن فعال: {faNum(totalWeight)} — احتمال هر جایزه = وزن ÷ مجموع وزن
         </p>
       </div>
@@ -122,11 +122,11 @@ export default function SpinTab() {
       >
         {items?.map((p) => (
           <tr key={p._id}>
-            <Td className="font-medium text-white">{p.title}</Td>
+            <Td className="font-medium text-slate-800">{p.title}</Td>
             <Td>{SPIN_PRIZE_TYPE_FA[p.type]}</Td>
             <Td>{p.value ? faNum(p.value) : "—"}</Td>
             <Td>{faNum(p.weight)}</Td>
-            <Td className="text-xs text-indigo-300">
+            <Td className="text-xs text-indigo-600">
               {p.isActive && totalWeight > 0
                 ? `${((p.weight / totalWeight) * 100).toFixed(1)}٪`
                 : "—"}
@@ -135,7 +135,7 @@ export default function SpinTab() {
             <Td>
               <span
                 className={`rounded-full px-2 py-0.5 text-xs ${
-                  p.isActive ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-500/20 text-slate-400"
+                  p.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
                 }`}
               >
                 {p.isActive ? "فعال" : "غیرفعال"}

@@ -129,8 +129,8 @@ export default function WalletTab() {
   return (
     <div className="space-y-4">
       {/* عملیات روی کاربر */}
-      <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-        <p className="mb-3 text-sm font-medium text-white">عملیات کیف پول کاربر</p>
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p className="mb-3 text-sm font-medium text-slate-800">عملیات کیف پول کاربر</p>
         <div className="flex flex-wrap items-end gap-2">
           <Field label="شناسه کاربر (ObjectId)">
             <div className="relative">
@@ -146,7 +146,7 @@ export default function WalletTab() {
           <button
             type="button"
             onClick={lookupWallet}
-            className="flex items-center gap-1 rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-200 hover:bg-white/10"
+            className="flex items-center gap-1 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
           >
             <Search className="h-4 w-4" /> مشاهده
           </button>
@@ -174,19 +174,19 @@ export default function WalletTab() {
           </button>
         </div>
         {walletInfo && (
-          <p className="mt-3 text-sm text-slate-300">
+          <p className="mt-3 text-sm text-slate-600">
             موجودی فعلی{" "}
-            <b className="text-white">
+            <b className="text-slate-800">
               {walletInfo.user?.username || walletInfo.user?.mobile || "کاربر"}
             </b>
-            : <b className="text-emerald-300">{toman(walletInfo.balance)}</b>
+            : <b className="text-emerald-600">{toman(walletInfo.balance)}</b>
           </p>
         )}
       </div>
 
       {/* سوییچ تراکنش/لاگ + فیلتر */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex rounded-xl border border-white/10 p-1">
+        <div className="flex rounded-xl border border-slate-200 bg-white p-1">
           {(["transactions", "logs"] as const).map((v) => (
             <button
               key={v}
@@ -196,7 +196,7 @@ export default function WalletTab() {
                 setPage(1);
               }}
               className={`rounded-lg px-4 py-1.5 text-sm transition ${
-                view === v ? "bg-indigo-600 text-white" : "text-slate-300 hover:text-white"
+                view === v ? "bg-indigo-600 text-white" : "text-slate-500 hover:text-slate-800"
               }`}
             >
               {v === "transactions" ? "تراکنش‌ها" : "لاگ حسابرسی"}
@@ -236,11 +236,11 @@ export default function WalletTab() {
                 <Td className="font-bold">{faNum(t.amount)}</Td>
                 <Td>{faNum(t.balanceAfter)}</Td>
                 <Td>
-                  <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs">
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
                     {WALLET_TX_STATUS_FA[t.status]}
                   </span>
                 </Td>
-                <Td className="max-w-48 truncate text-xs text-slate-400">{t.description ?? "—"}</Td>
+                <Td className="max-w-48 truncate text-xs text-slate-500">{t.description ?? "—"}</Td>
                 <Td className="text-xs">{toPersianDate(t.createdAt)}</Td>
               </tr>
             ))}
@@ -262,8 +262,8 @@ export default function WalletTab() {
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs ${
                       l.success
-                        ? "bg-emerald-500/20 text-emerald-300"
-                        : "bg-rose-500/20 text-rose-300"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-rose-100 text-rose-600"
                     }`}
                   >
                     {l.success ? "موفق" : "ناموفق"}

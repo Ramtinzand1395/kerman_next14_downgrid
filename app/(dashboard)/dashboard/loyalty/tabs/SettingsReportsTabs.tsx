@@ -52,7 +52,7 @@ export function SettingsTab() {
     load();
   }, [load]);
 
-  if (!settings) return <p className="py-10 text-center text-slate-400">در حال بارگذاری…</p>;
+  if (!settings) return <p className="py-10 text-center text-slate-500">در حال بارگذاری…</p>;
 
   const setXp = (k: keyof Settings["xp"], v: number) =>
     setSettings({ ...settings, xp: { ...settings.xp, [k]: v } });
@@ -72,8 +72,8 @@ export function SettingsTab() {
   return (
     <div className="space-y-5">
       {/* مقادیر XP */}
-      <div className="rounded-xl border border-white/10 bg-white/5 p-5">
-        <h3 className="mb-4 font-bold text-white">مقادیر امتیاز (XP)</h3>
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h3 className="mb-4 font-bold text-slate-800">مقادیر امتیاز (XP)</h3>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {(Object.keys(XP_LABELS) as (keyof Settings["xp"])[]).map((k) => (
             <Field key={k} label={XP_LABELS[k]}>
@@ -92,8 +92,8 @@ export function SettingsTab() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {/* کش‌بک و رفرال */}
         <div className="space-y-5">
-          <div className="rounded-xl border border-white/10 bg-white/5 p-5">
-            <h3 className="mb-4 font-bold text-white">کش‌بک</h3>
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 className="mb-4 font-bold text-slate-800">کش‌بک</h3>
             <div className="flex items-end gap-4">
               <Field label="درصد پیش‌فرض">
                 <input
@@ -121,8 +121,8 @@ export function SettingsTab() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-white/5 p-5">
-            <h3 className="mb-4 font-bold text-white">دعوت از دوستان</h3>
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 className="mb-4 font-bold text-slate-800">دعوت از دوستان</h3>
             <div className="grid grid-cols-3 gap-3">
               <Field label="پاداش معرف (تومان)">
                 <input
@@ -172,8 +172,8 @@ export function SettingsTab() {
 
         {/* زنجیره، گردونه، کیف پول */}
         <div className="space-y-5">
-          <div className="rounded-xl border border-white/10 bg-white/5 p-5">
-            <h3 className="mb-4 font-bold text-white">زنجیره ورود روزانه (XP روز ۱ تا ۷)</h3>
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 className="mb-4 font-bold text-slate-800">زنجیره ورود روزانه (XP روز ۱ تا ۷)</h3>
             <div className="grid grid-cols-7 gap-2">
               {settings.loginStreak.dailyXpRewards.map((v, i) => (
                 <Field key={i} label={`روز ${faNum(i + 1)}`}>
@@ -216,8 +216,8 @@ export function SettingsTab() {
           </div>
 
           <div className="grid grid-cols-2 gap-5">
-            <div className="rounded-xl border border-white/10 bg-white/5 p-5">
-              <h3 className="mb-4 font-bold text-white">گردونه شانس</h3>
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h3 className="mb-4 font-bold text-slate-800">گردونه شانس</h3>
               <Toggle
                 checked={settings.spin.enabled}
                 onChange={(v) =>
@@ -226,8 +226,8 @@ export function SettingsTab() {
                 label="فعال"
               />
             </div>
-            <div className="rounded-xl border border-white/10 bg-white/5 p-5">
-              <h3 className="mb-4 font-bold text-white">انقضای هدیه (روز)</h3>
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h3 className="mb-4 font-bold text-slate-800">انقضای هدیه (روز)</h3>
               <input
                 type="number"
                 min={0}
@@ -299,7 +299,7 @@ export function ReportsTab() {
             className={`rounded-xl px-4 py-2 text-sm transition ${
               report === r.key
                 ? "bg-indigo-600 text-white"
-                : "border border-white/10 text-slate-300 hover:bg-white/10"
+                : "border border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
             }`}
           >
             {r.label}
@@ -308,7 +308,7 @@ export function ReportsTab() {
       </div>
 
       {loading ? (
-        <p className="py-10 text-center text-slate-400">در حال بارگذاری گزارش…</p>
+        <p className="py-10 text-center text-slate-500">در حال بارگذاری گزارش…</p>
       ) : (
         <ReportBody report={report} data={data} />
       )}
@@ -326,7 +326,7 @@ function ReportBody({ report, data }: { report: string; data: unknown }) {
       <AdminTable headers={["کاربر", "موبایل", "مجموع خرید", "سفارش موفق", "VIP"]} empty={rows.length === 0}>
         {rows.map((u, i) => (
           <tr key={i}>
-            <Td className="font-medium text-white">{String(u.username ?? "—")}</Td>
+            <Td className="font-medium text-slate-800">{String(u.username ?? "—")}</Td>
             <Td className="font-mono text-xs">{String(u.mobile ?? "—")}</Td>
             <Td>{toman(Number(u.totalPurchase ?? 0))}</Td>
             <Td>{faNum(Number(u.successfulOrders ?? 0))}</Td>
@@ -345,15 +345,15 @@ function ReportBody({ report, data }: { report: string; data: unknown }) {
     };
     return (
       <div className="space-y-3">
-        <p className="text-sm text-slate-300">
-          تعداد کاربران فعال این ماه: <b className="text-white">{faNum(totalActive)}</b>
+        <p className="text-sm text-slate-600">
+          تعداد کاربران فعال این ماه: <b className="text-slate-800">{faNum(totalActive)}</b>
         </p>
         <AdminTable headers={["کاربر", "امتیاز ماه", "مجموع امتیاز", "سطح"]} empty={items.length === 0}>
           {items.map((u, i) => {
             const user = (u.user ?? {}) as Record<string, string>;
             return (
               <tr key={i}>
-                <Td className="font-medium text-white">{user.username ?? user.mobile ?? "—"}</Td>
+                <Td className="font-medium text-slate-800">{user.username ?? user.mobile ?? "—"}</Td>
                 <Td>{faNum(Number(u.monthlyXp ?? 0))}</Td>
                 <Td>{faNum(Number(u.totalXp ?? 0))}</Td>
                 <Td className="text-xs">{String(u.level ?? "—")}</Td>
@@ -397,7 +397,7 @@ function ReportBody({ report, data }: { report: string; data: unknown }) {
       <AdminTable headers={["نوع تراکنش", "تعداد", "مجموع مبلغ"]} empty={rows.length === 0}>
         {rows.map((r) => (
           <tr key={r._id}>
-            <Td className="font-medium text-white">{TYPE_LABELS[r._id] ?? r._id}</Td>
+            <Td className="font-medium text-slate-800">{TYPE_LABELS[r._id] ?? r._id}</Td>
             <Td>{faNum(r.count)}</Td>
             <Td>{toman(r.total)}</Td>
           </tr>
@@ -413,7 +413,7 @@ function ReportBody({ report, data }: { report: string; data: unknown }) {
       <AdminTable headers={["سطح VIP", "تعداد کاربر"]} empty={rows.length === 0}>
         {rows.map((r) => (
           <tr key={r._id}>
-            <Td className="font-medium text-white">{VIP_LABELS[r._id] ?? r._id}</Td>
+            <Td className="font-medium text-slate-800">{VIP_LABELS[r._id] ?? r._id}</Td>
             <Td>{faNum(r.count)}</Td>
           </tr>
         ))}
@@ -439,7 +439,7 @@ function ReportBody({ report, data }: { report: string; data: unknown }) {
         <AdminTable headers={["معرف", "دعوت موفق", "درآمد"]} empty={topReferrers.length === 0}>
           {topReferrers.map((r) => (
             <tr key={r._id}>
-              <Td className="font-medium text-white">
+              <Td className="font-medium text-slate-800">
                 {r.user?.username ?? r.user?.mobile ?? "—"}
               </Td>
               <Td>{faNum(r.count)}</Td>
@@ -468,9 +468,9 @@ function ReportBody({ report, data }: { report: string; data: unknown }) {
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-      <p className="text-xs text-slate-400">{label}</p>
-      <p className="mt-2 text-lg font-bold text-white">{value}</p>
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="mt-2 text-lg font-bold text-slate-800">{value}</p>
     </div>
   );
 }

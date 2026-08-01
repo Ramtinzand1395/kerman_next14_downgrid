@@ -107,7 +107,7 @@ export default function LevelsTab() {
       {rows.map((l) => (
         <tr key={l._id}>
           <Td className="font-mono text-xs">{l.code}</Td>
-          <Td className="font-medium text-white">{l.titleFa}</Td>
+          <Td className="font-medium text-slate-800">{l.titleFa}</Td>
           <Td className="text-xs">
             {l.kind === "level" ? `${faNum(l.minXp)} XP` : toman(l.minTotalPurchase)}
           </Td>
@@ -117,7 +117,7 @@ export default function LevelsTab() {
           <Td>
             <span
               className={`rounded-full px-2 py-0.5 text-xs ${
-                l.isActive ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-500/20 text-slate-400"
+                l.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
               }`}
             >
               {l.isActive ? "فعال" : "غیرفعال"}
@@ -127,7 +127,7 @@ export default function LevelsTab() {
             <button
               type="button"
               onClick={() => openEdit(l)}
-              className="rounded-md border border-indigo-400/30 px-2 py-1 text-xs text-indigo-300 hover:bg-indigo-500/20"
+              className="rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-100"
             >
               ویرایش
             </button>
@@ -144,7 +144,7 @@ export default function LevelsTab() {
           type="button"
           onClick={seed}
           disabled={seeding}
-          className="flex items-center gap-1.5 rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-200 hover:bg-white/10 disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50"
         >
           <RefreshCw className={`h-4 w-4 ${seeding ? "animate-spin" : ""}`} />
           Seed سطوح پیش‌فرض
@@ -152,16 +152,16 @@ export default function LevelsTab() {
       </div>
 
       <div>
-        <div className="mb-2 flex items-center gap-2 text-white">
-          <Sparkles className="h-4 w-4 text-indigo-400" />
+        <div className="mb-2 flex items-center gap-2 text-slate-800">
+          <Sparkles className="h-4 w-4 text-indigo-500" />
           <h3 className="font-bold">سطوح Level (بر اساس XP)</h3>
         </div>
         {renderTable(levels, "حداقل XP")}
       </div>
 
       <div>
-        <div className="mb-2 flex items-center gap-2 text-white">
-          <Crown className="h-4 w-4 text-amber-400" />
+        <div className="mb-2 flex items-center gap-2 text-slate-800">
+          <Crown className="h-4 w-4 text-amber-500" />
           <h3 className="font-bold">سطوح VIP (بر اساس مجموع خرید)</h3>
         </div>
         {renderTable(vips, "حداقل مجموع خرید")}

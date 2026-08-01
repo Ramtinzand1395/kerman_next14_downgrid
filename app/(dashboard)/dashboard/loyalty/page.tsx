@@ -49,19 +49,19 @@ export default function LoyaltyAdminPage() {
   return (
     <div className="space-y-5 p-1 md:p-4">
       <div className="flex items-center gap-3">
-        <span className="rounded-xl bg-indigo-500/20 p-3">
-          <Sparkles className="h-6 w-6 text-indigo-300" />
+        <span className="rounded-xl bg-indigo-100 p-3">
+          <Sparkles className="h-6 w-6 text-indigo-600" />
         </span>
         <div>
-          <h1 className="text-lg font-bold text-white">باشگاه مشتریان و کیف پول</h1>
-          <p className="text-xs text-slate-400">
+          <h1 className="text-lg font-bold text-slate-800">باشگاه مشتریان و کیف پول</h1>
+          <p className="text-xs text-slate-500">
             مدیریت امتیاز، سطوح، کش‌بک، کوپن، ماموریت‌ها و گزارش‌ها
           </p>
         </div>
       </div>
 
       {/* تب‌ها */}
-      <div className="flex flex-wrap gap-2 border-b border-white/10 pb-3">
+      <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-3">
         {TABS.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
@@ -69,8 +69,8 @@ export default function LoyaltyAdminPage() {
             onClick={() => setTab(key)}
             className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm transition ${
               tab === key
-                ? "bg-indigo-600 text-white shadow"
-                : "text-slate-300 hover:bg-white/10 hover:text-white"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-slate-600 hover:bg-slate-200/70 hover:text-slate-800"
             }`}
           >
             <Icon className="h-4 w-4" />

@@ -167,8 +167,8 @@ export default function MissionsTab() {
         {items?.map((m) => (
           <tr key={m._id}>
             <Td>
-              <p className="font-medium text-white">{m.title}</p>
-              {m.description && <p className="text-xs text-slate-400">{m.description}</p>}
+              <p className="font-medium text-slate-800">{m.title}</p>
+              {m.description && <p className="text-xs text-slate-500">{m.description}</p>}
             </Td>
             <Td>{PERIOD_FA[m.period]}</Td>
             <Td>{METRIC_FA[m.metric]}</Td>
@@ -182,7 +182,7 @@ export default function MissionsTab() {
             <Td>
               <span
                 className={`rounded-full px-2 py-0.5 text-xs ${
-                  m.isActive ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-500/20 text-slate-400"
+                  m.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
                 }`}
               >
                 {m.isActive ? "فعال" : "غیرفعال"}

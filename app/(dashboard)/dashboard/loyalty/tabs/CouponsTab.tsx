@@ -144,7 +144,7 @@ export default function CouponsTab() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative">
-          <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-slate-500" />
+          <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-slate-400" />
           <input
             value={search}
             onChange={(e) => {
@@ -171,7 +171,7 @@ export default function CouponsTab() {
       >
         {data?.items.map((c) => (
           <tr key={c._id}>
-            <Td className="font-mono font-bold text-indigo-300">{c.code}</Td>
+            <Td className="font-mono font-bold text-indigo-600">{c.code}</Td>
             <Td>{c.type === "percent" ? "درصدی" : "مبلغ ثابت"}</Td>
             <Td>{c.type === "percent" ? `${faNum(c.value)}٪` : toman(c.value)}</Td>
             <Td>{c.minPurchaseAmount ? toman(c.minPurchaseAmount) : "—"}</Td>
@@ -183,7 +183,7 @@ export default function CouponsTab() {
             <Td>
               <span
                 className={`rounded-full px-2 py-0.5 text-xs ${
-                  c.isActive ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-500/20 text-slate-400"
+                  c.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
                 }`}
               >
                 {c.isActive ? "فعال" : "غیرفعال"}
