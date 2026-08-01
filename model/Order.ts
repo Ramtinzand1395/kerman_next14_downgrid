@@ -73,7 +73,7 @@ const OrderSchema = new mongoose.Schema(
     },
     paymentGateway: {
       type: String,
-      enum: ["zarinpal"],
+      enum: ["zarinpal", "wallet"],
       default: null,
     },
     paymentAuthority: {
@@ -106,6 +106,24 @@ const OrderSchema = new mongoose.Schema(
     paymentVerifiedAt: {
       type: Date,
 
+      default: null,
+    },
+
+    // کوپن اعمال‌شده روی سفارش
+    couponCode: {
+      type: String,
+      default: null,
+    },
+    couponDiscount: {
+      type: Number,
+      default: 0,
+    },
+
+    // کلید idempotency سمت کلاینت — جلوگیری از ثبت سفارش تکراری (پرداخت کیف پول)
+    clientRequestKey: {
+      type: String,
+      unique: true,
+      sparse: true,
       default: null,
     },
 

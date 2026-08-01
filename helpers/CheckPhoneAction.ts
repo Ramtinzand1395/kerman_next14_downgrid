@@ -1,3 +1,33 @@
+// "use server";
+
+// import dbConnect from "@/lib/mongodb";
+// import Notification from "@/model/Notification";
+// import User from "@/model/User";
+
+// export async function CheckPhoneAction(mobile: string) {
+//   try {
+//     await dbConnect();
+//     let user = await User.findOne({ mobile });
+//     if (!user) {
+//       const user = await User.create({ mobile });
+//       await Notification.create({
+//         title: "کاربر جدید",
+//         message: "یک کاربر جدید ثبت نام شد",
+//         type: "user",
+//         target: {
+//           kind: "User",
+//           item: user._id,
+//         },
+//       });
+//     }
+//     return true; // در هر صورت true برمی‌گردانیم
+//   } catch (error) {
+//     console.error("CheckPhoneAction error:", error);
+//     return false; // در صورت خطا false برمی‌گردد
+//   }
+// }
+
+// بعد از chat
 "use server";
 
 import dbConnect from "@/lib/mongodb";
@@ -9,16 +39,24 @@ export async function CheckPhoneAction(mobile: string) {
     await dbConnect();
     let user = await User.findOne({ mobile });
     if (!user) {
-      const user = await User.create({ mobile });
+      const newUser = await User.create({ mobile });
       await Notification.create({
         title: "کاربر جدید",
         message: "یک کاربر جدید ثبت نام شد",
         type: "user",
         target: {
           kind: "User",
-          item: user._id,
+          item: newUser._id,
         },
       });
+
+      // باشگاه مشتریان: XP ثبت‌نام + ساخت کد دعوت
+      try {
+        const { onUserSignup } = await import("@/lib/loyalty/purchase.hooks");
+        await onUserSignup(newUser._id.toString());
+      } catch (err) {
+        console.error("[loyalty] signup hook failed:", err);
+      }
     }
     return true; // در هر صورت true برمی‌گردانیم
   } catch (error) {
