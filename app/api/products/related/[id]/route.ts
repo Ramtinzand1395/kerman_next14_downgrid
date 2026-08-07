@@ -34,6 +34,7 @@ export async function GET(
     const relatedProducts = await Product.find({
       _id: { $ne: id },
       category: product.category,
+      status: "published",
     })
       .sort({ createdAt: -1 })
       .limit(4)

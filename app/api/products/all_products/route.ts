@@ -16,7 +16,7 @@ export async function GET(req: Request) {
     const limit = Number(searchParams.get("limit") || 12);
     const skip = (page - 1) * limit;
 
-    const filter: Record<string, any> = {};
+     const filter: Record<string, any> = { status: "published" };
 
     if (categorySlug) {
       const mainCategory = await Category.findOne({

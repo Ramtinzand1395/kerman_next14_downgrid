@@ -24,6 +24,11 @@ const productSchema = new Schema(
         stock: { type: Number, default: 0 },
       },
     ],
+    status: {
+         type: String,
+          enum: ["draft", "published"],
+         default: "draft",
+       },
 
     sku: {
       type: String,

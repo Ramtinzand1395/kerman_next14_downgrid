@@ -45,7 +45,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     await dbConnect();
 
-    const products = (await Product.find({}, { slug: 1, updatedAt: 1, _id: 0 })
+    // const products = (await Product.find({}, { slug: 1, updatedAt: 1, _id: 0 })
+    const products = (await Product.find(
+      { status: "published" },
+      { slug: 1, updatedAt: 1, _id: 0 },
+    )
       .lean()
       .exec()) as ProductSitemapRow[];
 

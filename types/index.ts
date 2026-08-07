@@ -61,6 +61,7 @@ export interface OTP {
 }
 // !برای فرم محصول
 export interface ProductForm {
+  status: "draft" | "published";
   productType: "single" | "multi";
   title: string;
   slug: string;
@@ -160,6 +161,7 @@ export interface Category {
 }
 
 export interface Product {
+  status?: "draft" | "published";
   productType?: "single" | "multi";
   variants?: {
     _id?: string;

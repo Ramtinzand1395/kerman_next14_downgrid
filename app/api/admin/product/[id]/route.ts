@@ -74,6 +74,7 @@ export async function PUT(
 
     const productData = {
       ...body,
+       status: body.status === "published" ? "published" : "draft",
       category: categoryId,
       productType,
       variants: productType === "multi" ? safeVariants : [],

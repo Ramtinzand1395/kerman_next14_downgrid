@@ -131,6 +131,7 @@ export async function POST(req: Request) {
 
     const productData = {
       ...body,
+       status: body.status === "published" ? "published" : "draft",
       productType,
       category: categoryId,
       variants: productType === "multi" ? safeVariants : [],
