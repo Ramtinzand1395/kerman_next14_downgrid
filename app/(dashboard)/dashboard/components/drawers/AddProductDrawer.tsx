@@ -21,6 +21,7 @@
 // }
 
 // const initialForm: ProductForm = {
+//   status: "draft",
 //   productType: "single",
 //   title: "",
 //   slug: "",
@@ -41,7 +42,7 @@
 //   variants: [],
 // };
 
-// type SectionKey = "basic" | "taxonomy" | "media" | "specs" | "seo";
+// type SectionKey = "publish" | "basic" | "taxonomy" | "media" | "specs" | "seo";
 
 // interface DrawerSectionProps {
 //   title: string;
@@ -77,6 +78,7 @@
 
 // export default function AddProductDrawer({ onClose, onSave, product }: Props) {
 //   const [form, setForm] = useState<ProductForm>({
+//     status: product?.status || initialForm.status,
 //     title: product?.title || initialForm.title,
 //     slug: product?.slug || initialForm.slug,
 //     seoTitle: product?.seoTitle || initialForm.seoTitle,
@@ -223,6 +225,44 @@
 //           className="space-y-4 px-6 py-6"
 //         >
 //           <DrawerSection
+//             title="وضعیت انتشار"
+//             sectionKey="publish"
+//             openSection={openSection}
+//             onToggle={toggleSection}
+//           >
+//             <div className="grid grid-cols-2 gap-3">
+//               <button
+//                 type="button"
+//                 onClick={() => updateField("status", "draft")}
+//                 className={`rounded-lg border px-3 py-2.5 text-xs font-semibold transition ${
+//                   form.status === "draft"
+//                     ? "border-amber-400 bg-amber-400/10 text-amber-300"
+//                     : "border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600"
+//                 }`}
+//               >
+//                 پیش‌نویس
+//                 <span className="mt-1 block text-[10px] font-normal opacity-70">
+//                   در سایت نمایش داده نمی‌شود
+//                 </span>
+//               </button>
+//               <button
+//                 type="button"
+//                 onClick={() => updateField("status", "published")}
+//                 className={`rounded-lg border px-3 py-2.5 text-xs font-semibold transition ${
+//                   form.status === "published"
+//                     ? "border-emerald-400 bg-emerald-400/10 text-emerald-300"
+//                     : "border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600"
+//                 }`}
+//               >
+//                 آماده انتشار
+//                 <span className="mt-1 block text-[10px] font-normal opacity-70">
+//                   در سایت نمایش داده می‌شود
+//                 </span>
+//               </button>
+//             </div>
+//           </DrawerSection>
+
+//           <DrawerSection
 //             title="اطلاعات پایه"
 //             sectionKey="basic"
 //             openSection={openSection}
@@ -284,20 +324,36 @@
 //           </DrawerSection>
 
 //           <div className="sticky bottom-0 -mx-6 mt-6 border-t border-slate-700 bg-slate-900/95 px-6 py-4 backdrop-blur">
-//             <button
-//               type="submit"
-//               disabled={loading}
-//               className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 py-2 text-sm font-semibold transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-70"
-//             >
-//               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-//               {loading
-//                 ? product
-//                   ? "در حال بروزرسانی..."
-//                   : "در حال ذخیره..."
-//                 : product
-//                   ? "بروزرسانی محصول"
-//                   : "ذخیره محصول"}
-//             </button>
+//             <div className="flex gap-3">
+//               <button
+//                 type="submit"
+//                 onClick={() => updateField("status", "draft")}
+//                 disabled={loading}
+//                 className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-amber-500/50 bg-amber-500/10 py-2 text-sm font-semibold text-amber-300 transition hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-70"
+//               >
+//                 {loading && form.status === "draft" ? (
+//                   <Loader2 className="h-4 w-4 animate-spin" />
+//                 ) : null}
+//                 ذخیره پیش‌نویس
+//               </button>
+//               <button
+//                 type="submit"
+//                 onClick={() => updateField("status", "published")}
+//                 disabled={loading}
+//                 className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-indigo-600 py-2 text-sm font-semibold transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-70"
+//               >
+//                 {loading && form.status === "published" ? (
+//                   <Loader2 className="h-4 w-4 animate-spin" />
+//                 ) : null}
+//                 {loading && form.status === "published"
+//                   ? product
+//                     ? "در حال بروزرسانی..."
+//                     : "در حال انتشار..."
+//                   : product
+//                     ? "بروزرسانی و انتشار"
+//                     : "انتشار محصول"}
+//               </button>
+//             </div>
 //           </div>
 //         </form>
 //       </div>
@@ -460,14 +516,18 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
         }),
       });
 
-      if (!res.ok) throw new Error("Request failed");
+      const data = await res.json();
 
-      const created = await res.json();
+      if (!res.ok) {
+        toast.error(data?.error || "خطا در ذخیره محصول");
+        return;
+      }
+
       toast.success("محصول با موفقیت ذخیره شد");
-      onSave?.(created);
+      onSave?.(data);
       onClose();
     } catch (err) {
-      toast.error("خطا در ذخیره محصول");
+      toast.error("خطا در ارتباط با سرور");
     } finally {
       setLoading(false);
     }
@@ -493,14 +553,18 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
         }),
       });
 
-      if (!res.ok) throw new Error("Request failed");
+      const data = await res.json();
 
-      const updated = await res.json();
+      if (!res.ok) {
+        toast.error(data?.error || "خطا در بروزرسانی محصول");
+        return;
+      }
+
       toast.success("محصول با موفقیت بروزرسانی شد");
-      onSave?.(updated);
+      onSave?.(data);
       onClose();
     } catch (err) {
-      toast.error("خطا در بروزرسانی محصول");
+      toast.error("خطا در ارتباط با سرور");
     } finally {
       setLoading(false);
     }
