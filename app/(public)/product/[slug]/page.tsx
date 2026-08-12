@@ -77,21 +77,30 @@ export async function generateMetadata({
   const finalPrice = product.discountPrice ?? product.price;
   const canonicalUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/product/${product.slug}`;
 
+  const metaDescription = (
+    product.metaDescription ||
+    product.shortDesc ||
+    `مشاهده مشخصات، تصاویر و قیمت ${product.title}`
+  )
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 160);
+
   return {
     title:
       product.seoTitle ||
       `${product.title} | ${product.brand || "کرمان آتاری"} | خرید با بهترین قیمت`,
-    description:
-      product.metaDescription ||
-      product.shortDesc ||
-      `مشاهده مشخصات، تصاویر و قیمت ${product.title}`,
+    description: metaDescription,
     alternates: {
       canonical: canonicalUrl,
     },
+    robots: {
+      index: product.status !== "draft",
+      follow: product.status !== "draft",
+    },
     openGraph: {
-      title: `${product.title} | کرمان آتاری`,
-      description:
-        product.shortDesc || `مشاهده مشخصات، تصاویر و قیمت ${product.title}`,
+      title: product.seoTitle || `${product.title} | کرمان آتاری`,
+      description: metaDescription,
       type: "website",
       url: canonicalUrl,
       images: [
@@ -101,13 +110,20 @@ export async function generateMetadata({
         },
       ],
     },
+    twitter: {
+      card: "summary_large_image",
+      title: product.seoTitle || `${product.title} | کرمان آتاری`,
+      description: metaDescription,
+      images: [product.mainImage],
+    },
 
     keywords: [
       product.title,
       product.brand || "",
       product.category?.name || "",
-      "خرید دسته بازی",
-      "قیمت روز محصولات گیم",
+      ...(product.tags?.map((tag) => tag.name) || []),
+      `خرید ${product.title}`,
+      `قیمت ${product.title}`,
     ].filter(Boolean),
   };
 }

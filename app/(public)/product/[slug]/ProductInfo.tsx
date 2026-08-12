@@ -1,5 +1,6 @@
 "use client";
 import { Truck, RotateCcw, Box, Store } from "lucide-react";
+import Link from "next/link";
 import { Comment, Product } from "@/types";
 import AddToCart from "./AddToCart";
 import {
@@ -57,19 +58,17 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
     <div className="flex flex-col h-full">
       {/* Brand & Category */}
       <div className="flex items-center gap-2 text-sm text-indigo-600 font-medium mb-2">
-        <a href="#" className="hover:underline">
-          {product.brand}
-        </a>
+        {product.brand ? <span>{product.brand}</span> : null}
         <span className="text-gray-300">/</span>
-        <a href="#" className="hover:underline">
+        <Link
+          href={`/products?category=${product.category._id}`}
+          className="hover:underline"
+        >
           {product.category.name}
-        </a>
+        </Link>
       </div>
 
-      {/* Title */}
-      <h2 className="text-2xl font-bold text-gray-900 leading-snug mb-3">
-        {product.title}
-      </h2>
+      {/* SKU */}
       <span className="text-gray-400 text-sm mb-4 block dir-ltr text-right">
         SKU: {product.sku}
       </span>
@@ -127,7 +126,10 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
       {/* tags */}
       <div className="flex items-center gap-3">
         {product.tags.map((tag) => (
-          <p className="bg-blue-500 px-3 py-2 text-xs rounded-md text-white ">
+          <p
+            key={tag._id}
+            className="bg-blue-500 px-3 py-2 text-xs rounded-md text-white "
+          >
             {tag.name}
           </p>
         ))}

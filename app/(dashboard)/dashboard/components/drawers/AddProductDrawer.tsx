@@ -14,6 +14,7 @@ import ImageUploader from "../modals/ImageUploader";
 import SpecificationsEditor from "../modals/SpecificationsEditor";
 import FaqEditor from "../modals/FaqEditor";
 import SeoFields from "../modals/SeoFields";
+import SeoAnalyzer from "../modals/SeoAnalyzer";
 
 interface Props {
   onClose: () => void;
@@ -44,7 +45,7 @@ const initialForm: ProductForm = {
   variants: [],
 };
 
-type SectionKey = "publish" | "basic" | "taxonomy" | "media" | "specs" | "faq" | "seo";
+type SectionKey = "publish" | "basic" | "taxonomy" | "media" | "specs" | "faq" | "seo" | "seoCheck";
 
 interface DrawerSectionProps {
   title: string;
@@ -341,6 +342,15 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
             <div className="space-y-4">
               <SeoFields form={form} updateField={updateField} />
             </div>
+          </DrawerSection>
+
+          <DrawerSection
+            title="بررسی سئو قبل از انتشار"
+            sectionKey="seoCheck"
+            openSection={openSection}
+            onToggle={toggleSection}
+          >
+            <SeoAnalyzer form={form} />
           </DrawerSection>
 
           <div className="sticky bottom-0 -mx-6 mt-6 border-t border-slate-700 bg-slate-900/95 px-6 py-4 backdrop-blur">
