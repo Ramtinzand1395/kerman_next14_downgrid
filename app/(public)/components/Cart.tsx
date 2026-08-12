@@ -183,11 +183,12 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
             <Image
               src={game.mainImage}
               alt={game.mainImageAlt || game.title}
-              width={320}
-              height={180}
+              width={640}
+              height={360}
+              quality={85}
               loading="lazy"
               itemProp="image"
-              className="h-28 w-full object-contain transition-transform duration-300 group-hover:scale-105"
+              className=" w-full object-contain transition-transform duration-300 group-hover:scale-105"
             />
           </div>
         </Link>

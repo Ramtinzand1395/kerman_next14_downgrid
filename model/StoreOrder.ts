@@ -2,15 +2,7 @@ import mongoose from "mongoose";
 
 const storeOrderSchema = new mongoose.Schema(
   {
-    // !حل اشکال ثبت دستی
-    // list: [
-    //   {
-    //     name: { type: String, required: true },
-    //     price: { type: Number, required: true },
-    //     size: { type: Number, required: true },
-    //     storage: { type: String, required: true },
-    //   },
-    // ],
+  
     list: [
       {
         name: { type: String },

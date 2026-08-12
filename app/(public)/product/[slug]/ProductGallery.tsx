@@ -161,8 +161,10 @@ export const ProductGallery = ({
         onMouseLeave={() => setIsZoomed(false)}
       >
         <Image
-          width={200}
-          height={100}
+          width={1200}
+          height={1200}
+          quality={90}
+          sizes="(max-width: 768px) 100vw, 50vw"
           src={activeImage.url}
           alt={activeImage.alt || title}
           className={`w-full h-[400px] object-contain transition-transform duration-500 ${
