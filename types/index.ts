@@ -60,6 +60,11 @@ export interface OTP {
   createdAt: string | Date;
 }
 // !برای فرم محصول
+export interface ProductFaq {
+  question: string;
+  answer: string;
+}
+
 export interface ProductForm {
   status: "draft" | "published";
   productType: "single" | "multi";
@@ -76,6 +81,7 @@ export interface ProductForm {
   mainImage: string; // فقط URL
   galleryImages: { url: string; alt: string }[];
   specifications: { title: string; items: { key: string; value: string }[] }[];
+  faqs: ProductFaq[];
   seoTitle: string;
   metaDescription: string;
   mainImageAlt: string;
@@ -189,6 +195,7 @@ export interface Product {
   tags: Tag[];
   images: ({ url: string; alt: string } | string)[];
   specifications: Specification[];
+  faqs?: ProductFaq[];
   comments: Comment[];
   favorites: Favorite[];
   OrderItem: OrderItem[];

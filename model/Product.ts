@@ -8,8 +8,22 @@ const SpecificationItemSchema = new Schema(
   { _id: false }, // هر آیتم نیاز به _id جدا ندارد
 );
 
+const FaqItemSchema = new Schema(
+  {
+    question: { type: String, required: true },
+    answer: { type: String, required: true },
+  },
+  { _id: false }, // هر سوال نیاز به _id جدا ندارد
+);
+
 const productSchema = new Schema(
   {
+    status: {
+      type: String,
+      enum: ["draft", "published"],
+      default: "draft",
+    },
+
     productType: {
       type: String,
       enum: ["single", "multi"],
@@ -24,11 +38,6 @@ const productSchema = new Schema(
         stock: { type: Number, default: 0 },
       },
     ],
-    status: {
-         type: String,
-          enum: ["draft", "published"],
-         default: "draft",
-       },
 
     sku: {
       type: String,
@@ -87,6 +96,8 @@ const productSchema = new Schema(
         items: [SpecificationItemSchema],
       },
     ],
+
+    faqs: [FaqItemSchema],
 
     category: {
       type: mongoose.Schema.Types.ObjectId,

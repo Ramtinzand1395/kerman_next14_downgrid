@@ -195,6 +195,25 @@ export default async function ProductPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      {product.faqs && product.faqs.length > 0 ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              mainEntity: product.faqs.map((faq) => ({
+                "@type": "Question",
+                name: faq.question,
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: faq.answer,
+                },
+              })),
+            }),
+          }}
+        />
+      ) : null}
 
       <section className="mb-5 rounded-2xl border border-zinc-200 bg-white p-4 md:p-5">
         <nav aria-label="breadcrumb" className="text-sm text-zinc-500">
@@ -247,12 +266,31 @@ export default async function ProductPage({
           </div>
 
           <div className="rounded-3xl border border-zinc-200 bg-white p-4 md:p-6">
-            <h2 className="text-lg font-bold text-zinc-900 mb-2">
-              چرا این محصول؟
+            <h2 className="text-lg font-bold text-zinc-900 mb-4">
+              سوالات پرتکرار
             </h2>
-            <p className="text-zinc-600 leading-8 text-sm md:text-base">
-              این محصول با تضمین اصالت، ارسال سریع و پشتیبانی کامل ارائه می‌شود.
-            </p>{" "}
+            {product.faqs && product.faqs.length > 0 ? (
+              <div className="space-y-3">
+                {product.faqs.map((faq, index) => (
+                  <details
+                    key={index}
+                    className="group rounded-xl border border-zinc-200 bg-zinc-50 p-4"
+                  >
+                    <summary className="cursor-pointer list-none text-sm md:text-base font-bold text-zinc-900 transition-colors group-open:text-blue-700">
+                      {faq.question}
+                    </summary>
+                    <p className="mt-2 text-sm leading-7 text-zinc-600">
+                      {faq.answer}
+                    </p>
+                  </details>
+                ))}
+              </div>
+            ) : (
+              <p className="text-zinc-600 leading-8 text-sm md:text-base">
+                این محصول با تضمین اصالت، ارسال سریع و پشتیبانی کامل ارائه
+                می‌شود.
+              </p>
+            )}
           </div>
 
           <TabSection product={product} />
