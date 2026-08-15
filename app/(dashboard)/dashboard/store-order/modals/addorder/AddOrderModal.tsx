@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 
 import { Customer, storeOrder } from "@/types";
 import SearchCustomer from "./SearchCustomer";
 import RegisterCustomer from "./RegisterCustomer";
 import AddCustomerOrder from "./AddCustomerOrder";
+import { readStoreOrderDraft, writeStoreOrderDraft } from "./draft";
 
 type OrdersByConsole = {
   ps5: storeOrder[];
@@ -42,6 +43,27 @@ const steps = [
 const AddOrderModal = ({ closeModal, setOrders }: AddOrderModalProps) => {
   const [activeStep, setActiveStep] = useState<number>(1);
   const [customerData, setCustomerData] = useState<Customer>(defaultCustomer);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+
+  // بازیابی پیش‌نویس ذخیره‌شده (مثلا بعد از خطای ثبت سفارش) تا اطلاعات از اول وارد نشود
+  useEffect(() => {
+    const draft = readStoreOrderDraft();
+
+    if (draft?.customerData) {
+      setCustomerData({ ...defaultCustomer, ...draft.customerData });
+    }
+    if (draft?.activeStep && draft.activeStep >= 1 && draft.activeStep <= 3) {
+      setActiveStep(draft.activeStep);
+    }
+
+    setDraftLoaded(true);
+  }, []);
+
+  // ذخیره خودکار پیش‌نویس در localStorage هنگام هر تغییر
+  useEffect(() => {
+    if (!draftLoaded) return;
+    writeStoreOrderDraft({ customerData, activeStep });
+  }, [customerData, activeStep, draftLoaded]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-3 pt-6 sm:p-4 sm:pt-10 md:items-center">

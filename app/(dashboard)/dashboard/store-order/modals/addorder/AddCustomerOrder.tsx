@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   Gamepad2,
@@ -12,6 +12,11 @@ import { toast } from "react-toastify";
 
 import { ConsoleType, Customer, GameItem, storeOrder } from "@/types";
 import GameDropdown from "./GameDropdown";
+import {
+  clearStoreOrderDraft,
+  readStoreOrderDraft,
+  writeStoreOrderDraft,
+} from "./draft";
 
 type OrdersByConsole = {
   ps5: storeOrder[];
@@ -46,21 +51,41 @@ const AddCustomerOrder = ({
 }: AddCustomerOrderProps) => {
   const [loading, setLoading] = useState(false);
 
-  const [order, setOrder] = useState<storeOrder | null>({
-    _id: "",
-    list: [],
-    price: null,
-    totalSize: 0,
-    totalPrice: 0,
-    customerId: customerData._id,
-    description: "",
-    consoleType: "",
-    deliveryStatus: "",
-    createdAt: "",
-    updatedAt: "",
-    deliveryCode: "",
-    deliveryDate: "",
+  const [order, setOrder] = useState<storeOrder | null>(() => {
+    const baseOrder: storeOrder = {
+      _id: "",
+      list: [],
+      price: null,
+      totalSize: 0,
+      totalPrice: 0,
+      customerId: customerData._id,
+      description: "",
+      consoleType: "",
+      deliveryStatus: "",
+      createdAt: "",
+      updatedAt: "",
+      deliveryCode: "",
+      deliveryDate: "",
+    };
+
+    // بازیابی پیش‌نویس سفارش تا بعد از خطا اطلاعات از دست نرود
+    const draft = readStoreOrderDraft();
+    if (draft?.order) {
+      return {
+        ...baseOrder,
+        ...draft.order,
+        list: draft.order.list ?? [],
+        customerId: customerData._id,
+      };
+    }
+
+    return baseOrder;
   });
+
+  // ذخیره خودکار پیش‌نویس سفارش هنگام هر تغییر
+  useEffect(() => {
+    if (order) writeStoreOrderDraft({ order });
+  }, [order]);
 
   const handleSubmit = async () => {
     if (!customerData._id) {
@@ -82,9 +107,10 @@ const AddCustomerOrder = ({
         body: JSON.stringify({ ...order, customerId: customerData._id }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
 
-      if (!res.ok) throw new Error(data?.message || "ثبت سفارش ناموفق بود");
+      if (!res.ok)
+        throw new Error(data?.error || data?.message || "ثبت سفارش ناموفق بود");
 
       const consoleType = data.order.consoleType as ConsoleType;
 
@@ -97,10 +123,19 @@ const AddCustomerOrder = ({
 
       if (data?.sms?.body) toast.info(data.sms.body);
 
+      // ثبت موفق → پیش‌نویس ذخیره‌شده پاک شود
+      clearStoreOrderDraft();
+
       closeModal();
     } catch (err) {
       console.error(err);
-      toast.error("در ثبت سفارش خطایی رخ داد.");
+      // پیش‌نویس در localStorage باقی می‌ماند تا بدون وارد کردن مجدد اطلاعات، دوباره تلاش شود
+      toast.error(
+        err instanceof Error && err.message
+          ? err.message
+          : "در ثبت سفارش خطایی رخ داد.",
+      );
+      toast.info("اطلاعات فرم ذخیره شد و پس از رفع مشکل می‌توانید دوباره ثبت کنید.");
     } finally {
       setLoading(false);
     }

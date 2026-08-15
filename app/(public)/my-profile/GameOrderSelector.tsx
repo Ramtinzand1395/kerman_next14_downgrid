@@ -47,11 +47,11 @@ const consoleOptions: ConsoleOption[] = [
     id: "ps5-legal",
     platform: "ps5",
     title: "PlayStation 5",
-    subtitle: "قانونی / Standard",
+    subtitle: "اکانتی / Standard",
   },
   {
     id: "ps5-copy",
-    platform: "copy",
+    platform: "ps5Copy",
     title: "PlayStation 5",
     subtitle: "کپی‌خور",
   },
@@ -65,7 +65,7 @@ const consoleOptions: ConsoleOption[] = [
     id: "ps4-standard",
     platform: "ps4",
     title: "PlayStation 4",
-    subtitle: "قانونی / Standard",
+    subtitle: "اکانتی / Standard",
   },
   {
     id: "xbox",
@@ -540,7 +540,7 @@ export default function GameOrderSelector() {
                   </div>
                 </div>
 
-                <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
+                {/* <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
                   <StepHeader
                     number="۲"
                     title="انتخاب نوع اکانت"
@@ -557,7 +557,7 @@ export default function GameOrderSelector() {
                       />
                     ))}
                   </div>
-                </div>
+                </div> */}
 
                 <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
                   <StepHeader

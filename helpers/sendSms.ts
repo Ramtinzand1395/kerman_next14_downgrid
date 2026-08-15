@@ -17,11 +17,22 @@ async function sendSMS({
   const url = process.env.MELIPAYAMAK_SHARED_URL?.trim() || defaultSharedUrl;
   
   const payload = { bodyId, to, args };
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json; charset=UTF-8" },
-    body: JSON.stringify(payload),
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=UTF-8" },
+      body: JSON.stringify(payload),
+      // جلوگیری از معلق ماندن درخواست هنگام قطعی/کندی سرویس پیامک
+      signal: AbortSignal.timeout(8000),
+      cache: "no-store",
+    });
+  } catch (err) {
+    throw new Error(
+      "اتصال به سرویس پیامک برقرار نشد. لطفا چند لحظه دیگر دوباره تلاش کنید.",
+      { cause: err },
+    );
+  }
   const text = await res.text();
   if (!res.ok) {
     throw new Error(`SMS provider error (${res.status}): ${text}`);

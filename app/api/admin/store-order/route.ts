@@ -97,48 +97,89 @@ export async function POST(req: Request) {
 
   await dbConnect();
 
-  const body = await req.json();
-  const { list, price, customerId, description, consoleType, deliveryStatus } =
-    body;
-  const persianDate = moment().format("jYYYY/jMM/jDD HH:mm");
+  let createdOrderId: string | null = null;
 
-  if (!Array.isArray(list) || list.length === 0) {
+  try {
+    const body = await req.json();
+    const { list, price, customerId, description, consoleType, deliveryStatus } =
+      body;
+    const persianDate = moment().format("jYYYY/jMM/jDD HH:mm");
+
+    if (!Array.isArray(list) || list.length === 0) {
+      return NextResponse.json(
+        { error: "حداقل یک بازی باید انتخاب شود" },
+        { status: 400 },
+      );
+    }
+
+    if (!customerId) {
+      return NextResponse.json(
+        { error: "مشتری انتخاب نشده است" },
+        { status: 400 },
+      );
+    }
+
+    const order = await StoreOrder.create({
+      list,
+      price,
+      customer: customerId,
+      description,
+      consoleType,
+      deliveryStatus: deliveryStatus || "دریافت از مشتری",
+    });
+    createdOrderId = order._id.toString();
+
+    await order.populate("customer");
+    // ارسال پیامک
+    const [datePart, timePart] = persianDate.split(" ");
+    const customer = order.customer;
+
+    const smsResponse = await senSMS({
+      bodyId: 323165,
+      // bodyId: 323167,
+      to: customer.mobile,
+      args: [
+        customer.sex === "مرد" ? "جناب آقای" : "سرکار خانم",
+        customer.lastName,
+        getPersianConsoleName(consoleType),
+        toPersianDigits(datePart),
+        toPersianDigits(timePart),
+      ],
+    });
+
+    // اگر پیامک ارسال نشد، کل عملیات برگردانده می‌شود تا سفارش ناقص ثبت نشود
+    if (!smsResponse.ok) {
+      await StoreOrder.deleteOne({ _id: order._id });
+      createdOrderId = null;
+
+      return NextResponse.json(
+        {
+          error: `ثبت سفارش انجام نشد: ${smsResponse.body}`,
+          sms: smsResponse,
+        },
+        { status: 502 },
+      );
+    }
+
     return NextResponse.json(
-      { error: "حداقل یک بازی باید انتخاب شود" },
-      { status: 400 },
+      { message: "سفارش ایجاد شد.", order, sms: smsResponse },
+      { status: 201 },
+    );
+  } catch (err) {
+    console.error("POST /api/admin/store-order error:", err);
+
+    // هر خطایی در میانه عملیات → سفارش ثبت‌شده حذف شود تا دیتای ناقص نماند
+    if (createdOrderId) {
+      try {
+        await StoreOrder.deleteOne({ _id: createdOrderId });
+      } catch (rollbackErr) {
+        console.error("rollback failed:", rollbackErr);
+      }
+    }
+
+    return NextResponse.json(
+      { error: "ثبت سفارش با خطا مواجه شد. سفارشی ثبت نشد." },
+      { status: 500 },
     );
   }
-
-  const order = await StoreOrder.create({
-    list,
-    price,
-    customer: customerId,
-    description,
-    consoleType,
-    deliveryStatus: deliveryStatus || "دریافت از مشتری",
-  });
-
-  await order.populate("customer");
-  // ارسال پیامک
-  const [datePart, timePart] = persianDate.split(" ");
-  const customer = order.customer;
-
-  let smsResponse = null;
-
-  smsResponse = await senSMS({
-    bodyId: 323165,
-    // bodyId: 323167,
-    to: customer.mobile,
-    args: [
-      customer.sex === "مرد" ? "جناب آقای" : "سرکار خانم",
-      customer.lastName,
-      getPersianConsoleName(consoleType),
-      toPersianDigits(datePart),
-      toPersianDigits(timePart),
-    ],
-  });
-  return NextResponse.json(
-    { message: "سفارش ایجاد شد.", order, sms: smsResponse },
-    { status: 201 },
-  );
 }
