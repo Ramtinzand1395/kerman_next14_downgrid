@@ -1,3 +1,4 @@
+
 import Sidebar from "./Sidebar";
 import Stepper from "./Stepper";
 import Profile from "./Profile";
@@ -5,11 +6,13 @@ import FavoritesPage from "./Favorites";
 import MyAddresses from "./MyAddresses";
 import MyComments from "./MyComments";
 import MyOrders from "./MyOrders";
+import MyOrdersTabs from "./MyOrdersTabs";
 import GameOrderSelector from "./GameOrderSelector";
 import MyGameOrders from "./MyGameOrders";
 import MyWallet from "./MyWallet";
 import MyLoyalty from "./MyLoyalty";
 import SpinWheel from "./SpinWheel";
+import { redirect } from "next/navigation";
 
 interface MyProfilePageProps {
   searchParams?: { step?: string };
@@ -18,6 +21,11 @@ interface MyProfilePageProps {
 export default async function MyProfile({ searchParams }: MyProfilePageProps) {
   const data = await searchParams;
   const activeStep = Number(data?.step ?? 1);
+
+  // سفارش‌های نصب بازی (مرحله ۷) اکنون در همان صفحه سفارش‌ها (مرحله ۵) نمایش داده می‌شود
+  if (activeStep === 7) {
+    redirect("/my-profile?step=5");
+  }
 
   return (
     <div className="container mx-auto px-3 md:px-6 py-6 md:py-8">
@@ -34,9 +42,8 @@ export default async function MyProfile({ searchParams }: MyProfilePageProps) {
             {activeStep === 2 && <FavoritesPage />}
             {activeStep === 3 && <MyAddresses />}
             {activeStep === 4 && <MyComments />}
-            {activeStep === 5 && <MyOrders />}
+            {activeStep === 5 && <MyOrdersTabs />}
             {activeStep === 6 && <GameOrderSelector />}
-            {activeStep === 7 && <MyGameOrders />}
             {activeStep === 8 && <MyWallet />}
             {activeStep === 9 && <MyLoyalty />}
             {activeStep === 10 && <SpinWheel />}
