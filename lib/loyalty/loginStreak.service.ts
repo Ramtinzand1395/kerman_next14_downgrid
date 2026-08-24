@@ -21,6 +21,20 @@ export async function registerDailyLogin(userId: string): Promise<StreakResult> 
   const today = dayKey();
   const yesterday = yesterdayKey();
 
+  await LoginStreak.updateOne(
+    { user: userId },
+    {
+      $setOnInsert: {
+        user: userId,
+        currentStreak: 0,
+        longestStreak: 0,
+        lastLoginDayKey: "",
+        totalRewardsClaimed: 0,
+      },
+    },
+    { upsert: true },
+  );
+
   // قفل اتمیک: فقط اولین ورود امروز پردازش می‌شود
   const claimed = await LoginStreak.findOneAndUpdate(
     { user: userId, lastLoginDayKey: { $ne: today } },
@@ -28,22 +42,32 @@ export async function registerDailyLogin(userId: string): Promise<StreakResult> 
       {
         $set: {
           currentStreak: {
-            $cond: [{ $eq: ["$lastLoginDayKey", yesterday] }, { $add: ["$currentStreak", 1] }, 1],
+            $cond: [
+              { $eq: ["$lastLoginDayKey", yesterday] },
+              { $add: [{ $ifNull: ["$currentStreak", 0] }, 1] },
+              1,
+            ],
           },
           longestStreak: {
             $max: [
-              "$longestStreak",
-              { $cond: [{ $eq: ["$lastLoginDayKey", yesterday] }, { $add: ["$currentStreak", 1] }, 1] },
+              { $ifNull: ["$longestStreak", 0] },
+              {
+                $cond: [
+                  { $eq: ["$lastLoginDayKey", yesterday] },
+                  { $add: [{ $ifNull: ["$currentStreak", 0] }, 1] },
+                  1,
+                ],
+              },
             ],
           },
           lastLoginDayKey: today,
         },
       },
     ],
-    { upsert: true, new: true },
+    { returnDocument: "after", updatePipeline: true },
   );
 
-  if (claimed.lastLoginDayKey !== today) {
+  if (!claimed) {
     // race نادر: هم‌زمان به‌روز شد — وضعیت فعلی را برگردان
     const cur = await LoginStreak.findOne({ user: userId }).lean();
     return {

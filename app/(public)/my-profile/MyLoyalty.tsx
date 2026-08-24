@@ -150,8 +150,9 @@ export default function MyLoyalty() {
   const copyReferral = async () => {
     if (!dash?.referral.code) return;
     try {
-      await navigator.clipboard.writeText(dash.referral.code);
-      toast.success("کد دعوت کپی شد");
+      const referralLink = `${window.location.origin}/auth/login?ref=${encodeURIComponent(dash.referral.code)}`;
+      await navigator.clipboard.writeText(referralLink);
+      toast.success("لینک دعوت کپی شد");
     } catch {
       toast.error("کپی ناموفق بود");
     }

@@ -24,12 +24,24 @@ export async function ensureReferralCode(userId: string): Promise<string> {
   // تلاش با retry برای برخورد نادر تکرار
   for (let i = 0; i < 5; i++) {
     const code = generateReferralCode();
-    const res = await User.findOneAndUpdate(
-      { _id: userId, referralCode: { $exists: false } },
-      { $set: { referralCode: code } },
-      { new: true },
-    ).lean();
-    if (res?.referralCode) return res.referralCode;
+    try {
+      const res = await User.findOneAndUpdate(
+        {
+          _id: userId,
+          $or: [
+            { referralCode: { $exists: false } },
+            { referralCode: null },
+            { referralCode: "" },
+          ],
+        },
+        { $set: { referralCode: code } },
+        { new: true },
+      ).lean();
+      if (res?.referralCode) return res.referralCode;
+    } catch (err) {
+      // برخورد کد تصادفی با unique index؛ در تلاش بعدی کد جدید می‌سازیم.
+      if ((err as { code?: number })?.code !== 11000) throw err;
+    }
     const again = await User.findById(userId).select("referralCode").lean();
     if (again?.referralCode) return again.referralCode;
   }

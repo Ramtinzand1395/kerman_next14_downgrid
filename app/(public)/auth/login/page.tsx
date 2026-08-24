@@ -42,6 +42,7 @@ const normalizeOtpCode = (value: string) => {
 
 export default function LoginWithOtp() {
   const [mobile, setMobile] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [enteredOtp, setEnteredOtp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,6 +67,10 @@ export default function LoginWithOtp() {
   const currentStep = useMemo(() => (otpSent ? "otp" : "mobile"), [otpSent]);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref") ?? params.get("referral") ?? params.get("referralCode");
+    if (ref) setReferralCode(ref.trim().toUpperCase());
+
     const savedMeta = localStorage.getItem(OTP_META_KEY);
     if (savedMeta) {
       try {
@@ -190,7 +195,11 @@ export default function LoginWithOtp() {
         return;
       }
 
-      await CheckPhoneAction(mobile);
+      const phoneChecked = await CheckPhoneAction(mobile, referralCode || undefined);
+      if (!phoneChecked) {
+        toast.error("ثبت کاربر با خطا مواجه شد. لطفاً دوباره تلاش کنید.");
+        return;
+      }
 
       const newOtpId = await sendOtpToUser(mobile);
       const expireTime = Date.now() + OTP_TOTAL_TIME * 1000;
@@ -361,6 +370,18 @@ export default function LoginWithOtp() {
                   onChange={(e) => setMobile(e.target.value)}
                   placeholder="09xxxxxxxxx"
                   className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                />
+                <label className="mb-2 mt-4 block text-sm font-medium text-slate-700">
+                  کد دعوت (اختیاری)
+                </label>
+                <input
+                  type="text"
+                  dir="ltr"
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                  placeholder="KA-XXXXXX"
+                  maxLength={9}
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-left outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
                 />
               </div>
 
