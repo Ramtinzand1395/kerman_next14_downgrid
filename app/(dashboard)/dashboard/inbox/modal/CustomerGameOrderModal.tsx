@@ -7,11 +7,20 @@ import { toast } from "react-toastify";
 
 type OrderStatus = "pending" | "confirmed" | "rejected" | "completed";
 
+const gameTypeLabels: Record<string, string> = {
+  capacity1: "ظرفیت ۱",
+  capacity2: "ظرفیت ۲",
+  capacity3: "ظرفیت ۳",
+  offline: "آفلاین",
+  legal: "قانونی",
+};
+
 interface Product {
   name: string;
   platform?: string;
   price?: number;
   size?: number;
+  gameType?: string;
 }
 
 interface OrderUser {
@@ -83,6 +92,8 @@ const CustomerGameOrderModal = ({
 
   const [status, setStatus] = useState<OrderStatus>(order.status);
   const [updating, setUpdating] = useState(false);
+  const [totalPrice, setTotalPrice] = useState(String(order.totalPrice ?? 0));
+  const [savingPrice, setSavingPrice] = useState(false);
 
   const handleStatusChange = async (newStatus: OrderStatus) => {
     if (newStatus === status || updating) return;
@@ -111,6 +122,30 @@ const CustomerGameOrderModal = ({
       );
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handlePriceUpdate = async () => {
+    const parsedPrice = Number(totalPrice.replace(/,/g, "").trim());
+    if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
+      toast.error("مبلغ کل باید یک عدد معتبر و غیرمنفی باشد.");
+      return;
+    }
+    setSavingPrice(true);
+    try {
+      const res = await fetch(`/api/admin/customer-game-orders/${order._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ totalPrice: parsedPrice }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "خطا در ذخیره مبلغ");
+      setTotalPrice(String(data?.order?.totalPrice ?? parsedPrice));
+      toast.success("مبلغ کل سفارش ذخیره شد.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "خطا در ذخیره مبلغ");
+    } finally {
+      setSavingPrice(false);
     }
   };
 
@@ -176,9 +211,8 @@ const CustomerGameOrderModal = ({
 
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <span
-                className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                  statusMap[status].color
-                }`}
+                className={`rounded-full px-3 py-1 text-xs font-semibold ${statusMap[status].color
+                  }`}
               >
                 {statusMap[status].title}
               </span>
@@ -205,8 +239,14 @@ const CustomerGameOrderModal = ({
           <div className="col-span-2">
             <span className="font-bold">مبلغ کل:</span>
             <p className="mt-1 text-lg font-bold text-emerald-600">
-              {order.totalPrice.toLocaleString()} تومان
+              {Number(totalPrice || 0).toLocaleString()} تومان
             </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <input type="number" min="0" value={totalPrice} onChange={(event) => setTotalPrice(event.target.value)} disabled={savingPrice} className="w-48 rounded-lg border border-gray-200 px-3 py-2 text-lg font-bold text-emerald-700" />
+              <button type="button" onClick={handlePriceUpdate} disabled={savingPrice} className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                {savingPrice ? "در حال ذخیره..." : "ذخیره مبلغ"}
+              </button>
+            </div>
           </div>
 
           <div className="col-span-2">
@@ -233,6 +273,16 @@ const CustomerGameOrderModal = ({
                     <p>
                       <span className="font-semibold">حجم:</span> {product.size}{" "}
                       GB
+                    </p>
+                  )}
+                  {product.platform?.toLowerCase() === "ps5" && (
+                    <p>
+                      <span className="font-semibold">ظرفیت / نوع اجرا:</span>{" "}
+                      {product.gameType
+
+                        ? gameTypeLabels[product.gameType] || product.gameType
+
+                        : "انتخاب نشده"}
                     </p>
                   )}
 

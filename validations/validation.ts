@@ -72,12 +72,12 @@ export const customerGameOrderSchema = yup.object().shape({
     .required("شماره تماس الزامی است")
     .matches(/^09\d{9}$/, "شماره تماس باید ۱۱ رقم باشد و با 09 شروع شود"),
 
- // آدرس از دفترچه آدرس کاربر انتخاب می‌شود
+  // آدرس از دفترچه آدرس کاربر انتخاب می‌شود
   addressId: yup
     .string()
     .trim()
     .required("انتخاب یک آدرس الزامی است"),
-    
+
   message: yup
     .string()
     .trim()
@@ -91,8 +91,40 @@ export const customerGameOrderSchema = yup.object().shape({
       yup.object().shape({
         name: yup.string().trim().required("نام محصول الزامی است"),
         platform: yup.string().trim().optional().default(""),
-        price: yup.number().positive().optional().default(0),
-        size: yup.number().positive().optional().default(0),
+        size: yup
+          .number()
+          .min(0, "حجم بازی نمی‌تواند منفی باشد")
+          .optional()
+          .default(0),
+        gameType: yup
+          .string()
+          .trim()
+          .default("")
+          .when("platform", {
+            is: (platform?: string) =>
+               platform === "ps5",
+            then: (schema) =>
+              schema
+                .required("نوع بازی برای PS5 الزامی است")
+                .oneOf(
+                  ["capacity1", "capacity2", "capacity3", "offline", "legal"],
+                  "نوع بازی برای PS5 الزامی است",
+                ),
+            otherwise: (schema) =>
+              schema
+                .notRequired()
+                .oneOf(
+                  [
+                    "capacity1",
+                    "capacity2",
+                    "capacity3",
+                    "offline",
+                    "legal",
+                    "",
+                  ],
+                  "نوع بازی نامعتبر است",
+                ),
+          }),
       }),
     )
     .min(1, "حداقل یک محصول باید انتخاب شود")
@@ -105,6 +137,11 @@ export const customerGameOrderSchema = yup.object().shape({
 });
 
 export const customerOrderUpdateSchema = yup.object().shape({
+  totalPrice: yup
+    .number()
+    .min(0, "مبلغ کل نمی‌تواند منفی باشد")
+    .optional(),
+
   status: yup
     .string()
     .oneOf(["pending", "confirmed", "rejected", "completed"], "وضعیت نامعتبر است")

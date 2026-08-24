@@ -56,8 +56,23 @@ const customerGameOrderSchema = new mongoose.Schema(
         {
           name: { type: String, required: true, trim: true },
           platform: { type: String, trim: true },
-          price: { type: Number },
           size: { type: Number },
+          gameType: {
+            type: String,
+            trim: true,
+            default: "",
+            enum: {
+              values: [
+                "capacity1",
+                "capacity2",
+                "capacity3",
+                "offline",
+                "legal",
+                "",
+              ],
+              message: "نوع بازی نامعتبر است",
+            },
+          },
         },
       ],
       required: [true, "حداقل یک محصول الزامی است"],

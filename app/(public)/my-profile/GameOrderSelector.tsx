@@ -2,16 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { Search, X } from "lucide-react";
 
 type ConsoleOption = {
   id: string;
   platform: string;
-  title: string;
-  subtitle: string;
-};
-
-type AccountTypeOption = {
-  id: string;
+  platforms: string[];
   title: string;
   subtitle: string;
 };
@@ -19,10 +15,12 @@ type AccountTypeOption = {
 type GameData = {
   _id?: string;
   name: string;
-  price?: number;
   size?: number;
+  gameType?: GameType;
   platform?: string;
 };
+
+type GameType = "capacity1" | "capacity2" | "capacity3" | "offline" | "legal";
 
 type GameListResponse = {
   gameList?: Array<{
@@ -42,54 +40,47 @@ type AddressItem = {
   postalCode?: string;
 };
 
+type ApiErrorResponse = {
+  error?: string;
+  details?: string[];
+  message?: string;
+};
+
 const consoleOptions: ConsoleOption[] = [
   {
-    id: "ps5-legal",
+    id: "ps5-standard",
     platform: "ps5",
+    platforms: ["ps5"],
     title: "PlayStation 5",
     subtitle: "اکانتی / Standard",
   },
   {
     id: "ps5-copy",
     platform: "ps5Copy",
+    platforms: ["ps5Copy", "copy"],
     title: "PlayStation 5",
     subtitle: "کپی‌خور",
   },
   {
     id: "ps4-copy",
     platform: "copy",
+    platforms: ["copy"],
     title: "PlayStation 4",
     subtitle: "کپی‌خور",
   },
   {
     id: "ps4-standard",
     platform: "ps4",
+    platforms: ["ps4"],
     title: "PlayStation 4",
     subtitle: "اکانتی / Standard",
   },
   {
     id: "xbox",
     platform: "xbox",
+    platforms: ["xbox"],
     title: "Xbox",
     subtitle: "اکانت و بازی",
-  },
-];
-
-const accountTypeOptions: AccountTypeOption[] = [
-  {
-    id: "legal",
-    title: "اکانت قانونی",
-    subtitle: "Legal Account",
-  },
-  {
-    id: "hacked-warranty",
-    title: "هکی با تضمین",
-    subtitle: "Warranty Included",
-  },
-  {
-    id: "hacked-no-warranty",
-    title: "هکی بدون تضمین",
-    subtitle: "No Warranty",
   },
 ];
 
@@ -100,14 +91,6 @@ const normalize = (value: string) =>
     .replace(/\s+/g, "-")
     .replace(/[^\w؀-ۿ-]/g, "");
 
-const formatPrice = (price?: number) => {
-  if (!price) {
-    return "قیمت نامشخص";
-  }
-
-  return `${price.toLocaleString("fa-IR")} تومان`;
-};
-
 const formatSize = (size?: number) => {
   if (!size) {
     return "حجم نامشخص";
@@ -115,6 +98,31 @@ const formatSize = (size?: number) => {
 
   return `${size.toLocaleString("fa-IR")} گیگ`;
 };
+
+const ps5GameTypes: Array<{ value: GameType; label: string }> = [
+  { value: "capacity1", label: "ظرفیت ۱" },
+  { value: "capacity2", label: "ظرفیت ۲" },
+  { value: "capacity3", label: "ظرفیت ۳" },
+  { value: "offline", label: "آفلاین" },
+  { value: "legal", label: "قانونی" },
+];
+
+const gameTypeLabels = ps5GameTypes.reduce<Record<string, string>>(
+  (labels, gameType) => ({ ...labels, [gameType.value]: gameType.label }),
+  {},
+);
+
+const getGameId = (game: GameData) =>
+  `${game.platform}-${game._id ?? normalize(game.name)}`;
+
+const normalizeGamePlatform = (platform?: string) =>
+  platform?.trim().toLowerCase() === "ps5copy"
+    ? "ps5Copy"
+    : platform?.trim().toLowerCase() || "";
+
+// Capacity / execution type is only applicable to the standard PS5 account.
+const isPs5Platform = (platform?: string) =>
+  normalizeGamePlatform(platform) === "ps5";
 
 function StepHeader({
   number,
@@ -158,16 +166,14 @@ function OptionCard({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`rounded-2xl border p-4 text-right transition duration-300 ${
-        isActive
-          ? "border-[#001A6E] bg-indigo-50 shadow-lg shadow-indigo-950/10"
-          : "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50/60"
-      } ${disabled ? "cursor-not-allowed opacity-55 hover:translate-y-0" : ""}`}
+      className={`rounded-2xl border p-4 text-right transition duration-300 ${isActive
+        ? "border-[#001A6E] bg-indigo-50 shadow-lg shadow-indigo-950/10"
+        : "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50/60"
+        } ${disabled ? "cursor-not-allowed opacity-55 hover:translate-y-0" : ""}`}
     >
       <span
-        className={`block text-sm font-black md:text-base ${
-          isActive ? "text-[#001A6E]" : "text-slate-900"
-        }`}
+        className={`block text-sm font-black md:text-base ${isActive ? "text-[#001A6E]" : "text-slate-900"
+          }`}
       >
         {title}
       </span>
@@ -178,14 +184,110 @@ function OptionCard({
   );
 }
 
+function GameCard({
+  game,
+  gameId,
+  isSelected,
+  onAdd,
+}: {
+  game: GameData;
+  gameId: string;
+  isSelected: boolean;
+  onAdd: () => void;
+}) {
+  const needsCapacity = false;
+  const activeGameType: GameType | undefined = undefined;
+  const onGameType = (_value: GameType) => { };
+  const setDraftGameType = (_value: GameType) => { };
+  const canAdd = true;
+
+  return (
+    <div
+      className={`group rounded-2xl border bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-indigo-100/70 ${isSelected
+        ? "border-[#001A6E] bg-indigo-50/50"
+        : "border-slate-200 hover:border-indigo-200"
+        }`}
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-3">
+          <h4 className="truncate text-sm font-black text-slate-950 md:text-base">
+            {game.name}
+          </h4>
+          {isSelected && (
+            <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-700">
+              در سبد
+            </span>
+          )}
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-bold">
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
+            {game.platform === "ps5Copy" ? "PS5 کپی‌خور" : game.platform?.toUpperCase()}
+          </span>
+          <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[#001A6E]">
+            {formatSize(game.size)}
+          </span>
+        </div>
+        {needsCapacity && (
+          <div className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3">
+            <div className="flex items-center gap-2 text-[11px] font-black text-[#001A6E]">
+              <span>انتخاب ظرفیت / نوع اجرا</span>
+              <span className="text-red-500">*</span>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {ps5GameTypes.map((gameType) => {
+                const isActive = activeGameType === gameType.value;
+                return (
+                  <button
+                    key={gameType.value}
+                    type="button"
+                    onClick={() =>
+                      isSelected
+                        ? onGameType(gameType.value)
+                        : setDraftGameType(gameType.value)
+                    }
+                    className={`rounded-lg border px-2 py-2 text-[11px] font-black transition ${isActive
+                      ? "border-[#001A6E] bg-[#001A6E] text-white"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-[#001A6E]"
+                      }`}
+                  >
+                    {gameType.label}
+                  </button>
+                );
+              })}
+            </div>
+            {!activeGameType && (
+              <p className="mt-2 text-[11px] font-black text-red-500">
+                ابتدا یکی از گزینه‌ها را انتخاب کنید.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+      <button
+        type="button"
+        disabled={isSelected}
+        onClick={onAdd}
+        className={`mt-3 w-full rounded-xl px-3 py-2 text-xs font-black transition ${isSelected
+          ? "cursor-not-allowed bg-emerald-50 text-emerald-700"
+          : "bg-[#001A6E] text-white hover:bg-[#000e3c]"
+          }`}
+      >
+        {isSelected
+          ? "اضافه شد"
+          : canAdd
+            ? "افزودن"
+            : "ابتدا ظرفیت را انتخاب کنید"}
+      </button>
+    </div>
+  );
+}
+
 export default function GameOrderSelector() {
   const [selectedConsoleId, setSelectedConsoleId] = useState(
     consoleOptions[0].id,
   );
-  const [selectedAccountTypeId, setSelectedAccountTypeId] = useState(
-    accountTypeOptions[0].id,
-  );
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [games, setGames] = useState<GameData[]>([]);
   const [selectedGames, setSelectedGames] = useState<GameData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -217,55 +319,64 @@ export default function GameOrderSelector() {
     [selectedConsoleId],
   );
 
-  const selectedAccountType = useMemo(
-    () =>
-      accountTypeOptions.find((option) => option.id === selectedAccountTypeId),
-    [selectedAccountTypeId],
-  );
+  const selectedPlatforms = selectedConsole?.platforms || [];
 
-  const selectedPlatform = selectedConsole?.platform || "";
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search), 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    setSelectedGames([]);
+    setFieldErrors((currentErrors) => ({
+      ...currentErrors,
+      products: "",
+    }));
+  }, [selectedConsoleId]);
 
   useEffect(() => {
     const controller = new AbortController();
 
     const getData = async () => {
+      if (selectedPlatforms.length === 0) {
+        setGames([]);
+        return;
+      }
+
       setLoading(true);
 
       try {
-        const params = new URLSearchParams();
+        const results = await Promise.all(
+          selectedPlatforms.map(async (platform) => {
+            const params = new URLSearchParams();
 
-        if (search.trim()) {
-          params.set("search", search.trim());
-          params.set("limit", "100");
-        } else {
-          params.set("limit", "5000");
-        }
+            if (debouncedSearch.trim()) {
+              params.set("search", debouncedSearch.trim());
+            }
+            params.set("limit", "200");
 
-        if (selectedPlatform) {
-          params.set("platform", selectedPlatform);
-        }
+            params.set("platform", platform);
 
-        const res = await fetch(
-          `/api/profile/game-list/?${params.toString()}`,
-          {
-            signal: controller.signal,
-          },
+            const res = await fetch(
+              `/api/profile/game-list/?${params.toString()}`,
+              { signal: controller.signal },
+            );
+
+            if (!res.ok) return [];
+
+            const data = (await res.json()) as GameListResponse;
+            const gameList = data.gameList || [];
+
+            return gameList.flatMap((game) =>
+              (game.items || []).map((item) => ({
+                ...item,
+                platform: normalizeGamePlatform(game.platform || platform),
+              })),
+            );
+          }),
         );
 
-        if (!res.ok) {
-          setGames([]);
-          return;
-        }
-
-        const data = (await res.json()) as GameListResponse;
-        const gameList = data.gameList || [];
-
-        const allGames = gameList.flatMap((game) =>
-          (game.items || []).map((item) => ({
-            ...item,
-            platform: game.platform,
-          })),
-        );
+        const allGames = results.flat();
 
         const uniqueGames = Array.from(
           new Map(
@@ -290,7 +401,7 @@ export default function GameOrderSelector() {
     getData();
 
     return () => controller.abort();
-  }, [search, selectedPlatform]);
+  }, [debouncedSearch, selectedPlatforms]);
 
   // pre-fill نام و شماره تماس از پروفایل + بارگذاری دفترچه آدرس
   useEffect(() => {
@@ -334,37 +445,46 @@ export default function GameOrderSelector() {
   }, []);
 
   const filteredGames = useMemo(() => {
-    if (!selectedPlatform) {
+    if (selectedPlatforms.length === 0) {
       return games;
     }
 
-    return games.filter(
-      (game) => game.platform?.trim().toLowerCase() === selectedPlatform,
-    );
-  }, [games, selectedPlatform]);
+    const allowed = new Set(selectedPlatforms.map(normalizeGamePlatform));
+
+    return games.filter((game) => {
+      const platform = normalizeGamePlatform(game.platform);
+      return platform ? allowed.has(platform) : false;
+    });
+  }, [games, selectedPlatforms]);
 
   const selectedGameIds = useMemo(
+    () => new Set(selectedGames.map((game) => getGameId(game))),
+    [selectedGames],
+  );
+
+  const pendingCapacityGames = useMemo(
     () =>
-      new Set(
-        selectedGames.map(
-          (game) => `${game.platform}-${game._id ?? normalize(game.name)}`,
-        ),
+      selectedGames.filter(
+        (game) => isPs5Platform(game.platform) && !game.gameType,
       ),
     [selectedGames],
   );
 
-  const addGame = (game: GameData) => {
-    const gameId = `${game.platform}-${game._id ?? normalize(game.name)}`;
+  const addGame = (game: GameData, gameType?: GameType) => {
+    const gameId = getGameId(game);
 
     if (selectedGameIds.has(gameId)) {
       return;
     }
 
-    setSelectedGames((currentGames) => [...currentGames, game]);
+    setSelectedGames((currentGames) => [
+      ...currentGames,
+      gameType ? { ...game, gameType } : game,
+    ]);
   };
 
   const removeGame = (game: GameData) => {
-    const gameId = `${game.platform}-${game._id ?? normalize(game.name)}`;
+    const gameId = getGameId(game);
 
     setSelectedGames((currentGames) =>
       currentGames.filter(
@@ -373,6 +493,20 @@ export default function GameOrderSelector() {
           gameId,
       ),
     );
+  };
+
+  const updateGameType = (gameId: string, gameType: GameType) => {
+    setSelectedGames((currentGames) =>
+      currentGames.map((currentGame) =>
+        getGameId(currentGame) === gameId
+          ? { ...currentGame, gameType }
+          : currentGame,
+      ),
+    );
+    setFieldErrors((currentErrors) => ({
+      ...currentErrors,
+      products: "",
+    }));
   };
 
   const validateFields = (): boolean => {
@@ -392,16 +526,17 @@ export default function GameOrderSelector() {
 
     if (selectedGames.length === 0) {
       errors.products = "حداقل یک بازی باید انتخاب شود.";
+    } else if (
+      selectedGames.some(
+        (game) => isPs5Platform(game.platform) && !game.gameType,
+      )
+    ) {
+      errors.products = "برای هر بازی PS5 نوع بازی را انتخاب کنید.";
     }
 
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
-
-  const totalPrice = useMemo(
-    () => selectedGames.reduce((sum, game) => sum + (game.price || 0), 0),
-    [selectedGames],
-  );
 
   const handleSubmit = async () => {
     setSubmitError("");
@@ -420,10 +555,10 @@ export default function GameOrderSelector() {
       products: selectedGames.map((game) => ({
         name: game.name,
         platform: game.platform || "",
-        price: game.price || 0,
         size: game.size || 0,
+        gameType: game.gameType || "",
       })),
-      totalPrice,
+      totalPrice: 0,
     };
 
     try {
@@ -433,14 +568,30 @@ export default function GameOrderSelector() {
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      let data: ApiErrorResponse = {};
+
+      try {
+        data = (await res.json()) as ApiErrorResponse;
+      } catch {
+        data = {
+          error: `سرور خطای HTTP ${res.status} برگرداند و پاسخ قابل خواندن نبود.`,
+        };
+        setSubmitError(data.error || `خطای HTTP ${res.status}`);
+        return;
+      }
 
       if (!res.ok) {
-        const msg =
-          data.error ||
-          data.details?.join(". ") ||
-          "خطایی در ثبت سفارش رخ داد.";
-        setSubmitError(msg);
+        const messages = [
+          ...(data.error ? [`خطای سرور (${res.status}): ${data.error}`] : []),
+          ...(data.details ?? []),
+          ...(data.message ? [data.message] : []),
+        ];
+
+        setSubmitError(
+          messages.length > 0
+            ? messages.join(" | ")
+            : `خطای ناشناخته HTTP ${res.status}`,
+        );
         return;
       }
 
@@ -540,85 +691,59 @@ export default function GameOrderSelector() {
                   </div>
                 </div>
 
-                {/* <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
-                  <StepHeader
-                    number="۲"
-                    title="انتخاب نوع اکانت"
-                    description="نوع خرید موردنیاز برای هماهنگی نهایی مشخص می‌شود."
-                  />
-                  <div className="grid gap-3 md:grid-cols-3">
-                    {accountTypeOptions.map((option) => (
-                      <OptionCard
-                        key={option.id}
-                        isActive={selectedAccountTypeId === option.id}
-                        title={option.title}
-                        subtitle={option.subtitle}
-                        onClick={() => setSelectedAccountTypeId(option.id)}
-                      />
-                    ))}
-                  </div>
-                </div> */}
-
                 <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
                   <StepHeader
-                    number="۳"
+                    number="۲"
                     title="جستجوی بازی"
                     description="داده‌ها از API لیست بازی‌های فروشگاه خوانده می‌شود."
                   />
 
-                  <div className="relative">
-                    <input
-                      value={search}
-                      onChange={(event) => setSearch(event.target.value)}
-                      placeholder="نام بازی را وارد کنید..."
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#001A6E] focus:ring-4 focus:ring-indigo-100"
-                    />
-                    {loading && (
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-[#001A6E]">
-                        در حال دریافت...
+                  <div className="rounded-2xl border border-indigo-100 bg-white p-4 shadow-sm">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-black text-slate-900">کتابخانه بازی‌ها</p>
+                        <p className="mt-1 text-xs font-semibold text-slate-500">نام بازی را جست‌وجو کنید یا از فهرست انتخاب کنید</p>
+                      </div>
+                      <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-[#001A6E]">
+                        {filteredGames.length.toLocaleString("fa-IR")} بازی
                       </span>
-                    )}
+                    </div>
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                      <input
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                        placeholder="نام بازی را جست‌وجو کنید..."
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-12 py-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 hover:bg-white focus:border-[#001A6E] focus:bg-white focus:ring-4 focus:ring-indigo-100"
+                        aria-label="جست‌وجوی بازی"
+                      />
+                      {search && (
+                        <button type="button" onClick={() => setSearch("")} aria-label="پاک کردن جست‌وجو" className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                      {loading && <span className="absolute left-10 top-1/2 -translate-y-1/2 text-xs font-bold text-[#001A6E]">در حال دریافت...</span>}
+                    </div>
                   </div>
 
-                  <div className="mt-4 grid max-h-[34rem] gap-3 overflow-y-auto pl-1 md:grid-cols-2">
+                  <div className="mt-3 flex items-center justify-between text-xs font-bold text-slate-500">
+                    <span>{filteredGames.length.toLocaleString("fa-IR")} بازی موجود</span>
+                    {search && <span>نتایج برای «{search}»</span>}
+                  </div>
+
+                  <div className="mt-4 grid max-h-[34rem] gap-3 overflow-y-auto pl-1 sm:grid-cols-2">
                     {filteredGames.map((game) => {
-                      const gameId = `${game.platform}-${game._id ?? normalize(game.name)}`;
+                      const gameId = getGameId(game);
                       const isSelected = selectedGameIds.has(gameId);
 
                       return (
-                        <div
+                        <GameCard
                           key={gameId}
-                          className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-lg hover:shadow-slate-200/70"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <h4 className="truncate text-sm font-black text-slate-950">
-                              {game.name}
-                            </h4>
-                            <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-bold">
-                              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
-                                {game.platform}
-                              </span>
-                              <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[#001A6E]">
-                                {formatSize(game.size)}
-                              </span>
-                              <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">
-                                {formatPrice(game.price)}
-                              </span>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            disabled={isSelected}
-                            onClick={() => addGame(game)}
-                            className={`shrink-0 rounded-xl px-3 py-2 text-xs font-black transition ${
-                              isSelected
-                                ? "cursor-not-allowed bg-emerald-50 text-emerald-700"
-                                : "bg-[#001A6E] text-white hover:bg-[#000e3c]"
-                            }`}
-                          >
-                            {isSelected ? "اضافه شد" : "افزودن"}
-                          </button>
-                        </div>
+                          game={game}
+                          gameId={gameId}
+                          isSelected={isSelected}
+                          onAdd={() => addGame(game)}
+                        />
                       );
                     })}
                   </div>
@@ -633,7 +758,7 @@ export default function GameOrderSelector() {
 
               <aside className="h-fit rounded-3xl border border-indigo-100 bg-white p-5 shadow-xl shadow-slate-200/80 xl:sticky xl:top-6">
                 <StepHeader
-                  number="۴"
+                  number="۳"
                   title="خلاصه درخواست"
                   description="اطلاعات خود را وارد کن و درخواست را ارسال کن."
                 />
@@ -643,18 +768,6 @@ export default function GameOrderSelector() {
                     <span className="text-slate-500">کنسول</span>
                     <span className="text-left font-black text-slate-950">
                       {selectedConsole?.title} / {selectedConsole?.subtitle}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-slate-500">نوع اکانت</span>
-                    <span className="text-left font-black text-slate-950">
-                      {selectedAccountType?.title}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3 border-t border-slate-200 pt-3">
-                    <span className="text-slate-500">مجموع قیمت</span>
-                    <span className="text-left font-black text-emerald-700">
-                      {totalPrice > 0 ? formatPrice(totalPrice) : "قیمت نامشخص"}
                     </span>
                   </div>
                 </div>
@@ -669,33 +782,90 @@ export default function GameOrderSelector() {
                     </span>
                   </div>
 
+                  {pendingCapacityGames.length > 0 && (
+                    <div className="mb-3 flex items-start gap-2 rounded-2xl border border-red-100 bg-red-50 p-3 text-xs font-black leading-6 text-red-600">
+                      <span>⚠</span>
+                      <span>
+                        برای{" "}
+                        {pendingCapacityGames.length.toLocaleString("fa-IR")}{" "}
+                        بازی PS5 هنوز ظرفیت انتخاب نشده است.
+                      </span>
+                    </div>
+                  )}
+
                   <div className="max-h-80 space-y-3 overflow-y-auto pl-1">
                     {selectedGames.map((game) => {
-                      const gameId = `${game.platform}-${game._id ?? normalize(game.name)}`;
+                      const gameId = getGameId(game);
+                      const needsCapacity = isPs5Platform(game.platform);
 
                       return (
                         <div
                           key={gameId}
-                          className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3"
+                          className={`rounded-2xl border p-3 ${needsCapacity && !game.gameType
+                            ? "border-red-200 bg-red-50/70"
+                            : "border-slate-200 bg-slate-50"
+                            }`}
                         >
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-sm font-black text-[#001A6E]">
-                            {game.name.slice(0, 1)}
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-sm font-black text-[#001A6E]">
+                              {game.name.slice(0, 1)}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-black text-slate-950">
+                                {game.name}
+                              </p>
+                              <p className="text-xs font-semibold text-slate-500">
+                                {game.platform} • {formatSize(game.size)}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeGame(game)}
+                              className="shrink-0 rounded-lg border border-red-100 bg-red-50 px-2.5 py-1.5 text-xs font-black text-red-600 transition hover:bg-red-100"
+                            >
+                              حذف
+                            </button>
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-black text-slate-950">
-                              {game.name}
-                            </p>
-                            <p className="text-xs font-semibold text-slate-500">
-                              {game.platform} • {formatSize(game.size)}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeGame(game)}
-                            className="rounded-lg border border-red-100 bg-red-50 px-2.5 py-1.5 text-xs font-black text-red-600 transition hover:bg-red-100"
-                          >
-                            حذف
-                          </button>
+
+                          {needsCapacity && (
+                            <div className="mt-3 border-t border-slate-200 pt-3">
+                              <div className="mb-2 text-[11px] font-black text-slate-600">
+                                ظرفیت / نوع اجرا:{" "}
+                                <span
+                                  className={
+                                    game.gameType
+                                      ? "text-[#001A6E]"
+                                      : "text-red-500"
+                                  }
+                                >
+                                  {game.gameType
+                                    ? gameTypeLabels[game.gameType]
+                                    : "انتخاب نشده"}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                {ps5GameTypes.map((gameType) => {
+                                  const isActive =
+                                    game.gameType === gameType.value;
+                                  return (
+                                    <button
+                                      key={gameType.value}
+                                      type="button"
+                                      onClick={() =>
+                                        updateGameType(gameId, gameType.value)
+                                      }
+                                      className={`rounded-lg border px-2 py-2 text-[11px] font-black transition ${isActive
+                                        ? "border-[#001A6E] bg-[#001A6E] text-white"
+                                        : "border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-[#001A6E]"
+                                        }`}
+                                    >
+                                      {gameType.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -731,11 +901,10 @@ export default function GameOrderSelector() {
                         }));
                       }}
                       placeholder="مثال: علی رضایی"
-                      className={`w-full rounded-2xl border bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-4 disabled:opacity-60 ${
-                        fieldErrors.customerName
-                          ? "border-red-300 focus:border-red-400 focus:ring-red-100"
-                          : "border-slate-200 focus:border-[#001A6E] focus:ring-indigo-100"
-                      }`}
+                      className={`w-full rounded-2xl border bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-4 disabled:opacity-60 ${fieldErrors.customerName
+                        ? "border-red-300 focus:border-red-400 focus:ring-red-100"
+                        : "border-slate-200 focus:border-[#001A6E] focus:ring-indigo-100"
+                        }`}
                     />
                     {fieldErrors.customerName && (
                       <p className="mt-1.5 text-xs font-bold text-red-500">
@@ -762,11 +931,10 @@ export default function GameOrderSelector() {
                       inputMode="numeric"
                       dir="ltr"
                       placeholder="09123456789"
-                      className={`w-full rounded-2xl border bg-white px-4 py-3 text-right text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-4 disabled:opacity-60 ${
-                        fieldErrors.phone
-                          ? "border-red-300 focus:border-red-400 focus:ring-red-100"
-                          : "border-slate-200 focus:border-[#001A6E] focus:ring-indigo-100"
-                      }`}
+                      className={`w-full rounded-2xl border bg-white px-4 py-3 text-right text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-4 disabled:opacity-60 ${fieldErrors.phone
+                        ? "border-red-300 focus:border-red-400 focus:ring-red-100"
+                        : "border-slate-200 focus:border-[#001A6E] focus:ring-indigo-100"
+                        }`}
                     />
                     {fieldErrors.phone && (
                       <p className="mt-1.5 text-xs font-bold text-red-500">
@@ -806,11 +974,10 @@ export default function GameOrderSelector() {
                                   address: "",
                                 }));
                               }}
-                              className={`w-full rounded-2xl border p-3 text-right transition ${
-                                isSelected
-                                  ? "border-[#001A6E] bg-indigo-50"
-                                  : "border-slate-200 bg-white hover:border-indigo-200"
-                              }`}
+                              className={`w-full rounded-2xl border p-3 text-right transition ${isSelected
+                                ? "border-[#001A6E] bg-indigo-50"
+                                : "border-slate-200 bg-white hover:border-indigo-200"
+                                }`}
                             >
                               <p className="text-xs font-bold text-slate-700">
                                 {addr.province} - {addr.city}
@@ -854,7 +1021,7 @@ export default function GameOrderSelector() {
                   </div>
 
                   {fieldErrors.products && (
-                    <p className="text-xs font-bold text-red-500">
+                    <p className="rounded-2xl bg-red-50 p-3 text-xs font-bold text-red-600">
                       {fieldErrors.products}
                     </p>
                   )}
@@ -870,11 +1037,10 @@ export default function GameOrderSelector() {
                   type="button"
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className={`mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-black text-white shadow-lg shadow-indigo-950/20 transition ${
-                    submitting
-                      ? "cursor-not-allowed bg-slate-400"
-                      : "bg-[#001A6E] hover:-translate-y-0.5 hover:bg-[#000e3c]"
-                  }`}
+                  className={`mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-black text-white shadow-lg shadow-indigo-950/20 transition ${submitting
+                    ? "cursor-not-allowed bg-slate-400"
+                    : "bg-[#001A6E] hover:-translate-y-0.5 hover:bg-[#000e3c]"
+                    }`}
                 >
                   {submitting ? (
                     <>

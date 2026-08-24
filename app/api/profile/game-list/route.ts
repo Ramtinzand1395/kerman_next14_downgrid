@@ -6,12 +6,17 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 
 type GameListDoc = {
   platform: string;
-  items: { _id: string; name: string }[];
+  items: {
+    _id: string;
+    name: string;
+    size?: number;
+  }[];
 };
 
 const normalizePlatform = (value: string | null) => {
   if (!value) return "";
-  return value.trim().toLowerCase();
+  const platform = value.trim().toLowerCase();
+  return platform === "ps5copy" ? "ps5Copy" : platform;
 };
 
 const filterItems = (items: GameListDoc["items"], search: string) => {

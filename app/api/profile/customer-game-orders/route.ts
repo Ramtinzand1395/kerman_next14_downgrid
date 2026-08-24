@@ -42,26 +42,63 @@ export async function POST(req: NextRequest) {
       addressId: String(body.addressId || "").trim(),
       message: stripHtmlTags(body.message || ""),
       products: Array.isArray(body.products)
-        ? body.products.map((p: Record<string, unknown>) => ({
-            name: stripHtmlTags(String(p.name ?? "")),
-            platform: stripHtmlTags(String(p.platform ?? "")) || "",
-            price: Number(p.price) || 0,
-            size: Number(p.size) || 0,
-          }))
+        ? body.products.map((p: Record<string, unknown>) => {
+            const platform = stripHtmlTags(String(p.platform ?? "")).trim();
+            const isStandardPs5 = platform.toLowerCase() === "ps5";
+            return {
+              name: stripHtmlTags(String(p.name ?? "")),
+              platform,
+              size: Number(p.size) || 0,
+              // Capacity / execution type is meaningful only for standard PS5.
+              gameType: isStandardPs5
+                ? stripHtmlTags(String(p.gameType ?? "")) || ""
+                : "",
+            };
+          })
         : [],
-      totalPrice: Number(body.totalPrice) || 0,
+      totalPrice: 0,
     };
+
+    const invalidPs5Product = sanitizedBody.products.find(
+      (product: { platform?: string; gameType?: string }) =>
+        product.platform?.toLowerCase() === "ps5" && !product.gameType,
+    );
+    if (invalidPs5Product) {
+      return NextResponse.json(
+        { error: "برای هر بازی PS5 استاندارد، ظرفیت / نوع اجرا را انتخاب کنید." },
+        { status: 400 },
+      );
+    }
 
     try {
       await customerGameOrderSchema.validate(sanitizedBody, {
         abortEarly: false,
       });
     } catch (validationError: unknown) {
-      const err = validationError as { errors?: Array<{ message: string }> };
+      const err = validationError as {
+        errors?: string[];
+        message?: string;
+        inner?: Array<{ path?: string; message?: string }>;
+      };
+      const details = [
+        ...(err.errors ?? []),
+        ...(err.message && !err.errors?.length ? [err.message] : []),
+      ];
       return NextResponse.json(
         {
           error: "اطلاعات ورودی نامعتبر است.",
-          details: err.errors?.map((e) => e.message),
+          details,
+          fields: err.inner?.reduce<Record<string, string[]>>(
+            (fieldErrors, issue) => {
+              if (!issue.path || !issue.message) return fieldErrors;
+              fieldErrors[issue.path] = [
+                ...(fieldErrors[issue.path] ?? []),
+                issue.message,
+              ];
+              return fieldErrors;
+            },
+            {},
+          ),
         },
         { status: 400 },
       );

@@ -94,7 +94,25 @@ export async function PUT(
       sanitizedBody.address = stripHtmlTags(body.address);
     if (body.message !== undefined)
       sanitizedBody.message = stripHtmlTags(body.message || "");
+    if (body.totalPrice !== undefined) {
 
+      const totalPrice = Number(body.totalPrice);
+
+      if (!Number.isFinite(totalPrice)) {
+
+        return NextResponse.json(
+
+          { error: "مبلغ کل باید یک عدد معتبر باشد." },
+
+          { status: 400 },
+
+        );
+
+      }
+
+      sanitizedBody.totalPrice = totalPrice;
+
+    }
     try {
       await customerOrderUpdateSchema.validate(sanitizedBody, {
         abortEarly: false,

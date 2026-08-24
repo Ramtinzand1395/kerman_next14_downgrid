@@ -68,6 +68,10 @@ export async function GET() {
         return Notification.populate(n, {
           path: "target.item",
           model: "CustomerGameOrder",
+          populate: [
+            { path: "user", select: "username mobile createdAt" },
+            { path: "addressRef" },
+          ],
         });
       }
       if (n.type === "contact") {
@@ -81,5 +85,13 @@ export async function GET() {
     }),
   );
 
-  return NextResponse.json(populated);
+  // Do not expose stale notifications whose referenced record was deleted.
+  const validNotifications = populated.filter((notification) => {
+    const typedTarget = ["comment", "user", "order", "customerGameOrder", "contact"].includes(
+      notification.type,
+    );
+    return !typedTarget || Boolean(notification.target?.item);
+  });
+
+  return NextResponse.json(validNotifications);
 }
