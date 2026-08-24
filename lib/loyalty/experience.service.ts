@@ -124,23 +124,28 @@ export async function grantXp(input: GrantXpInput): Promise<{
     }
   }
 
-  const session = await mongoose.startSession();
+  const topologyType = (mongoose.connection.getClient() as unknown as {
+    topology?: { description?: { type?: string } };
+  }).topology?.description?.type;
   let levelChanged = false;
   let newLevel: LevelCode = "rookie";
   let totalXp = 0;
   let oldLevel: LevelCode = "rookie";
 
-  try {
-    await session.withTransaction(async () => {
+  const applyXp = async (session?: mongoose.ClientSession) => {
       const exp = await Experience.findOneAndUpdate(
         { user: userId },
         { $inc: { totalXp: finalAmount, monthlyXp: Math.max(0, finalAmount) }, $setOnInsert: { level: "rookie" } },
-        { upsert: true, new: true, session },
+        { upsert: true, returnDocument: "after", ...(session ? { session } : {}) },
       );
 
       // جلوگیری از XP منفی
       if (exp.totalXp < 0) {
-        await Experience.updateOne({ user: userId }, { $set: { totalXp: 0, monthlyXp: 0 } }, { session });
+        await Experience.updateOne(
+          { user: userId },
+          { $set: { totalXp: 0, monthlyXp: 0 } },
+          session ? { session } : undefined,
+        );
         exp.totalXp = 0;
       }
 
@@ -150,10 +155,14 @@ export async function grantXp(input: GrantXpInput): Promise<{
       levelChanged = newLevel !== oldLevel;
 
       if (levelChanged) {
-        await Experience.updateOne({ user: userId }, { $set: { level: newLevel } }, { session });
+        await Experience.updateOne(
+          { user: userId },
+          { $set: { level: newLevel } },
+          session ? { session } : undefined,
+        );
         await MembershipHistory.create(
           [{ user: userId, kind: "level", from: oldLevel, to: newLevel, reason: "xp_threshold" }],
-          { session },
+          session ? { session } : undefined,
         );
       }
 
@@ -170,18 +179,29 @@ export async function grantXp(input: GrantXpInput): Promise<{
             description: input.description,
           },
         ],
-        { session },
+        session ? { session } : undefined,
       );
 
       totalXp = exp.totalXp;
-    });
+  };
+
+  try {
+    if (topologyType === "Single") {
+      // MongoDB standalone transaction ندارد؛ عملیات را بدون session اجرا می‌کنیم.
+      await applyXp();
+    } else {
+      const session = await mongoose.startSession();
+      try {
+        await session.withTransaction(() => applyXp(session));
+      } finally {
+        await session.endSession();
+      }
+    }
   } catch (err) {
     if ((err as { code?: number })?.code === 11000) {
       return { ok: true, duplicate: true };
     }
     throw err;
-  } finally {
-    await session.endSession();
   }
 
   // اعلان‌ها بیرون از تراکنش
