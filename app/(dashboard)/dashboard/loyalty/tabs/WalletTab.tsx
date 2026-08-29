@@ -102,16 +102,25 @@ export default function WalletTab() {
   const submitAction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (saving || !modal) return;
+    const numericAmount = Number(amount);
+    if (!Number.isFinite(numericAmount) || numericAmount === 0) {
+      toast.error("مبلغ باید عددی غیرصفر باشد");
+      return;
+    }
+    if (modal === "gift" && Math.abs(numericAmount) < 1_000) {
+      toast.error("حداقل مبلغ هدیه ۱٬۰۰۰ تومان است");
+      return;
+    }
     setSaving(true);
     const payload =
       modal === "gift"
         ? {
             userId: userId.trim(),
-            amount: Math.abs(Number(amount)),
+            amount: Math.abs(numericAmount),
             description: description || undefined,
             expiresInDays: expiresInDays ? Number(expiresInDays) : undefined,
           }
-        : { userId: userId.trim(), amount: Number(amount), description };
+        : { userId: userId.trim(), amount: numericAmount, description };
     const res = await apiFetch<{ balance: number }>("/api/admin/loyalty/wallet", {
       method: modal === "gift" ? "POST" : "PATCH",
       body: JSON.stringify(payload),

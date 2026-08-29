@@ -137,12 +137,15 @@ export async function credit(input: CreditInput): Promise<WalletTxResult> {
     };
   }
 
-  const session = await mongoose.startSession();
+  const topologyType = (mongoose.connection.getClient() as unknown as {
+    topology?: { description?: { type?: string } };
+  }).topology?.description?.type;
+  const session = topologyType === "Single" ? undefined : await mongoose.startSession();
   try {
     let result: WalletTxResult = { ok: false, error: "خطای ناشناخته" };
 
-    await session.withTransaction(async () => {
-      const wallet = await getOrCreateWallet(userId, session);
+    const applyCredit = async (activeSession?: mongoose.ClientSession) => {
+      const wallet = await getOrCreateWallet(userId, activeSession);
       if (!wallet.isActive) {
         result = { ok: false, error: "کیف پول غیرفعال است" };
         return;
@@ -164,7 +167,7 @@ export async function credit(input: CreditInput): Promise<WalletTxResult> {
       const updated = await Wallet.findOneAndUpdate(
         { _id: wallet._id, version: wallet.version, isActive: true },
         update,
-        { new: true, session },
+        { new: true, ...(activeSession ? { session: activeSession } : {}) },
       );
       if (!updated) {
         // نسخه عوض شده → تداخل هم‌زمان؛ تراکنش abort می‌شود و Mongo دوباره تلاش می‌کند
@@ -188,7 +191,7 @@ export async function credit(input: CreditInput): Promise<WalletTxResult> {
             performedBy: input.performedBy,
           },
         ],
-        { session },
+        activeSession ? { session: activeSession } : undefined,
       );
 
       await log({
@@ -204,7 +207,9 @@ export async function credit(input: CreditInput): Promise<WalletTxResult> {
       });
 
       result = { ok: true, transaction: tx, balance: balanceAfter };
-    });
+    };
+    if (session) await session.withTransaction(() => applyCredit(session));
+    else await applyCredit();
 
     // اعلان بیرون از تراکنش (غیرحساس به rollback)
     if (result.ok && input.notify) {
@@ -240,7 +245,7 @@ export async function credit(input: CreditInput): Promise<WalletTxResult> {
     });
     return { ok: false, error: message };
   } finally {
-    await session.endSession();
+    if (session) await session.endSession();
   }
 }
 
@@ -263,12 +268,15 @@ export async function debit(input: DebitInput): Promise<WalletTxResult> {
     };
   }
 
-  const session = await mongoose.startSession();
+  const topologyType = (mongoose.connection.getClient() as unknown as {
+    topology?: { description?: { type?: string } };
+  }).topology?.description?.type;
+  const session = topologyType === "Single" ? undefined : await mongoose.startSession();
   try {
     let result: WalletTxResult = { ok: false, error: "خطای ناشناخته" };
 
-    await session.withTransaction(async () => {
-      const wallet = await getOrCreateWallet(userId, session);
+    const applyDebit = async (activeSession?: mongoose.ClientSession) => {
+      const wallet = await getOrCreateWallet(userId, activeSession);
       const balanceBefore = wallet.balance;
 
       // برداشت اتمیک با شرط موجودی کافی — قلب جلوگیری از double-spend.
@@ -280,7 +288,7 @@ export async function debit(input: DebitInput): Promise<WalletTxResult> {
           balance: { $gte: amount },
         },
         { $inc: { balance: -amount, version: 1 } },
-        { new: true, session },
+        { new: true, ...(activeSession ? { session: activeSession } : {}) },
       );
 
       if (!updated) {
@@ -313,7 +321,7 @@ export async function debit(input: DebitInput): Promise<WalletTxResult> {
             performedBy: input.performedBy,
           },
         ],
-        { session },
+        activeSession ? { session: activeSession } : undefined,
       );
 
       await log({
@@ -329,7 +337,9 @@ export async function debit(input: DebitInput): Promise<WalletTxResult> {
       });
 
       result = { ok: true, transaction: tx, balance: updated.balance };
-    });
+    };
+    if (session) await session.withTransaction(() => applyDebit(session));
+    else await applyDebit();
 
     return result;
   } catch (err) {
@@ -346,7 +356,7 @@ export async function debit(input: DebitInput): Promise<WalletTxResult> {
     });
     return { ok: false, error: "خطا در عملیات کیف پول" };
   } finally {
-    await session.endSession();
+    if (session) await session.endSession();
   }
 }
 
