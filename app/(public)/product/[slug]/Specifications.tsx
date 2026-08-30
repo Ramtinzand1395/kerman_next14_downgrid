@@ -23,11 +23,12 @@ export const Specifications = ({ specs }: SpecificationsProps) => {
             </h4>
           </div>
           <div className="divide-y divide-gray-50">
-            {spec.items.map((item) => (
+            {spec.items.map((item, index) => (
               <div
-                key={item._id}
+                key={index}
                 className="grid grid-cols-1 md:grid-cols-4 px-6 py-4 hover:bg-gray-50/50 transition-colors"
               >
+                {" "}
                 <div className="text-gray-500 text-sm font-medium md:col-span-1 mb-1 md:mb-0">
                   {item.key}
                 </div>

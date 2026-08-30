@@ -10,7 +10,8 @@ import Faq from "./components/landing/Faq";
 import Link from "next/link";
 import MainPageBanners from "./components/landing/MainPageBanners";
 import Motion from "./components/Motion";
-
+import banner from "../../public/banner-5.jpg";
+import Image from "next/image";
 const now = new Date();
 const nextMidnight = new Date(
   now.getFullYear(),
@@ -63,8 +64,8 @@ export default async function Home() {
         </Motion>
 
         <Motion delay={0.13} direction="up" distance={30}>
-          <section className="my-8 overflow-hidden rounded-3xl border border-indigo-100 bg-gradient-to-l from-[#001A6E] via-[#12389b] to-indigo-500 px-6 py-8 text-white shadow-xl shadow-indigo-900/15 md:px-10 md:py-10">
-            <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
+          {/* <section className="my-8 overflow-hidden rounded-3xl border border-indigo-100 bg-gradient-to-l from-[#001A6E] via-[#12389b] to-indigo-500 px-6 py-8 text-white shadow-xl shadow-indigo-900/15 md:px-10 md:py-10"> */}
+            {/* <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
               <div>
                 <span className="inline-flex rounded-full bg-white/15 px-4 py-1.5 text-xs font-bold">
                   خدمات نصب بازی
@@ -82,8 +83,32 @@ export default async function Home() {
               >
                 ثبت نوبت بازی
               </Link>
-            </div>
-          </section>
+            </div> */}
+            <Image
+              src={banner}
+              // width={50}
+              // height={50}
+              alt="بنر خدمات نصب"
+              className="w-full object-contain mt-2 rounded"
+            />
+              <Link
+                href="/my-profile?step=6"
+                className="shrink-0 rounded-2xl bg-white px-6 py-3 text-sm font-black text-[#001A6E] transition hover:-translate-y-0.5 hover:bg-indigo-50"
+              >
+                ثبت نوبت بازی
+              </Link>
+               <div>
+                <span className="inline-flex rounded-full bg-white/15 px-4 py-1.5 text-xs font-bold">
+                  خدمات نصب بازی
+                </span>
+                <h2 className="mt-3 text-2xl font-black md:text-3xl">
+                  نوبت نصب بازی‌ات را همین حالا ثبت کن
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-7 text-indigo-100 md:text-base">
+                  کنسول و بازی‌های موردنظرت را انتخاب کن تا تیم ما در سریع‌ترین زمان با تو هماهنگ شود.
+                </p>
+              </div>
+          {/* </section> */}
         </Motion>
 
         <Motion delay={0.14} direction="right" distance={36}>

@@ -253,7 +253,7 @@ export interface Order {
 }
 
 export interface Comment {
-  id: string;
+  _id: string;
   text: string;
   rating: number;
   userId: number;

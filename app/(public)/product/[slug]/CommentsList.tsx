@@ -59,7 +59,7 @@ export const CommentsList = ({
         <div className="space-y-4">
           {comments.map((comment) => (
             <div
-              key={comment.id}
+              key={comment._id}
               className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
             >
               <div className="flex items-start justify-between mb-4">
