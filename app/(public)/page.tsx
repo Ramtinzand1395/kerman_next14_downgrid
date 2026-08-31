@@ -64,51 +64,46 @@ export default async function Home() {
         </Motion>
 
         <Motion delay={0.13} direction="up" distance={30}>
-          {/* <section className="my-8 overflow-hidden rounded-3xl border border-indigo-100 bg-gradient-to-l from-[#001A6E] via-[#12389b] to-indigo-500 px-6 py-8 text-white shadow-xl shadow-indigo-900/15 md:px-10 md:py-10"> */}
-            {/* <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
-              <div>
-                <span className="inline-flex rounded-full bg-white/15 px-4 py-1.5 text-xs font-bold">
+        
+          <section className="relative my-8 overflow-hidden rounded-3xl bg-[#001A6E] shadow-xl shadow-indigo-950/10">
+            <div className="flex flex-col-reverse md:flex-row md:items-stretch">
+              {/* متن و دکمه */}
+              <div className="flex w-full flex-col justify-center p-6 text-white sm:p-8 md:w-1/2 md:p-10 lg:p-12">
+                <span className="mb-3 w-fit rounded-full bg-white/10 px-4 py-1.5 text-xs font-bold text-indigo-100 ring-1 ring-white/10">
                   خدمات نصب بازی
                 </span>
-                <h2 className="mt-3 text-2xl font-black md:text-3xl">
+
+                <h2 className="text-2xl font-black leading-9 sm:text-3xl sm:leading-[1.7] lg:text-4xl">
                   نوبت نصب بازی‌ات را همین حالا ثبت کن
                 </h2>
-                <p className="mt-2 max-w-2xl text-sm leading-7 text-indigo-100 md:text-base">
-                  کنسول و بازی‌های موردنظرت را انتخاب کن تا تیم ما در سریع‌ترین زمان با تو هماهنگ شود.
+
+                <p className="mt-3 max-w-xl text-sm leading-7 text-indigo-100 sm:text-base sm:leading-8">
+                  کنسول و بازی‌های موردنظرت را انتخاب کن تا تیم ما در سریع‌ترین
+                  زمان با تو هماهنگ شود و بازی‌ها را برایت نصب کند.
                 </p>
+
+                <Link
+                  href="/my-profile?step=6"
+                  className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-white px-6 py-3.5 text-sm font-black text-[#001A6E] transition-all duration-300 hover:-translate-y-1 hover:bg-indigo-50 hover:shadow-lg sm:w-fit"
+                >
+                  ثبت نوبت نصب بازی
+                </Link>
               </div>
-              <Link
-                href="/my-profile?step=6"
-                className="shrink-0 rounded-2xl bg-white px-6 py-3 text-sm font-black text-[#001A6E] transition hover:-translate-y-0.5 hover:bg-indigo-50"
-              >
-                ثبت نوبت بازی
-              </Link>
-            </div> */}
-            <Image
-              src={banner}
-              // width={50}
-              // height={50}
-              alt="بنر خدمات نصب"
-              className="w-full object-contain mt-2 rounded"
-            />
-              <Link
-                href="/my-profile?step=6"
-                className="shrink-0 rounded-2xl bg-white px-6 py-3 text-sm font-black text-[#001A6E] transition hover:-translate-y-0.5 hover:bg-indigo-50"
-              >
-                ثبت نوبت بازی
-              </Link>
-               <div>
-                <span className="inline-flex rounded-full bg-white/15 px-4 py-1.5 text-xs font-bold">
-                  خدمات نصب بازی
-                </span>
-                <h2 className="mt-3 text-2xl font-black md:text-3xl">
-                  نوبت نصب بازی‌ات را همین حالا ثبت کن
-                </h2>
-                <p className="mt-2 max-w-2xl text-sm leading-7 text-indigo-100 md:text-base">
-                  کنسول و بازی‌های موردنظرت را انتخاب کن تا تیم ما در سریع‌ترین زمان با تو هماهنگ شود.
-                </p>
+
+              {/* تصویر بنر */}
+              <div className="relative w-full md:w-1/2">
+                <Image
+                  src={banner}
+                  alt="خدمات نصب بازی پلی استیشن"
+                  className="h-auto min-h-[220px] w-full object-cover md:h-full md:min-h-[320px]"
+                  priority
+                />
+
+                {/* لایه گرادیانت برای اتصال تصویر و متن */}
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#001A6E]/30 via-transparent to-transparent md:bg-gradient-to-l md:from-transparent md:to-[#001A6E]/20" />
               </div>
-          {/* </section> */}
+            </div>
+          </section>
         </Motion>
 
         <Motion delay={0.14} direction="right" distance={36}>
