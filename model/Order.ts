@@ -10,6 +10,16 @@ const OrderStatusEnum = [
 
 const PaymentStatusEnum = ["unpaid", "paid", "failed", "pending_refund"];
 
+// A sparse unique index ignores missing fields, but it still indexes explicit
+// null values. Normalize empty optional identifiers to `undefined` so wallet
+// orders (which have no gateway authority) are not all indexed as `null`.
+const normalizeOptionalUniqueString = (value: unknown) => {
+  if (typeof value !== "string") return undefined;
+
+  const normalized = value.trim();
+  return normalized || undefined;
+};
+
 const OrderSchema = new mongoose.Schema(
   {
     user: {
@@ -80,7 +90,7 @@ const OrderSchema = new mongoose.Schema(
       type: String,
       unique: true,
       sparse: true,
-      default: null,
+      set: normalizeOptionalUniqueString,
     },
     paymentRefId: {
       type: Number,
@@ -124,7 +134,7 @@ const OrderSchema = new mongoose.Schema(
       type: String,
       unique: true,
       sparse: true,
-      default: null,
+      set: normalizeOptionalUniqueString,
     },
 
     trackingCode: {

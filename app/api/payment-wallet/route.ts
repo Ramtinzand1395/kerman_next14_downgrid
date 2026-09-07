@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
     );
   }
   const userId = session.user.id;
-  const idempotencyKey = req.headers.get("Idempotency-Key")?.trim() || null;
+  const idempotencyKey =
+    req.headers.get("Idempotency-Key")?.trim() || undefined;
 
   try {
     const payload: {
@@ -245,7 +246,7 @@ export async function POST(req: NextRequest) {
             couponDiscount,
             paymentStatus: "unpaid",
             paymentGateway: "wallet",
-            clientRequestKey: idempotencyKey,
+            ...(idempotencyKey ? { clientRequestKey: idempotencyKey } : {}),
           },
         ],
         activeSession ? { session: activeSession } : undefined,
