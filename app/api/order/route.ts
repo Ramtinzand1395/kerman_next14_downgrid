@@ -8,6 +8,7 @@ import User from "@/model/User";
 import Address from "@/model/Address";
 import Product from "@/model/Product";
 import mongoose from "mongoose";
+import { createAddressSnapshot } from "@/lib/addressSnapshot";
 
 interface OrderItem {
   productId: string;
@@ -165,6 +166,7 @@ export async function POST(req: Request) {
       order = await Order.create({
         user: session.user.id,
         address: payload.addressId,
+        addressSnapshot: createAddressSnapshot(address),
         items: orderItems,
         totalPrice,
         shippingCost,

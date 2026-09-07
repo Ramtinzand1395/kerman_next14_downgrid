@@ -249,6 +249,7 @@ export interface Order {
 
   user?: User;
   address?: Address;
+  addressSnapshot?: Omit<Address, "_id" | "userId" | "createdAt" | "updatedAt">;
   items: OrderItem[];
 }
 

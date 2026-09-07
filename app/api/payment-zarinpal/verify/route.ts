@@ -1,245 +1,3 @@
-// import dbConnect from "@/lib/mongodb";
-// import Notification from "@/model/Notification";
-// import Order from "@/model/Order";
-// import Product from "@/model/Product";
-// import TempPayment from "@/model/TempPayment";
-// import User from "@/model/User";
-// import { NextRequest, NextResponse } from "next/server";
-// import { getSiteUrl } from "@/lib/baseUrl";
-
-// type ZarinpalVerifyResponse = {
-//   data?: {
-//     code?: number;
-//     ref_id?: number;
-//     card_pan?: string;
-//     fee_type?: string;
-//     fee?: number;
-//   };
-// };
-
-// function withPaymentQuery(
-//   baseUrl: string,
-//   path: string,
-//   params: Record<string, string | number | undefined | null>,
-// ) {
-//   const url = new URL(`${baseUrl}${path}`);
-//   for (const [key, value] of Object.entries(params)) {
-//     if (value !== undefined && value !== null && value !== "") {
-//       url.searchParams.set(key, String(value));
-//     }
-//   }
-//   return url.toString();
-// }
-
-// export async function GET(req: NextRequest) {
-//   await dbConnect();
-
-//   const baseUrl = getSiteUrl();
-//   const { searchParams } = new URL(req.url);
-
-//   const authority =
-//     searchParams.get("Authority") ?? searchParams.get("authority") ?? "";
-//   const status = searchParams.get("Status") ?? searchParams.get("status") ?? "";
-//   const retried = searchParams.get("retried") ?? "";
-
-//   const failedUrl = withPaymentQuery(baseUrl, "/payment-failed", {
-//     authority,
-//     status,
-//     retried: retried === "1" ? "1" : undefined,
-//   });
-
-//   const pendingUrl = withPaymentQuery(baseUrl, "/payment-pending", {
-//     authority,
-//   });
-
-//   try {
-//     if (!authority || status !== "OK") {
-//       if (authority) {
-//         await TempPayment.findOneAndUpdate(
-//           { authority },
-//           { $set: { status: "failed", failedAt: new Date() } },
-//         );
-//       }
-//       return NextResponse.redirect(failedUrl);
-//     }
-
-//     const merchant_id = process.env.ZARINPAL_MERCHANT_ID?.trim();
-//     if (!merchant_id) return NextResponse.redirect(failedUrl);
-
-//     const alreadyPaidOrder = await Order.findOne({
-//       paymentAuthority: authority,
-//       paymentStatus: { $in: ["paid", "pending_refund"] },
-//     }).lean();
-
-//     if (alreadyPaidOrder) {
-//       const successPath =
-//         alreadyPaidOrder.paymentStatus === "pending_refund"
-//           ? "/payment-pending"
-//           : "/payment-success";
-
-//       await TempPayment.deleteOne({ authority });
-
-//       const successUrl = withPaymentQuery(baseUrl, successPath, {
-//         orderId: alreadyPaidOrder._id?.toString(),
-//         authority,
-//         refId: alreadyPaidOrder.paymentRefId,
-//       });
-
-//       return NextResponse.redirect(successUrl);
-//     }
-
-//     const temp = await TempPayment.findOne({ authority }).lean();
-//     if (!temp) return NextResponse.redirect(failedUrl);
-
-//     const verifyRes = await fetch(
-//       "https://payment.zarinpal.com/pg/v4/payment/verify.json",
-//       {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//           merchant_id,
-//           amount: temp.gatewayAmount,
-//           authority,
-//         }),
-//         cache: "no-store",
-//       },
-//     );
-
-//     const result = (await verifyRes.json()) as ZarinpalVerifyResponse;
-//     const code = result?.data?.code;
-
-//     if (!verifyRes.ok || (code !== 100 && code !== 101)) {
-//       await TempPayment.findOneAndUpdate(
-//         { authority },
-//         { $set: { status: "failed", failedAt: new Date() } },
-//       );
-//       return NextResponse.redirect(failedUrl);
-//     }
-
-//     const duplicateOrder = await Order.findOne({
-//       paymentAuthority: authority,
-//       paymentStatus: { $in: ["paid", "pending_refund"] },
-//     }).lean();
-
-//     if (duplicateOrder) {
-//       await TempPayment.deleteOne({ authority });
-
-//       const successPath =
-//         duplicateOrder.paymentStatus === "pending_refund"
-//           ? "/payment-pending"
-//           : "/payment-success";
-
-//       const duplicateUrl = withPaymentQuery(baseUrl, successPath, {
-//         orderId: duplicateOrder._id.toString(),
-//         authority,
-//         refId: duplicateOrder.paymentRefId,
-//       });
-
-//       return NextResponse.redirect(duplicateUrl);
-//     }
-
-//     for (const item of temp.items as Array<{
-//       product: string;
-//       variantId?: string;
-//       quantity: number;
-//     }>) {
-//       if (item.variantId) {
-//         const updated = await Product.findOneAndUpdate(
-//           {
-//             _id: item.product,
-//             stock: { $gte: item.quantity },
-//             variants: {
-//               $elemMatch: {
-//                 _id: item.variantId,
-//                 stock: { $gte: item.quantity },
-//               },
-//             },
-//           },
-//           {
-//             $inc: {
-//               stock: -item.quantity,
-//               "variants.$.stock": -item.quantity,
-//             },
-//           },
-//         );
-
-//         if (!updated) {
-//           await TempPayment.findOneAndUpdate(
-//             { authority },
-//             { $set: { status: "failed", failedAt: new Date() } },
-//           );
-//           return NextResponse.redirect(failedUrl);
-//         }
-//         continue;
-//       }
-
-//       const updated = await Product.findOneAndUpdate(
-//         { _id: item.product, stock: { $gte: item.quantity } },
-//         { $inc: { stock: -item.quantity } },
-//       );
-
-//       if (!updated) {
-//         await TempPayment.findOneAndUpdate(
-//           { authority },
-//           { $set: { status: "failed", failedAt: new Date() } },
-//         );
-//         return NextResponse.redirect(failedUrl);
-//       }
-//     }
-
-//     const order = await Order.create({
-//       user: temp.userId,
-//       address: temp.address,
-//       items: temp.items,
-//       totalPrice: temp.totalPrice,
-//       shippingCost: temp.shippingCost,
-//       finalPrice: temp.finalPrice,
-//       paymentStatus: "paid",
-//       paymentGateway: "zarinpal",
-//       paymentAuthority: authority,
-//       paymentRefId: result?.data?.ref_id ?? null,
-//       paymentCardPan: result?.data?.card_pan ?? null,
-//       paymentFeeType: result?.data?.fee_type ?? null,
-//       paymentFee: result?.data?.fee ?? null,
-//       paymentVerifiedAt: new Date(),
-//     });
-
-//     await User.findByIdAndUpdate(temp.userId, { $push: { orders: order._id } });
-
-//     await Notification.create({
-//       title: "سفارش جدید",
-//       message: "یک سفارش جدید ثبت شد",
-//       type: "order",
-//       target: {
-//         kind: "Order",
-//         item: order._id,
-//       },
-//     });
-
-//     await TempPayment.deleteOne({ authority });
-
-//     const successUrl = withPaymentQuery(baseUrl, "/payment-success", {
-//       orderId: order._id.toString(),
-//       authority,
-//       refId: result?.data?.ref_id,
-//     });
-
-//     console.info(
-//       JSON.stringify({
-//         event: "payment.verify.completed",
-//         authority,
-//         orderId: order._id.toString(),
-//       }),
-//     );
-
-//     return NextResponse.redirect(successUrl);
-//   } catch (error) {
-//     console.error(error);
-//     return NextResponse.redirect(pendingUrl);
-//   }
-// }
-
-// بعد از chat
 
 import dbConnect from "@/lib/mongodb";
 import Notification from "@/model/Notification";
@@ -253,14 +11,6 @@ import { onSuccessfulPurchase } from "@/lib/loyalty/purchase.hooks";
 import { applyCoupon } from "@/lib/loyalty/coupon.service";
 import { NextRequest, NextResponse } from "next/server";
 import { getSiteUrl } from "@/lib/baseUrl";
-import mongoose from "mongoose";
-import {
-  databaseSupportsTransactions,
-  decrementInventory,
-  InsufficientStockError,
-  InventoryItem,
-  restoreInventory,
-} from "@/lib/inventory.service";
 
 type ZarinpalVerifyResponse = {
   data?: {
@@ -440,98 +190,104 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(walletSuccessUrl);
     }
 
-    const inventoryItems = temp.items as InventoryItem[];
-    const useTransaction = databaseSupportsTransactions();
-    const purchaseSession = useTransaction
-      ? await mongoose.startSession()
-      : undefined;
-    let orderId = "";
-    let orderObjectId: mongoose.Types.ObjectId | undefined;
-    let decrementedItems: InventoryItem[] = [];
+    const decrementedItems: Array<{
+      product: string;
+      variantId?: string;
+      quantity: number;
+    }> = [];
 
-    const completePurchase = async (activeSession?: mongoose.ClientSession) => {
-      decrementedItems = await decrementInventory(
-        inventoryItems,
-        activeSession,
-      );
-
-      const [order] = await Order.create(
-        [
+    for (const item of temp.items as Array<{
+      product: string;
+      variantId?: string;
+      quantity: number;
+    }>) {
+      if (item.variantId) {
+        const updated = await Product.findOneAndUpdate(
           {
-            user: temp.userId,
-            address: temp.address,
-            items: temp.items,
-            totalPrice: temp.totalPrice,
-            shippingCost: temp.shippingCost,
-            finalPrice: temp.finalPrice,
-            couponCode: temp.couponCode ?? null,
-            couponDiscount: temp.couponDiscount ?? 0,
-            paymentStatus: "paid",
-            paymentGateway: "zarinpal",
-            paymentAuthority: authority,
-            paymentRefId: result?.data?.ref_id ?? null,
-            paymentCardPan: result?.data?.card_pan ?? null,
-            paymentFeeType: result?.data?.fee_type ?? null,
-            paymentFee: result?.data?.fee ?? null,
-            paymentVerifiedAt: new Date(),
+            _id: item.product,
+            stock: { $gte: item.quantity },
+            variants: {
+              $elemMatch: {
+                _id: item.variantId,
+                stock: { $gte: item.quantity },
+              },
+            },
           },
-        ],
-        activeSession ? { session: activeSession } : undefined,
-      );
-
-      orderId = order._id.toString();
-      orderObjectId = order._id;
-      await User.findByIdAndUpdate(
-        temp.userId,
-        { $push: { orders: order._id } },
-        activeSession ? { session: activeSession } : undefined,
-      );
-    };
-
-    try {
-      if (purchaseSession) {
-        await purchaseSession.withTransaction(() =>
-          completePurchase(purchaseSession),
+          {
+            $inc: {
+              stock: -item.quantity,
+              "variants.$.stock": -item.quantity,
+            },
+          },
         );
-      } else {
-        await completePurchase();
-      }
-    } catch (error) {
-      if (!purchaseSession && decrementedItems.length > 0) {
-        await restoreInventory(decrementedItems);
+
+        if (!updated) {
+          for (const previous of decrementedItems) {
+            await Product.findOneAndUpdate(
+              previous.variantId
+                ? { _id: previous.product, variants: { $elemMatch: { _id: previous.variantId } } }
+                : { _id: previous.product },
+              previous.variantId
+                ? { $inc: { stock: previous.quantity, "variants.$.stock": previous.quantity } }
+                : { $inc: { stock: previous.quantity } },
+            );
+          }
+          await TempPayment.findOneAndUpdate(
+            { authority },
+            { $set: { status: "failed", failedAt: new Date() } },
+          );
+          return NextResponse.redirect(failedUrl);
+        }
+        decrementedItems.push(item);
+        continue;
       }
 
-      if (error instanceof InsufficientStockError) {
+      const updated = await Product.findOneAndUpdate(
+        { _id: item.product, stock: { $gte: item.quantity } },
+        { $inc: { stock: -item.quantity } },
+      );
+
+      if (!updated) {
+        for (const previous of decrementedItems) {
+          await Product.findOneAndUpdate(
+            previous.variantId
+              ? { _id: previous.product, variants: { $elemMatch: { _id: previous.variantId } } }
+              : { _id: previous.product },
+            previous.variantId
+              ? { $inc: { stock: previous.quantity, "variants.$.stock": previous.quantity } }
+              : { $inc: { stock: previous.quantity } },
+          );
+        }
         await TempPayment.findOneAndUpdate(
           { authority },
           { $set: { status: "failed", failedAt: new Date() } },
         );
         return NextResponse.redirect(failedUrl);
       }
-
-      // دو callback هم‌زمان ممکن است هر دو از pre-check عبور کنند.
-      if ((error as { code?: number })?.code === 11000) {
-        const existing = await Order.findOne({
-          paymentAuthority: authority,
-          paymentStatus: { $in: ["paid", "pending_refund"] },
-        }).lean();
-        if (existing) {
-          await TempPayment.deleteOne({ authority });
-          return NextResponse.redirect(
-            withPaymentQuery(baseUrl, "/payment-success", {
-              orderId: existing._id.toString(),
-              authority,
-              refId: existing.paymentRefId,
-            }),
-          );
-        }
-      }
-      throw error;
-    } finally {
-      if (purchaseSession) await purchaseSession.endSession();
+      decrementedItems.push(item);
     }
 
-    if (!orderId || !orderObjectId) throw new Error("ORDER_NOT_CREATED");
+    const order = await Order.create({
+      user: temp.userId,
+      address: temp.address,
+      addressSnapshot: temp.addressSnapshot,
+      items: temp.items,
+      totalPrice: temp.totalPrice,
+      shippingCost: temp.shippingCost,
+      finalPrice: temp.finalPrice,
+      couponCode: temp.couponCode ?? null,
+      couponDiscount: temp.couponDiscount ?? 0,
+      paymentStatus: "paid",
+      paymentGateway: "zarinpal",
+      paymentAuthority: authority,
+      paymentRefId: result?.data?.ref_id ?? null,
+      paymentCardPan: result?.data?.card_pan ?? null,
+      paymentFeeType: result?.data?.fee_type ?? null,
+      paymentFee: result?.data?.fee ?? null,
+      paymentVerifiedAt: new Date(),
+    });
+
+    await User.findByIdAndUpdate(temp.userId, { $push: { orders: order._id } });
 
     await Notification.create({
       title: "سفارش جدید",
@@ -539,10 +295,8 @@ export async function GET(req: NextRequest) {
       type: "order",
       target: {
         kind: "Order",
-        item: orderObjectId,
+        item: order._id,
       },
-    }).catch((error) => {
-      console.error("[payment-zarinpal] notification failed:", error);
     });
 
     await TempPayment.deleteOne({ authority });
@@ -571,13 +325,13 @@ export async function GET(req: NextRequest) {
         const applied = await applyCoupon({
           code: temp.couponCode,
           userId: String(temp.userId),
-          orderId,
+          orderId: order._id.toString(),
           orderAmount: temp.totalPrice,
           items: couponItems,
         });
         if (!applied.ok) {
           console.error(
-            "applyCoupon failed for order " + orderId + ":",
+            `[loyalty] applyCoupon failed for order ${order._id}:`,
             applied.error,
           );
         }
@@ -585,7 +339,7 @@ export async function GET(req: NextRequest) {
 
       await onSuccessfulPurchase({
         userId: String(temp.userId),
-        orderId,
+        orderId: order._id.toString(),
         orderAmount: temp.finalPrice,
         categoryIds,
       });
@@ -594,7 +348,7 @@ export async function GET(req: NextRequest) {
     }
 
     const successUrl = withPaymentQuery(baseUrl, "/payment-success", {
-      orderId,
+      orderId: order._id.toString(),
       authority,
       refId: result?.data?.ref_id,
     });
@@ -603,7 +357,7 @@ export async function GET(req: NextRequest) {
       JSON.stringify({
         event: "payment.verify.completed",
         authority,
-        orderId,
+        orderId: order._id.toString(),
       }),
     );
 

@@ -34,13 +34,19 @@ export async function GET() {
     .sort({ createdAt: -1 });
   const mappedTempOrders = unpaidTempOrders.map((payment: any) => ({
     ...payment,
+    address: payment.addressSnapshot ?? payment.address ?? null,
     source: "temp_payment",
     id: payment._id,
     paymentStatus: "unpaid",
     status: payment.status,
   }));
 
-  const mergedOrders = [...orders, ...mappedTempOrders].sort(
+  const mappedOrders = orders.map((order: any) => ({
+    ...order,
+    address: order.addressSnapshot ?? order.address ?? null,
+  }));
+
+  const mergedOrders = [...mappedOrders, ...mappedTempOrders].sort(
     (a: any, b: any) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );

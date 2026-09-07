@@ -14,17 +14,11 @@ import User from "@/model/User";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { getServerSession } from "next-auth";
 import mongoose from "mongoose";
+import { createAddressSnapshot } from "@/lib/addressSnapshot";
 import { NextRequest, NextResponse } from "next/server";
 import { debit, credit } from "@/lib/loyalty/wallet.service";
 import { validateCoupon, applyCoupon } from "@/lib/loyalty/coupon.service";
 import { onSuccessfulPurchase } from "@/lib/loyalty/purchase.hooks";
-import {
-  databaseSupportsTransactions,
-  decrementInventory,
-  InsufficientStockError,
-  InventoryItem,
-  restoreInventory,
-} from "@/lib/inventory.service";
 
 interface CheckoutItem {
   productId: string;
@@ -43,8 +37,7 @@ export async function POST(req: NextRequest) {
     );
   }
   const userId = session.user.id;
-  const idempotencyKey =
-    req.headers.get("Idempotency-Key")?.trim() || undefined;
+  const idempotencyKey = req.headers.get("Idempotency-Key")?.trim() || null;
 
   try {
     const payload: {
@@ -221,112 +214,29 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // سفارش، برداشت کیف پول و کسر همه اقلام باید یک واحد اتمیک باشند.
-    const useTransaction = databaseSupportsTransactions();
-    const purchaseSession = useTransaction
-      ? await mongoose.startSession()
-      : undefined;
-    let orderId = "";
-    let orderObjectId: mongoose.Types.ObjectId | undefined;
-    let debitFailure: Awaited<ReturnType<typeof debit>> | undefined;
-    let debitApplied = false;
-    let decrementedItems: InventoryItem[] = [];
-
-    const completePurchase = async (activeSession?: mongoose.ClientSession) => {
-      const [order] = await Order.create(
-        [
-          {
-            user: userId,
-            address: payload.addressId,
-            items: checkoutItems,
-            totalPrice,
-            shippingCost,
-            finalPrice,
-            couponCode,
-            couponDiscount,
-            paymentStatus: "unpaid",
-            paymentGateway: "wallet",
-            ...(idempotencyKey ? { clientRequestKey: idempotencyKey } : {}),
-          },
-        ],
-        activeSession ? { session: activeSession } : undefined,
-      );
-
-      orderId = order._id.toString();
-      orderObjectId = order._id;
-
-      if (finalPrice > 0) {
-        const debitResult = await debit({
-          userId,
-          amount: finalPrice,
-          type: "payment",
-          idempotencyKey: "wallet-pay:" + orderId,
-          ref: { kind: "Order", item: order._id },
-          description: "پرداخت سفارش از کیف پول",
-          session: activeSession,
-        });
-
-        if (!debitResult.ok) {
-          debitFailure = debitResult;
-          throw new Error("WALLET_DEBIT_FAILED");
-        }
-        debitApplied = true;
-      }
-
-      decrementedItems = await decrementInventory(
-        checkoutItems,
-        activeSession,
-      );
-
-      await Order.findByIdAndUpdate(
-        order._id,
-        {
-          paymentStatus: "paid",
-          paymentVerifiedAt: new Date(),
-        },
-        activeSession ? { session: activeSession } : undefined,
-      );
-
-      await User.findByIdAndUpdate(
-        userId,
-        { $push: { orders: order._id } },
-        activeSession ? { session: activeSession } : undefined,
-      );
-    };
-
+    // ── ساخت سفارش unpaid ──
+    let order;
     try {
-      if (purchaseSession) {
-        await purchaseSession.withTransaction(() =>
-          completePurchase(purchaseSession),
-        );
-      } else {
-        await completePurchase();
-      }
-    } catch (error) {
-      // در standalone تراکنش MongoDB نداریم؛ تمام اثرهای انجام‌شده جبران می‌شوند.
-      if (!purchaseSession) {
-        if (decrementedItems.length > 0) {
-          await restoreInventory(decrementedItems);
-        }
-        if (debitApplied && finalPrice > 0 && orderObjectId) {
-          const refundResult = await credit({
-            userId,
-            amount: finalPrice,
-            type: "refund",
-            idempotencyKey: "refund:" + orderId,
-            ref: { kind: "Order", item: orderObjectId },
-            description: "بازگشت وجه — نهایی‌سازی سفارش ناموفق بود",
-          });
-          if (!refundResult.ok) throw new Error("WALLET_REFUND_FAILED");
-        }
-        if (orderObjectId) await Order.deleteOne({ _id: orderObjectId });
-      }
-
-      if ((error as { code?: number })?.code === 11000 && idempotencyKey) {
+      order = await Order.create({
+        user: userId,
+        address: payload.addressId,
+        addressSnapshot: createAddressSnapshot(address),
+        items: checkoutItems,
+        totalPrice,
+        shippingCost,
+        finalPrice,
+        couponCode,
+        couponDiscount,
+        paymentStatus: "unpaid",
+        paymentGateway: "wallet",
+        clientRequestKey: idempotencyKey,
+      });
+    } catch (err) {
+      // برخورد با کلید تکراری در حالت رقابتی — سفارش موجود را برگردان
+      if ((err as { code?: number })?.code === 11000 && idempotencyKey) {
         const existing = await Order.findOne({
           user: userId,
           clientRequestKey: idempotencyKey,
-          paymentStatus: "paid",
         }).lean();
         if (existing) {
           return NextResponse.json({
@@ -336,37 +246,109 @@ export async function POST(req: NextRequest) {
           });
         }
       }
+      throw err;
+    }
 
-      if (error instanceof InsufficientStockError) {
+    const orderId = order._id.toString();
+
+    // ── برداشت از کیف پول (اتمیک، ضد double-spend) ──
+    if (finalPrice > 0) {
+      const debitResult = await debit({
+        userId,
+        amount: finalPrice,
+        type: "payment",
+        idempotencyKey: `wallet-pay:${orderId}`,
+        ref: { kind: "Order", item: order._id },
+        description: `پرداخت سفارش از کیف پول`,
+      });
+
+      if (!debitResult.ok) {
+        await Order.deleteOne({ _id: order._id, paymentStatus: "unpaid" });
+        return NextResponse.json(
+          {
+            success: false,
+            error: debitResult.error || "موجودی کیف پول کافی نیست",
+            balance: debitResult.balance,
+          },
+          { status: 402 },
+        );
+      }
+    }
+
+    // ── کسر موجودی انبار — در صورت کمبود، وجه برمی‌گردد ──
+    const decrementedItems: typeof checkoutItems = [];
+    for (const item of checkoutItems) {
+      const updated = item.variantId
+        ? await Product.findOneAndUpdate(
+            {
+              _id: item.product,
+              stock: { $gte: item.quantity },
+              variants: {
+                $elemMatch: {
+                  _id: item.variantId,
+                  stock: { $gte: item.quantity },
+                },
+              },
+            },
+            {
+              $inc: {
+                stock: -item.quantity,
+                "variants.$.stock": -item.quantity,
+              },
+            },
+          )
+        : await Product.findOneAndUpdate(
+            { _id: item.product, stock: { $gte: item.quantity } },
+            { $inc: { stock: -item.quantity } },
+          );
+
+      if (!updated) {
+        for (const previous of decrementedItems) {
+          await Product.findOneAndUpdate(
+            previous.variantId
+              ? { _id: previous.product, variants: { $elemMatch: { _id: previous.variantId } } }
+              : { _id: previous.product },
+            previous.variantId
+              ? { $inc: { stock: previous.quantity, "variants.$.stock": previous.quantity } }
+              : { $inc: { stock: previous.quantity } },
+          );
+        }
+        // برگشت وجه + لغو سفارش
+        if (finalPrice > 0) {
+          await credit({
+            userId,
+            amount: finalPrice,
+            type: "refund",
+            idempotencyKey: `refund:${orderId}`,
+            ref: { kind: "Order", item: order._id },
+            description: "بازگشت وجه — موجودی کافی نبود",
+          });
+        }
+        await Order.findByIdAndUpdate(order._id, {
+          status: "cancelled",
+          paymentStatus: "failed",
+        });
         return NextResponse.json(
           { success: false, error: "موجودی برخی محصولات کافی نیست." },
           { status: 409 },
         );
       }
-      if (error instanceof Error && error.message === "WALLET_DEBIT_FAILED") {
-        return NextResponse.json(
-          {
-            success: false,
-            error: debitFailure?.error || "موجودی کیف پول کافی نیست",
-            balance: debitFailure?.balance,
-          },
-          { status: 402 },
-        );
-      }
-      throw error;
-    } finally {
-      if (purchaseSession) await purchaseSession.endSession();
+      decrementedItems.push(item);
     }
 
-    if (!orderId || !orderObjectId) throw new Error("ORDER_NOT_CREATED");
+    // ── نهایی‌سازی پرداخت ──
+    await Order.findByIdAndUpdate(order._id, {
+      paymentStatus: "paid",
+      paymentVerifiedAt: new Date(),
+    });
+
+    await User.findByIdAndUpdate(userId, { $push: { orders: order._id } });
 
     await Notification.create({
       title: "سفارش جدید",
       message: "یک سفارش جدید ثبت شد",
       type: "order",
-      target: { kind: "Order", item: orderObjectId },
-    }).catch((error) => {
-      console.error("[payment-wallet] notification failed:", error);
+      target: { kind: "Order", item: order._id },
     });
 
     // ── باشگاه مشتریان: اعمال قطعی کوپن + XP/کش‌بک/VIP/ماموریت/نشان/رفرال ──

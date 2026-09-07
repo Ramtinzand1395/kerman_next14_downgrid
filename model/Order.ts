@@ -10,15 +10,17 @@ const OrderStatusEnum = [
 
 const PaymentStatusEnum = ["unpaid", "paid", "failed", "pending_refund"];
 
-// A sparse unique index ignores missing fields, but it still indexes explicit
-// null values. Normalize empty optional identifiers to `undefined` so wallet
-// orders (which have no gateway authority) are not all indexed as `null`.
-const normalizeOptionalUniqueString = (value: unknown) => {
-  if (typeof value !== "string") return undefined;
-
-  const normalized = value.trim();
-  return normalized || undefined;
-};
+const AddressSnapshotSchema = new mongoose.Schema(
+  {
+    province: { type: String, required: true },
+    city: { type: String, required: true },
+    address: { type: String, required: true },
+    plaque: { type: String, default: "" },
+    unit: { type: String, default: "" },
+    postalCode: { type: String, default: "" },
+  },
+  { _id: false },
+);
 
 const OrderSchema = new mongoose.Schema(
   {
@@ -31,6 +33,12 @@ const OrderSchema = new mongoose.Schema(
     address: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Address",
+      default: null,
+    },
+
+    // Historical copy: remains available if the profile address is edited/deleted.
+    addressSnapshot: {
+      type: AddressSnapshotSchema,
       default: null,
     },
 
@@ -49,10 +57,11 @@ const OrderSchema = new mongoose.Schema(
           type: String,
           default: null,
         },
-       price: { type: Number, required: true },
+        price: { type: Number, required: true },
         discountPrice: Number,
         quantity: { type: Number, required: true },
-    total: { type: Number, required: true },      },
+        total: { type: Number, required: true },
+      },
     ],
 
     totalPrice: {
@@ -90,7 +99,7 @@ const OrderSchema = new mongoose.Schema(
       type: String,
       unique: true,
       sparse: true,
-      set: normalizeOptionalUniqueString,
+      default: null,
     },
     paymentRefId: {
       type: Number,
@@ -134,7 +143,7 @@ const OrderSchema = new mongoose.Schema(
       type: String,
       unique: true,
       sparse: true,
-      set: normalizeOptionalUniqueString,
+      default: null,
     },
 
     trackingCode: {
