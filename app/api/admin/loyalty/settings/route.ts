@@ -29,7 +29,7 @@ export async function PATCH(req: Request) {
   const doc = await LoyaltySettings.findOneAndUpdate(
     { key: "global" },
     { $set: flat },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: "after" },
   );
   invalidateSettingsCache();
   return ok(doc);

@@ -23,7 +23,11 @@ export async function PATCH(req: Request, ctx: Ctx) {
   const { data, error } = await parseBody(req, couponUpdateSchema);
   if (error) return error;
 
-  const coupon = await Coupon.findByIdAndUpdate(id, { $set: data! }, { new: true });
+  const coupon = await Coupon.findByIdAndUpdate(
+    id,
+    { $set: data! },
+    { returnDocument: "after" },
+  );
   if (!coupon) return fail("کوپن یافت نشد", 404);
   return ok(coupon);
 }
@@ -33,7 +37,11 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   if ("error" in auth) return auth.error;
   const { id } = await ctx.params;
   // حذف نرم: غیرفعال‌سازی برای حفظ تاریخچه استفاده
-  const coupon = await Coupon.findByIdAndUpdate(id, { $set: { isActive: false } }, { new: true });
+  const coupon = await Coupon.findByIdAndUpdate(
+    id,
+    { $set: { isActive: false } },
+    { returnDocument: "after" },
+  );
   if (!coupon) return fail("کوپن یافت نشد", 404);
   return ok({ done: true });
 }

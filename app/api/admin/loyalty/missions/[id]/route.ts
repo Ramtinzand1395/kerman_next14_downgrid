@@ -14,7 +14,11 @@ export async function PATCH(req: Request, ctx: Ctx) {
   const { data, error } = await parseBody(req, missionUpdateSchema);
   if (error) return error;
 
-  const mission = await Mission.findByIdAndUpdate(id, { $set: data! }, { new: true });
+  const mission = await Mission.findByIdAndUpdate(
+    id,
+    { $set: data! },
+    { returnDocument: "after" },
+  );
   if (!mission) return fail("ماموریت یافت نشد", 404);
   return ok(mission);
 }

@@ -31,7 +31,7 @@ export async function PATCH(req: Request) {
   const doc = await MembershipLevel.findOneAndUpdate(
     { kind: body.kind, code: body.code },
     { $set: data! },
-    { new: true },
+    { returnDocument: "after" },
   );
   if (!doc) return fail("سطح یافت نشد", 404);
   invalidateLevelsCache();

@@ -12,7 +12,11 @@ export async function PATCH(req: Request, ctx: Ctx) {
   const { id } = await ctx.params;
   const { data, error } = await parseBody(req, achievementUpdateSchema);
   if (error) return error;
-  const doc = await Achievement.findByIdAndUpdate(id, { $set: data! }, { new: true });
+  const doc = await Achievement.findByIdAndUpdate(
+    id,
+    { $set: data! },
+    { returnDocument: "after" },
+  );
   if (!doc) return fail("نشان یافت نشد", 404);
   return ok(doc);
 }

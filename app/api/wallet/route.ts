@@ -20,7 +20,7 @@ export async function GET() {
   const wallet = await Wallet.findOneAndUpdate(
     { user: auth.userId },
     { $setOnInsert: { balance: 0 } },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: "after" },
   ).lean<IWallet>();
 
   const now = new Date();

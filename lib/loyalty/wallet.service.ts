@@ -175,7 +175,10 @@ export async function credit(input: CreditInput): Promise<WalletTxResult> {
       const updated = await Wallet.findOneAndUpdate(
         { _id: wallet._id, version: wallet.version, isActive: true },
         update,
-        { new: true, ...(activeSession ? { session: activeSession } : {}) },
+        {
+          returnDocument: "after",
+          ...(activeSession ? { session: activeSession } : {}),
+        },
       );
       if (!updated) {
         // نسخه عوض شده → تداخل هم‌زمان؛ تراکنش abort می‌شود و Mongo دوباره تلاش می‌کند
@@ -300,7 +303,10 @@ export async function debit(input: DebitInput): Promise<WalletTxResult> {
           balance: { $gte: amount },
         },
         { $inc: { balance: -amount, version: 1 } },
-        { new: true, ...(activeSession ? { session: activeSession } : {}) },
+        {
+          returnDocument: "after",
+          ...(activeSession ? { session: activeSession } : {}),
+        },
       );
 
       if (!updated) {

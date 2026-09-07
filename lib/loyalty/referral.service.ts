@@ -35,7 +35,7 @@ export async function ensureReferralCode(userId: string): Promise<string> {
           ],
         },
         { $set: { referralCode: code } },
-        { new: true },
+        { returnDocument: "after" },
       ).lean();
       if (res?.referralCode) return res.referralCode;
     } catch (err) {
@@ -101,7 +101,7 @@ export async function rewardReferralOnFirstPurchase(
   const locked = await Referral.findOneAndUpdate(
     { _id: referral._id, status: { $in: ["registered", "first_purchase"] } },
     { $set: { status: "rewarded", firstOrder: orderId, rewardedAt: new Date() } },
-    { new: true },
+    { returnDocument: "after" },
   );
   if (!locked) return { rewarded: false };
 

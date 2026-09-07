@@ -199,7 +199,7 @@ export async function POST(req: NextRequest) {
       {
         upsert: true,
 
-        new: true,
+        returnDocument: "after",
       },
     );
 
@@ -265,7 +265,7 @@ export async function PUT(req: NextRequest) {
       },
 
       {
-        new: true,
+        returnDocument: "after",
       },
     );
 

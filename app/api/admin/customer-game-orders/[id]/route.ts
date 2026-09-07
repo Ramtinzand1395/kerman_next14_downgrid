@@ -131,7 +131,7 @@ export async function PUT(
     const updatedOrder = await CustomerGameOrder.findByIdAndUpdate(
       id,
       { $set: sanitizedBody },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     ).lean();
 
     return NextResponse.json(

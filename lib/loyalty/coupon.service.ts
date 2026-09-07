@@ -142,7 +142,7 @@ export async function applyCoupon(input: {
         : {}),
     },
     { $inc: { usedCount: 1 } },
-    { new: true },
+    { returnDocument: "after" },
   );
   if (!updated)
     return { ok: false, error: "ظرفیت استفاده از این کد تکمیل شده است" };

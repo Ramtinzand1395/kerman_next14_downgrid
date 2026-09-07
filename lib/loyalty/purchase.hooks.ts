@@ -34,7 +34,7 @@ export async function onSuccessfulPurchase(input: PurchaseHookInput): Promise<vo
   const user = await User.findOneAndUpdate(
     { _id: userId },
     { $inc: { successfulOrders: 1, totalPurchase: orderAmount } },
-    { new: true },
+    { returnDocument: "after" },
   ).lean();
   if (!user) return;
 

@@ -155,7 +155,7 @@ export async function GET(req: NextRequest) {
                 "gateway.refId": result?.data?.ref_id ?? null,
               },
             },
-            { new: true },
+            { returnDocument: "after" },
           )
         : null;
 
@@ -163,7 +163,7 @@ export async function GET(req: NextRequest) {
         const updatedWallet = await Wallet.findOneAndUpdate(
           { user: temp.userId },
           { $inc: { balance: chargedTx.amount, version: 1 } },
-          { new: true },
+          { returnDocument: "after" },
         );
         await WalletTransaction.updateOne(
           { _id: chargedTx._id },

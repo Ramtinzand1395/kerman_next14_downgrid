@@ -92,7 +92,7 @@ export async function PUT(
       faqs: safeFaqs,
     };
     const Update = await Product.findByIdAndUpdate(id, productData, {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     });
     return NextResponse.json(Update);

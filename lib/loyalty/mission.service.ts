@@ -49,7 +49,7 @@ export async function trackEvent(input: TrackEventInput): Promise<void> {
     const progress = await MissionProgress.findOneAndUpdate(
       { user: input.userId, mission: mission._id, periodKey: key, completed: false },
       { $inc: { progress: inc }, $setOnInsert: { rewardClaimed: false } },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: "after" },
     );
 
     if (progress.progress >= mission.target && !progress.completed) {
@@ -57,7 +57,7 @@ export async function trackEvent(input: TrackEventInput): Promise<void> {
       const completed = await MissionProgress.findOneAndUpdate(
         { _id: progress._id, completed: false },
         { $set: { completed: true, completedAt: new Date() } },
-        { new: true },
+        { returnDocument: "after" },
       );
       if (completed) {
         await Notification.create({
@@ -84,7 +84,7 @@ export async function claimMissionReward(
   const locked = await MissionProgress.findOneAndUpdate(
     { user: userId, mission: mission._id, periodKey: key, completed: true, rewardClaimed: false },
     { $set: { rewardClaimed: true, rewardClaimedAt: new Date() } },
-    { new: true },
+    { returnDocument: "after" },
   );
   if (!locked) return { claimed: false };
 

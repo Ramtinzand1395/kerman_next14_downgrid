@@ -58,5 +58,6 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/auth/login",
   },
-  debug: process.env.NODE_ENV === "development",
+  // Keep authentication logs opt-in; enabling debug unconditionally emits a warning.
+  debug: process.env.NEXTAUTH_DEBUG === "true",
 };

@@ -26,7 +26,7 @@ export async function getSettings() {
   const data = await LoyaltySettings.findOneAndUpdate(
     { key: "global" },
     { $setOnInsert: { key: "global" } },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: "after" },
   );
   settingsCache = { data, at: Date.now() };
   return data;
@@ -274,7 +274,7 @@ export async function getUserExperience(userId: string) {
   const exp = await Experience.findOneAndUpdate(
     { user: userId },
     { $setOnInsert: { level: "rookie" } },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: "after" },
   ).lean();
 
   const { level } = await getLevels();

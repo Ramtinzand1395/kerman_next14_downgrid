@@ -10,6 +10,15 @@ const OrderStatusEnum = [
 
 const PaymentStatusEnum = ["unpaid", "paid", "failed", "pending_refund"];
 
+// Sparse unique indexes ignore a missing field, but still index explicit nulls.
+// Optional unique identifiers must therefore be stored as `undefined` when empty.
+const normalizeOptionalUniqueString = (value: unknown) => {
+  if (typeof value !== "string") return undefined;
+
+  const normalized = value.trim();
+  return normalized || undefined;
+};
+
 const AddressSnapshotSchema = new mongoose.Schema(
   {
     province: { type: String, required: true },
@@ -99,7 +108,7 @@ const OrderSchema = new mongoose.Schema(
       type: String,
       unique: true,
       sparse: true,
-      default: null,
+      set: normalizeOptionalUniqueString,
     },
     paymentRefId: {
       type: Number,
@@ -143,7 +152,7 @@ const OrderSchema = new mongoose.Schema(
       type: String,
       unique: true,
       sparse: true,
-      default: null,
+      set: normalizeOptionalUniqueString,
     },
 
     trackingCode: {
