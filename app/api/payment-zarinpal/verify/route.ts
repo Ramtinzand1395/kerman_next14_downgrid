@@ -253,6 +253,14 @@ import { onSuccessfulPurchase } from "@/lib/loyalty/purchase.hooks";
 import { applyCoupon } from "@/lib/loyalty/coupon.service";
 import { NextRequest, NextResponse } from "next/server";
 import { getSiteUrl } from "@/lib/baseUrl";
+import mongoose from "mongoose";
+import {
+  databaseSupportsTransactions,
+  decrementInventory,
+  InsufficientStockError,
+  InventoryItem,
+  restoreInventory,
+} from "@/lib/inventory.service";
 
 type ZarinpalVerifyResponse = {
   data?: {
@@ -432,75 +440,98 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(walletSuccessUrl);
     }
 
-    for (const item of temp.items as Array<{
-      product: string;
-      variantId?: string;
-      quantity: number;
-    }>) {
-      if (item.variantId) {
-        const updated = await Product.findOneAndUpdate(
-          {
-            _id: item.product,
-            stock: { $gte: item.quantity },
-            variants: {
-              $elemMatch: {
-                _id: item.variantId,
-                stock: { $gte: item.quantity },
-              },
-            },
-          },
-          {
-            $inc: {
-              stock: -item.quantity,
-              "variants.$.stock": -item.quantity,
-            },
-          },
-        );
+    const inventoryItems = temp.items as InventoryItem[];
+    const useTransaction = databaseSupportsTransactions();
+    const purchaseSession = useTransaction
+      ? await mongoose.startSession()
+      : undefined;
+    let orderId = "";
+    let orderObjectId: mongoose.Types.ObjectId | undefined;
+    let decrementedItems: InventoryItem[] = [];
 
-        if (!updated) {
-          await TempPayment.findOneAndUpdate(
-            { authority },
-            { $set: { status: "failed", failedAt: new Date() } },
-          );
-          return NextResponse.redirect(failedUrl);
-        }
-        continue;
-      }
-
-      const updated = await Product.findOneAndUpdate(
-        { _id: item.product, stock: { $gte: item.quantity } },
-        { $inc: { stock: -item.quantity } },
+    const completePurchase = async (activeSession?: mongoose.ClientSession) => {
+      decrementedItems = await decrementInventory(
+        inventoryItems,
+        activeSession,
       );
 
-      if (!updated) {
+      const [order] = await Order.create(
+        [
+          {
+            user: temp.userId,
+            address: temp.address,
+            items: temp.items,
+            totalPrice: temp.totalPrice,
+            shippingCost: temp.shippingCost,
+            finalPrice: temp.finalPrice,
+            couponCode: temp.couponCode ?? null,
+            couponDiscount: temp.couponDiscount ?? 0,
+            paymentStatus: "paid",
+            paymentGateway: "zarinpal",
+            paymentAuthority: authority,
+            paymentRefId: result?.data?.ref_id ?? null,
+            paymentCardPan: result?.data?.card_pan ?? null,
+            paymentFeeType: result?.data?.fee_type ?? null,
+            paymentFee: result?.data?.fee ?? null,
+            paymentVerifiedAt: new Date(),
+          },
+        ],
+        activeSession ? { session: activeSession } : undefined,
+      );
+
+      orderId = order._id.toString();
+      orderObjectId = order._id;
+      await User.findByIdAndUpdate(
+        temp.userId,
+        { $push: { orders: order._id } },
+        activeSession ? { session: activeSession } : undefined,
+      );
+    };
+
+    try {
+      if (purchaseSession) {
+        await purchaseSession.withTransaction(() =>
+          completePurchase(purchaseSession),
+        );
+      } else {
+        await completePurchase();
+      }
+    } catch (error) {
+      if (!purchaseSession && decrementedItems.length > 0) {
+        await restoreInventory(decrementedItems);
+      }
+
+      if (error instanceof InsufficientStockError) {
         await TempPayment.findOneAndUpdate(
           { authority },
           { $set: { status: "failed", failedAt: new Date() } },
         );
         return NextResponse.redirect(failedUrl);
       }
+
+      // دو callback هم‌زمان ممکن است هر دو از pre-check عبور کنند.
+      if ((error as { code?: number })?.code === 11000) {
+        const existing = await Order.findOne({
+          paymentAuthority: authority,
+          paymentStatus: { $in: ["paid", "pending_refund"] },
+        }).lean();
+        if (existing) {
+          await TempPayment.deleteOne({ authority });
+          return NextResponse.redirect(
+            withPaymentQuery(baseUrl, "/payment-success", {
+              orderId: existing._id.toString(),
+              authority,
+              refId: existing.paymentRefId,
+            }),
+          );
+        }
+      }
+      throw error;
+    } finally {
+      if (purchaseSession) await purchaseSession.endSession();
     }
 
-    const order = await Order.create({
-      user: temp.userId,
-      address: temp.address,
-      items: temp.items,
-      totalPrice: temp.totalPrice,
-      shippingCost: temp.shippingCost,
-      finalPrice: temp.finalPrice,
-      couponCode: temp.couponCode ?? null,
-      couponDiscount: temp.couponDiscount ?? 0,
-      paymentStatus: "paid",
-      paymentGateway: "zarinpal",
-      paymentAuthority: authority,
-      paymentRefId: result?.data?.ref_id ?? null,
-      paymentCardPan: result?.data?.card_pan ?? null,
-      paymentFeeType: result?.data?.fee_type ?? null,
-      paymentFee: result?.data?.fee ?? null,
-      paymentVerifiedAt: new Date(),
-    });
-
-    await User.findByIdAndUpdate(temp.userId, { $push: { orders: order._id } });
+    if (!orderId || !orderObjectId) throw new Error("ORDER_NOT_CREATED");
 
     await Notification.create({
       title: "سفارش جدید",
@@ -508,8 +539,10 @@ export async function GET(req: NextRequest) {
       type: "order",
       target: {
         kind: "Order",
-        item: order._id,
+        item: orderObjectId,
       },
+    }).catch((error) => {
+      console.error("[payment-zarinpal] notification failed:", error);
     });
 
     await TempPayment.deleteOne({ authority });
@@ -538,13 +571,13 @@ export async function GET(req: NextRequest) {
         const applied = await applyCoupon({
           code: temp.couponCode,
           userId: String(temp.userId),
-          orderId: order._id.toString(),
+          orderId,
           orderAmount: temp.totalPrice,
           items: couponItems,
         });
         if (!applied.ok) {
           console.error(
-            `[loyalty] applyCoupon failed for order ${order._id}:`,
+            "applyCoupon failed for order " + orderId + ":",
             applied.error,
           );
         }
@@ -552,7 +585,7 @@ export async function GET(req: NextRequest) {
 
       await onSuccessfulPurchase({
         userId: String(temp.userId),
-        orderId: order._id.toString(),
+        orderId,
         orderAmount: temp.finalPrice,
         categoryIds,
       });
@@ -561,7 +594,7 @@ export async function GET(req: NextRequest) {
     }
 
     const successUrl = withPaymentQuery(baseUrl, "/payment-success", {
-      orderId: order._id.toString(),
+      orderId,
       authority,
       refId: result?.data?.ref_id,
     });
@@ -570,7 +603,7 @@ export async function GET(req: NextRequest) {
       JSON.stringify({
         event: "payment.verify.completed",
         authority,
-        orderId: order._id.toString(),
+        orderId,
       }),
     );
 

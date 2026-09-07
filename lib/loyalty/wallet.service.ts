@@ -49,6 +49,8 @@ export interface DebitInput {
   description?: string;
   ref?: IWalletTransaction["ref"];
   performedBy?: string;
+  /** برای هماهنگ‌کردن برداشت با transaction سفارش */
+  session?: mongoose.ClientSession;
 }
 
 export interface WalletTxResult {
@@ -74,21 +76,27 @@ async function log(input: {
   context?: Record<string, unknown>;
   errorMessage?: string;
   performedBy?: string;
+  session?: mongoose.ClientSession;
 }) {
   try {
-    await WalletLog.create({
-      wallet: input.wallet as never,
-      user: input.user as never,
-      action: input.action,
-      success: input.success,
-      amount: input.amount,
-      balanceBefore: input.balanceBefore,
-      balanceAfter: input.balanceAfter,
-      transaction: input.transaction as never,
-      context: input.context,
-      errorMessage: input.errorMessage,
-      performedBy: input.performedBy as never,
-    });
+    await WalletLog.create(
+      [
+        {
+          wallet: input.wallet as never,
+          user: input.user as never,
+          action: input.action,
+          success: input.success,
+          amount: input.amount,
+          balanceBefore: input.balanceBefore,
+          balanceAfter: input.balanceAfter,
+          transaction: input.transaction as never,
+          context: input.context,
+          errorMessage: input.errorMessage,
+          performedBy: input.performedBy as never,
+        },
+      ],
+      input.session ? { session: input.session } : undefined,
+    );
   } catch {
     // لاگ هرگز نباید فلو اصلی را بشکند
   }
@@ -258,7 +266,9 @@ export async function debit(input: DebitInput): Promise<WalletTxResult> {
     return { ok: false, error: "مبلغ نامعتبر است" };
   }
 
-  const existing = await WalletTransaction.findOne({ idempotencyKey }).lean();
+  const existingQuery = WalletTransaction.findOne({ idempotencyKey });
+  if (input.session) existingQuery.session(input.session);
+  const existing = await existingQuery.lean();
   if (existing) {
     return {
       ok: existing.status === "completed",
@@ -271,7 +281,9 @@ export async function debit(input: DebitInput): Promise<WalletTxResult> {
   const topologyType = (mongoose.connection.getClient() as unknown as {
     topology?: { description?: { type?: string } };
   }).topology?.description?.type;
-  const session = topologyType === "Single" ? undefined : await mongoose.startSession();
+  const ownsSession = !input.session && topologyType !== "Single";
+  const session =
+    input.session ?? (ownsSession ? await mongoose.startSession() : undefined);
   try {
     let result: WalletTxResult = { ok: false, error: "خطای ناشناخته" };
 
@@ -301,6 +313,7 @@ export async function debit(input: DebitInput): Promise<WalletTxResult> {
           balanceBefore,
           errorMessage: "موجودی ناکافی یا کیف پول غیرفعال",
           performedBy: input.performedBy,
+          session: activeSession,
         });
         result = { ok: false, error: "موجودی کیف پول کافی نیست", balance: balanceBefore };
         return; // خروج بدون throw → تراکنش commit می‌شود ولی چیزی تغییر نکرده
@@ -334,11 +347,13 @@ export async function debit(input: DebitInput): Promise<WalletTxResult> {
         balanceAfter: updated.balance,
         transaction: tx._id,
         performedBy: input.performedBy,
+        session: activeSession,
       });
 
       result = { ok: true, transaction: tx, balance: updated.balance };
     };
-    if (session) await session.withTransaction(() => applyDebit(session));
+    if (input.session) await applyDebit(input.session);
+    else if (session) await session.withTransaction(() => applyDebit(session));
     else await applyDebit();
 
     return result;
@@ -356,7 +371,7 @@ export async function debit(input: DebitInput): Promise<WalletTxResult> {
     });
     return { ok: false, error: "خطا در عملیات کیف پول" };
   } finally {
-    if (session) await session.endSession();
+    if (ownsSession && session) await session.endSession();
   }
 }
 
