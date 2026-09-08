@@ -11,9 +11,11 @@ import Notification from "@/model/Notification";
 import Order from "@/model/Order";
 import Product from "@/model/Product";
 import User from "@/model/User";
+import WalletPaymentAttempt from "@/model/WalletPaymentAttempt";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { getServerSession } from "next-auth";
 import mongoose from "mongoose";
+import { createHash } from "node:crypto";
 import { createAddressSnapshot } from "@/lib/addressSnapshot";
 import { NextRequest, NextResponse } from "next/server";
 import { debit, credit } from "@/lib/loyalty/wallet.service";
@@ -24,6 +26,86 @@ interface CheckoutItem {
   productId: string;
   quantity: number;
   variantId?: string;
+}
+
+const AUTOMATIC_IDEMPOTENCY_TTL_MS = 5 * 60_000;
+const AUTOMATIC_IDEMPOTENCY_WAIT_MS = 5_000;
+const AUTOMATIC_IDEMPOTENCY_POLL_MS = 100;
+
+function automaticIdempotencyFingerprint(input: {
+  userId: string;
+  addressId: string;
+  items: CheckoutItem[];
+  shippingCost: number;
+  couponCode: string | null;
+}) {
+  const canonicalItems = input.items
+    .map((item) => ({
+      productId: item.productId,
+      variantId: item.variantId || null,
+      quantity: item.quantity,
+    }))
+    .sort((left, right) =>
+      `${left.productId}:${left.variantId ?? ""}`.localeCompare(
+        `${right.productId}:${right.variantId ?? ""}`,
+      ),
+    );
+
+  return createHash("sha256")
+    .update(
+      JSON.stringify({
+        version: 1,
+        userId: input.userId,
+        addressId: input.addressId,
+        items: canonicalItems,
+        shippingCost: input.shippingCost,
+        couponCode: input.couponCode,
+      }),
+    )
+    .digest("hex");
+}
+
+const delay = (milliseconds: number) =>
+  new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+async function replayAutomaticAttempt(fingerprint: string) {
+  const deadline = Date.now() + AUTOMATIC_IDEMPOTENCY_WAIT_MS;
+
+  do {
+    const existing = await WalletPaymentAttempt.findOne({ fingerprint }).lean();
+    if (!existing) return null;
+
+    if (existing.status === "completed" && existing.order) {
+      return NextResponse.json({
+        success: true,
+        orderId: existing.order.toString(),
+        reused: true,
+      });
+    }
+
+    if (existing.status === "failed") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: existing.error || "پرداخت قبلی ناموفق بود.",
+          reused: true,
+        },
+        { status: existing.httpStatus || 409 },
+      );
+    }
+
+    await delay(AUTOMATIC_IDEMPOTENCY_POLL_MS);
+  } while (Date.now() < deadline);
+
+  return NextResponse.json(
+    {
+      success: false,
+      error: "این پرداخت در حال پردازش است.",
+      reused: true,
+      retryable: true,
+    },
+    { status: 409, headers: { "Retry-After": "1" } },
+  );
 }
 
 export async function POST(req: NextRequest) {
@@ -39,6 +121,7 @@ export async function POST(req: NextRequest) {
   const userId = session.user.id;
   const idempotencyKey =
     req.headers.get("Idempotency-Key")?.trim() || undefined;
+  let automaticAttemptId: mongoose.Types.ObjectId | undefined;
 
   try {
     const payload: {
@@ -200,6 +283,60 @@ export async function POST(req: NextRequest) {
 
     const finalPrice = totalPrice - couponDiscount + shippingCost;
 
+    // If the caller omitted Idempotency-Key, atomically claim a short-lived
+    // fingerprint of the checkout. This closes the double-click race without
+    // preventing an intentional identical purchase at a later time.
+    if (!idempotencyKey) {
+      // Model operations do not necessarily wait for background index creation.
+      // Waiting for init here guarantees the unique lock exists before checkout.
+      await WalletPaymentAttempt.init();
+
+      const fingerprint = automaticIdempotencyFingerprint({
+        userId,
+        addressId: payload.addressId,
+        items: normalizedItems,
+        shippingCost,
+        couponCode,
+      });
+
+      for (let attempt = 0; attempt < 2 && !automaticAttemptId; attempt++) {
+        try {
+          const claim = await WalletPaymentAttempt.create({
+            fingerprint,
+            user: userId,
+            status: "processing",
+            expiresAt: new Date(Date.now() + AUTOMATIC_IDEMPOTENCY_TTL_MS),
+          });
+          automaticAttemptId = claim._id;
+        } catch (error) {
+          if ((error as { code?: number })?.code !== 11000) throw error;
+
+          const existing = await WalletPaymentAttempt.findOne({ fingerprint })
+            .select("expiresAt")
+            .lean();
+          if (existing && existing.expiresAt <= new Date()) {
+            await WalletPaymentAttempt.deleteOne({
+              _id: existing._id,
+              expiresAt: { $lte: new Date() },
+            });
+            continue;
+          }
+
+          return (
+            (await replayAutomaticAttempt(fingerprint)) ??
+            NextResponse.json(
+              {
+                success: false,
+                error: "این پرداخت در حال پردازش است؛ دوباره تلاش کنید.",
+                retryable: true,
+              },
+              { status: 409, headers: { "Retry-After": "1" } },
+            )
+          );
+        }
+      }
+    }
+
     // ── ری‌پلی idempotent: اگر همین کلید قبلاً سفارش ساخته، همان را برگردان ──
     if (idempotencyKey) {
       const existing = await Order.findOne({
@@ -252,6 +389,13 @@ export async function POST(req: NextRequest) {
 
     const orderId = order._id.toString();
 
+    if (automaticAttemptId) {
+      await WalletPaymentAttempt.updateOne(
+        { _id: automaticAttemptId, status: "processing" },
+        { $set: { order: order._id } },
+      );
+    }
+
     // ── برداشت از کیف پول (اتمیک، ضد double-spend) ──
     if (finalPrice > 0) {
       const debitResult = await debit({
@@ -265,6 +409,18 @@ export async function POST(req: NextRequest) {
 
       if (!debitResult.ok) {
         await Order.deleteOne({ _id: order._id, paymentStatus: "unpaid" });
+        if (automaticAttemptId) {
+          await WalletPaymentAttempt.updateOne(
+            { _id: automaticAttemptId, status: "processing" },
+            {
+              $set: {
+                status: "failed",
+                error: debitResult.error || "موجودی کیف پول کافی نیست",
+                httpStatus: 402,
+              },
+            },
+          );
+        }
         return NextResponse.json(
           {
             success: false,
@@ -329,6 +485,18 @@ export async function POST(req: NextRequest) {
           status: "cancelled",
           paymentStatus: "failed",
         });
+        if (automaticAttemptId) {
+          await WalletPaymentAttempt.updateOne(
+            { _id: automaticAttemptId, status: "processing" },
+            {
+              $set: {
+                status: "failed",
+                error: "موجودی برخی محصولات کافی نیست.",
+                httpStatus: 409,
+              },
+            },
+          );
+        }
         return NextResponse.json(
           { success: false, error: "موجودی برخی محصولات کافی نیست." },
           { status: 409 },
@@ -342,6 +510,13 @@ export async function POST(req: NextRequest) {
       paymentStatus: "paid",
       paymentVerifiedAt: new Date(),
     });
+
+    if (automaticAttemptId) {
+      await WalletPaymentAttempt.updateOne(
+        { _id: automaticAttemptId, status: "processing" },
+        { $set: { status: "completed", order: order._id } },
+      );
+    }
 
     await User.findByIdAndUpdate(userId, { $push: { orders: order._id } });
 
@@ -401,6 +576,18 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, orderId });
   } catch (error) {
+    if (automaticAttemptId) {
+      await WalletPaymentAttempt.updateOne(
+        { _id: automaticAttemptId, status: "processing" },
+        {
+          $set: {
+            status: "failed",
+            error: "خطا در پردازش پرداخت کیف پول",
+            httpStatus: 500,
+          },
+        },
+      ).catch(() => {});
+    }
     if (error instanceof Error && error.message === "INSUFFICIENT_STOCK") {
       return NextResponse.json(
         { success: false, error: "موجودی برخی محصولات کافی نیست." },

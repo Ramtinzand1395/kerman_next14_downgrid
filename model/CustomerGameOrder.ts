@@ -38,6 +38,13 @@ const customerGameOrderSchema = new mongoose.Schema(
       ref: "User",
     },
 
+    // Client-generated key used to make retries of the same request safe.
+    clientRequestKey: {
+      type: String,
+      trim: true,
+      maxlength: 128,
+    },
+
     // ارجاع به آدرس انتخاب‌شده از دفترچه آدرس کاربر
     addressRef: {
       type: mongoose.Schema.Types.ObjectId,
@@ -103,6 +110,13 @@ const customerGameOrderSchema = new mongoose.Schema(
 customerGameOrderSchema.index({ status: 1, createdAt: -1 });
 customerGameOrderSchema.index({ phone: 1 });
 customerGameOrderSchema.index({ customerName: "text" });
+customerGameOrderSchema.index(
+  { user: 1, clientRequestKey: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { clientRequestKey: { $type: "string" } },
+  },
+);
  
 export default mongoose.models.CustomerGameOrder ||
   mongoose.model("CustomerGameOrder", customerGameOrderSchema);

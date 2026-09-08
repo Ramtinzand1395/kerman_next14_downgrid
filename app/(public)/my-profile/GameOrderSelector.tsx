@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Search, X } from "lucide-react";
 
@@ -303,10 +303,14 @@ export default function GameOrderSelector() {
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const idempotencyKeyRef = useRef<string | null>(null);
+  const submittingRef = useRef(false);
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const resetForm = () => {
+    idempotencyKeyRef.current = null;
+    submittingRef.current = false;
     setSelectedGames([]);
     setMessage("");
     setFieldErrors({});
@@ -539,13 +543,21 @@ export default function GameOrderSelector() {
   };
 
   const handleSubmit = async () => {
+    // State updates are asynchronous; this also closes the same-tick click race.
+    if (submittingRef.current) return;
+
     setSubmitError("");
 
     if (!validateFields()) {
       return;
     }
 
+    submittingRef.current = true;
     setSubmitting(true);
+
+    if (!idempotencyKeyRef.current) {
+      idempotencyKeyRef.current = crypto.randomUUID();
+    }
 
     const payload = {
       customerName: customerName.trim(),
@@ -564,7 +576,10 @@ export default function GameOrderSelector() {
     try {
       const res = await fetch("/api/profile/customer-game-orders", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKeyRef.current,
+        },
         body: JSON.stringify(payload),
       });
 
@@ -601,6 +616,7 @@ export default function GameOrderSelector() {
         "خطا در ارتباط با سرور. لطفاً اتصال اینترنت را بررسی کنید.",
       );
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };

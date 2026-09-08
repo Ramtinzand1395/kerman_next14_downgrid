@@ -28,11 +28,37 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const idempotencyKey = req.headers.get("Idempotency-Key")?.trim();
+    if (!idempotencyKey || idempotencyKey.length > 128) {
+      return NextResponse.json(
+        { error: "هدر Idempotency-Key معتبر الزامی است." },
+        { status: 400 },
+      );
+    }
+
     await dbConnect();
+
+    // The unique index must be ready before concurrent requests can insert.
+    await CustomerGameOrder.init();
 
     const user = await User.findById(session.user.id);
     if (!user) {
       return NextResponse.json({ error: "کاربر یافت نشد." }, { status: 404 });
+    }
+
+    const existingOrder = await CustomerGameOrder.findOne({
+      user: user._id,
+      clientRequestKey: idempotencyKey,
+    });
+    if (existingOrder) {
+      return NextResponse.json(
+        {
+          message: "سفارش قبلاً ثبت شده است.",
+          order: existingOrder,
+          reused: true,
+        },
+        { status: 200 },
+      );
     }
 
     const body = await req.json();
@@ -146,16 +172,40 @@ export async function POST(req: NextRequest) {
     //   );
     // }
 
-    const order = await CustomerGameOrder.create({
-      customerName: sanitizedBody.customerName,
-      phone: sanitizedBody.phone,
-      address: addressSnapshot,
-      addressRef: address._id,
-      user: user._id,
-      message: sanitizedBody.message,
-      products: sanitizedBody.products,
-      totalPrice: sanitizedBody.totalPrice,
-    });
+    let order;
+    try {
+      order = await CustomerGameOrder.create({
+        customerName: sanitizedBody.customerName,
+        phone: sanitizedBody.phone,
+        address: addressSnapshot,
+        addressRef: address._id,
+        user: user._id,
+        clientRequestKey: idempotencyKey,
+        message: sanitizedBody.message,
+        products: sanitizedBody.products,
+        totalPrice: sanitizedBody.totalPrice,
+      });
+    } catch (error) {
+      // Two requests can pass the lookup together; the database decides the
+      // winner and the losing request replays that same order.
+      if ((error as { code?: number })?.code === 11000) {
+        const concurrentOrder = await CustomerGameOrder.findOne({
+          user: user._id,
+          clientRequestKey: idempotencyKey,
+        });
+        if (concurrentOrder) {
+          return NextResponse.json(
+            {
+              message: "سفارش قبلاً ثبت شده است.",
+              order: concurrentOrder,
+              reused: true,
+            },
+            { status: 200 },
+          );
+        }
+      }
+      throw error;
+    }
 
     await Notification.create({
       title: "سفارش بازی جدید",
@@ -171,7 +221,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(
-      { message: "سفارش با موفقیت ثبت شد.", order },
+      { message: "سفارش با موفقیت ثبت شد.", order, reused: false },
       { status: 201 },
     );
   } catch (error) {
