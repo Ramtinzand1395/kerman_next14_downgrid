@@ -22,6 +22,8 @@ type ZarinpalVerifyResponse = {
   };
 };
 
+const PAYMENT_PROCESSING_TTL_MS = 15 * 60 * 1000;
+
 function withPaymentQuery(
   baseUrl: string,
   path: string,
@@ -61,7 +63,7 @@ export async function GET(req: NextRequest) {
     if (!authority || status !== "OK") {
       if (authority) {
         await TempPayment.findOneAndUpdate(
-          { authority },
+          { authority, status: "initiated" },
           { $set: { status: "failed", failedAt: new Date() } },
         );
       }
@@ -115,7 +117,7 @@ export async function GET(req: NextRequest) {
 
     if (!verifyRes.ok || (code !== 100 && code !== 101)) {
       await TempPayment.findOneAndUpdate(
-        { authority },
+        { authority, status: "initiated" },
         { $set: { status: "failed", failedAt: new Date() } },
       );
       return NextResponse.redirect(failedUrl);
@@ -141,6 +143,45 @@ export async function GET(req: NextRequest) {
       });
 
       return NextResponse.redirect(duplicateUrl);
+    }
+
+    // Claim the payment before performing any side effects. Only one callback
+    // can atomically change initiated -> paid_pending, so concurrent callbacks
+    // cannot decrement inventory or create the order a second time.
+    const claimedTemp = await TempPayment.findOneAndUpdate(
+      { authority, status: "initiated" },
+      {
+        $set: {
+          status: "paid_pending",
+          failedAt: null,
+          expiresAt: new Date(Date.now() + PAYMENT_PROCESSING_TTL_MS),
+        },
+      },
+      { returnDocument: "after" },
+    ).lean();
+
+    if (!claimedTemp) {
+      // The winning callback may have completed between the earlier duplicate
+      // check and this failed claim.
+      const completedOrder = await Order.findOne({
+        paymentAuthority: authority,
+        paymentStatus: { $in: ["paid", "pending_refund"] },
+      }).lean();
+
+      if (completedOrder) {
+        const completedPath =
+          completedOrder.paymentStatus === "pending_refund"
+            ? "/payment-pending"
+            : "/payment-success";
+        const completedUrl = withPaymentQuery(baseUrl, completedPath, {
+          orderId: completedOrder._id.toString(),
+          authority,
+          refId: completedOrder.paymentRefId,
+        });
+        return NextResponse.redirect(completedUrl);
+      }
+
+      return NextResponse.redirect(pendingUrl);
     }
 
     // ── شارژ کیف پول ──
