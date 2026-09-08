@@ -2,7 +2,7 @@
 
 import { toPersianDate } from "@/helpers/toPersianDate";
 import { Loader2, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 
 type OrderStatus = "pending" | "confirmed" | "rejected" | "completed";
@@ -95,6 +95,21 @@ const CustomerGameOrderModal = ({
   const [totalPrice, setTotalPrice] = useState(String(order.totalPrice ?? 0));
   const [savingPrice, setSavingPrice] = useState(false);
 
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeModal();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [closeModal]);
+
   const handleStatusChange = async (newStatus: OrderStatus) => {
     if (newStatus === status || updating) return;
 
@@ -150,24 +165,35 @@ const CustomerGameOrderModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4">
+      <button
+        type="button"
+        aria-label="بستن پنجره"
         onClick={closeModal}
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
       />
 
-      <div className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl animate-fadeIn">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="customer-game-order-title"
+        className="relative max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-2xl bg-white p-4 shadow-2xl animate-fadeIn sm:p-6"
+      >
         <button
+          type="button"
           title="بستن"
+          aria-label="بستن پنجره"
           onClick={closeModal}
-          className="absolute right-4 top-4 rounded-full p-1 hover:bg-gray-100"
+          className="absolute right-4 top-4 z-10 rounded-full bg-white p-1 hover:bg-gray-100"
         >
           <X size={20} />
         </button>
 
-        <h2 className="mb-6 text-xl font-bold">اطلاعات سفارش مشتری</h2>
+        <h2 id="customer-game-order-title" className="mb-6 pl-8 text-xl font-bold">
+          اطلاعات سفارش مشتری
+        </h2>
 
-        <div className="grid grid-cols-2 gap-4 text-sm">
+        <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
           <div>
             <span className="font-bold">نام مشتری:</span>
             <p>{order.user?.username || order.customerName}</p>
@@ -178,7 +204,7 @@ const CustomerGameOrderModal = ({
             <p>{order.user?.mobile || order.phone}</p>
           </div>
 
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <span className="font-bold">آدرس:</span>
             <p className="mt-1 leading-7">{order.address || "ثبت نشده"}</p>
           </div>
@@ -193,7 +219,7 @@ const CustomerGameOrderModal = ({
           )}
 
           {order.message && (
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <span className="font-bold">پیام مشتری:</span>
               <p className="mt-1 rounded-lg bg-gray-50 p-3 leading-7">
                 {order.message}
@@ -236,7 +262,7 @@ const CustomerGameOrderModal = ({
             </select>
           </div>
 
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <span className="font-bold">مبلغ کل:</span>
             <p className="mt-1 text-lg font-bold text-emerald-600">
               {Number(totalPrice || 0).toLocaleString()} تومان
@@ -249,7 +275,7 @@ const CustomerGameOrderModal = ({
             </div>
           </div>
 
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <h3 className="mb-3 font-bold">محصولات سفارش</h3>
 
             <div className="space-y-3">
