@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/mongodb";
 import Tag from "@/model/Tag";
+import Product from "@/model/Product";
 
 export async function DELETE(
   req: NextRequest,
@@ -26,7 +27,14 @@ export async function DELETE(
       return NextResponse.json({ error: "آی‌دی نامعتبر است" }, { status: 400 });
     }
 
-    await Tag.findByIdAndDelete(id);
+    const tag = await Tag.findById(id).select("_id").lean();
+    if (!tag) {
+      return NextResponse.json({ error: "برچسب پیدا نشد" }, { status: 404 });
+    }
+
+    // A tag is optional on products; remove its references before deletion.
+    await Product.updateMany({ tags: id }, { $pull: { tags: id } });
+    await Tag.deleteOne({ _id: id });
 
     return NextResponse.json({ success: true });
   } catch (err) {

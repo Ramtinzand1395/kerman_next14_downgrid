@@ -6,6 +6,18 @@ const CustomerGameOrderStatusEnum = [
   "rejected",
   "completed",
 ] as const;
+
+const AddressSnapshotSchema = new mongoose.Schema(
+  {
+    province: { type: String, required: true },
+    city: { type: String, required: true },
+    address: { type: String, required: true },
+    plaque: { type: String, default: "" },
+    unit: { type: String, default: "" },
+    postalCode: { type: String, default: "" },
+  },
+  { _id: false },
+);
  
 const customerGameOrderSchema = new mongoose.Schema(
   {
@@ -49,6 +61,13 @@ const customerGameOrderSchema = new mongoose.Schema(
     addressRef: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Address",
+      default: null,
+    },
+
+    // Historical copy: remains available if the profile address changes.
+    addressSnapshot: {
+      type: AddressSnapshotSchema,
+      default: null,
     },
  
  

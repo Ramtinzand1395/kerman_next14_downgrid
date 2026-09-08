@@ -5,6 +5,7 @@ import dbConnect from "@/lib/mongodb";
 import Favorite from "@/model/Favorite";
 import User from "@/model/User";
 import mongoose from "mongoose";
+import Product from "@/model/Product";
 
 export async function GET(req: NextRequest) {
   try {
@@ -59,6 +60,13 @@ export async function POST(req: NextRequest) {
     }
 
     await dbConnect();
+
+    if (!(await Product.exists({ _id: productId, status: "published" }))) {
+      return NextResponse.json(
+        { error: "محصول موردنظر وجود ندارد" },
+        { status: 404 },
+      );
+    }
 
     const favorite = await Favorite.create({
       userId: session.user.id,

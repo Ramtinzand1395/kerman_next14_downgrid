@@ -7,6 +7,7 @@ import Comment from "@/model/Comment";
 import Notification from "@/model/Notification";
 import Product from "@/model/Product";
 import User from "@/model/User";
+import mongoose from "mongoose";
 
 export async function POST(req: Request) {
   try {
@@ -20,7 +21,16 @@ export async function POST(req: Request) {
     if (!productId || !text) {
       return NextResponse.json({ error: "اطلاعات ناقص است" }, { status: 400 });
     }
+    if (!mongoose.isValidObjectId(String(productId))) {
+      return NextResponse.json({ error: "شناسه محصول نامعتبر است" }, { status: 400 });
+    }
     await dbConnect(); // اتصال به MongoDB
+    if (!(await Product.exists({ _id: productId, status: "published" }))) {
+      return NextResponse.json(
+        { error: "محصول موردنظر وجود ندارد" },
+        { status: 404 },
+      );
+    }
     const comment = await Comment.create({
       text,
       rating: rating || 5,

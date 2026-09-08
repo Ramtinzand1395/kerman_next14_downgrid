@@ -5,9 +5,11 @@ import { authOptions } from "../../auth/[...nextauth]/options";
 import dbConnect from "@/lib/mongodb";
 import Address from "@/model/Address";
 import User from "@/model/User";
-import Order from "@/model/Order";
-import TempPayment from "@/model/TempPayment";
-import { createAddressSnapshot } from "@/lib/addressSnapshot";
+import {
+  detachAddressReferences,
+  preserveAddressSnapshots,
+} from "@/lib/addressReferences";
+import mongoose from "mongoose";
 
 // ===== GET Addresses =====
 export async function GET() {
@@ -83,18 +85,29 @@ export async function PUT(req: NextRequest) {
     if (!addressId) {
       return NextResponse.json({ error: "id الزامی است" }, { status: 400 });
     }
+    if (!mongoose.isValidObjectId(String(addressId))) {
+      return NextResponse.json({ error: "شناسه آدرس نامعتبر است" }, { status: 400 });
+    }
 
-    const updated = await Address.findOneAndUpdate(
-      { _id: addressId, userId: session.user.id },
-      { province, city, address, plaque, unit, postalCode },
-      { returnDocument: "after" },
-    );
-    if (!updated) {
+    const addressToUpdate = await Address.findOne({
+      _id: addressId,
+      userId: session.user.id,
+    }).lean();
+    if (!addressToUpdate) {
       return NextResponse.json(
         { error: "آدرسی برای بروزرسانی پیدا نشد" },
         { status: 404 },
       );
     }
+
+    // Capture the old value for records created before snapshots were added.
+    await preserveAddressSnapshots(addressToUpdate);
+
+    const updated = await Address.findByIdAndUpdate(
+      addressToUpdate._id,
+      { province, city, address, plaque, unit, postalCode },
+      { returnDocument: "after" },
+    );
 
     return NextResponse.json(updated);
   } catch (err) {
@@ -120,6 +133,9 @@ export async function DELETE(req: NextRequest) {
     if (!id) {
       return NextResponse.json({ error: "id الزامی است" }, { status: 400 });
     }
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ error: "شناسه آدرس نامعتبر است" }, { status: 400 });
+    }
 
     const addressToDelete = await Address.findOne({
       _id: id,
@@ -130,22 +146,9 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "آدرس پیدا نشد" }, { status: 404 });
     }
 
-    const addressSnapshot = createAddressSnapshot(addressToDelete);
-    const missingSnapshot = {
-      $or: [{ addressSnapshot: { $exists: false } }, { addressSnapshot: null }],
-    };
-
-    // Preserve existing orders/payment attempts before removing their reference.
-    await Promise.all([
-      Order.updateMany(
-        { address: addressToDelete._id, ...missingSnapshot },
-        { $set: { addressSnapshot } },
-      ),
-      TempPayment.updateMany(
-        { address: addressToDelete._id, ...missingSnapshot },
-        { $set: { addressSnapshot } },
-      ),
-    ]);
+    // Preserve every dependent record, then remove dangling references.
+    await preserveAddressSnapshots(addressToDelete);
+    await detachAddressReferences(addressToDelete._id);
 
     await Address.deleteOne({ _id: addressToDelete._id });
     await User.findByIdAndUpdate(session.user.id, {

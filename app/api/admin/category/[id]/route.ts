@@ -3,6 +3,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/mongodb";
 import Category from "@/model/Category";
+import Product from "@/model/Product";
+import Coupon from "@/model/Loyalty Club/Coupon";
+import CashbackRule from "@/model/Loyalty Club/CashbackRule";
 
 export async function DELETE(
   req: NextRequest,
@@ -26,7 +29,29 @@ export async function DELETE(
       return NextResponse.json({ error: "آی‌دی نامعتبر است" }, { status: 400 });
     }
 
-    await Category.findByIdAndDelete(id);
+    const category = await Category.findById(id).select("_id").lean();
+    if (!category) {
+      return NextResponse.json({ error: "دسته‌بندی پیدا نشد" }, { status: 404 });
+    }
+
+    const [childCategory, product, coupon, cashbackRule] = await Promise.all([
+      Category.exists({ parent: id }),
+      Product.exists({ category: id }),
+      Coupon.exists({ categories: id }),
+      CashbackRule.exists({ categories: id }),
+    ]);
+
+    if (childCategory || product || coupon || cashbackRule) {
+      return NextResponse.json(
+        {
+          error:
+            "این دسته‌بندی در داده‌های دیگر استفاده شده است. ابتدا وابستگی‌ها را تغییر دهید.",
+        },
+        { status: 409 },
+      );
+    }
+
+    await Category.deleteOne({ _id: id });
 
     return NextResponse.json({ success: true });
   } catch (err) {

@@ -4,6 +4,15 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/mongodb";
 import Product from "@/model/Product";
 import mongoose from "mongoose";
+import Order from "@/model/Order";
+import TempPayment from "@/model/TempPayment";
+import Coupon from "@/model/Loyalty Club/Coupon";
+import CashbackRule from "@/model/Loyalty Club/CashbackRule";
+import Comment from "@/model/Comment";
+import Favorite from "@/model/Favorite";
+import Notification from "@/model/Notification";
+import User from "@/model/User";
+import { validateCatalogReferences } from "@/lib/catalogReferences";
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -23,11 +32,13 @@ export async function PUT(
       return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
 
     const body = await req.json();
-    const categoryId = String(body?.category || "").trim();
-
-    if (!mongoose.isValidObjectId(categoryId)) {
+    const catalogReferences = await validateCatalogReferences(
+      body?.category,
+      body?.tags,
+    );
+    if (!catalogReferences.ok) {
       return NextResponse.json(
-        { error: "لطفاً یک دسته‌بندی معتبر انتخاب کنید." },
+        { error: catalogReferences.error },
         { status: 400 },
       );
     }
@@ -84,7 +95,8 @@ export async function PUT(
     const productData = {
       ...body,
       status: body.status === "published" ? "published" : "draft",
-      category: categoryId,
+      category: catalogReferences.categoryId,
+      tags: catalogReferences.tagIds,
       productType,
       variants: productType === "multi" ? safeVariants : [],
       stock: totalStock,
@@ -166,11 +178,65 @@ export async function DELETE(
       return NextResponse.json({ error: "آی‌دی نامعتبر است" }, { status: 400 });
     }
 
-    await Product.findByIdAndDelete(id);
+    const product = await Product.findById(id).select("_id").lean();
+    if (!product) {
+      return NextResponse.json({ error: "محصول پیدا نشد" }, { status: 404 });
+    }
+
+    // Never orphan immutable order/payment history or broaden a restricted
+    // loyalty rule by silently removing its only product constraint.
+    const [historicalOrder, paymentAttempt, coupon, cashbackRule] =
+      await Promise.all([
+        Order.exists({ "items.product": id }),
+        TempPayment.exists({ "items.product": id }),
+        Coupon.exists({ products: id }),
+        CashbackRule.exists({ products: id }),
+      ]);
+
+    if (historicalOrder || paymentAttempt || coupon || cashbackRule) {
+      return NextResponse.json(
+        {
+          error:
+            "این محصول در سفارش، پرداخت یا قانون باشگاه استفاده شده است و حذف آن به تاریخچه آسیب می‌زند. آن را به حالت پیش‌نویس ببرید.",
+        },
+        { status: 409 },
+      );
+    }
+
+    const [comments, favorites] = await Promise.all([
+      Comment.find({ product: id }).select("_id").lean(),
+      Favorite.find({ productId: id }).select("_id").lean(),
+    ]);
+    const commentIds = comments.map((comment) => comment._id);
+    const favoriteIds = favorites.map((favorite) => favorite._id);
+
+    // Comments/favorites have no meaning without a product, so clean every
+    // denormalized reference before removing the product itself.
+    await Promise.all([
+      Comment.deleteMany({ product: id }),
+      Favorite.deleteMany({ productId: id }),
+      Notification.deleteMany({
+        $or: [
+          { "target.kind": "Product", "target.item": id },
+          { "target.kind": "Comment", "target.item": { $in: commentIds } },
+        ],
+      }),
+      User.updateMany(
+        {},
+        {
+          $pull: {
+            comments: { $in: commentIds },
+            favorites: { $in: favoriteIds },
+          },
+        },
+      ),
+    ]);
+
+    await Product.deleteOne({ _id: id });
 
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "خطا در حذف دسته" }, { status: 500 });
+    return NextResponse.json({ error: "خطا در حذف محصول" }, { status: 500 });
   }
 }

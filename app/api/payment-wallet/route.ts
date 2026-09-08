@@ -418,6 +418,7 @@ export async function POST(req: NextRequest) {
                 error: debitResult.error || "موجودی کیف پول کافی نیست",
                 httpStatus: 402,
               },
+              $unset: { order: "" },
             },
           );
         }

@@ -9,6 +9,7 @@ import { authOptions } from "../../auth/[...nextauth]/options";
 import { customerGameOrderSchema } from "@/validations/validation";
 import { stripHtmlTags } from "@/helpers/stripHtmlTags";
 import mongoose from "mongoose";
+import { createAddressSnapshot } from "@/lib/addressSnapshot";
 
  
 export const dynamic = "force-dynamic";
@@ -146,8 +147,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // snapshot آدرس به‌صورت رشته‌ی یکپارچه برای پایداری سفارش تاریخی
-    const addressSnapshot = [
+    // Keep the old text field for compatibility; addressSnapshot is canonical.
+    const addressText = [
       `${address.province} - ${address.city}`,
       address.address,
       address.plaque ? `پلاک ${address.plaque}` : "",
@@ -177,8 +178,9 @@ export async function POST(req: NextRequest) {
       order = await CustomerGameOrder.create({
         customerName: sanitizedBody.customerName,
         phone: sanitizedBody.phone,
-        address: addressSnapshot,
+        address: addressText,
         addressRef: address._id,
+        addressSnapshot: createAddressSnapshot(address),
         user: user._id,
         clientRequestKey: idempotencyKey,
         message: sanitizedBody.message,

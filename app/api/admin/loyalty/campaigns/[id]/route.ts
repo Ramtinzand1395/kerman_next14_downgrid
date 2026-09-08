@@ -25,7 +25,12 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   const auth = await requireAdmin();
   if ("error" in auth) return auth.error;
   const { id } = await ctx.params;
-  const doc = await Campaign.findByIdAndDelete(id);
+  // Soft-delete so XP and wallet histories keep a valid campaign reference.
+  const doc = await Campaign.findByIdAndUpdate(
+    id,
+    { $set: { isActive: false } },
+    { returnDocument: "after" },
+  );
   if (!doc) return fail("کمپین یافت نشد", 404);
   return ok({ done: true });
 }

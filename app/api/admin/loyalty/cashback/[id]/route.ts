@@ -1,6 +1,6 @@
 // app/api/admin/loyalty/cashback/[id]/route.ts
 import { NextRequest } from "next/server";
-import CashbackRule from "@/model/Loyalty Club/Cashback";
+import CashbackRule from "@/model/Loyalty Club/CashbackRule";
 import { fail, ok, parseBody, requireAdmin } from "@/lib/loyalty/api";
 import { cashbackRuleUpdateSchema } from "@/validations/loyalty.validation";
 
@@ -25,7 +25,12 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   const auth = await requireAdmin();
   if ("error" in auth) return auth.error;
   const { id } = await ctx.params;
-  const doc = await CashbackRule.findByIdAndDelete(id);
+  // Soft-delete so any historical rule references remain resolvable.
+  const doc = await CashbackRule.findByIdAndUpdate(
+    id,
+    { $set: { isActive: false } },
+    { returnDocument: "after" },
+  );
   if (!doc) return fail("قاعده یافت نشد", 404);
   return ok({ done: true });
 }

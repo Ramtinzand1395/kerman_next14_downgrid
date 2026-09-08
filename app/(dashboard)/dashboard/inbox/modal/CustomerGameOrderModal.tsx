@@ -35,6 +35,14 @@ interface CustomerGameOrder {
   customerName: string;
   phone: string;
   address?: string;
+  addressSnapshot?: {
+    province?: string;
+    city?: string;
+    address?: string;
+    plaque?: string;
+    unit?: string;
+    postalCode?: string;
+  } | null;
   message?: string;
   user?: OrderUser;
   products: Product[];
@@ -83,6 +91,23 @@ const statusOptions: OrderStatus[] = [
   "rejected",
   "completed",
 ];
+
+function formatAddress(order: CustomerGameOrder) {
+  const a = order.addressSnapshot;
+  if (!a) return order.address || "";
+
+  return [
+    a.province && a.city
+      ? `${a.province} - ${a.city}`
+      : a.province || a.city,
+    a.address,
+    a.plaque ? `پلاک ${a.plaque}` : "",
+    a.unit ? `واحد ${a.unit}` : "",
+    a.postalCode ? `کدپستی ${a.postalCode}` : "",
+  ]
+    .filter(Boolean)
+    .join("، ");
+}
 
 const CustomerGameOrderModal = ({
   selected,
@@ -206,7 +231,9 @@ const CustomerGameOrderModal = ({
 
           <div className="sm:col-span-2">
             <span className="font-bold">آدرس:</span>
-            <p className="mt-1 leading-7">{order.address || "ثبت نشده"}</p>
+            <p className="mt-1 leading-7">
+              {formatAddress(order) || "ثبت نشده"}
+            </p>
           </div>
 
           {order.user?._id && (

@@ -25,6 +25,7 @@ interface GameOrder {
   customerName: string;
   phone: string;
   address?: string;
+  addressSnapshot?: AddressRef | null;
   addressRef?: AddressRef | null;
   message?: string;
   products: Product[];
@@ -60,9 +61,18 @@ function toPersianDate(date: string) {
 }
 
 function formatAddress(order: GameOrder) {
-  if (order.addressRef) {
-    const a = order.addressRef;
-    return [a.province && a.city ? `${a.province} - ${a.city}` : a.province || a.city, a.address]
+  const structuredAddress = order.addressSnapshot ?? order.addressRef;
+  if (structuredAddress) {
+    const a = structuredAddress;
+    return [
+      a.province && a.city
+        ? `${a.province} - ${a.city}`
+        : a.province || a.city,
+      a.address,
+      a.plaque ? `پلاک ${a.plaque}` : "",
+      a.unit ? `واحد ${a.unit}` : "",
+      a.postalCode ? `کدپستی ${a.postalCode}` : "",
+    ]
       .filter(Boolean)
       .join("، ");
   }

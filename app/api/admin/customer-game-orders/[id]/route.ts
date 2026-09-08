@@ -6,6 +6,7 @@ import { authOptions } from "../../../auth/[...nextauth]/options";
 import { customerOrderUpdateSchema } from "@/validations/validation";
 import { stripHtmlTags } from "@/helpers/stripHtmlTags";
 import mongoose from "mongoose";
+import Notification from "@/model/Notification";
 
 async function requireSuperadmin() {
   const session = await getServerSession(authOptions);
@@ -90,8 +91,13 @@ export async function PUT(
     if (body.status !== undefined) sanitizedBody.status = body.status;
     if (body.phone !== undefined)
       sanitizedBody.phone = String(body.phone).trim();
-    if (body.address !== undefined)
-      sanitizedBody.address = stripHtmlTags(body.address);
+    if (body.address !== undefined) {
+      const sanitizedAddress = stripHtmlTags(body.address);
+      sanitizedBody.address = sanitizedAddress;
+      if (existingOrder.addressSnapshot) {
+        sanitizedBody["addressSnapshot.address"] = sanitizedAddress;
+      }
+    }
     if (body.message !== undefined)
       sanitizedBody.message = stripHtmlTags(body.message || "");
     if (body.totalPrice !== undefined) {
@@ -175,6 +181,11 @@ export async function DELETE(
         { status: 404 },
       );
     }
+
+    await Notification.deleteMany({
+      "target.kind": "CustomerGameOrder",
+      "target.item": deletedOrder._id,
+    });
 
     return NextResponse.json(
       { message: "سفارش با موفقیت حذف شد." },

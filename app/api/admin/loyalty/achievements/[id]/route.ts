@@ -25,7 +25,12 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   const auth = await requireAdmin();
   if ("error" in auth) return auth.error;
   const { id } = await ctx.params;
-  const doc = await Achievement.findByIdAndDelete(id);
+  // Earned achievements are historical records; keep their source document.
+  const doc = await Achievement.findByIdAndUpdate(
+    id,
+    { $set: { isActive: false } },
+    { returnDocument: "after" },
+  );
   if (!doc) return fail("نشان یافت نشد", 404);
   return ok({ done: true });
 }

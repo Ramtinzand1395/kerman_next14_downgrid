@@ -1,12 +1,10 @@
 import dbConnect from "@/lib/mongodb";
 import Product from "@/model/Product";
-import "@/model/Category";
-import "@/model/Tag";
 import { NextResponse } from "next/server";
 import Comment from "@/model/Comment";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/options";
-import mongoose from "mongoose";
+import { validateCatalogReferences } from "@/lib/catalogReferences";
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
 
@@ -76,11 +74,13 @@ export async function POST(req: Request) {
     `SKU-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   try {
     const body = await req.json();
-    const categoryId = String(body?.category || "").trim();
-
-    if (!mongoose.isValidObjectId(categoryId)) {
+    const catalogReferences = await validateCatalogReferences(
+      body?.category,
+      body?.tags,
+    );
+    if (!catalogReferences.ok) {
       return NextResponse.json(
-        { error: "لطفاً یک دسته‌بندی معتبر انتخاب کنید." },
+        { error: catalogReferences.error },
         { status: 400 },
       );
     }
@@ -142,7 +142,8 @@ export async function POST(req: Request) {
       ...body,
       status: body.status === "published" ? "published" : "draft",
       productType,
-      category: categoryId,
+      category: catalogReferences.categoryId,
+      tags: catalogReferences.tagIds,
       variants: productType === "multi" ? safeVariants : [],
       stock: totalStock,
       images: safeGalleryImages,

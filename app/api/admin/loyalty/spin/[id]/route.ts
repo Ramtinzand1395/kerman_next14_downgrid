@@ -25,7 +25,12 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   const auth = await requireAdmin();
   if ("error" in auth) return auth.error;
   const { id } = await ctx.params;
-  const doc = await SpinPrize.findByIdAndDelete(id);
+  // SpinHistory points to this record and already has a display snapshot.
+  const doc = await SpinPrize.findByIdAndUpdate(
+    id,
+    { $set: { isActive: false } },
+    { returnDocument: "after" },
+  );
   if (!doc) return fail("جایزه یافت نشد", 404);
   return ok({ done: true });
 }

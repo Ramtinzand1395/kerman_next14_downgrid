@@ -47,13 +47,23 @@ export type CustomerGameOrderStatus =
   | "rejected"
   | "completed";
 
+export interface CustomerGameOrderAddress {
+  province: string;
+  city: string;
+  address: string;
+  plaque?: string;
+  unit?: string;
+  postalCode?: string;
+}
+
 export interface CustomerGameOrder {
   _id: string;
   customerName: string;
   phone: string;
   address?: string;
+  addressSnapshot?: CustomerGameOrderAddress | null;
   message?: string;
-  addressRef?: string;
+  addressRef?: string | CustomerGameOrderAddress | null;
   user?: {
     _id: string;
     username: string;

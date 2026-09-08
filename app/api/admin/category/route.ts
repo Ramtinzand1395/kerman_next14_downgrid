@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { authOptions } from "../../auth/[...nextauth]/options";
 import dbConnect from "@/lib/mongodb";
 import Category from "@/model/Category";
+import mongoose from "mongoose";
 
 // GET
 export async function GET() {
@@ -47,11 +48,24 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
+    const parentId = body.parentId ? String(body.parentId).trim() : null;
+    if (parentId && !mongoose.isValidObjectId(parentId)) {
+      return NextResponse.json(
+        { error: "دسته‌بندی والد نامعتبر است" },
+        { status: 400 },
+      );
+    }
+    if (parentId && !(await Category.exists({ _id: parentId }))) {
+      return NextResponse.json(
+        { error: "دسته‌بندی والد وجود ندارد" },
+        { status: 400 },
+      );
+    }
 
     const newCategory = await Category.create({
       name: body.name,
       slug: body.slug,
-      parent: body.parentId || null,
+      parent: parentId,
     });
 
     return NextResponse.json(newCategory);
