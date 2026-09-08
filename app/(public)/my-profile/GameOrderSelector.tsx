@@ -560,6 +560,7 @@ export default function GameOrderSelector() {
     }
 
     const payload = {
+      clientRequestKey: idempotencyKeyRef.current,
       customerName: customerName.trim(),
       phone: phone.trim(),
       addressId: selectedAddressId,

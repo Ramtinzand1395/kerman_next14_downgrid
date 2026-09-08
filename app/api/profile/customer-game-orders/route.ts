@@ -10,6 +10,7 @@ import { customerGameOrderSchema } from "@/validations/validation";
 import { stripHtmlTags } from "@/helpers/stripHtmlTags";
 import mongoose from "mongoose";
 import { createAddressSnapshot } from "@/lib/addressSnapshot";
+import crypto from "crypto";
 
  
 export const dynamic = "force-dynamic";
@@ -29,13 +30,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const idempotencyKey = req.headers.get("Idempotency-Key")?.trim();
-    if (!idempotencyKey || idempotencyKey.length > 128) {
+    const body = await req.json();
+    const suppliedIdempotencyKey =
+      req.headers.get("Idempotency-Key")?.trim() ||
+      (typeof body.clientRequestKey === "string"
+        ? body.clientRequestKey.trim()
+        : "");
+
+    if (suppliedIdempotencyKey.length > 128) {
       return NextResponse.json(
-        { error: "هدر Idempotency-Key معتبر الزامی است." },
+        { error: "کلید جلوگیری از ثبت تکراری نامعتبر است." },
         { status: 400 },
       );
     }
+    // Older/cached clients may not send the custom header. Do not block the
+    // order; current clients send the same key in both the header and body.
+    const idempotencyKey = suppliedIdempotencyKey || crypto.randomUUID();
 
     await dbConnect();
 
@@ -62,7 +72,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
     const sanitizedBody = {
       customerName: stripHtmlTags(body.customerName),
       phone: String(body.phone || "").trim(),
