@@ -2,6 +2,7 @@
 import CashbackRule from "@/model/Loyalty Club/CashbackRule";
 import { ok, parseBody, requireAdmin } from "@/lib/loyalty/api";
 import { cashbackRuleSchema } from "@/validations/loyalty.validation";
+import { Types } from "mongoose";
 
 export async function GET() {
   const auth = await requireAdmin();
@@ -14,5 +15,11 @@ export async function POST(req: Request) {
   if ("error" in auth) return auth.error;
   const { data, error } = await parseBody(req, cashbackRuleSchema);
   if (error) return error;
-  return ok(await CashbackRule.create(data!), 201);
+  return ok(
+    await CashbackRule.create({
+      ...data!,
+      categories: data!.categories.map((id) => new Types.ObjectId(id)),
+    }),
+    201,
+  );
 }
