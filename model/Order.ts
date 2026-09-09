@@ -137,6 +137,13 @@ const OrderSchema = new mongoose.Schema(
       default: null,
     },
 
+    // Atomic claim used by the loyalty purchase hook. Setting this before any
+    // loyalty side effect makes concurrent/replayed payment callbacks no-ops.
+    loyaltyProcessedAt: {
+      type: Date,
+      default: null,
+    },
+
     // کوپن اعمال‌شده روی سفارش
     couponCode: {
       type: String,

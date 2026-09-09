@@ -4,6 +4,7 @@
 //   ماموریت‌ها → نشان‌ها → رفرال
 // همه مراحل idempotent‌اند؛ خطای هر مرحله فلو را نمی‌شکند ولی لاگ می‌شود.
 import User from "@/model/User";
+import Order from "@/model/Order";
 import { grantXp, getSettings, syncVipTier } from "./experience.service";
 import { grantCashback } from "./cashback.service";
 import { trackEvent } from "./mission.service";
@@ -29,6 +30,24 @@ export async function onSuccessfulPurchase(input: PurchaseHookInput): Promise<vo
   };
 
   const settings = await getSettings();
+
+  // Claim the paid order before performing any side effect. findOneAndUpdate is
+  // atomic, so only one of multiple concurrent/replayed callbacks can continue.
+  // Matching the owner also prevents applying an order's loyalty effects to a
+  // different user if this hook is ever called with inconsistent input.
+  const claimedOrder = await Order.findOneAndUpdate(
+    {
+      _id: orderId,
+      user: userId,
+      paymentStatus: "paid",
+      loyaltyProcessedAt: null,
+    },
+    { $set: { loyaltyProcessedAt: new Date() } },
+    { returnDocument: "after" },
+  )
+    .select("_id")
+    .lean();
+  if (!claimedOrder) return;
 
   // ۱) شمارنده‌های کاربر — آیا این اولین خرید است؟
   const user = await User.findOneAndUpdate(
