@@ -7,6 +7,7 @@ import FilterProducts from "./components/FilterProducts";
 import Pagination from "./components/Pagination";
 import SortProducts from "./components/SortProducts";
 import ProductsSearch from "./components/ProductsSearch";
+import { SITE_URL, toAbsoluteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "محصولات",
@@ -20,13 +21,13 @@ export const metadata: Metadata = {
     "قیمت PS5",
   ],
   alternates: {
-    canonical: "https://kermanatari.ir/products",
+    canonical: "/products",
   },
   openGraph: {
     title: "محصولات | کرمان آتاری",
     description:
       "مشاهده همه محصولات کرمان آتاری با فیلتر دسته‌بندی، مرتب‌سازی قیمت و دسترسی سریع به جزئیات هر کالا.",
-    url: "https://kermanatari.ir/products",
+    url: "/products",
     type: "website",
     locale: "fa_IR",
   },
@@ -37,8 +38,7 @@ async function getProducts(params: {
   page?: string;
   q?: string;
 }) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  const url = new URL(`${baseUrl}/api/products/all_products`);
+  const url = new URL(`${SITE_URL}/api/products/all_products`);
 
   if (params.category) {
     url.searchParams.append("category", params.category);
@@ -79,7 +79,7 @@ export default async function ProductsPage({
     name: "محصولات کرمان آتاری",
     description:
       "لیست کامل محصولات کرمان آتاری شامل کنسول، بازی و لوازم جانبی با امکان فیلتر و مرتب‌سازی.",
-    url: "https://kermanatari.ir/products",
+    url: toAbsoluteUrl("/products"),
     mainEntity: {
       "@type": "ItemList",
       numberOfItems: products.length,
@@ -87,7 +87,7 @@ export default async function ProductsPage({
         "@type": "ListItem",
         position: index + 1,
         name: product.title,
-        url: `https://kermanatari.ir/product/${product.slug}`,
+        url: toAbsoluteUrl(`/product/${product.slug}`),
       })),
     },
     breadcrumb: {
@@ -97,13 +97,13 @@ export default async function ProductsPage({
           "@type": "ListItem",
           position: 1,
           name: "خانه",
-          item: "https://kermanatari.ir",
+          item: SITE_URL,
         },
         {
           "@type": "ListItem",
           position: 2,
           name: "محصولات",
-          item: "https://kermanatari.ir/products",
+          item: toAbsoluteUrl("/products"),
         },
       ],
     },

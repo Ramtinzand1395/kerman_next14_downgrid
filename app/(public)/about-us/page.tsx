@@ -1,7 +1,6 @@
 import Image from "next/image";
 import type { Metadata } from "next";
-
-const SITE_URL = "https://kermanatari.ir";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

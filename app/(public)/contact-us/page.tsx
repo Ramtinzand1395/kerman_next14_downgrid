@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import ContactForm from "./ContactForm";
+import { toAbsoluteUrl } from "@/lib/site";
 
 const faqItems = [
   {
@@ -38,7 +39,7 @@ export const metadata: Metadata = {
     title: "تماس با ما | کرمان آتاری",
     description:
       "برای مشاوره خرید، پیگیری سفارش و دریافت پشتیبانی تخصصی با تیم کرمان آتاری در ارتباط باشید.",
-    url: "https://kermanatari.ir/contact-us",
+    url: "/contact-us",
     siteName: "کرمان آتاری",
     locale: "fa_IR",
     type: "website",
@@ -82,8 +83,8 @@ export default function ContactUsPage() {
     "@context": "https://schema.org",
     "@type": "Store",
     name: "کرمان آتاری",
-    url: "https://kermanatari.ir/contact-us",
-    image: "https://kermanatari.ir/banner_1.webp",
+    url: toAbsoluteUrl("/contact-us"),
+    image: toAbsoluteUrl("/banner_1.webp"),
     telephone: "+989383077225",
     email: "info@kermanatari.ir",
     address: {

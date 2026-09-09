@@ -12,6 +12,14 @@ import MainPageBanners from "./components/landing/MainPageBanners";
 import Motion from "./components/Motion";
 import banner from "../../public/banner-5.jpg";
 import Image from "next/image";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/",
+  },
+};
+
 const now = new Date();
 const nextMidnight = new Date(
   now.getFullYear(),

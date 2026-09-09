@@ -3,15 +3,18 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { stripHtmlTags } from "@/helpers/stripHtmlTags";
+import { SITE_URL } from "@/lib/site";
 export const metadata: Metadata = {
   title: "وبلاگ | کرمان آتاری",
   description: "جدیدترین مقالات و راهنمای خرید کنسول و بازی در کرمان آتاری.",
+  alternates: {
+    canonical: "/blog",
+  },
 };
 
 async function getBlogs(): Promise<BlogPost[]> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const res = await fetch(`${baseUrl}/api/blog?limit=30`, {
+    const res = await fetch(`${SITE_URL}/api/blog?limit=30`, {
       cache: "no-store",
     });
 

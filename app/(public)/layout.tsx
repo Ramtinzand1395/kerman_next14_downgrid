@@ -7,6 +7,7 @@ import AuthProvider from "../AuthProvider";
 import Navbar from "./(navbar)/Navbar";
 import Footer from "./Footer";
 import { SITE_URL } from "@/lib/site";
+import type { Metadata } from "next";
 const INSTAGRAM_URL =
    "https://www.instagram.com/kermanatari.ir?igsh=MTh4cmd3NnNib2N5dw==";
 
@@ -16,7 +17,7 @@ const vazir = localFont({
   variable: "--font-vazir",
 });
 
-export const metadata = {
+export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: "کرمان آتاری | فروشگاه بازی و لوازم گیمینگ در کرمان",
@@ -37,9 +38,6 @@ export const metadata = {
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon.ico",
-  },
-  alternates: {
-    canonical: "/",
   },
   robots: {
     index: true,

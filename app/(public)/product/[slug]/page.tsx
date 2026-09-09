@@ -6,6 +6,7 @@ import { ProductGallery } from "./ProductGallery";
 import { ProductInfo } from "./ProductInfo";
 import TabSection from "./TabSection";
 import type { Product } from "@/types";
+import { SITE_URL, toAbsoluteUrl } from "@/lib/site";
 
 type ProductResponse = Product & {
   id?: string;
@@ -14,7 +15,7 @@ type ProductResponse = Product & {
 
 async function getProduct(slug: string): Promise<ProductResponse> {
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/products/${slug}`,
+    `${SITE_URL}/api/products/${slug}`,
     {
       next: {
         revalidate: 300,
@@ -37,7 +38,7 @@ async function getRelatedProducts(
   }
 
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/products/related/${id}`,
+    `${SITE_URL}/api/products/related/${id}`,
     {
       next: {
         revalidate: 300,
@@ -75,7 +76,7 @@ export async function generateMetadata({
   }
 
   const finalPrice = product.discountPrice ?? product.price;
-  const canonicalUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/product/${product.slug}`;
+  const canonicalPath = `/product/${product.slug}`;
 
   const metaDescription = (
     product.metaDescription ||
@@ -92,7 +93,7 @@ export async function generateMetadata({
       `${product.title} | ${product.brand || "کرمان آتاری"} | خرید با بهترین قیمت`,
     description: metaDescription,
     alternates: {
-      canonical: canonicalUrl,
+      canonical: canonicalPath,
     },
     robots: {
       index: product.status !== "draft",
@@ -102,7 +103,7 @@ export async function generateMetadata({
       title: product.seoTitle || `${product.title} | کرمان آتاری`,
       description: metaDescription,
       type: "website",
-      url: canonicalUrl,
+      url: canonicalPath,
       images: [
         {
           url: product.mainImage,
@@ -143,7 +144,7 @@ export default async function ProductPage({
     product._id || product.id,
   );
   const finalPrice = product.discountPrice ?? product.price;
-  const productUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/product/${product.slug}`;
+  const productUrl = toAbsoluteUrl(`/product/${product.slug}`);
 
   const jsonLd = {
     "@context": "https://schema.org",

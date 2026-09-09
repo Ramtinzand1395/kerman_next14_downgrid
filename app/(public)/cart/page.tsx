@@ -5,6 +5,9 @@ import { Suspense } from "react";
 import CartPage from "./CartPage";
 
 export const metadata: Metadata = {
+  alternates: {
+    canonical: "/cart",
+  },
   robots: {
     index: false,
     follow: false,

@@ -3,6 +3,9 @@ import Link from "next/link";
 import ClearCartOnSuccess from "./ClearCartOnSuccess";
 
 export const metadata: Metadata = {
+  alternates: {
+    canonical: "/payment-success",
+  },
   robots: {
     index: false,
     follow: false,

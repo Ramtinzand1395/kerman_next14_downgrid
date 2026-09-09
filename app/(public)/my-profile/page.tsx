@@ -15,6 +15,9 @@ import SpinWheel from "./SpinWheel";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
+  alternates: {
+    canonical: "/my-profile",
+  },
   robots: {
     index: false,
     follow: false,

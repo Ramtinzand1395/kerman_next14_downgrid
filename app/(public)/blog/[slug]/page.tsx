@@ -47,6 +47,7 @@ import { BlogPost } from "@/types";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { SITE_URL } from "@/lib/site";
 
 type Params = Promise<{ slug: string }>;
 
@@ -59,8 +60,7 @@ const stripHtmlTags = (value?: string) =>
 
 async function getBlog(slug: string): Promise<BlogPost | null> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const res = await fetch(`${baseUrl}/api/blog/${slug}`, { cache: "no-store" });
+    const res = await fetch(`${SITE_URL}/api/blog/${slug}`, { cache: "no-store" });
 
     if (res.status === 404) return null;
     if (!res.ok) return null;
@@ -101,10 +101,14 @@ export async function generateMetadata({
     title,
     description,
     keywords,
+    alternates: {
+      canonical: `/blog/${blog.slug}`,
+    },
     openGraph: {
       title,
       description,
       type: "article",
+      url: `/blog/${blog.slug}`,
       images: blog.coverImage ? [blog.coverImage] : [],
     },
   };

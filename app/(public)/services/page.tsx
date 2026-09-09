@@ -1,8 +1,7 @@
 import { CheckCircle2 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-
-const SITE_URL = "https://kermanatari.ir";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
