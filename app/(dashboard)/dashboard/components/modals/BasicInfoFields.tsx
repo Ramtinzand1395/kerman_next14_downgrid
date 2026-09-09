@@ -166,6 +166,7 @@ const BasicInfoFields = ({ form, updateField }: BasicInfoFieldsProps) => {
                 <input
                   type="number"
                   placeholder="موجودی"
+                  min={0}
                   value={variant.stock}
                   onChange={(e) => {
                     const next = [...(form.variants || [])];
@@ -206,6 +207,7 @@ const BasicInfoFields = ({ form, updateField }: BasicInfoFieldsProps) => {
         <input
           id="product-stock"
           type="number"
+          min={0}
           value={form.stock ?? ""}
           onChange={(e) => updateField("stock", Number(e.target.value))}
           className="w-full border-b border-gray-300 bg-inherit py-1 transition-colors focus:border-b-2 focus:border-blue-700 focus:outline-none"

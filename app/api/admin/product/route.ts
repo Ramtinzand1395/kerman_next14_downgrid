@@ -130,6 +130,18 @@ export async function POST(req: Request) {
       : [];
 
     const productType = body.productType === "multi" ? "multi" : "single";
+    const hasNegativeStock =
+      productType === "multi"
+        ? safeVariants.some((variant: { stock: number }) => variant.stock < 0)
+        : Number(body.stock || 0) < 0;
+
+    if (hasNegativeStock) {
+      return NextResponse.json(
+        { error: "موجودی محصول و تنوع‌ها نمی‌تواند منفی باشد." },
+        { status: 400 },
+      );
+    }
+
     const totalStock =
       productType === "multi"
         ? safeVariants.reduce(

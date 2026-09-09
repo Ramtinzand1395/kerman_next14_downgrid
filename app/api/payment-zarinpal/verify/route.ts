@@ -8,9 +8,10 @@ import User from "@/model/User";
 import Wallet from "@/model/Loyalty Club/Wallet";
 import WalletTransaction from "@/model/Loyalty Club/WalletTransaction";
 import { onSuccessfulPurchase } from "@/lib/loyalty/purchase.hooks";
-import { applyCoupon } from "@/lib/loyalty/coupon.service";
+import { applyCoupon, releaseCoupon } from "@/lib/loyalty/coupon.service";
 import { NextRequest, NextResponse } from "next/server";
 import { getSiteUrl } from "@/lib/baseUrl";
+import mongoose from "mongoose";
 
 type ZarinpalVerifyResponse = {
   data?: {
@@ -23,6 +24,33 @@ type ZarinpalVerifyResponse = {
 };
 
 const PAYMENT_PROCESSING_TTL_MS = 15 * 60 * 1000;
+
+type InventoryItem = {
+  product: string;
+  variantId?: string;
+  quantity: number;
+};
+
+async function restoreInventory(items: InventoryItem[]) {
+  for (const item of items) {
+    await Product.findOneAndUpdate(
+      item.variantId
+        ? {
+            _id: item.product,
+            variants: { $elemMatch: { _id: item.variantId } },
+          }
+        : { _id: item.product },
+      item.variantId
+        ? {
+            $inc: {
+              stock: item.quantity,
+              "variants.$.stock": item.quantity,
+            },
+          }
+        : { $inc: { stock: item.quantity } },
+    );
+  }
+}
 
 function withPaymentQuery(
   baseUrl: string,
@@ -231,11 +259,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(walletSuccessUrl);
     }
 
-    const decrementedItems: Array<{
-      product: string;
-      variantId?: string;
-      quantity: number;
-    }> = [];
+    const decrementedItems: InventoryItem[] = [];
 
     for (const item of temp.items as Array<{
       product: string;
@@ -263,16 +287,7 @@ export async function GET(req: NextRequest) {
         );
 
         if (!updated) {
-          for (const previous of decrementedItems) {
-            await Product.findOneAndUpdate(
-              previous.variantId
-                ? { _id: previous.product, variants: { $elemMatch: { _id: previous.variantId } } }
-                : { _id: previous.product },
-              previous.variantId
-                ? { $inc: { stock: previous.quantity, "variants.$.stock": previous.quantity } }
-                : { $inc: { stock: previous.quantity } },
-            );
-          }
+          await restoreInventory(decrementedItems);
           await TempPayment.findOneAndUpdate(
             { authority },
             { $set: { status: "failed", failedAt: new Date() } },
@@ -289,16 +304,7 @@ export async function GET(req: NextRequest) {
       );
 
       if (!updated) {
-        for (const previous of decrementedItems) {
-          await Product.findOneAndUpdate(
-            previous.variantId
-              ? { _id: previous.product, variants: { $elemMatch: { _id: previous.variantId } } }
-              : { _id: previous.product },
-            previous.variantId
-              ? { $inc: { stock: previous.quantity, "variants.$.stock": previous.quantity } }
-              : { $inc: { stock: previous.quantity } },
-          );
-        }
+        await restoreInventory(decrementedItems);
         await TempPayment.findOneAndUpdate(
           { authority },
           { $set: { status: "failed", failedAt: new Date() } },
@@ -308,25 +314,105 @@ export async function GET(req: NextRequest) {
       decrementedItems.push(item);
     }
 
-    const order = await Order.create({
-      user: temp.userId,
-      address: temp.address,
-      addressSnapshot: temp.addressSnapshot,
-      items: temp.items,
-      totalPrice: temp.totalPrice,
-      shippingCost: temp.shippingCost,
-      finalPrice: temp.finalPrice,
-      couponCode: temp.couponCode ?? null,
-      couponDiscount: temp.couponDiscount ?? 0,
-      paymentStatus: "paid",
-      paymentGateway: "zarinpal",
-      paymentAuthority: authority,
-      paymentRefId: result?.data?.ref_id ?? null,
-      paymentCardPan: result?.data?.card_pan ?? null,
-      paymentFeeType: result?.data?.fee_type ?? null,
-      paymentFee: result?.data?.fee ?? null,
-      paymentVerifiedAt: new Date(),
-    });
+    const itemProducts = (temp.items as Array<{ product: unknown }>).map(
+      (item) => String(item.product),
+    );
+    const productDocs = await Product.find({ _id: { $in: itemProducts } })
+      .select("category")
+      .lean();
+    const categoryOf = new Map(
+      productDocs.map((product) => [
+        String(product._id),
+        String(product.category),
+      ]),
+    );
+    const categoryIds = [...new Set(categoryOf.values())];
+    const couponItems = itemProducts.map((productId) => ({
+      productId,
+      categoryIds: categoryOf.has(productId)
+        ? [categoryOf.get(productId)!]
+        : [],
+    }));
+    const orderId = new mongoose.Types.ObjectId();
+
+    // The amount has already been captured by the gateway, so coupon capacity
+    // must be claimed before a paid order is created. A failed claim is routed
+    // to refund handling instead of silently granting an invalid discount.
+    if (temp.couponCode) {
+      let applied;
+      try {
+        applied = await applyCoupon({
+          code: temp.couponCode,
+          userId: String(temp.userId),
+          orderId: orderId.toString(),
+          orderAmount: temp.totalPrice,
+          items: couponItems,
+        });
+      } catch (error) {
+        await restoreInventory(decrementedItems);
+        await TempPayment.findOneAndUpdate(
+          { authority, status: "paid_pending" },
+          { $set: { status: "refund_required", expiresAt: null } },
+        );
+        console.error(
+          `[loyalty] coupon claim errored for payment ${authority}:`,
+          error,
+        );
+        return NextResponse.redirect(pendingUrl);
+      }
+
+      if (!applied.ok) {
+        await restoreInventory(decrementedItems);
+        await TempPayment.findOneAndUpdate(
+          { authority, status: "paid_pending" },
+          { $set: { status: "refund_required", expiresAt: null } },
+        );
+        console.error(
+          `[loyalty] coupon claim failed for payment ${authority}:`,
+          applied.error,
+        );
+        return NextResponse.redirect(pendingUrl);
+      }
+    }
+
+    let order;
+    try {
+      order = await Order.create({
+        _id: orderId,
+        user: temp.userId,
+        address: temp.address,
+        addressSnapshot: temp.addressSnapshot,
+        items: temp.items,
+        totalPrice: temp.totalPrice,
+        shippingCost: temp.shippingCost,
+        finalPrice: temp.finalPrice,
+        couponCode: temp.couponCode ?? null,
+        couponDiscount: temp.couponDiscount ?? 0,
+        paymentStatus: "paid",
+        paymentGateway: "zarinpal",
+        paymentAuthority: authority,
+        paymentRefId: result?.data?.ref_id ?? null,
+        paymentCardPan: result?.data?.card_pan ?? null,
+        paymentFeeType: result?.data?.fee_type ?? null,
+        paymentFee: result?.data?.fee ?? null,
+        paymentVerifiedAt: new Date(),
+      });
+    } catch (error) {
+      if (temp.couponCode) {
+        await releaseCoupon(orderId.toString()).catch((releaseError) => {
+          console.error(
+            `[loyalty] failed to release coupon for order ${orderId}:`,
+            releaseError,
+          );
+        });
+      }
+      await restoreInventory(decrementedItems);
+      await TempPayment.findOneAndUpdate(
+        { authority, status: "paid_pending" },
+        { $set: { status: "refund_required", expiresAt: null } },
+      );
+      throw error;
+    }
 
     await User.findByIdAndUpdate(temp.userId, { $push: { orders: order._id } });
 
@@ -342,42 +428,9 @@ export async function GET(req: NextRequest) {
 
     await TempPayment.deleteOne({ authority });
 
-    // ── باشگاه مشتریان: اعمال قطعی کوپن + XP/کش‌بک/VIP/ماموریت/نشان/رفرال ──
+    // ── باشگاه مشتریان: XP/کش‌بک/VIP/ماموریت/نشان/رفرال ──
     // خطای این بخش‌ها سفارش پرداخت‌شده را برنمی‌گرداند ولی لاگ می‌شود.
     try {
-      const itemProducts = (temp.items as Array<{ product: unknown }>).map(
-        (i) => String(i.product),
-      );
-      const productDocs = await Product.find({ _id: { $in: itemProducts } })
-        .select("category")
-        .lean();
-      const categoryOf = new Map(
-        productDocs.map((p) => [String(p._id), String(p.category)]),
-      );
-      const categoryIds = [...new Set(categoryOf.values())];
-      const couponItems = itemProducts.map((productId) => ({
-        productId,
-        categoryIds: categoryOf.has(productId)
-          ? [categoryOf.get(productId)!]
-          : [],
-      }));
-
-      if (temp.couponCode) {
-        const applied = await applyCoupon({
-          code: temp.couponCode,
-          userId: String(temp.userId),
-          orderId: order._id.toString(),
-          orderAmount: temp.totalPrice,
-          items: couponItems,
-        });
-        if (!applied.ok) {
-          console.error(
-            `[loyalty] applyCoupon failed for order ${order._id}:`,
-            applied.error,
-          );
-        }
-      }
-
       await onSuccessfulPurchase({
         userId: String(temp.userId),
         orderId: order._id.toString(),

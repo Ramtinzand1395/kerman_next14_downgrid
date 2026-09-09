@@ -35,7 +35,11 @@ const productSchema = new Schema(
         sku: String,
         price: { type: Number, required: true },
         discountPrice: Number,
-        stock: { type: Number, default: 0 },
+        stock: {
+          type: Number,
+          default: 0,
+          min: [0, "موجودی تنوع محصول نمی‌تواند منفی باشد"],
+        },
       },
     ],
 
@@ -72,6 +76,7 @@ const productSchema = new Schema(
     stock: {
       type: Number,
       default: 0,
+      min: [0, "موجودی محصول نمی‌تواند منفی باشد"],
     },
 
     brand: String,
