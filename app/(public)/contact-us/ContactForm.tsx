@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Clock3, Mail, MapPin, MessageSquare, Phone } from "lucide-react";
 import { toast } from "react-toastify";
+import { CONTACT_LIMITS } from "@/validations/contactValidation";
 
 type FormData = {
   name: string;
@@ -121,6 +122,8 @@ export default function ContactForm() {
               value={formData.name}
               onChange={handleChange}
               required
+              minLength={CONTACT_LIMITS.name.min}
+              maxLength={CONTACT_LIMITS.name.max}
               className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500"
             />
           </div>
@@ -140,6 +143,9 @@ export default function ContactForm() {
               value={formData.phone}
               onChange={handleChange}
               required
+              minLength={CONTACT_LIMITS.phone.min}
+              maxLength={CONTACT_LIMITS.phone.max}
+              pattern="(?:09[0-9]{9}|(?:[+]98|0098)9[0-9]{9})"
               className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500"
             />
           </div>
@@ -159,6 +165,7 @@ export default function ContactForm() {
               value={formData.email}
               onChange={handleChange}
               required
+              maxLength={CONTACT_LIMITS.email.max}
               className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500"
             />
           </div>
@@ -178,6 +185,8 @@ export default function ContactForm() {
               value={formData.subject}
               onChange={handleChange}
               required
+              minLength={CONTACT_LIMITS.subject.min}
+              maxLength={CONTACT_LIMITS.subject.max}
               className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500"
             />
           </div>
@@ -197,6 +206,8 @@ export default function ContactForm() {
             value={formData.message}
             onChange={handleChange}
             required
+            minLength={CONTACT_LIMITS.message.min}
+            maxLength={CONTACT_LIMITS.message.max}
             rows={6}
             className="w-full resize-none rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500"
           />
