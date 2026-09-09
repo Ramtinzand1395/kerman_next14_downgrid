@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 import dbConnect from "@/lib/mongodb";
 import Customer from "@/model/Customer";
+import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ customerId: string }> }
 ) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
+  }
+  if (!["admin", "superadmin"].includes(session.user.role)) {
+    return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
+  }
+
   await dbConnect();
 
   try {
