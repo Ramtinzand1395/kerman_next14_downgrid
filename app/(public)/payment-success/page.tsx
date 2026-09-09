@@ -1,5 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import ClearCartOnSuccess from "./ClearCartOnSuccess";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 interface PaymentSuccessPageProps {
   searchParams: {

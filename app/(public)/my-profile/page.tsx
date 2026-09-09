@@ -1,4 +1,4 @@
-
+import type { Metadata } from "next";
 import Sidebar from "./Sidebar";
 import Stepper from "./Stepper";
 import Profile from "./Profile";
@@ -13,6 +13,13 @@ import MyWallet from "./MyWallet";
 import MyLoyalty from "./MyLoyalty";
 import SpinWheel from "./SpinWheel";
 import { redirect } from "next/navigation";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 interface MyProfilePageProps {
   searchParams?: { step?: string };

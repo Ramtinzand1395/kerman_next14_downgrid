@@ -41,6 +41,10 @@ export const metadata = {
   alternates: {
     canonical: "/",
   },
+  robots: {
+    index: true,
+    follow: true,
+  },
   openGraph: {
     title: "کرمان آتاری | فروشگاه تخصصی بازی و لوازم گیمینگ در کرمان",
     description:
@@ -63,7 +67,6 @@ export default function RootLayout({
       <head>
         {/* Minimal extra head tags that are safe in app dir */}
         <meta name="viewport" content="width=device-width,initial-scale=1" />
-        <meta name="robots" content="index,follow" />
          <meta name="enamad" content="2601172" />
         <script src="https://accounts.google.com/gsi/client" async></script>
       </head>
