@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/mongodb";
 import Blog from "@/model/Blog";
+import { deleteUnusedCloudinaryImages } from "@/lib/cloudinary";
 
 const slugify = (value: string) =>
   value
@@ -80,20 +81,42 @@ export async function PUT(
       );
     }
 
-    const updated = await Blog.findByIdAndUpdate(
-      id,
-      {
-        title,
-        slug,
-        excerpt: String(body.excerpt || "").trim(),
-        content,
-        coverImage: String(body.coverImage || "").trim(),
-        published: Boolean(body.published),
-        metaDescription: String(body.metaDescription || "").trim(),
-        focusKeyword: parseFocusKeywords(body.focusKeyword),
-      },
-     { returnDocument: 'after' },
-    );
+    const existingBlog = await Blog.findById(id);
+    if (!existingBlog) {
+      return NextResponse.json({ error: "وبلاگ یافت نشد" }, { status: 404 });
+    }
+
+    const updateData = {
+      title,
+      slug,
+      excerpt: String(body.excerpt || "").trim(),
+      content,
+      coverImage: String(body.coverImage || "").trim(),
+      published: Boolean(body.published),
+      metaDescription: String(body.metaDescription || "").trim(),
+      focusKeyword: parseFocusKeywords(body.focusKeyword),
+    };
+
+    // Validate the new database state before permanently deleting the old asset.
+    const validationCandidate = new Blog({
+      ...existingBlog.toObject(),
+      ...updateData,
+      _id: id,
+    });
+    await validationCandidate.validate();
+
+    if (
+      existingBlog.coverImage &&
+      existingBlog.coverImage !== updateData.coverImage
+    ) {
+      await deleteUnusedCloudinaryImages([existingBlog.coverImage], {
+        excludeBlogId: id,
+      });
+    }
+
+    const updated = await Blog.findByIdAndUpdate(id, updateData, {
+      returnDocument: "after",
+    });
 
     if (!updated) {
       return NextResponse.json({ error: "وبلاگ یافت نشد" }, { status: 404 });
@@ -121,10 +144,15 @@ export async function DELETE(
       return NextResponse.json({ error: "آی‌دی نامعتبر است" }, { status: 400 });
     }
 
-    const deleted = await Blog.findByIdAndDelete(id);
-    if (!deleted) {
+    const blog = await Blog.findById(id).select("_id coverImage").lean();
+    if (!blog) {
       return NextResponse.json({ error: "وبلاگ یافت نشد" }, { status: 404 });
     }
+
+    await deleteUnusedCloudinaryImages([blog.coverImage], {
+      excludeBlogId: id,
+    });
+    await Blog.deleteOne({ _id: id });
 
     return NextResponse.json({ success: true });
   } catch (error) {

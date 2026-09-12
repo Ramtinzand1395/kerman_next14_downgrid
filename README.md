@@ -16,6 +16,23 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Cloudinary configuration
+
+Uploads use the public cloud name and unsigned upload preset. Deleting a
+product image, gallery image, or blog cover also removes the asset from
+Cloudinary, so the server additionally needs the private API credentials:
+
+```env
+NEXT_PUBLIC_CLOUDINARY_CLOUD=your_cloud_name
+NEXT_PUBLIC_CLOUDINARY_PRESET=your_unsigned_upload_preset
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
+
+Set the same variables in the Vercel project settings. Never expose the API
+secret through a variable whose name starts with `NEXT_PUBLIC_`.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

@@ -13,6 +13,7 @@ import Favorite from "@/model/Favorite";
 import Notification from "@/model/Notification";
 import User from "@/model/User";
 import { validateCatalogReferences } from "@/lib/catalogReferences";
+import { deleteUnusedCloudinaryImages } from "@/lib/cloudinary";
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -115,6 +116,36 @@ export async function PUT(
      images: safeGalleryImages,
       faqs: safeFaqs,
     };
+
+    const existingProduct = await Product.findById(id);
+    if (!existingProduct) {
+      return NextResponse.json({ error: "محصول پیدا نشد" }, { status: 404 });
+    }
+
+    // Validate the new database state before permanently deleting old assets.
+    const validationCandidate = new Product({
+      ...existingProduct.toObject(),
+      ...productData,
+      _id: id,
+    });
+    await validationCandidate.validate();
+
+    const previousImageUrls = [
+      existingProduct.mainImage,
+      ...(existingProduct.images || []).map((image: any) =>
+        typeof image === "string" ? image : image.url,
+      ),
+    ].filter(Boolean);
+    const nextImageUrls = new Set([
+      String(productData.mainImage || ""),
+      ...safeGalleryImages.map((image: any) => image.url),
+    ]);
+
+    await deleteUnusedCloudinaryImages(
+      previousImageUrls.filter((url: string) => !nextImageUrls.has(url)),
+      { excludeProductId: id },
+    );
+
     const Update = await Product.findByIdAndUpdate(id, productData, {
       returnDocument: "after",
       runValidators: true,
@@ -190,7 +221,9 @@ export async function DELETE(
       return NextResponse.json({ error: "آی‌دی نامعتبر است" }, { status: 400 });
     }
 
-    const product = await Product.findById(id).select("_id").lean();
+    const product = await Product.findById(id)
+      .select("_id mainImage images")
+      .lean();
     if (!product) {
       return NextResponse.json({ error: "محصول پیدا نشد" }, { status: 404 });
     }
@@ -214,6 +247,17 @@ export async function DELETE(
         { status: 409 },
       );
     }
+
+    const productImageUrls = [
+      product.mainImage,
+      ...(product.images || []).map((image: any) =>
+        typeof image === "string" ? image : image.url,
+      ),
+    ];
+
+    await deleteUnusedCloudinaryImages(productImageUrls, {
+      excludeProductId: id,
+    });
 
     const [comments, favorites] = await Promise.all([
       Comment.find({ product: id }).select("_id").lean(),
