@@ -5,6 +5,8 @@ import Comment from "@/model/Comment";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/options";
 import { validateCatalogReferences } from "@/lib/catalogReferences";
+import { productValidationSchema } from "@/validations/validation";
+import { ValidationError as YupValidationError } from "yup";
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
 
@@ -73,7 +75,9 @@ export async function POST(req: Request) {
   const generateSKU = () =>
     `SKU-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   try {
-    const body = await req.json();
+    const body = await productValidationSchema.validate(await req.json(), {
+      abortEarly: false,
+    });
     const catalogReferences = await validateCatalogReferences(
       body?.category,
       body?.tags,
@@ -167,6 +171,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "محصول جدید ساخته شد.", product });
   } catch (err: any) {
     console.log(err);
+
+    if (err instanceof YupValidationError) {
+      return NextResponse.json(
+        { error: Array.from(new Set(err.errors)).join("، ") },
+        { status: 400 },
+      );
+    }
 
     // خطاهای اعتبارسنجی Mongoose را به پیام فارسی تبدیل می‌کنیم
     if (err?.name === "ValidationError" && err?.errors) {

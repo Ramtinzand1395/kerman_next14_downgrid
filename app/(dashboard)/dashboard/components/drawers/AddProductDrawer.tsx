@@ -3,8 +3,10 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { ChevronDown, Loader2, PackagePlus, X } from "lucide-react";
+import { ValidationError } from "yup";
 
 import type { ProductForm, Tag } from "@/types";
+import { productValidationSchema } from "@/validations/validation";
 
 import BasicInfoFields from "../modals/BasicInfoFields";
 import CategorySelector from "../modals/CategorySelector";
@@ -109,6 +111,9 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
   const [openSection, setOpenSection] = useState<SectionKey>("basic");
 
   const [loading, setLoading] = useState(false);
+  const [submittingStatus, setSubmittingStatus] = useState<
+    ProductForm["status"] | null
+  >(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [tagsList, setTagsList] = useState<any[]>([]);
 
@@ -137,77 +142,65 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!form.category) {
-      toast.error("لطفاً دسته‌بندی محصول را انتخاب کنید");
-      return;
-    }
-    setLoading(true);
+
+    const submitter = (e.nativeEvent as SubmitEvent)
+      .submitter as HTMLButtonElement | null;
+    const requestedStatus: ProductForm["status"] =
+      submitter?.value === "published" ? "published" : "draft";
+    const payload = {
+      ...form,
+      status: requestedStatus,
+      variants:
+        form.productType === "multi"
+          ? form.variants
+          : [],
+    };
+
     try {
-      const res = await fetch("/api/admin/product", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          variants:
-            form.productType === "multi"
-              ? form.variants.filter((v) => v.title.trim())
-              : [],
-        }),
+      const validatedPayload = await productValidationSchema.validate(payload, {
+        abortEarly: false,
       });
+
+      setLoading(true);
+      setSubmittingStatus(requestedStatus);
+      const res = await fetch(
+        product ? `/api/admin/product/${product._id}` : "/api/admin/product",
+        {
+          method: product ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(validatedPayload),
+        },
+      );
 
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data?.error || "خطا در ذخیره محصول");
+        toast.error(
+          data?.error ||
+            (product ? "خطا در بروزرسانی محصول" : "خطا در ذخیره محصول"),
+        );
         return;
       }
 
-      toast.success("محصول با موفقیت ذخیره شد");
+      toast.success(
+        product
+          ? "محصول با موفقیت بروزرسانی شد"
+          : "محصول با موفقیت ذخیره شد",
+      );
       onSave?.(data);
       onClose();
     } catch (err) {
-      toast.error("خطا در ارتباط با سرور");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.category) {
-      toast.error("لطفاً دسته‌بندی محصول را انتخاب کنید");
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/admin/product/${product?._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          variants:
-            form.productType === "multi"
-              ? form.variants.filter((v) => v.title.trim())
-              : [],
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data?.error || "خطا در بروزرسانی محصول");
-        return;
+      if (err instanceof ValidationError) {
+        const messages = Array.from(new Set(err.errors));
+        toast.error(messages.join("، "));
+      } else {
+        toast.error("خطا در ارتباط با سرور");
       }
-
-      toast.success("محصول با موفقیت بروزرسانی شد");
-      onSave?.(data);
-      onClose();
-    } catch (err) {
-      toast.error("خطا در ارتباط با سرور");
     } finally {
       setLoading(false);
+      setSubmittingStatus(null);
     }
   };
 
@@ -233,7 +226,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
         </div>
 
         <form
-          onSubmit={product ? handleUpdate : handleSubmit}
+          onSubmit={handleSubmit}
           className="space-y-4 px-6 py-6"
         >
           <DrawerSection
@@ -357,25 +350,27 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
             <div className="flex gap-3">
               <button
                 type="submit"
-                onClick={() => updateField("status", "draft")}
+                name="status"
+                value="draft"
                 disabled={loading}
                 className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-amber-500/50 bg-amber-500/10 py-2 text-sm font-semibold text-amber-300 transition hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {loading && form.status === "draft" ? (
+                {loading && submittingStatus === "draft" ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : null}
                 ذخیره پیش‌نویس
               </button>
               <button
                 type="submit"
-                onClick={() => updateField("status", "published")}
+                name="status"
+                value="published"
                 disabled={loading}
                 className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-indigo-600 py-2 text-sm font-semibold transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {loading && form.status === "published" ? (
+                {loading && submittingStatus === "published" ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : null}
-                {loading && form.status === "published"
+                {loading && submittingStatus === "published"
                   ? product
                     ? "در حال بروزرسانی..."
                     : "در حال انتشار..."

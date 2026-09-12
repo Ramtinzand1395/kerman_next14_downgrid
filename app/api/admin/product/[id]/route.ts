@@ -14,6 +14,8 @@ import Notification from "@/model/Notification";
 import User from "@/model/User";
 import { validateCatalogReferences } from "@/lib/catalogReferences";
 import { deleteUnusedCloudinaryImages } from "@/lib/cloudinary";
+import { productValidationSchema } from "@/validations/validation";
+import { ValidationError as YupValidationError } from "yup";
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -32,7 +34,9 @@ export async function PUT(
     if (session.user.role !== "superadmin")
       return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
 
-    const body = await req.json();
+    const body = await productValidationSchema.validate(await req.json(), {
+      abortEarly: false,
+    });
     const catalogReferences = await validateCatalogReferences(
       body?.category,
       body?.tags,
@@ -153,6 +157,13 @@ export async function PUT(
     return NextResponse.json(Update);
   } catch (err: any) {
     console.error("❌ Product Update Error:", err);
+
+    if (err instanceof YupValidationError) {
+      return NextResponse.json(
+        { error: Array.from(new Set(err.errors)).join("، ") },
+        { status: 400 },
+      );
+    }
 
     // خطاهای اعتبارسنجی Mongoose را به پیام فارسی تبدیل می‌کنیم
     if (err?.name === "ValidationError" && err?.errors) {
