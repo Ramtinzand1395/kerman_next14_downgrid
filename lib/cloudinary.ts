@@ -3,6 +3,7 @@ import {
   type UploadApiErrorResponse,
   type UploadApiResponse,
 } from "cloudinary";
+import { Types } from "mongoose";
 
 import Blog from "@/model/Blog";
 import Product from "@/model/Product";
@@ -98,16 +99,20 @@ const isReferencedElsewhere = async (
   url: string,
   { excludeBlogId, excludeProductId }: DeletionContext,
 ) => {
-  const productFilter: Record<string, unknown> = {
+  // Use the native collection here so legacy string entries in `images` do
+  // not get cast as embedded documents by Mongoose before the query runs.
+  const productFilter: Record<string, any> = {
     $or: [{ mainImage: url }, { "images.url": url }, { images: url }],
   };
   const blogFilter: Record<string, unknown> = { coverImage: url };
 
-  if (excludeProductId) productFilter._id = { $ne: excludeProductId };
+  if (excludeProductId && Types.ObjectId.isValid(excludeProductId)) {
+    productFilter._id = { $ne: new Types.ObjectId(excludeProductId) };
+  }
   if (excludeBlogId) blogFilter._id = { $ne: excludeBlogId };
 
   const [productReference, blogReference] = await Promise.all([
-    Product.exists(productFilter),
+    Product.collection.findOne(productFilter, { projection: { _id: 1 } }),
     Blog.exists(blogFilter),
   ]);
 
