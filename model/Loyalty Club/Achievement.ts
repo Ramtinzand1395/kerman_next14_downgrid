@@ -3,7 +3,7 @@
 import mongoose, { Schema, model, Document } from "mongoose";
 import { MISSION_METRICS, MissionMetric } from "@/types/loyalty";
 
-export interface IAchievement extends Document {
+interface IAchievement extends Document {
   code: string; // مثل first_purchase, loyal_customer, collector
   title: string;
   description?: string;

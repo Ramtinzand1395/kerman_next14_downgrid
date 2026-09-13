@@ -1,6 +1,6 @@
 import { Customer, storeOrder } from "@/types";
 
-export const STORE_ORDER_DRAFT_KEY = "store-order-draft";
+const STORE_ORDER_DRAFT_KEY = "store-order-draft";
 
 export type StoreOrderDraft = {
   activeStep?: number;

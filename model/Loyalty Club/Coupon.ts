@@ -64,7 +64,7 @@
 // model/Coupon.ts
 // کوپن تخفیف — عمومی/خصوصی، درصدی/مبلغ ثابت، با محدودیت‌های استفاده، تاریخ، محصول و دسته‌بندی.
 
-import mongoose, { Schema, model, models, HydratedDocument } from "mongoose";
+import mongoose, { Schema, model, models } from "mongoose";
 
 import {
   COUPON_TYPES,
@@ -140,7 +140,6 @@ export interface ICoupon {
   updatedAt: Date;
 }
 
-export type CouponDocument = HydratedDocument<ICoupon>;
 
 const CouponSchema = new Schema<ICoupon>(
   {

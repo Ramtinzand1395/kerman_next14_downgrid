@@ -3,7 +3,7 @@
 import mongoose, { Schema, model, Document } from "mongoose";
 import { XP_REASONS, XpReason } from "@/types/loyalty";
 
-export interface ICampaign extends Document {
+interface ICampaign extends Document {
   title: string;
   description?: string;
   /** ضریب XP در طول کمپین (مثلاً ۲ = دوبرابر) */

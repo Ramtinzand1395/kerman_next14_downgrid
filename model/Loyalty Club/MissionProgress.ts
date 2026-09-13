@@ -3,7 +3,7 @@
 // یکتایی (user, mission, periodKey) جلوی دریافت پاداش تکراری در یک دوره را می‌گیرد.
 import mongoose, { Schema, model, Document } from "mongoose";
 
-export interface IMissionProgress extends Document {
+interface IMissionProgress extends Document {
   user: mongoose.Types.ObjectId;
   mission: mongoose.Types.ObjectId;
   /**

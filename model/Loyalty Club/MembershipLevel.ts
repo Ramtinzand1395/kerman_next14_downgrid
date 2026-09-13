@@ -4,7 +4,7 @@
 import mongoose, { Schema, model, Document } from "mongoose";
 import { LEVEL_CODES, VIP_TIERS, LevelCode, VipTier } from "@/types/loyalty";
 
-export interface IMembershipBenefits {
+interface IMembershipBenefits {
   /** درصد کش‌بک اضافه */
   cashbackBonusPercent: number;
   /** درصد تخفیف اختصاصی */
@@ -19,7 +19,7 @@ export interface IMembershipBenefits {
   periodicGift: boolean;
 }
 
-export interface IMembershipLevel extends Document {
+interface IMembershipLevel extends Document {
   kind: "level" | "vip";
   code: LevelCode | VipTier;
   titleFa: string;

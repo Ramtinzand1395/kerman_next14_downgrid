@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { toast } from "react-toastify";
 import {
   Edit2,
@@ -216,10 +217,12 @@ export default function BlogsAdminPage() {
 
             <div className="relative h-32 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
               {previewImage ? (
-                <img
+                <Image
                   src={previewImage}
                   alt="پیش‌نمایش تصویر"
-                  className="h-full w-full object-cover"
+                  fill
+                  unoptimized
+                  className="object-cover"
                 />
               ) : (
                 <div className="flex h-full items-center justify-center gap-1 text-xs text-gray-500">

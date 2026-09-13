@@ -1,6 +1,6 @@
 import mongoose, { Document, model, Schema } from "mongoose";
 
-export interface IWalletPaymentAttempt extends Document {
+interface IWalletPaymentAttempt extends Document {
   fingerprint: string;
   user: mongoose.Types.ObjectId;
   status: "processing" | "completed" | "failed";

@@ -7,7 +7,7 @@ export interface User {
   createdAt?: string;
 }
 
-export interface Product {
+interface Product {
   _id: string;
   title: string;
   sku: string;
@@ -24,7 +24,7 @@ export interface Comment {
   product: Product;
 }
 
-export interface Order {
+interface Order {
   _id: string;
   orderNumber: string;
   totalAmount: number;
@@ -33,7 +33,7 @@ export interface Order {
   createdAt: string;
 }
 
-export interface CustomerGameOrderProduct {
+interface CustomerGameOrderProduct {
   name: string;
   platform?: string;
   price?: number;
@@ -41,13 +41,13 @@ export interface CustomerGameOrderProduct {
   gameType?: string;
 }
 
-export type CustomerGameOrderStatus =
+type CustomerGameOrderStatus =
   | "pending"
   | "confirmed"
   | "rejected"
   | "completed";
 
-export interface CustomerGameOrderAddress {
+interface CustomerGameOrderAddress {
   province: string;
   city: string;
   address: string;
@@ -77,7 +77,7 @@ export interface CustomerGameOrder {
 }
 
 // Target union
-export type Target =
+type Target =
   | { kind: "Comment"; item: Comment }
   | { kind: "User"; item: User }
   | { kind: "Product"; item: Product }

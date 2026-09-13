@@ -61,14 +61,6 @@ export const couponCreateSchema = z.object({
 });
 export const couponUpdateSchema = couponCreateSchema.partial();
 
-export const validateCouponSchema = z.object({
-  code: z.string().min(1, "کد تخفیف را وارد کنید"),
-  orderAmount: z.number().min(0),
-  items: z
-    .array(z.object({ productId: objectId, categoryIds: z.array(objectId).optional() }))
-    .optional(),
-});
-
 // ---- ماموریت ----
 export const missionSchema = z.object({
   title: z.string().min(2).max(120),

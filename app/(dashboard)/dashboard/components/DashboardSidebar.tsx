@@ -42,7 +42,7 @@ interface NavItem {
   children?: NavItem[];
 }
 
-export const navItems: NavItem[] = [
+const navItems: NavItem[] = [
   { label: "بازگشت به سایت", href: "/", icon: Home },
   { label: "داشبورد", href: "/dashboard", icon: Layers3 },
   { label: "پیام‌ها", href: "/dashboard/inbox", icon: Inbox },

@@ -323,7 +323,10 @@ export default function GameOrderSelector() {
     [selectedConsoleId],
   );
 
-  const selectedPlatforms = selectedConsole?.platforms || [];
+  const selectedPlatforms = useMemo(
+    () => selectedConsole?.platforms ?? [],
+    [selectedConsole],
+  );
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(search), 300);

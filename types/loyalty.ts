@@ -128,4 +128,3 @@ export const LOYALTY_NOTIF_TYPES = [
   "spin_reward", // جایزه گردونه
   "referral_reward", // پاداش معرفی
 ] as const;
-export type LoyaltyNotifType = (typeof LOYALTY_NOTIF_TYPES)[number];

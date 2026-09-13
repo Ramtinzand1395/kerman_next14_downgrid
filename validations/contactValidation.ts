@@ -59,5 +59,3 @@ export const contactMessageSchema = z
       .pipe(z.string().max(CONTACT_LIMITS.message.max, "متن پیام بیش از حد طولانی است.")),
   })
   .strict();
-
-export type ContactMessageInput = z.infer<typeof contactMessageSchema>;

@@ -23,7 +23,7 @@ export interface CouponValidation {
   discountAmount?: number;
 }
 
-export function computeDiscount(
+function computeDiscount(
   coupon: Pick<ICoupon, "type" | "value" | "maxDiscountAmount">,
   orderAmount: number,
 ): number {

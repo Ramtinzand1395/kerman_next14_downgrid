@@ -2,7 +2,7 @@
 // زنجیره ورود روزانه — آخرین روز ورود و طول زنجیره؛ با عدم ورود یک روز، ریست می‌شود.
 import mongoose, { Schema, model, Document } from "mongoose";
 
-export interface ILoginStreak extends Document {
+interface ILoginStreak extends Document {
   user: mongoose.Types.ObjectId;
   /** طول زنجیره فعلی (روز) */
   currentStreak: number;

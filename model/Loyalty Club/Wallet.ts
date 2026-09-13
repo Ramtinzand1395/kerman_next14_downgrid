@@ -3,7 +3,7 @@
 // نکته امنیتی: موجودی فقط از طریق WalletService و داخل تراکنش اتمیک تغییر می‌کند.
 import mongoose, { Schema, model, Document } from "mongoose";
 
-export interface IWallet extends Document {
+interface IWallet extends Document {
   user: mongoose.Types.ObjectId;
   /** موجودی فعلی (تومان) */
   balance: number;

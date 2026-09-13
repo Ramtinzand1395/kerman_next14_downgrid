@@ -1,11 +1,4 @@
-// validationSchemas.ts
 import * as Yup from "yup";
-
-export const searchSchema = Yup.object().shape({
-  mobile: Yup.string()
-    .required("شماره موبایل الزامی است")
-    .matches(/^09\d{9}$/, "شماره موبایل معتبر نیست"),
-});
 
 export const customerSchema = Yup.object().shape({
   lastName: Yup.string().required("نام خانوادگی الزامی است"),

@@ -33,7 +33,7 @@ export type ProfileFormPayload = {
   newsletter: boolean;
 };
 
-export interface User {
+interface User {
   _id: string;
   username: string;
   email: string;
@@ -53,14 +53,14 @@ export interface User {
   favorites: Favorite;
 }
 
-export interface OTP {
+interface OTP {
   id: number;
   mobile: string;
   otp: number;
   createdAt: string | Date;
 }
 // !برای فرم محصول
-export interface ProductFaq {
+interface ProductFaq {
   question: string;
   answer: string;
 }
@@ -107,7 +107,7 @@ export interface Customer {
   description: string;
 }
 export type ConsoleType = "ps5" | "ps4" | "xbox" | "copy" | "ps5Copy";
-export interface StoreOrder {
+interface StoreOrder {
   _id: string;
   list: GameItem[];
   totalSize?: number;
@@ -210,7 +210,7 @@ export interface Tag {
   name: string;
   slug: string;
 }
-export interface Favorite {
+interface Favorite {
   _id: number;
   userId: number;
   productId: number;
@@ -218,7 +218,7 @@ export interface Favorite {
   user: User;
   product: Product;
 }
-export interface OrderItem {
+interface OrderItem {
   _id: string;
   orderId: number;
   productId: number;
@@ -287,7 +287,7 @@ export interface Specification {
   items: SpecificationItem[];
 }
 
-export interface SpecificationItem {
+interface SpecificationItem {
   _id: string;
   key: string;
   value: string;
@@ -309,28 +309,3 @@ export interface BlogPost {
   focusKeyword?: string[];
 }
 
-export type CustomerOrderStatus =
-  | "pending"
-  | "confirmed"
-  | "rejected"
-  | "completed";
-
-export interface CustomerOrderProduct {
-  name: string;
-  platform?: string;
-  price?: number;
-  size?: number;
-}
-
-export interface CustomerOrder {
-  _id: string;
-  customerName: string;
-  phone: string;
-  address: string;
-  message?: string;
-  products: CustomerOrderProduct[];
-  totalPrice: number;
-  status: CustomerOrderStatus;
-  createdAt: string;
-  updatedAt: string;
-}

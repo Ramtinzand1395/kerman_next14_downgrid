@@ -3,7 +3,7 @@
 import mongoose, { Schema, model, Document } from "mongoose";
 import { LEVEL_CODES, VIP_TIERS, LevelCode, VipTier } from "@/types/loyalty";
 
-export interface IMembershipHistory extends Document {
+interface IMembershipHistory extends Document {
   user: mongoose.Types.ObjectId;
   kind: "level" | "vip";
   from: LevelCode | VipTier | null;

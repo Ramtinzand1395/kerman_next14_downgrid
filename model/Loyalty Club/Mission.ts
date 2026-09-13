@@ -3,7 +3,7 @@
 import mongoose, { Schema, model, Document } from "mongoose";
 import { MISSION_PERIODS, MISSION_METRICS, MissionPeriod, MissionMetric } from "@/types/loyalty";
 
-export interface IMissionReward {
+interface IMissionReward {
   xp: number;
   /** اعتبار کیف پول (تومان) */
   walletCredit: number;

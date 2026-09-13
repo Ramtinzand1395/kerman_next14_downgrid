@@ -2,7 +2,7 @@
 // لاگ حسابرسی تمام عملیات مالی — جدا از تراکنش‌ها؛ حتی عملیات ناموفق هم لاگ می‌شوند.
 import mongoose, { Schema, model, Document } from "mongoose";
 
-export interface IWalletLog extends Document {
+interface IWalletLog extends Document {
   wallet?: mongoose.Types.ObjectId;
   user?: mongoose.Types.ObjectId;
   action: string; // مثل charge_attempt, debit, credit, refund, expire, lock_fail

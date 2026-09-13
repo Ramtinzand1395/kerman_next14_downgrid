@@ -6,7 +6,7 @@ import AuthProvider from "@/app/AuthProvider";
 import DashboardSidebar from "./components/DashboardSidebar";
 import DashboardTopbar from "./components/DashboardTopbar";
 const vazir = localFont({
-  src: "./Vazir.woff2",
+  src: "../../Vazir.woff2",
   display: "swap",
 });
 

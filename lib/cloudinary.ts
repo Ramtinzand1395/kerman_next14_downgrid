@@ -60,7 +60,7 @@ export const uploadCloudinaryImage = (buffer: Buffer) => {
  * Extracts the public ID from the original secure_url returned by an unsigned
  * Cloudinary image upload. Non-Cloudinary URLs are intentionally ignored.
  */
-export const getCloudinaryPublicId = (value: string) => {
+const getCloudinaryPublicId = (value: string) => {
   try {
     const url = new URL(value);
     const parts = url.pathname.split("/").filter(Boolean);

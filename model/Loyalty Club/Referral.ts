@@ -2,7 +2,7 @@
 // سیستم معرفی دوستان — هر کاربر یک کد دعوت دارد (روی User) و هر ثبت‌نام موفق یک رکورد Referral.
 import mongoose, { Schema, model, Document } from "mongoose";
 
-export interface IReferral extends Document {
+interface IReferral extends Document {
   /** معرف */
   referrer: mongoose.Types.ObjectId;
   /** کاربر دعوت‌شده */

@@ -1,6 +1,6 @@
 import mongoose, { Schema, model, Document } from "mongoose";
 
-export interface IOtp extends Document {
+interface IOtp extends Document {
   mobile: string;
   otp: string;
   createdAt: Date;

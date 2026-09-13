@@ -2,7 +2,7 @@
 // نشان‌های کسب‌شده توسط هر کاربر — یکتایی (user, achievement) جلوی اعطای تکراری.
 import mongoose, { Schema, model, Document } from "mongoose";
 
-export interface IUserAchievement extends Document {
+interface IUserAchievement extends Document {
   user: mongoose.Types.ObjectId;
   achievement: mongoose.Types.ObjectId;
   /** اسنپ‌شات عنوان و آیکون برای نمایش سریع بدون join */

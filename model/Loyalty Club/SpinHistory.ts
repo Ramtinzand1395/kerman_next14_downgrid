@@ -36,7 +36,7 @@ export const SpinPrize =
   mongoose.models.SpinPrize || model<ISpinPrize>("SpinPrize", SpinPrizeSchema);
 
 // ---- تاریخچه چرخش ----
-export interface ISpinHistory extends Document {
+interface ISpinHistory extends Document {
   user: mongoose.Types.ObjectId;
   /** کلید روز (مثل 2026-07-28) — یکتایی (user, dayKey) یعنی هر روز یک چرخش */
   dayKey: string;

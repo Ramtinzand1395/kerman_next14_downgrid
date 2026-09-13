@@ -7,30 +7,28 @@ interface DiscountTimerProps {
   endDate: string; // تاریخ پایان به صورت ISO string
 }
 
+const calculateTimeLeft = (endDate: string) => {
+  const difference = new Date(endDate).getTime() - Date.now();
+  if (difference <= 0) return null;
+
+  return {
+    days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+    hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+    minutes: Math.floor((difference / 1000 / 60) % 60),
+    seconds: Math.floor((difference / 1000) % 60),
+  };
+};
+
 export default function DiscountTimer({ endDate }: DiscountTimerProps) {
   const [mounted, setMounted] = useState(false);
-  const calculateTimeLeft = () => {
-    const difference = new Date(endDate).getTime() - new Date().getTime();
-    if (difference > 0) {
-      return {
-        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-        minutes: Math.floor((difference / 1000 / 60) % 60),
-        seconds: Math.floor((difference / 1000) % 60),
-      };
-    } else {
-      return null;
-    }
-  };
-
   const [timeLeft, setTimeLeft] =
     useState<ReturnType<typeof calculateTimeLeft>>(null);
 
   useEffect(() => {
     setMounted(true);
-    setTimeLeft(calculateTimeLeft());
+    setTimeLeft(calculateTimeLeft(endDate));
     const timer = setInterval(() => {
-      setTimeLeft(calculateTimeLeft());
+      setTimeLeft(calculateTimeLeft(endDate));
     }, 1000);
     return () => clearInterval(timer);
   }, [endDate]);

@@ -12,7 +12,7 @@ import { credit } from "./wallet.service";
 import { grantXp, getSettings } from "./experience.service";
 
 /** ساخت کد دعوت خوانا و یکتا: KA-XXXXXX */
-export function generateReferralCode(): string {
+function generateReferralCode(): string {
   return `KA-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
 }
 

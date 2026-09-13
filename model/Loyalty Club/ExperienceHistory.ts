@@ -3,7 +3,7 @@
 import mongoose, { Schema, model, Document } from "mongoose";
 import { XP_REASONS, XpReason } from "@/types/loyalty";
 
-export interface IExperienceHistory extends Document {
+interface IExperienceHistory extends Document {
   user: mongoose.Types.ObjectId;
   amount: number; // مثبت = اعطا، منفی = کسر (توسط مدیر)
   reason: XpReason;

@@ -2,7 +2,7 @@ import mongoose, { Schema, model, Document } from "mongoose";
 import { VIP_TIERS, VipTier } from "@/types/loyalty";
 
 // تعریف interface TypeScript
-export interface IUser extends Document {
+interface IUser extends Document {
   username?: string;
   email?: string;
   mobile: string;

@@ -4,7 +4,7 @@
 import mongoose, { Schema, model, Document } from "mongoose";
 import { LEVEL_CODES, LevelCode } from "@/types/loyalty";
 
-export interface IExperience extends Document {
+interface IExperience extends Document {
   user: mongoose.Types.ObjectId;
   /** مجموع XP فعلی (هرگز منفی نمی‌شود) */
   totalXp: number;
