@@ -5,7 +5,7 @@
 // - رسیدن به هدف → completed؛ پرداخت پاداش با claimMissionReward (idempotent) انجام می‌شود.
 import Mission, { IMission } from "@/model/Loyalty Club/Mission";
 import MissionProgress from "@/model/Loyalty Club/MissionProgress";
-import Notification from "@/model/Notification";
+import { notifyUser } from "@/lib/notifications/service";
 import { credit } from "./wallet.service";
 import { grantXp } from "./experience.service";
 import { MissionMetric } from "@/types/loyalty";
@@ -60,13 +60,16 @@ export async function trackEvent(input: TrackEventInput): Promise<void> {
         { returnDocument: "after" },
       );
       if (completed) {
-        await Notification.create({
+        await notifyUser({
+          userId: input.userId,
           title: "تکمیل ماموریت",
           message: `ماموریت «${mission.title}» را تکمیل کردید! پاداش شما به‌زودی اعمال می‌شود.`,
           type: "mission_complete",
-          for: "user",
-          user: input.userId,
-          target: { kind: "Mission", item: mission._id },
+          category: "loyalty",
+          entityType: "Mission",
+          entityId: mission._id,
+          link: "/my-profile?step=9",
+          eventKey: `MISSION_COMPLETE:${progress._id}`,
         }).catch(() => {});
         // پاداش به‌صورت خودکار پرداخت می‌شود (بدون نیاز به کلیک کاربر)
         await claimMissionReward(input.userId, mission, key);

@@ -1,0 +1,53 @@
+import { LOYALTY_NOTIF_TYPES } from "@/types/loyalty";
+
+export const NOTIFICATION_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
+export type NotificationPriority = (typeof NOTIFICATION_PRIORITIES)[number];
+
+export const NOTIFICATION_SENDER_TYPES = ["system", "admin", "user"] as const;
+export type NotificationSenderType = (typeof NOTIFICATION_SENDER_TYPES)[number];
+
+export const NOTIFICATION_CATEGORIES = [
+  "order",
+  "payment",
+  "wallet",
+  "inventory",
+  "support",
+  "account",
+  "request",
+  "loyalty",
+  "system",
+] as const;
+export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number];
+
+export const NOTIFICATION_TYPES = {
+  ORDER_CREATED: "ORDER_CREATED",
+  ORDER_CONFIRMED: "ORDER_CONFIRMED",
+  ORDER_PROCESSING: "ORDER_PROCESSING",
+  ORDER_SHIPPED: "ORDER_SHIPPED",
+  ORDER_COMPLETED: "ORDER_COMPLETED",
+  ORDER_CANCELLED: "ORDER_CANCELLED",
+  PAYMENT_SUCCESS: "PAYMENT_SUCCESS",
+  PAYMENT_FAILED: "PAYMENT_FAILED",
+  PAYMENT_REVIEW_REQUIRED: "PAYMENT_REVIEW_REQUIRED",
+  WALLET_CHARGED: "WALLET_CHARGED",
+  WALLET_DEBITED: "WALLET_DEBITED",
+  WALLET_REFUNDED: "WALLET_REFUNDED",
+  WALLET_ADJUSTED: "WALLET_ADJUSTED",
+  NEW_ORDER_ADMIN: "NEW_ORDER_ADMIN",
+  PRODUCT_LOW_STOCK: "PRODUCT_LOW_STOCK",
+  PRODUCT_OUT_OF_STOCK: "PRODUCT_OUT_OF_STOCK",
+  SUPPORT_MESSAGE: "SUPPORT_MESSAGE",
+  SUPPORT_REPLY: "SUPPORT_REPLY",
+  USER_REGISTERED: "USER_REGISTERED",
+  ADMIN_MESSAGE: "ADMIN_MESSAGE",
+  SYSTEM_NOTIFICATION: "SYSTEM_NOTIFICATION",
+  REQUEST_CREATED: "REQUEST_CREATED",
+  REQUEST_STATUS_CHANGED: "REQUEST_STATUS_CHANGED",
+  COMMENT_CREATED: "COMMENT_CREATED",
+  COMMENT_APPROVED: "COMMENT_APPROVED",
+  ...Object.fromEntries(LOYALTY_NOTIF_TYPES.map((type) => [type.toUpperCase(), type])),
+} as const;
+
+export type NotificationType = (typeof NOTIFICATION_TYPES)[keyof typeof NOTIFICATION_TYPES];
+
+export const ADMIN_DATABASE_ROLES = ["admin", "superadmin"] as const;

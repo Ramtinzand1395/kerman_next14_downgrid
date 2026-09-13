@@ -7,6 +7,7 @@ import { authOptions } from "../../auth/[...nextauth]/options";
 import "@/model/Address";
 import "@/model/User";
 import "@/model/Product";
+import { notifyUser } from "@/lib/notifications/service";
 
 export async function GET(req: Request) {
   await dbConnect();
@@ -103,6 +104,31 @@ export async function PUT(req: NextRequest) {
     } catch (err) {
       console.error("[loyalty] refund on cancel failed:", err);
     }
+  }
+
+  const statusInfo: Record<string, { title: string; message: string; type: string; priority?: "high" }> = {
+    pending: { title: "سفارش در حال بررسی است", message: "سفارش شما در صف بررسی قرار دارد.", type: "ORDER_CREATED" },
+    processing: { title: "سفارش در حال آماده‌سازی است", message: "آماده‌سازی سفارش شما آغاز شد.", type: "ORDER_PROCESSING" },
+    shipped: { title: "سفارش ارسال شد", message: "سفارش شما تحویل واحد ارسال شد.", type: "ORDER_SHIPPED" },
+    delivered: { title: "سفارش تکمیل شد", message: "سفارش شما با موفقیت تکمیل شد.", type: "ORDER_COMPLETED" },
+    cancelled: { title: "سفارش لغو شد", message: "سفارش شما لغو شد. در صورت پرداخت، مبلغ به کیف پول بازمی‌گردد.", type: "ORDER_CANCELLED", priority: "high" },
+  };
+  const notification = statusInfo[status];
+  if (order.user && notification) {
+    await notifyUser({
+      userId: order.user,
+      title: notification.title,
+      message: notification.message,
+      type: notification.type,
+      category: "order",
+      entityType: "Order",
+      entityId: order._id,
+      link: "/my-profile?step=5",
+      priority: notification.priority,
+      senderType: "admin",
+      senderId: session.user.id,
+      eventKey: `ORDER_STATUS_CHANGED:${order._id}:${status}`,
+    }).catch((error) => console.error("[notifications] order-status event failed:", error));
   }
 
   return NextResponse.json(order);

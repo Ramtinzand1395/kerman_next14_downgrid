@@ -5,7 +5,7 @@
 // - اعمال جایزه idempotent بر اساس SpinHistory._id.
 import crypto from "crypto";
 import SpinHistory, { SpinPrize, ISpinPrize } from "@/model/Loyalty Club/SpinHistory";
-import Notification from "@/model/Notification";
+import { notifyUser } from "@/lib/notifications/service";
 import { credit } from "./wallet.service";
 import { grantXp, getSettings } from "./experience.service";
 import { dayKey } from "./dateKeys";
@@ -107,29 +107,35 @@ async function applyPrize(userId: string, historyId: string, prize: ISpinPrize) 
       if (prize.coupon) {
         const { default: Coupon } = await import("@/model/Loyalty Club/Coupon");
         await Coupon.updateOne({ _id: prize.coupon }, { $addToSet: { allowedUsers: userId } });
-        await Notification.create({
+        await notifyUser({
+          userId,
           title: "کد تخفیف گردونه",
           message: `کد تخفیف «${prize.title}» از گردونه شانس برای شما فعال شد.`,
           type: "spin_reward",
-          for: "user",
-          user: userId,
-          target: { kind: "SpinHistory", item: historyId as never },
+          category: "loyalty",
+          entityType: "SpinHistory",
+          entityId: historyId,
+          link: "/my-profile?step=10",
+          eventKey: `SPIN_REWARD:${historyId}`,
         }).catch(() => {});
       }
       break;
 
     case "free_shipping":
     case "special_gift":
-      await Notification.create({
+      await notifyUser({
+        userId,
         title: "جایزه گردونه شانس",
         message:
           prize.type === "free_shipping"
             ? "شما ارسال رایگان برای سفارش بعدی برنده شدید! هنگام ثبت سفارش اعمال می‌شود."
             : `شما «${prize.title}» برنده شدید! پشتیبانی به‌زودی با شما تماس می‌گیرد.`,
         type: "spin_reward",
-        for: "user",
-        user: userId,
-        target: { kind: "SpinHistory", item: historyId as never },
+        category: "loyalty",
+        entityType: "SpinHistory",
+        entityId: historyId,
+        link: "/my-profile?step=10",
+        eventKey: `SPIN_REWARD:${historyId}`,
       }).catch(() => {});
       break;
 

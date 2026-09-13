@@ -11,7 +11,7 @@ import mongoose from "mongoose";
 import Wallet from "@/model/Loyalty Club/Wallet";
 import WalletTransaction, { IWalletTransaction } from "@/model/Loyalty Club/WalletTransaction";
 import WalletLog from "@/model/Loyalty Club/WalletLog";
-import Notification from "@/model/Notification";
+import { notifyUser } from "@/lib/notifications/service";
 import { WalletTxType } from "@/types/loyalty";
 
 // ---------- انواع ورودی/خروجی ----------
@@ -224,15 +224,25 @@ export async function credit(input: CreditInput): Promise<WalletTxResult> {
 
     // اعلان بیرون از تراکنش (غیرحساس به rollback)
     if (result.ok && input.notify) {
-      await Notification.create({
+      await notifyUser({
+        userId,
         title: input.notify.title,
         message: input.notify.message,
-        type: type === "cashback" ? "cashback" : type === "gift" ? "gift" : "wallet_credit",
-        for: "user",
-        user: userId,
-        target: result.transaction
-          ? { kind: "WalletTransaction", item: result.transaction._id }
-          : undefined,
+        type:
+          type === "cashback"
+            ? "cashback"
+            : type === "gift"
+              ? "gift"
+              : type === "refund"
+                ? "WALLET_REFUNDED"
+                : type === "charge"
+                  ? "WALLET_CHARGED"
+                  : "wallet_credit",
+        category: "wallet",
+        entityType: result.transaction ? "WalletTransaction" : undefined,
+        entityId: result.transaction?._id,
+        link: "/my-profile?step=8",
+        eventKey: result.transaction ? `WALLET_CREDIT:${result.transaction._id}` : input.idempotencyKey,
       }).catch(() => {});
     }
 
@@ -418,12 +428,14 @@ export async function expireCredits(now = new Date()): Promise<{ expiredCount: n
         expiredCount++;
         totalAmount += creditItem.amount;
 
-        await Notification.create({
+        await notifyUser({
+          userId: wallet.user,
           title: "انقضای اعتبار",
           message: `مبلغ ${creditItem.amount.toLocaleString("fa-IR")} تومان از اعتبار کیف پول شما منقضی شد.`,
           type: "credit_expiry",
-          for: "user",
-          user: wallet.user,
+          category: "wallet",
+          link: "/my-profile?step=8",
+          eventKey: `CREDIT_EXPIRY:${key}`,
         }).catch(() => {});
       }
     }

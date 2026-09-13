@@ -1,6 +1,5 @@
 "use client";
 
-import { uploadCloudinaryImage } from "@/helpers/uploadCloudinaryImage";
 import { ProductForm } from "@/types";
 import Image from "next/image";
 import { useState } from "react";
@@ -13,31 +12,31 @@ interface GalleryUploaderProps {
     value: ProductForm[K],
   ) => void;
 }
-
 const GalleryUploader = ({ form, updateField }: GalleryUploaderProps) => {
-  const [loadingImage, setLoadingImage] = useState(false);
-
-  const handleMainImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-
-    setLoadingImage(true);
-    toast.info("در حال آپلود تصویر...");
-
-    try {
-      const url = await uploadCloudinaryImage(file);
-      updateField("mainImage", url);
-      toast.success("تصویر اصلی آپلود شد");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "خطا در آپلود تصویر");
-    } finally {
-      setLoadingImage(false);
-    }
+  const [LoadingImage, setLoadingImage] = useState(false);
+  const uploadToCloudinary = async (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_PRESET!);
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD}/image/upload`,
+      { method: "POST", body: fd },
+    );
+    const data = await res.json();
+    return data.secure_url;
   };
+  const handleMainImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLoadingImage(true);
 
-  if (loadingImage) return "در حال بارگذاری تصویر";
-
+    const file = e.target.files?.[0];
+    if (!file) return;
+    toast.info("در حال آپلود تصویر...");
+    const url = await uploadToCloudinary(file);
+    updateField("mainImage", url);
+    toast.success("تصویر اصلی آپلود شد");
+    setLoadingImage(false);
+  };
+  if (LoadingImage) return "درحال بارگزاری تصویر";
   return (
     <div>
       <div className="flex flex-col">
@@ -48,12 +47,12 @@ const GalleryUploader = ({ form, updateField }: GalleryUploaderProps) => {
             height={50}
             alt={form.mainImageAlt || form.title || "تصویر اصلی محصول"}
             src={form.mainImage}
-            className="mt-2 h-32 w-52 rounded object-contain"
+            className="w-52 h-32 object-contain mt-2 rounded"
           />
         )}
         <input
           title="تصویر اصلی"
-          className="w-fit rounded-2xl border-2 border-blue-500 p-2"
+          className="border-blue-500 border-2 rounded-2xl p-2 w-fit"
           type="file"
           accept="image/*"
           onChange={handleMainImage}

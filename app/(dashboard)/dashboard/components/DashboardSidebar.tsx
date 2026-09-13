@@ -6,7 +6,6 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
   Home,
-  Inbox,
   Users,
   Layers3,
   Tag,
@@ -20,12 +19,13 @@ import {
   Sparkles,
   ClipboardList,
   Trophy,
+  Bell,
 } from "lucide-react";
 import AddProductDrawer from "./drawers/AddProductDrawer";
 import AddCategoryDrawer from "./drawers/AddCategoryDrawer";
 import AddTagDrawer from "./drawers/AddTagDrawer";
 import { toast } from "react-toastify";
-// 
+
 type DrawerAction =
   | "addProduct"
   | "addGame"
@@ -42,10 +42,10 @@ interface NavItem {
   children?: NavItem[];
 }
 
-const navItems: NavItem[] = [
+export const navItems: NavItem[] = [
   { label: "بازگشت به سایت", href: "/", icon: Home },
   { label: "داشبورد", href: "/dashboard", icon: Layers3 },
-  { label: "پیام‌ها", href: "/dashboard/inbox", icon: Inbox },
+  { label: "اعلان‌ها", href: "/dashboard/notifications", icon: Bell },
   { label: "کاربران", href: "/dashboard/users", icon: Users },
   { label: "وبلاگ", href: "/dashboard/blogs", icon: Newspaper },
   { label: "باشگاه مشتریان", href: "/dashboard/loyalty", icon: Trophy },
@@ -78,6 +78,7 @@ export default function DashboardSidebar() {
     role === "admin"
       ? [
           { label: "بازگشت به سایت", href: "/", icon: Home },
+          { label: "اعلان‌ها", href: "/dashboard/notifications", icon: Bell },
           {
             label: "سفارشات",
             icon: ClipboardList,
@@ -108,12 +109,12 @@ export default function DashboardSidebar() {
   useEffect(() => {
     const countMsg = async () => {
       try {
-        const res = await fetch("/api/admin/notifications/unread");
-        if (!res.ok) throw new Error("خطا در دریافت پیام‌ها");
+        const res = await fetch("/api/notifications/unread-count");
+        if (!res.ok) throw new Error("خطا در دریافت اعلان‌ها");
         const data = await res.json();
-        setUnreadCount(Number(data) || 0);
+        setUnreadCount(Number(data.unreadCount) || 0);
       } catch {
-        toast.error("خطا در دریافت پیام‌ها");
+        toast.error("خطا در دریافت اعلان‌ها");
       }
     };
 
@@ -239,7 +240,7 @@ useEffect(() => {
                 <item.icon className="h-4 w-4" />
                 {expanded && item.label}
 
-                {item.label === "پیام‌ها" && unreadCount > 0 && (
+                {item.label === "اعلان‌ها" && unreadCount > 0 && (
                   <span className="mr-auto rounded-full bg-rose-500 px-2 py-0.5 text-xs text-white">
                     {unreadCount}
                   </span>

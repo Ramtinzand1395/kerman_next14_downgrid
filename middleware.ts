@@ -17,7 +17,8 @@ export default withAuth(
     }
 
     // admin فقط به مسیرهای store-order داشبورد دسترسی دارد
-    if (isDashboardPath && role === "admin" && !isStoreOrderPath) {
+    const isNotificationPath = pathname.startsWith("/dashboard/notifications");
+    if (isDashboardPath && role === "admin" && !isStoreOrderPath && !isNotificationPath) {
       return NextResponse.redirect(new URL("/dashboard/store-order", req.url));
     }
 
@@ -26,7 +27,7 @@ export default withAuth(
     }
 
     // --- مسیر /my-profile فقط برای کاربران وارد شده ---
-    if (pathname.startsWith("/my-profile") && !role) {
+    if ((pathname.startsWith("/my-profile") || pathname.startsWith("/notifications")) && !role) {
       return NextResponse.redirect(new URL("/auth/login", req.url));
     }
   },
@@ -38,5 +39,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/my-profile/:path*"], // مسیرهای محافظت شده
+  matcher: ["/dashboard/:path*", "/my-profile/:path*", "/notifications/:path*"], // مسیرهای محافظت شده
 };

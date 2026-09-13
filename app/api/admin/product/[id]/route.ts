@@ -13,9 +13,7 @@ import Favorite from "@/model/Favorite";
 import Notification from "@/model/Notification";
 import User from "@/model/User";
 import { validateCatalogReferences } from "@/lib/catalogReferences";
-import { deleteUnusedCloudinaryImages } from "@/lib/cloudinary";
-import { productValidationSchema } from "@/validations/validation";
-import { ValidationError as YupValidationError } from "yup";
+import { notifyLowInventory } from "@/lib/notifications/events";
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -34,9 +32,7 @@ export async function PUT(
     if (session.user.role !== "superadmin")
       return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
 
-    const body = await productValidationSchema.validate(await req.json(), {
-      abortEarly: false,
-    });
+    const body = await req.json();
     const catalogReferences = await validateCatalogReferences(
       body?.category,
       body?.tags,
@@ -89,18 +85,6 @@ export async function PUT(
       : [];
 
     const productType = body.productType === "multi" ? "multi" : "single";
-    const hasNegativeStock =
-      productType === "multi"
-        ? safeVariants.some((variant: { stock: number }) => variant.stock < 0)
-        : Number(body.stock || 0) < 0;
-
-    if (hasNegativeStock) {
-      return NextResponse.json(
-        { error: "موجودی محصول و تنوع‌ها نمی‌تواند منفی باشد." },
-        { status: 400 },
-      );
-    }
-
     const totalStock =
       productType === "multi"
         ? safeVariants.reduce(
@@ -120,50 +104,24 @@ export async function PUT(
      images: safeGalleryImages,
       faqs: safeFaqs,
     };
-
-    const existingProduct = await Product.findById(id);
-    if (!existingProduct) {
-      return NextResponse.json({ error: "محصول پیدا نشد" }, { status: 404 });
-    }
-
-    // Validate the new database state before permanently deleting old assets.
-    const validationCandidate = new Product({
-      ...existingProduct.toObject(),
-      ...productData,
-      _id: id,
-    });
-    await validationCandidate.validate();
-
-    const previousImageUrls = [
-      existingProduct.mainImage,
-      ...(existingProduct.images || []).map((image: any) =>
-        typeof image === "string" ? image : image.url,
-      ),
-    ].filter(Boolean);
-    const nextImageUrls = new Set([
-      String(productData.mainImage || ""),
-      ...safeGalleryImages.map((image: any) => image.url),
-    ]);
-
-    await deleteUnusedCloudinaryImages(
-      previousImageUrls.filter((url: string) => !nextImageUrls.has(url)),
-      { excludeProductId: id },
-    );
-
+    const previousProduct = await Product.findById(id).select("stock status").lean();
     const Update = await Product.findByIdAndUpdate(id, productData, {
       returnDocument: "after",
       runValidators: true,
     });
+    if (
+      Update?.status === "published" &&
+      Number(Update.stock) <= 5 &&
+      (Number(previousProduct?.stock) !== Number(Update.stock) ||
+        previousProduct?.status !== "published")
+    ) {
+      await notifyLowInventory([Update._id]).catch((error) =>
+        console.error("[notifications] product inventory event failed:", error),
+      );
+    }
     return NextResponse.json(Update);
   } catch (err: any) {
     console.error("❌ Product Update Error:", err);
-
-    if (err instanceof YupValidationError) {
-      return NextResponse.json(
-        { error: Array.from(new Set(err.errors)).join("، ") },
-        { status: 400 },
-      );
-    }
 
     // خطاهای اعتبارسنجی Mongoose را به پیام فارسی تبدیل می‌کنیم
     if (err?.name === "ValidationError" && err?.errors) {
@@ -232,9 +190,7 @@ export async function DELETE(
       return NextResponse.json({ error: "آی‌دی نامعتبر است" }, { status: 400 });
     }
 
-    const product = await Product.findById(id)
-      .select("_id mainImage images")
-      .lean();
+    const product = await Product.findById(id).select("_id").lean();
     if (!product) {
       return NextResponse.json({ error: "محصول پیدا نشد" }, { status: 404 });
     }
@@ -258,17 +214,6 @@ export async function DELETE(
         { status: 409 },
       );
     }
-
-    const productImageUrls = [
-      product.mainImage,
-      ...(product.images || []).map((image: any) =>
-        typeof image === "string" ? image : image.url,
-      ),
-    ];
-
-    await deleteUnusedCloudinaryImages(productImageUrls, {
-      excludeProductId: id,
-    });
 
     const [comments, favorites] = await Promise.all([
       Comment.find({ product: id }).select("_id").lean(),

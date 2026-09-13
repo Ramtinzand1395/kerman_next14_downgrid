@@ -3,12 +3,12 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/options";
 import { NextResponse } from "next/server";
 import Order from "@/model/Order";
-import Notification from "@/model/Notification";
 import User from "@/model/User";
 import Address from "@/model/Address";
 import Product from "@/model/Product";
 import mongoose from "mongoose";
 import { createAddressSnapshot } from "@/lib/addressSnapshot";
+import { notifyAdmins, notifyUser } from "@/lib/notifications/service";
 
 interface OrderItem {
   productId: string;
@@ -183,15 +183,30 @@ export async function POST(req: Request) {
       $push: { orders: order._id },
     });
 
-    await Notification.create({
-      title: "سفارش جدید",
-      message: "یک سفارش جدید ثبت شد",
-      type: "order",
-      target: {
-        kind: "Order",
-        item: order._id,
-      },
-    });
+    await Promise.all([
+      notifyUser({
+        userId: session.user.id,
+        title: "سفارش شما ثبت شد",
+        message: "سفارش شما ثبت شد و در انتظار پرداخت یا بررسی است.",
+        type: "ORDER_CREATED",
+        category: "order",
+        entityType: "Order",
+        entityId: order._id,
+        link: "/my-profile?step=5",
+        eventKey: `ORDER_CREATED:${order._id}`,
+      }),
+      notifyAdmins({
+        title: "سفارش جدید ثبت شد",
+        message: `سفارش جدید به مبلغ ${Number(order.finalPrice).toLocaleString("fa-IR")} تومان ثبت شد.`,
+        type: "NEW_ORDER_ADMIN",
+        category: "order",
+        entityType: "Order",
+        entityId: order._id,
+        link: "/dashboard/orders",
+        priority: "high",
+        eventKey: `NEW_ORDER_ADMIN:${order._id}`,
+      }),
+    ]).catch((error) => console.error("[notifications] order-created event failed:", error));
 
     return NextResponse.json(order);
   } catch (error) {

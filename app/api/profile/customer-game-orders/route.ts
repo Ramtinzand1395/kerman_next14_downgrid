@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import dbConnect from "@/lib/mongodb";
 import CustomerGameOrder from "@/model/CustomerGameOrder";
-import Notification from "@/model/Notification";
+import { notifyAdmins, notifyUser } from "@/lib/notifications/service";
 import User from "@/model/User";
 import Address from "@/model/Address";
 import { authOptions } from "../../auth/[...nextauth]/options";
@@ -218,18 +218,30 @@ export async function POST(req: NextRequest) {
       throw error;
     }
 
-    await Notification.create({
-      title: "سفارش بازی جدید",
-      message: `یک سفارش بازی جدید از ${user.username}`,
-      type: "customerGameOrder",
-      for: "admin",
-      isRead: false,
-      user: user._id,
-      target: {
-        kind: "CustomerGameOrder",
-        item: order._id,
-      },
-    });
+    await Promise.all([
+      notifyUser({
+        userId: user._id,
+        title: "درخواست شما ثبت شد",
+        message: "درخواست سفارش بازی شما ثبت شد و در انتظار بررسی است.",
+        type: "REQUEST_CREATED",
+        category: "request",
+        entityType: "CustomerGameOrder",
+        entityId: order._id,
+        link: "/my-profile?step=5",
+        eventKey: `REQUEST_CREATED:${order._id}`,
+      }),
+      notifyAdmins({
+        title: "سفارش بازی جدید",
+        message: `یک سفارش بازی جدید از ${user.username || user.mobile} ثبت شد.`,
+        type: "REQUEST_CREATED",
+        category: "request",
+        entityType: "CustomerGameOrder",
+        entityId: order._id,
+        link: "/dashboard/notifications",
+        priority: "high",
+        eventKey: `ADMIN_REQUEST_CREATED:${order._id}`,
+      }),
+    ]).catch((error) => console.error("[notifications] request-created event failed:", error));
 
     return NextResponse.json(
       { message: "سفارش با موفقیت ثبت شد.", order, reused: false },

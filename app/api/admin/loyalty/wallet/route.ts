@@ -7,6 +7,7 @@ import { credit, debit } from "@/lib/loyalty/wallet.service";
 import { adminAdjustSchema, adminGiftSchema } from "@/validations/loyalty.validation";
 import { getSettings } from "@/lib/loyalty/experience.service";
 import crypto from "crypto";
+import { notifyUser } from "@/lib/notifications/service";
 
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin();
@@ -93,5 +94,17 @@ export async function PATCH(req: Request) {
         
 
   if (!result.ok) return fail(result.error ?? "خطا در تعدیل", 400);
+  await notifyUser({
+    userId: data!.userId,
+    title: "موجودی کیف پول اصلاح شد",
+    message: `موجودی کیف پول شما توسط مدیریت ${data!.amount > 0 ? "افزایش" : "کاهش"} یافت (${Math.abs(data!.amount).toLocaleString("fa-IR")} تومان).${data!.description ? ` ${data!.description}` : ""}`,
+    type: "WALLET_ADJUSTED",
+    category: "wallet",
+    link: "/my-profile?step=8",
+    priority: "high",
+    senderType: "admin",
+    senderId: auth.userId,
+    eventKey: `WALLET_ADJUSTED:${key}`,
+  }).catch(() => undefined);
   return ok({ balance: result.balance });
 }

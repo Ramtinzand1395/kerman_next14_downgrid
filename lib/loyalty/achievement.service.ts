@@ -7,7 +7,7 @@ import User from "@/model/User";
 import Referral from "@/model/Loyalty Club/Referral";
 import Comment from "@/model/Comment";
 import LoginStreak from "@/model/Loyalty Club/LoginStreak";
-import Notification from "@/model/Notification";
+import { notifyUser } from "@/lib/notifications/service";
 import { grantXp } from "./experience.service";
 import { MissionMetric } from "@/types/loyalty";
 
@@ -74,13 +74,16 @@ export async function checkAchievements(userId: string): Promise<string[]> {
       });
     }
 
-    await Notification.create({
+    await notifyUser({
+      userId,
       title: "نشان جدید",
       message: `تبریک! نشان «${a.title}» را کسب کردید.`,
       type: "achievement",
-      for: "user",
-      user: userId,
-      target: { kind: "Achievement", item: a._id },
+      category: "loyalty",
+      entityType: "Achievement",
+      entityId: a._id,
+      link: "/my-profile?step=9",
+      eventKey: `ACHIEVEMENT:${a._id}:${userId}`,
     }).catch(() => {});
   }
 

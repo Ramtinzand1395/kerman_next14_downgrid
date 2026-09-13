@@ -1,6 +1,6 @@
 import dbConnect from "@/lib/mongodb";
 import ContactMessage from "@/model/ContactMessage";
-import Notification from "@/model/Notification";
+import { notifyAdmins } from "@/lib/notifications/service";
 import { contactMessageSchema } from "@/validations/contactValidation";
 import { NextResponse } from "next/server";
 
@@ -56,17 +56,17 @@ export async function POST(req: Request) {
       message,
     });
 
-    await Notification.create({
+    await notifyAdmins({
       title: `پیام جدید تماس: ${subject}`,
       message: `از طرف ${name} | ${phone}`,
-      type: "contact",
-      target: {
-        kind: "ContactMessage",
-        item: contactMessage._id,
-      },
-      for: "admin",
-      isRead: false,
-    });
+      type: "SUPPORT_MESSAGE",
+      category: "support",
+      entityType: "ContactMessage",
+      entityId: contactMessage._id,
+      link: "/dashboard/notifications",
+      priority: "high",
+      eventKey: `SUPPORT_MESSAGE:${contactMessage._id}`,
+    }).catch((error) => console.error("[notifications] support event failed:", error));
 
     return NextResponse.json({ success: true, message: "پیام شما ثبت شد." }, { status: 201 });
   } catch (error) {

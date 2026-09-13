@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { CalendarDays, LayoutDashboard } from "lucide-react";
+import NotificationBell from "@/app/components/notifications/NotificationBell";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "نمای کلی داشبورد",
@@ -10,7 +11,7 @@ const pageTitles: Record<string, string> = {
   "/dashboard/orders": "سفارشات فروشگاه",
   "/dashboard/store-order": "سفارشات دستی",
   "/dashboard/users": "مدیریت کاربران",
-  "/dashboard/inbox": "پیام‌ها و اعلان‌ها",
+  "/dashboard/notifications": "مرکز اعلان‌ها",
   "/dashboard/blogs": "مدیریت وبلاگ",
 };
 
@@ -48,9 +49,12 @@ export default function DashboardTopbar() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 shadow-sm">
-        <CalendarDays className="h-4 w-4 text-indigo-600" />
-        <span>{today}</span>
+      <div className="flex items-center gap-2">
+        <NotificationBell admin />
+        <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 shadow-sm">
+          <CalendarDays className="h-4 w-4 text-indigo-600" />
+          <span>{today}</span>
+        </div>
       </div>
     </header>
   );

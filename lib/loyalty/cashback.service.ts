@@ -104,7 +104,7 @@ import { VipTier } from "@/types/loyalty";
 // Types
 // ============================
 
-interface CashbackCalcInput {
+export interface CashbackCalcInput {
   userId: string;
   orderAmount: number;
   categoryIds?: string[];
@@ -121,7 +121,7 @@ export interface CashbackResult {
 // Calculate Cashback
 // ============================
 
-async function calculateCashback(
+export async function calculateCashback(
   input: CashbackCalcInput,
 ): Promise<CashbackResult> {
   const settings = await getSettings();

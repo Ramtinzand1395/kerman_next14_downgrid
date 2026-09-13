@@ -1,97 +1,47 @@
 // app/api/admin/notifications/route.ts
-import dbConnect from "@/lib/mongodb";
-import Notification from "@/model/Notification";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/options";
 import { NextResponse } from "next/server";
-import "@/model/Order";
-import "@/model/Comment";
-import "@/model/Product";
-import "@/model/ContactMessage";
-import "@/model/User";
-import "@/model/CustomerGameOrder";
-export async function GET() {
+import dbConnect from "@/lib/mongodb";
+import { notifyAllUsers, notifyUser } from "@/lib/notifications/service";
+import { adminSendNotificationSchema } from "@/validations/notification.validation";
+import User from "@/model/User";
+
+export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "superadmin")
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  if (!session?.user || session.user.role !== "superadmin") {
+    return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
+  }
+
+  const parsed = adminSendNotificationSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "اطلاعات اعلان نامعتبر است.", details: parsed.error.flatten().fieldErrors },
+      { status: 400 },
+    );
+  }
 
   await dbConnect();
+  const { recipient, recipientId, title, message, priority, link } = parsed.data;
+  const payload = {
+    type: "ADMIN_MESSAGE" as const,
+    category: "system" as const,
+    title,
+    message,
+    priority,
+    link: link || undefined,
+    senderType: "admin" as const,
+    senderId: session.user.id,
+    eventKey: `ADMIN_MESSAGE:${crypto.randomUUID()}`,
+  };
 
-  // 1. گرفتن Notification ها بدون populate
-  const notifications = await Notification.find({ for: "admin" })
-    .sort({ createdAt: -1 })
-    .limit(20);
+  if (recipient === "user") {
+    const user = await User.exists({ _id: recipientId, role: "user" });
+    if (!user) return NextResponse.json({ error: "کاربر پیدا نشد." }, { status: 404 });
+    await notifyUser({ ...payload, userId: recipientId! });
+    return NextResponse.json({ success: true, sentCount: 1 }, { status: 201 });
+  }
 
-  // 2. populate شرطی
-  const populated = await Promise.all(
-    notifications.map(async (n) => {
-      if (n.type === "comment") {
-        // populate Comment
-        const populatedComment = await Notification.populate(n, {
-          path: "target.item",
-          model: "Comment", // مدل صحیح
-          populate: [
-            { path: "product", select: "title mainImage price sku" },
-            { path: "user", select: "username mobile" },
-          ],
-        });
-        return populatedComment;
-      }
-
-      if (n.type === "user") {
-        // populate User
-        const populatedUser = await Notification.populate(n, {
-          path: "target.item",
-          model: "User", // مدل صحیح
-          select: "username mobile createdAt",
-        });
-        return populatedUser;
-      }
-
-      if (n.type === "order") {
-        return Notification.populate(n, {
-          path: "target.item",
-          populate: [
-            {
-              path: "user",
-              select: "username mobile",
-            },
-            {
-              path: "items.product",
-              select: "title mainImage price",
-            },
-          ],
-        });
-      }
-
-      if (n.type === "customerGameOrder") {
-        return Notification.populate(n, {
-          path: "target.item",
-          model: "CustomerGameOrder",
-          populate: [
-            { path: "user", select: "username mobile createdAt" },
-            { path: "addressRef" },
-          ],
-        });
-      }
-      if (n.type === "contact") {
-        return Notification.populate(n, {
-          path: "target.item",
-          model: "ContactMessage",
-          select: "name email phone subject message createdAt",
-        });
-      }
-      return n;
-    }),
-  );
-
-  // Do not expose stale notifications whose referenced record was deleted.
-  const validNotifications = populated.filter((notification) => {
-    const typedTarget = ["comment", "user", "order", "customerGameOrder", "contact"].includes(
-      notification.type,
-    );
-    return !typedTarget || Boolean(notification.target?.item);
-  });
-
-  return NextResponse.json(validNotifications);
+  const sentCount = await notifyAllUsers(payload);
+  return NextResponse.json({ success: true, sentCount }, { status: 201 });
 }

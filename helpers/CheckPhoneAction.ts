@@ -2,8 +2,8 @@
 "use server";
 
 import dbConnect from "@/lib/mongodb";
-import Notification from "@/model/Notification";
 import User from "@/model/User";
+import { notifyAdmins } from "@/lib/notifications/service";
 
 export async function CheckPhoneAction(mobile: string, referralCode?: string) {
   try {
@@ -11,15 +11,16 @@ export async function CheckPhoneAction(mobile: string, referralCode?: string) {
     let user = await User.findOne({ mobile });
     if (!user) {
       const newUser = await User.create({ mobile });
-      await Notification.create({
+      await notifyAdmins({
         title: "کاربر جدید",
-        message: "یک کاربر جدید ثبت نام شد",
-        type: "user",
-        target: {
-          kind: "User",
-          item: newUser._id,
-        },
-      });
+        message: `کاربر جدید با شماره ${mobile} ثبت‌نام کرد.`,
+        type: "USER_REGISTERED",
+        category: "account",
+        entityType: "User",
+        entityId: newUser._id,
+        link: "/dashboard/users",
+        eventKey: `USER_REGISTERED:${newUser._id}`,
+      }).catch((error) => console.error("[notifications] signup event failed:", error));
 
       // باشگاه مشتریان: XP ثبت‌نام + ساخت کد دعوت
       try {

@@ -2,12 +2,11 @@
 // POST: پرداخت سفارش با موجودی کیف پول (باشگاه مشتریان)
 //
 // جریان: اعتبارسنجی آدرس/اقلام/قیمت از دیتابیس → کوپن → ساخت سفارش unpaid →
-//        اعمال قطعی کوپن → برداشت اتمیک از کیف پول → کسر موجودی انبار → علامت paid →
-//        هوک‌های باشگاه مشتریان.
+//        برداشت اتمیک از کیف پول → کسر موجودی انبار → علامت paid →
+//        اعمال قطعی کوپن + هوک‌های باشگاه مشتریان.
 // اگر برداشت یا کسر انبار شکست بخورد، سفارش حذف/لغو و مبلغ برمی‌گردد.
 import dbConnect from "@/lib/mongodb";
 import Address from "@/model/Address";
-import Notification from "@/model/Notification";
 import Order from "@/model/Order";
 import Product from "@/model/Product";
 import User from "@/model/User";
@@ -19,12 +18,9 @@ import { createHash } from "node:crypto";
 import { createAddressSnapshot } from "@/lib/addressSnapshot";
 import { NextRequest, NextResponse } from "next/server";
 import { debit, credit } from "@/lib/loyalty/wallet.service";
-import {
-  validateCoupon,
-  applyCoupon,
-  releaseCoupon,
-} from "@/lib/loyalty/coupon.service";
+import { validateCoupon, applyCoupon } from "@/lib/loyalty/coupon.service";
 import { onSuccessfulPurchase } from "@/lib/loyalty/purchase.hooks";
+import { notifyInventoryFailure, notifyLowInventory, notifyOrderPaid, notifyPaymentFailed } from "@/lib/notifications/events";
 
 interface CheckoutItem {
   productId: string;
@@ -126,8 +122,6 @@ export async function POST(req: NextRequest) {
   const idempotencyKey =
     req.headers.get("Idempotency-Key")?.trim() || undefined;
   let automaticAttemptId: mongoose.Types.ObjectId | undefined;
-  let appliedCouponOrderId: string | undefined;
-  let paymentFinalized = false;
 
   try {
     const payload: {
@@ -402,48 +396,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validation does not reserve capacity. Claim the coupon before charging
-    // the wallet so a concurrent checkout cannot consume the final use first.
-    if (couponCode) {
-      const applied = await applyCoupon({
-        code: couponCode,
-        userId,
-        orderId,
-        orderAmount: totalPrice,
-        items: normalizedItems.map((item) => ({
-          productId: item.productId,
-          categoryIds: productMap.get(item.productId)?.category
-            ? [String(productMap.get(item.productId)!.category)]
-            : [],
-        })),
-      });
-
-      if (!applied.ok) {
-        await Order.deleteOne({ _id: order._id, paymentStatus: "unpaid" });
-        if (automaticAttemptId) {
-          await WalletPaymentAttempt.updateOne(
-            { _id: automaticAttemptId, status: "processing" },
-            {
-              $set: {
-                status: "failed",
-                error: applied.error || "ظرفیت استفاده از کد تخفیف تکمیل شده است.",
-                httpStatus: 409,
-              },
-              $unset: { order: "" },
-            },
-          );
-        }
-        return NextResponse.json(
-          {
-            success: false,
-            error: applied.error || "ظرفیت استفاده از کد تخفیف تکمیل شده است.",
-          },
-          { status: 409 },
-        );
-      }
-      appliedCouponOrderId = orderId;
-    }
-
     // ── برداشت از کیف پول (اتمیک، ضد double-spend) ──
     if (finalPrice > 0) {
       const debitResult = await debit({
@@ -456,10 +408,6 @@ export async function POST(req: NextRequest) {
       });
 
       if (!debitResult.ok) {
-        if (appliedCouponOrderId) {
-          await releaseCoupon(appliedCouponOrderId);
-          appliedCouponOrderId = undefined;
-        }
         await Order.deleteOne({ _id: order._id, paymentStatus: "unpaid" });
         if (automaticAttemptId) {
           await WalletPaymentAttempt.updateOne(
@@ -474,6 +422,11 @@ export async function POST(req: NextRequest) {
             },
           );
         }
+        await notifyPaymentFailed({
+          userId,
+          paymentId: automaticAttemptId?.toString() || orderId,
+          message: debitResult.error || "پرداخت از کیف پول انجام نشد.",
+        }).catch(() => undefined);
         return NextResponse.json(
           {
             success: false,
@@ -513,6 +466,7 @@ export async function POST(req: NextRequest) {
           );
 
       if (!updated) {
+        await notifyInventoryFailure({ productId: item.product, eventId: orderId }).catch(() => undefined);
         for (const previous of decrementedItems) {
           await Product.findOneAndUpdate(
             previous.variantId
@@ -532,11 +486,11 @@ export async function POST(req: NextRequest) {
             idempotencyKey: `refund:${orderId}`,
             ref: { kind: "Order", item: order._id },
             description: "بازگشت وجه — موجودی کافی نبود",
+            notify: {
+              title: "بازگشت وجه به کیف پول",
+              message: `مبلغ ${finalPrice.toLocaleString("fa-IR")} تومان به‌دلیل کمبود موجودی به کیف پول شما بازگردانده شد.`,
+            },
           });
-        }
-        if (appliedCouponOrderId) {
-          await releaseCoupon(appliedCouponOrderId);
-          appliedCouponOrderId = undefined;
         }
         await Order.findByIdAndUpdate(order._id, {
           status: "cancelled",
@@ -567,7 +521,6 @@ export async function POST(req: NextRequest) {
       paymentStatus: "paid",
       paymentVerifiedAt: new Date(),
     });
-    paymentFinalized = true;
 
     if (automaticAttemptId) {
       await WalletPaymentAttempt.updateOne(
@@ -578,19 +531,43 @@ export async function POST(req: NextRequest) {
 
     await User.findByIdAndUpdate(userId, { $push: { orders: order._id } });
 
-    await Notification.create({
-      title: "سفارش جدید",
-      message: "یک سفارش جدید ثبت شد",
-      type: "order",
-      target: { kind: "Order", item: order._id },
-    });
+    await Promise.all([
+      notifyOrderPaid({
+        orderId: order._id,
+        userId,
+        amount: Number(order.finalPrice),
+        gateway: "wallet",
+      }),
+      notifyLowInventory(decrementedItems.map((item) => item.product)),
+    ]).catch((error) => console.error("[notifications] wallet order event failed:", error));
 
-    // ── باشگاه مشتریان: XP/کش‌بک/VIP/ماموریت/نشان/رفرال ──
+    // ── باشگاه مشتریان: اعمال قطعی کوپن + XP/کش‌بک/VIP/ماموریت/نشان/رفرال ──
     try {
       const categoryOf = new Map(
         products.map((p) => [String(p._id), String(p.category)]),
       );
       const categoryIds = [...new Set(categoryOf.values())];
+
+      if (couponCode) {
+        const applied = await applyCoupon({
+          code: couponCode,
+          userId,
+          orderId,
+          orderAmount: totalPrice,
+          items: normalizedItems.map((item) => ({
+            productId: item.productId,
+            categoryIds: categoryOf.has(item.productId)
+              ? [categoryOf.get(item.productId)!]
+              : [],
+          })),
+        });
+        if (!applied.ok) {
+          console.error(
+            `[loyalty] applyCoupon failed for wallet order ${orderId}:`,
+            applied.error,
+          );
+        }
+      }
 
       await onSuccessfulPurchase({
         userId,
@@ -613,14 +590,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, orderId });
   } catch (error) {
-    if (appliedCouponOrderId && !paymentFinalized) {
-      await releaseCoupon(appliedCouponOrderId).catch((releaseError) => {
-        console.error(
-          "[loyalty] failed to release wallet coupon:",
-          releaseError,
-        );
-      });
-    }
     if (automaticAttemptId) {
       await WalletPaymentAttempt.updateOne(
         { _id: automaticAttemptId, status: "processing" },

@@ -23,6 +23,7 @@ import CartDropdown from "./CartDropdown";
 import UserBtn from "./UserBtn";
 import { categories } from "../constants/categories";
 import { useSession } from "next-auth/react";
+import NotificationBell from "@/app/components/notifications/NotificationBell";
 
 const menuItems = [
   { name: "خانه", link: "/", icon: <Home className="h-4 w-4 ml-1" /> },
@@ -225,6 +226,7 @@ export default function Navbar() {
         </form>
 
         <div className="relative flex shrink-0 items-center gap-1.5 md:gap-4">
+          <NotificationBell />
           <UserBtn
             setActiveDropdown={setActiveDropdown}
             activeDropdown={activeDropdown}

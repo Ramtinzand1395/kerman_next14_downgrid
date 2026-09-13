@@ -9,7 +9,7 @@ import Experience from "@/model/Loyalty Club/Experience";
 import ExperienceHistory from "@/model/Loyalty Club/ExperienceHistory";
 import MembershipLevel from "@/model/Loyalty Club/MembershipLevel";
 import MembershipHistory from "@/model/Loyalty Club/MembershipHistory";
-import Notification from "@/model/Notification";
+import { notifyUser } from "@/lib/notifications/service";
 import User from "@/model/User";
 import { LevelCode, LEVEL_FA, VipTier, VIP_TIER_FA, XpReason } from "@/types/loyalty";
 import LoyaltySettings from "@/model/Loyalty Club/LoyaltySettings";
@@ -64,7 +64,7 @@ export function invalidateLevelsCache() {
 }
 
 /** سطح متناظر با یک مقدار XP */
-function levelForXp(
+export function levelForXp(
   xp: number,
   levels: { code: LevelCode; minXp: number }[],
 ): LevelCode {
@@ -74,7 +74,7 @@ function levelForXp(
 }
 
 /** VIP متناظر با مجموع خرید — null یعنی هنوز VIP نیست */
-function vipForPurchase(
+export function vipForPurchase(
   totalPurchase: number,
   tiers: { code: VipTier; minTotalPurchase: number }[],
 ): VipTier | null {
@@ -206,21 +206,25 @@ export async function grantXp(input: GrantXpInput): Promise<{
 
   // اعلان‌ها بیرون از تراکنش
   if (finalAmount > 0) {
-    await Notification.create({
+    await notifyUser({
+      userId,
       title: "دریافت امتیاز",
       message: `${finalAmount.toLocaleString("fa-IR")} امتیاز (XP) دریافت کردید.${input.description ? ` ${input.description}` : ""}`,
       type: "xp_gain",
-      for: "user",
-      user: userId,
+      category: "loyalty",
+      link: "/my-profile?step=9",
+      eventKey: `XP_GAIN:${input.idempotencyKey}`,
     }).catch(() => {});
   }
   if (levelChanged) {
-    await Notification.create({
+    await notifyUser({
+      userId,
       title: "ارتقای سطح",
       message: `تبریک! سطح شما به «${LEVEL_FA[newLevel]}» ارتقا یافت.`,
       type: "level_up",
-      for: "user",
-      user: userId,
+      category: "loyalty",
+      link: "/my-profile?step=9",
+      eventKey: `LEVEL_UP:${userId}:${newLevel}`,
     }).catch(() => {});
   }
 
@@ -255,14 +259,16 @@ export async function syncVipTier(userId: string): Promise<{
     reason: "purchase_threshold",
   });
 
-  await Notification.create({
+  await notifyUser({
+    userId,
     title: target ? "ارتقای عضویت VIP" : "تغییر عضویت VIP",
     message: target
       ? `تبریک! عضویت شما به سطح «${VIP_TIER_FA[target]}» ارتقا یافت.`
       : "سطح عضویت VIP شما به‌روزرسانی شد.",
     type: "vip_change",
-    for: "user",
-    user: userId,
+    category: "loyalty",
+    link: "/my-profile?step=9",
+    eventKey: `VIP_CHANGE:${userId}:${target || "none"}`,
   }).catch(() => {});
 
   return { changed: true, tier: target };

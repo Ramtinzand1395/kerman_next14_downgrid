@@ -4,7 +4,7 @@ import dbConnect from "@/lib/mongodb"; // تابع اتصال به MongoDB
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/options";
 import Comment from "@/model/Comment";
-import Notification from "@/model/Notification";
+import { notifyAdmins } from "@/lib/notifications/service";
 import Product from "@/model/Product";
 import User from "@/model/User";
 import mongoose from "mongoose";
@@ -45,15 +45,16 @@ export async function POST(req: Request) {
       $addToSet: { comments: comment._id },
     });
 
-    await Notification.create({
+    await notifyAdmins({
       title: "کامنت جدید",
       message: "یک نظر جدید ثبت شد",
-      type: "comment",
-      target: {
-        kind: "Comment",
-        item: comment._id,
-      },
-    });
+      type: "COMMENT_CREATED",
+      category: "support",
+      entityType: "Comment",
+      entityId: comment._id,
+      link: "/dashboard/notifications",
+      eventKey: `COMMENT_CREATED:${comment._id}`,
+    }).catch((error) => console.error("[notifications] comment event failed:", error));
 
     return NextResponse.json(
       { message: " و بعد از تایید اضافه میشه کامنت با موفقیت ثبت شد", comment },

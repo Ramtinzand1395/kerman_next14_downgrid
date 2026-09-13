@@ -46,6 +46,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../../auth/[...nextauth]/options";
 import Product from "@/model/Product";
 import { revalidatePath } from "next/cache";
+import { notifyUser } from "@/lib/notifications/service";
 export async function PUT(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "superadmin")
@@ -88,6 +89,19 @@ export async function PUT(req: NextRequest) {
       .select("slug")
       .lean();
     if (product?.slug) {
+      await notifyUser({
+        userId: comment.user,
+        title: "نظر شما تایید شد",
+        message: "نظر شما بررسی و در صفحه محصول منتشر شد.",
+        type: "COMMENT_APPROVED",
+        category: "support",
+        entityType: "Comment",
+        entityId: comment._id,
+        link: `/product/${product.slug}`,
+        senderType: "admin",
+        senderId: session.user.id,
+        eventKey: `COMMENT_APPROVED:${comment._id}`,
+      }).catch((error) => console.error("[notifications] comment-approved event failed:", error));
       revalidatePath(`/product/${product.slug}`);
       revalidatePath(`/api/products/${product.slug}`);
     }

@@ -7,12 +7,12 @@ import crypto from "crypto";
 import mongoose from "mongoose";
 import User from "@/model/User";
 import Referral from "@/model/Loyalty Club/Referral";
-import Notification from "@/model/Notification";
+import { notifyUser } from "@/lib/notifications/service";
 import { credit } from "./wallet.service";
 import { grantXp, getSettings } from "./experience.service";
 
 /** ساخت کد دعوت خوانا و یکتا: KA-XXXXXX */
-function generateReferralCode(): string {
+export function generateReferralCode(): string {
   return `KA-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
 }
 
@@ -149,12 +149,14 @@ export async function rewardReferralOnFirstPurchase(
     });
   }
 
-  await Notification.create({
+  await notifyUser({
+    userId: locked.referrer,
     title: "معرفی موفق",
     message: "یکی از دوستان دعوت‌شده شما اولین خریدش را انجام داد!",
     type: "referral_reward",
-    for: "user",
-    user: locked.referrer,
+    category: "loyalty",
+    link: "/my-profile?step=9",
+    eventKey: `REFERRAL_REWARD:${locked._id}`,
   }).catch(() => {});
 
   return { rewarded: true };

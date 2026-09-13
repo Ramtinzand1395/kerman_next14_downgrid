@@ -2,7 +2,7 @@
 import { fail, ok, parseBody, requireAdmin } from "@/lib/loyalty/api";
 import User from "@/model/User";
 import MembershipHistory from "@/model/Loyalty Club/MembershipHistory";
-import Notification from "@/model/Notification";
+import { notifyUser } from "@/lib/notifications/service";
 import { VIP_TIERS, VIP_TIER_FA, VipTier } from "@/types/loyalty";
 import { z } from "zod";
 
@@ -34,14 +34,18 @@ export async function POST(req: Request) {
     performedBy: auth.userId,
   });
 
-  await Notification.create({
+  await notifyUser({
+    userId: data!.userId,
     title: "تغییر عضویت VIP",
     message: data!.tier
       ? `عضویت شما به سطح «${VIP_TIER_FA[data!.tier]}» تغییر یافت.`
       : "عضویت VIP شما پایان یافت.",
     type: "vip_change",
-    for: "user",
-    user: data!.userId,
+    category: "loyalty",
+    link: "/my-profile?step=9",
+    senderType: "admin",
+    senderId: auth.userId,
+    eventKey: `ADMIN_VIP_CHANGE:${data!.userId}:${data!.tier || "none"}`,
   }).catch(() => {});
 
   return ok({ changed: true, tier: data!.tier });

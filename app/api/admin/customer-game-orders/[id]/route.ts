@@ -7,6 +7,7 @@ import { customerOrderUpdateSchema } from "@/validations/validation";
 import { stripHtmlTags } from "@/helpers/stripHtmlTags";
 import mongoose from "mongoose";
 import Notification from "@/model/Notification";
+import { notifyUser } from "@/lib/notifications/service";
 
 async function requireSuperadmin() {
   const session = await getServerSession(authOptions);
@@ -139,6 +140,28 @@ export async function PUT(
       { $set: sanitizedBody },
       { returnDocument: "after", runValidators: true },
     ).lean();
+
+    if (body.status !== undefined && body.status !== existingOrder.status && existingOrder.user) {
+      const statusLabels: Record<string, string> = {
+        pending: "در انتظار بررسی",
+        confirmed: "تایید شده",
+        rejected: "رد شده",
+        completed: "تکمیل شده",
+      };
+      await notifyUser({
+        userId: existingOrder.user,
+        title: "وضعیت درخواست شما تغییر کرد",
+        message: `وضعیت سفارش بازی شما به «${statusLabels[String(body.status)] || body.status}» تغییر کرد.`,
+        type: "REQUEST_STATUS_CHANGED",
+        category: "request",
+        entityType: "CustomerGameOrder",
+        entityId: existingOrder._id,
+        link: "/my-profile?step=5",
+        senderType: "admin",
+        senderId: (await getServerSession(authOptions))?.user.id,
+        eventKey: `REQUEST_STATUS_CHANGED:${existingOrder._id}:${body.status}`,
+      }).catch((error) => console.error("[notifications] request-status event failed:", error));
+    }
 
     return NextResponse.json(
       { message: "سفارش با موفقیت بروزرسانی شد.", order: updatedOrder },

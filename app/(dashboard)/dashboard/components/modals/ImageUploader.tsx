@@ -1,6 +1,4 @@
 "use client";
-
-import { uploadCloudinaryImage } from "@/helpers/uploadCloudinaryImage";
 import { ProductForm } from "@/types";
 import { Trash2 } from "lucide-react";
 import Image from "next/image";
@@ -17,29 +15,38 @@ interface ImageUploaderProps {
 
 const ImageUploader = ({ form, updateField }: ImageUploaderProps) => {
   const [loadingImage, setLoadingImage] = useState(false);
+  // ------------------ Upload Images ------------------
+  const uploadToCloudinary = async (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_PRESET!);
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD}/image/upload`,
+      { method: "POST", body: fd },
+    );
+    const data = await res.json();
+    return data.secure_url as string;
+  };
 
   const handleGallery = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    e.target.value = "";
-    if (!files.length) return;
-
     setLoadingImage(true);
+    const files = Array.from(e.target.files || []);
+    // if (!files.length) return;
+    if (!files.length) {
+      setLoadingImage(false);
+      return;
+    }
     toast.info("در حال آپلود تصاویر...");
 
-    try {
-      const uploaded = await Promise.all(files.map(uploadCloudinaryImage));
-      const newImages = uploaded.map((url) => ({
-        url,
-        alt: `تصویر گالری ${form.title || "محصول"}`,
-      }));
+    const uploaded = await Promise.all(files.map(uploadToCloudinary));
+    const newImages = uploaded.map((url) => ({
+      url,
+      alt: `تصویر گالری ${form.title || "محصول"}`,
+    }));
 
-      updateField("galleryImages", [...form.galleryImages, ...newImages]);
-      toast.success("تصاویر گالری آپلود شد");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "خطا در آپلود تصاویر");
-    } finally {
-      setLoadingImage(false);
-    }
+    updateField("galleryImages", [...form.galleryImages, ...newImages]);
+    toast.success("تصاویر گالری آپلود شد");
+    setLoadingImage(false);
   };
 
   const deleteImage = (index: number) => {
@@ -47,7 +54,7 @@ const ImageUploader = ({ form, updateField }: ImageUploaderProps) => {
     updatedImages.splice(index, 1);
     updateField("galleryImages", updatedImages);
   };
-
+  // if (LoadingImage) return "درحال بارگزاری تصویر";
   const updateImageAlt = (index: number, alt: string) => {
     const updatedImages = form.galleryImages.map((img, i) =>
       i === index ? { ...img, alt } : img,
@@ -55,32 +62,34 @@ const ImageUploader = ({ form, updateField }: ImageUploaderProps) => {
     updateField("galleryImages", updatedImages);
   };
 
-  if (loadingImage) return "در حال بارگذاری تصاویر";
+  if (loadingImage) return "درحال بارگزاری تصویر";
 
   return (
     <div className="borert my-10">
-      <div className="mt-5 flex flex-col">
+      {/* Gallery Images */}
+      <div className="flex flex-col mt-5">
         <label className="font-medium">گالری تصاویر</label>
 
-        <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {/* <div className="grid grid-cols-6 gap-2 mt-2"> */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
           {form.galleryImages.length > 0 ? (
             form.galleryImages.map((img, i) => (
               <div
                 key={`${img.url}-${i}`}
-                className="group relative rounded border p-2"
+                className="relative group rounded border p-2"
               >
                 <Image
                   width={300}
                   height={200}
                   src={img.url}
                   alt={img.alt || form.title || `تصویر ${i + 1}`}
-                  className="h-24 w-full rounded object-contain"
+                  className="w-full h-24 object-contain rounded"
                 />
                 <button
                   type="button"
-                  title="حذف تصویر"
+                  title="حذف محصول"
                   onClick={() => deleteImage(i)}
-                  className="absolute -right-2 -top-2 rounded-full bg-red-600 p-1 text-white opacity-0 transition group-hover:opacity-100"
+                  className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -103,7 +112,7 @@ const ImageUploader = ({ form, updateField }: ImageUploaderProps) => {
           multiple
           accept="image/*"
           onChange={handleGallery}
-          className="mt-2 w-fit rounded-2xl border-2 border-blue-500 p-2"
+          className="border-blue-500 border-2 rounded-2xl p-2 w-fit mt-2"
         />
       </div>
     </div>

@@ -46,7 +46,7 @@ export async function requireAdmin() {
 type Bucket = { count: number; resetAt: number };
 const buckets = new Map<string, Bucket>();
 
-function rateLimit(
+export function rateLimit(
   key: string,
   { limit, windowMs }: { limit: number; windowMs: number },
 ): boolean {
