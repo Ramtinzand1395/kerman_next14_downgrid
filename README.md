@@ -18,13 +18,10 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## Cloudinary configuration
 
-Uploads use the public cloud name and unsigned upload preset. Deleting a
-product image, gallery image, or blog cover also removes the asset from
-Cloudinary, so the server additionally needs the private API credentials:
+Image uploads and deletions run only on the server and require these private
+environment variables:
 
 ```env
-NEXT_PUBLIC_CLOUDINARY_CLOUD=your_cloud_name
-NEXT_PUBLIC_CLOUDINARY_PRESET=your_unsigned_upload_preset
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret

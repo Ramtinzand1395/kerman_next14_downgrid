@@ -1,4 +1,8 @@
-import { v2 as cloudinary } from "cloudinary";
+import {
+  v2 as cloudinary,
+  type UploadApiErrorResponse,
+  type UploadApiResponse,
+} from "cloudinary";
 
 import Blog from "@/model/Blog";
 import Product from "@/model/Product";
@@ -8,10 +12,7 @@ type DeletionContext = {
   excludeProductId?: string;
 };
 
-const getCloudName = () =>
-  process.env.CLOUDINARY_CLOUD_NAME ||
-  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD ||
-  "";
+const getCloudName = () => process.env.CLOUDINARY_CLOUD_NAME || "";
 
 const configureCloudinary = () => {
   const cloudName = getCloudName();
@@ -24,7 +25,34 @@ const configureCloudinary = () => {
     );
   }
 
-  cloudinary.config({ cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret });
+  cloudinary.config({
+    cloud_name: cloudName,
+    api_key: apiKey,
+    api_secret: apiSecret,
+  });
+};
+
+export const uploadCloudinaryImage = (buffer: Buffer) => {
+  configureCloudinary();
+
+  return new Promise<{ url: string; publicId: string }>((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { resource_type: "image" },
+      (
+        error: UploadApiErrorResponse | undefined,
+        result: UploadApiResponse | undefined,
+      ) => {
+        if (error || !result?.secure_url || !result.public_id) {
+          reject(error || new Error("Cloudinary returned an invalid response."));
+          return;
+        }
+
+        resolve({ url: result.secure_url, publicId: result.public_id });
+      },
+    );
+
+    stream.end(buffer);
+  });
 };
 
 /**

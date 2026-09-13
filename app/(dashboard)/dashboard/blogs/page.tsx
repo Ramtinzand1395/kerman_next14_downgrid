@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import {
   Edit2,
@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { BlogPost } from "@/types";
+import { uploadCloudinaryImage } from "@/helpers/uploadCloudinaryImage";
 import RichTextEditor from "../components/RichTextEditor";
 
 const initialForm = {
@@ -47,13 +48,6 @@ export default function BlogsAdminPage() {
   const [form, setForm] = useState(initialForm);
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  const hasCloudinaryConfig = useMemo(
-    () =>
-      Boolean(process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD) &&
-      Boolean(process.env.NEXT_PUBLIC_CLOUDINARY_PRESET),
-    [],
-  );
-
   const fetchBlogs = async () => {
     try {
       setLoading(true);
@@ -76,35 +70,14 @@ export default function BlogsAdminPage() {
   const handleImageUpload = async (file?: File) => {
     if (!file) return;
 
-    if (!hasCloudinaryConfig) {
-      toast.error("تنظیمات آپلود (Cloudinary) موجود نیست");
-      return;
-    }
-
     setUploadingImage(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append(
-        "upload_preset",
-        process.env.NEXT_PUBLIC_CLOUDINARY_PRESET as string,
-      );
-
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD}/image/upload`,
-        { method: "POST", body: formData },
-      );
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.error?.message || "خطا در آپلود تصویر");
-      }
-
-      setForm((p) => ({ ...p, coverImage: data.secure_url }));
+      const url = await uploadCloudinaryImage(file);
+      setForm((p) => ({ ...p, coverImage: url }));
       toast.success("تصویر آپلود شد");
     } catch (error) {
       console.error(error);
-      toast.error("خطا در آپلود تصویر");
+      toast.error(error instanceof Error ? error.message : "خطا در آپلود تصویر");
     } finally {
       setUploadingImage(false);
     }
@@ -225,7 +198,7 @@ export default function BlogsAdminPage() {
                     handleImageUpload(file);
                     e.target.value = "";
                   }}
-                  disabled={!hasCloudinaryConfig || uploadingImage}
+                  disabled={uploadingImage}
                 />
               </label>
 
