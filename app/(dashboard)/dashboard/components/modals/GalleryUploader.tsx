@@ -1,6 +1,7 @@
 "use client";
 
 import { ProductForm } from "@/types";
+import { uploadCloudinaryImage } from "@/helpers/uploadCloudinaryImage";
 import Image from "next/image";
 import { useState } from "react";
 import { toast } from "react-toastify";
@@ -13,30 +14,30 @@ interface GalleryUploaderProps {
   ) => void;
 }
 const GalleryUploader = ({ form, updateField }: GalleryUploaderProps) => {
-  const [LoadingImage, setLoadingImage] = useState(false);
-  const uploadToCloudinary = async (file: File) => {
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_PRESET!);
-    const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD}/image/upload`,
-      { method: "POST", body: fd },
-    );
-    const data = await res.json();
-    return data.secure_url;
-  };
-  const handleMainImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLoadingImage(true);
+  const [loadingImage, setLoadingImage] = useState(false);
 
+  const handleMainImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    setLoadingImage(true);
     toast.info("در حال آپلود تصویر...");
-    const url = await uploadToCloudinary(file);
-    updateField("mainImage", url);
-    toast.success("تصویر اصلی آپلود شد");
-    setLoadingImage(false);
+
+    try {
+      const url = await uploadCloudinaryImage(file);
+      updateField("mainImage", url);
+      toast.success("تصویر اصلی آپلود شد");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "خطا در آپلود تصویر اصلی",
+      );
+    } finally {
+      setLoadingImage(false);
+      e.target.value = "";
+    }
   };
-  if (LoadingImage) return "درحال بارگزاری تصویر";
+
+  if (loadingImage) return "در حال بارگذاری تصویر";
   return (
     <div>
       <div className="flex flex-col">

@@ -1,4 +1,5 @@
 "use client";
+import { uploadCloudinaryImage } from "@/helpers/uploadCloudinaryImage";
 import { ProductForm } from "@/types";
 import { Trash2 } from "lucide-react";
 import Image from "next/image";
@@ -15,38 +16,31 @@ interface ImageUploaderProps {
 
 const ImageUploader = ({ form, updateField }: ImageUploaderProps) => {
   const [loadingImage, setLoadingImage] = useState(false);
-  // ------------------ Upload Images ------------------
-  const uploadToCloudinary = async (file: File) => {
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_PRESET!);
-    const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD}/image/upload`,
-      { method: "POST", body: fd },
-    );
-    const data = await res.json();
-    return data.secure_url as string;
-  };
 
   const handleGallery = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLoadingImage(true);
     const files = Array.from(e.target.files || []);
-    // if (!files.length) return;
-    if (!files.length) {
-      setLoadingImage(false);
-      return;
-    }
+    if (!files.length) return;
+
+    setLoadingImage(true);
     toast.info("در حال آپلود تصاویر...");
 
-    const uploaded = await Promise.all(files.map(uploadToCloudinary));
-    const newImages = uploaded.map((url) => ({
-      url,
-      alt: `تصویر گالری ${form.title || "محصول"}`,
-    }));
+    try {
+      const uploaded = await Promise.all(files.map(uploadCloudinaryImage));
+      const newImages = uploaded.map((url) => ({
+        url,
+        alt: `تصویر گالری ${form.title || "محصول"}`,
+      }));
 
-    updateField("galleryImages", [...form.galleryImages, ...newImages]);
-    toast.success("تصاویر گالری آپلود شد");
-    setLoadingImage(false);
+      updateField("galleryImages", [...form.galleryImages, ...newImages]);
+      toast.success("تصاویر گالری آپلود شد");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "خطا در آپلود تصاویر گالری",
+      );
+    } finally {
+      setLoadingImage(false);
+      e.target.value = "";
+    }
   };
 
   const deleteImage = (index: number) => {
@@ -54,7 +48,6 @@ const ImageUploader = ({ form, updateField }: ImageUploaderProps) => {
     updatedImages.splice(index, 1);
     updateField("galleryImages", updatedImages);
   };
-  // if (LoadingImage) return "درحال بارگزاری تصویر";
   const updateImageAlt = (index: number, alt: string) => {
     const updatedImages = form.galleryImages.map((img, i) =>
       i === index ? { ...img, alt } : img,
@@ -62,7 +55,7 @@ const ImageUploader = ({ form, updateField }: ImageUploaderProps) => {
     updateField("galleryImages", updatedImages);
   };
 
-  if (loadingImage) return "درحال بارگزاری تصویر";
+  if (loadingImage) return "در حال بارگذاری تصاویر";
 
   return (
     <div className="borert my-10">
