@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import Category from "@/model/Category";
 import Product from "@/model/Product";
 import dbConnect from "@/lib/mongodb";
+import "@/model/Comment";
+import "@/model/Tag";
 
 export async function GET(req: Request) {
   try {

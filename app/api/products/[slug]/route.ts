@@ -5,6 +5,7 @@ import Product from "@/model/Product";
 import "@/model/Category";
 import "@/model/Tag";
 import "@/model/Comment";
+import "@/model/User";
 
 export async function GET(
   req: NextRequest,

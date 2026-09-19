@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
 import { toast } from "react-toastify";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
+import ProductImage from "@/app/components/ProductImage";
 
 interface Address {
   _id: string;
@@ -299,14 +299,13 @@ export default function UsersPage() {
                           key={favorite._id}
                           className="relative h-12 w-12 overflow-hidden rounded-md border border-slate-200 bg-slate-50"
                         >
-                          {favorite.productId?.mainImage ? (
-                            <Image
-                              src={favorite.productId.mainImage}
-                              alt={favorite.productId.title}
-                              fill
-                              className="object-cover"
-                            />
-                          ) : null}
+                          <ProductImage
+                            src={favorite.productId?.mainImage}
+                            alt={favorite.productId?.title || "محصول"}
+                            fill
+                            sizes="48px"
+                            className="object-cover"
+                          />
                         </div>
                       ))}
                     </div>

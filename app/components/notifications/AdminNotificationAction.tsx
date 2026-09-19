@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 import {
   CheckCircle2,
@@ -14,6 +13,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+import ProductImage from "@/app/components/ProductImage";
 import { toast } from "react-toastify";
 import type { NotificationItem } from "./types";
 
@@ -182,7 +182,7 @@ function DetailsModal({
           {kind === "Comment" && (
             <>
               <div className="flex items-center gap-4 rounded-2xl border border-slate-200 p-4">
-                {typeof product.mainImage === "string" && product.mainImage ? <Image src={product.mainImage} alt={text(product.title, "محصول")} width={72} height={72} className="h-[72px] w-[72px] rounded-xl object-cover" /> : <div className="h-[72px] w-[72px] rounded-xl bg-slate-100" />}
+                <ProductImage src={typeof product.mainImage === "string" ? product.mainImage : null} alt={text(product.title, "محصول")} width={72} height={72} sizes="72px" className="h-[72px] w-[72px] rounded-xl object-cover" />
                 <div><h3 className="font-bold text-slate-900">{text(product.title, "محصول نامشخص")}</h3><p className="mt-1 text-xs text-slate-500">SKU: {text(product.sku)}</p></div>
               </div>
               <p className="rounded-2xl bg-slate-50 p-4 text-sm leading-7 text-slate-700">{text(item.text)}</p>
@@ -281,4 +281,3 @@ export default function AdminNotificationAction({
     </>
   );
 }
-

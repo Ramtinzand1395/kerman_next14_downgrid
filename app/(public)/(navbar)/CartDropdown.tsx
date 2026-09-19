@@ -6,7 +6,7 @@ import { CartItem } from "@/types";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronDown, ShoppingBag } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
+import ProductImage from "@/app/components/ProductImage";
 
 type DropdownType = "user" | "cart" | null;
 
@@ -35,11 +35,12 @@ const CartPreviewItem = memo(function CartPreviewItem({
 const displayTitle = item.variantTitle || item.title;
   return (
     <li className="flex items-center gap-3 border-b border-slate-100 pb-3 last:border-b-0 last:pb-0">
-      <Image
+      <ProductImage
         src={item.image}
         alt={displayTitle}
         width={56}
         height={56}
+        sizes="56px"
         className="h-14 w-14 rounded-lg border border-slate-100 object-cover"
         loading="lazy"
       />

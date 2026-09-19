@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import {
   BadgeCheck,
@@ -12,6 +11,7 @@ import {
   ShoppingBag,
   User,
 } from "lucide-react";
+import ProductImage from "@/app/components/ProductImage";
 
 type OrderStatus =
   | "pending"
@@ -38,6 +38,8 @@ type OrdersResponse = {
       product: {
         title: string;
         sku: string;
+        mainImage?: string;
+        mainImageAlt?: string;
         images: ({ url: string; alt: string } | string)[];
       };
     }>;
@@ -49,13 +51,23 @@ type OrdersResponse = {
   pages: number;
 };
 
-const getProductImageData = (
-  images: ({ url: string; alt: string } | string)[] = [],
-) => {
-  const firstImage = images?.[0];
+const getProductImageData = (product: {
+  title?: string;
+  mainImage?: string;
+  mainImageAlt?: string;
+  images?: ({ url: string; alt: string } | string)[];
+}) => {
+  if (product.mainImage?.trim()) {
+    return {
+      src: product.mainImage,
+      alt: product.mainImageAlt || product.title || "تصویر محصول",
+    };
+  }
+
+  const firstImage = product.images?.[0];
 
   if (!firstImage) {
-    return { src: "/placeholder.png", alt: "تصویر محصول" };
+    return { src: null, alt: product.title || "تصویر محصول" };
   }
 
   if (typeof firstImage === "string") {
@@ -347,14 +359,15 @@ export default function Orders() {
                 <td className="py-4 px-4 min-w-[280px] space-y-2">
                   {order.items.map((item) => (
                     <div key={item._id} className="flex gap-2 items-center">
-                      <Image
-                        src={getProductImageData(item.product.images).src}
+                      <ProductImage
+                        src={getProductImageData(item.product).src}
                         alt={
-                          getProductImageData(item.product.images).alt ||
+                          getProductImageData(item.product).alt ||
                           item.product.title
                         }
                         width={36}
                         height={36}
+                        sizes="36px"
                         className="rounded-lg border bg-white object-cover"
                       />
                       <div className="min-w-0">
@@ -462,14 +475,15 @@ export default function Orders() {
               <div className="space-y-2">
                 {order.items.map((item) => (
                   <div key={item._id} className="flex items-center gap-2">
-                    <Image
-                      src={getProductImageData(item.product.images).src}
+                    <ProductImage
+                      src={getProductImageData(item.product).src}
                       alt={
-                        getProductImageData(item.product.images).alt ||
+                        getProductImageData(item.product).alt ||
                         item.product.title
                       }
                       width={36}
                       height={36}
+                      sizes="36px"
                       className="rounded-lg border bg-white object-cover"
                     />
                     <div className="min-w-0">

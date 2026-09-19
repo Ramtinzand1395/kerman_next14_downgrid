@@ -3,13 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Heart, ShoppingCart, Star } from "lucide-react";
 import { motion } from "framer-motion";
-import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { toast } from "react-toastify";
 import useCartStore from "@/stores/cartStore";
 import { Comment, Product } from "@/types";
 import useFavoriteStore from "@/stores/favoriteStore";
+import ProductImage from "@/app/components/ProductImage";
 
 interface CartProps {
   game: Product;
@@ -180,15 +180,16 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
           className="block"
         >
           <div className="relative flex h-[200px] items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-gray-100 to-gray-50">
-            <Image
+            <ProductImage
               src={game.mainImage}
               alt={game.mainImageAlt || game.title}
               width={640}
               height={360}
               quality={85}
               loading="lazy"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               itemProp="image"
-              className=" w-full object-contain transition-transform duration-300 group-hover:scale-105"
+              className="w-full object-contain transition-transform duration-300 group-hover:scale-105"
             />
           </div>
         </Link>

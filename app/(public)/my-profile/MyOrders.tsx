@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
+import ProductImage from "@/app/components/ProductImage";
 
 interface Product {
   title: string;
@@ -196,10 +196,10 @@ export default function MyOrders() {
                     className="flex items-center gap-3 rounded-xl border border-slate-100 p-3"
                   >
                     <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                      <Image
+                      <ProductImage
                         fill
-                        src={item.product.mainImage}
-                        alt={item.product.title}
+                        src={item.product?.mainImage}
+                        alt={item.product?.title || "محصول"}
                         className="object-cover"
                         sizes="64px"
                       />

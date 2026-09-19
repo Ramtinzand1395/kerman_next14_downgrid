@@ -2,9 +2,9 @@
 import { uploadCloudinaryImage } from "@/helpers/uploadCloudinaryImage";
 import { ProductForm } from "@/types";
 import { Trash2 } from "lucide-react";
-import Image from "next/image";
 import { useState } from "react";
 import { toast } from "react-toastify";
+import ProductImage from "@/app/components/ProductImage";
 
 interface ImageUploaderProps {
   form: ProductForm;
@@ -71,11 +71,12 @@ const ImageUploader = ({ form, updateField }: ImageUploaderProps) => {
                 key={`${img.url}-${i}`}
                 className="relative group rounded border p-2"
               >
-                <Image
+                <ProductImage
                   width={300}
                   height={200}
                   src={img.url}
                   alt={img.alt || form.title || `تصویر ${i + 1}`}
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
                   className="w-full h-24 object-contain rounded"
                 />
                 <button

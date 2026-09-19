@@ -8,6 +8,8 @@ export const revalidate = 0;
 export const runtime = "nodejs";
 export const fetchCache = "force-no-store";
 import TempPayment from "@/model/TempPayment";
+import "@/model/Address";
+import "@/model/Product";
 
 export async function GET() {
   await dbConnect();

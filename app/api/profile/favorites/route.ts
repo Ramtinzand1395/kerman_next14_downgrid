@@ -6,6 +6,7 @@ import Favorite from "@/model/Favorite";
 import User from "@/model/User";
 import mongoose from "mongoose";
 import Product from "@/model/Product";
+import "@/model/Comment";
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,9 +20,11 @@ export async function GET(req: NextRequest) {
     const favorites = await Favorite.find({ userId: session.user.id })
       .populate({
         path: "productId",
-        select: "title slug price discountPrice mainImage",
+        select:
+          "title slug price discountPrice mainImage mainImageAlt shortDesc sku brand stock productType variants comments",
         populate: {
           path: "comments",
+          match: { verified: true },
           // اسم فیلدها رو مطابق Comment schema خودت تنظیم کن
           select: "text rating user createdAt",
         },

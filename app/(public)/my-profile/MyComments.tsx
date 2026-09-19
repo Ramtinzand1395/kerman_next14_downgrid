@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import { MessageSquareText, ShieldCheck, Star } from "lucide-react";
+import ProductImage from "@/app/components/ProductImage";
 
 interface Comment {
   id: number;
@@ -106,11 +106,12 @@ export default function MyComments() {
           className="p-4 border border-slate-200 rounded-xl bg-white shadow-sm"
         >
           <div className="flex flex-col md:flex-row gap-4">
-            <Image
+            <ProductImage
               width={80}
               height={80}
-              src={comment.product.mainImage}
-              alt={comment.product.title}
+              src={comment.product?.mainImage}
+              alt={comment.product?.title || "محصول"}
+              sizes="80px"
               className="w-20 h-20 object-cover rounded-lg border border-slate-200"
             />
 

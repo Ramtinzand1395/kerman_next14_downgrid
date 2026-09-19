@@ -2,9 +2,9 @@
 
 import { ProductForm } from "@/types";
 import { uploadCloudinaryImage } from "@/helpers/uploadCloudinaryImage";
-import Image from "next/image";
 import { useState } from "react";
 import { toast } from "react-toastify";
+import ProductImage from "@/app/components/ProductImage";
 
 interface GalleryUploaderProps {
   form: ProductForm;
@@ -43,11 +43,12 @@ const GalleryUploader = ({ form, updateField }: GalleryUploaderProps) => {
       <div className="flex flex-col">
         <label className="font-medium">تصویر اصلی</label>
         {form.mainImage && (
-          <Image
+          <ProductImage
             width={50}
             height={50}
             alt={form.mainImageAlt || form.title || "تصویر اصلی محصول"}
             src={form.mainImage}
+            sizes="208px"
             className="w-52 h-32 object-contain mt-2 rounded"
           />
         )}

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductGallery } from "./ProductGallery";
@@ -7,6 +6,7 @@ import { ProductInfo } from "./ProductInfo";
 import TabSection from "./TabSection";
 import type { Product } from "@/types";
 import { SITE_URL, toAbsoluteUrl } from "@/lib/site";
+import ProductImage from "@/app/components/ProductImage";
 
 type ProductResponse = Product & {
   id?: string;
@@ -350,11 +350,12 @@ export default async function ProductPage({
                     className="group flex items-start gap-3"
                   >
                     <div className="w-20 h-20 rounded-lg overflow-hidden border border-zinc-100 bg-zinc-50 shrink-0">
-                      <Image
+                      <ProductImage
                         width={160}
                         height={160}
                         src={item.mainImage}
                         alt={item.title}
+                        sizes="80px"
                         className="w-full h-full object-cover transition-transform group-hover:scale-105"
                       />
                     </div>

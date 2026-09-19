@@ -375,10 +375,10 @@
 
 "use client";
 
-import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import Skeleton from "react-loading-skeleton";
+import ProductImage from "@/app/components/ProductImage";
 
 import {
   AlertTriangle,
@@ -672,11 +672,12 @@ export default function ProductsPage() {
                       <tr key={product._id} className="hover:bg-slate-50">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <Image
+                            <ProductImage
                               src={product.mainImage}
                               alt={product.title}
                               width={48}
                               height={48}
+                              sizes="48px"
                               className="h-12 w-12 rounded-xl border border-slate-200 object-cover"
                             />
                             <div>

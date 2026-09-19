@@ -11,7 +11,6 @@ import {
   MapPin,
   ShoppingBag,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -19,6 +18,7 @@ import PaymentForm from "../components/PaymentForm";
 import ShippingForm from "../components/ShippingForm";
 import { safeParseJSON } from "@/helpers/safeParseJSON";
 import { toast } from "react-toastify";
+import ProductImage from "@/app/components/ProductImage";
 
 const checkoutSteps = [
   {
@@ -214,10 +214,11 @@ export default function CartPage() {
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex min-w-0 items-center gap-4">
                           <div className="relative h-16 w-20 flex-shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
-                            <Image
+                            <ProductImage
                               src={item.image}
                               alt={item.title}
                               fill
+                              sizes="80px"
                               className="object-contain p-1"
                             />
                           </div>

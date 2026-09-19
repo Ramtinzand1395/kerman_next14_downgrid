@@ -9,6 +9,8 @@ import Comment from "@/model/Comment";
 import ContactMessage from "@/model/ContactMessage";
 import User from "@/model/User";
 import CustomerGameOrder from "@/model/CustomerGameOrder";
+import "@/model/Address";
+import "@/model/Product";
 
 async function getEntity(kind: string, entityId: mongoose.Types.ObjectId) {
   switch (kind) {

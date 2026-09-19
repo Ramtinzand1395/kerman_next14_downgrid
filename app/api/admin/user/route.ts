@@ -7,6 +7,7 @@ import "@/model/Order";
 import "@/model/Comment";
 import "@/model/Favorite";
 import "@/model/Address";
+import "@/model/Product";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const runtime = "nodejs";

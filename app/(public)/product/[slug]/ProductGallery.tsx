@@ -1,10 +1,10 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import { ZoomIn, Heart, Share2 } from "lucide-react";
-import Image from "next/image";
 import { toast } from "react-toastify";
 import { useSession } from "next-auth/react";
 import useFavoriteStore from "@/stores/favoriteStore";
+import ProductImage from "@/app/components/ProductImage";
 
 interface GalleryImage {
   url: string;
@@ -160,7 +160,7 @@ export const ProductGallery = ({
         onMouseEnter={() => setIsZoomed(true)}
         onMouseLeave={() => setIsZoomed(false)}
       >
-        <Image
+        <ProductImage
           width={1200}
           height={1200}
           quality={90}
@@ -188,10 +188,11 @@ export const ProductGallery = ({
                 : "border-transparent hover:border-gray-300"
             }`}
           >
-            <Image
+            <ProductImage
               src={img.url}
               alt={img.alt || title}
               fill
+              sizes="(max-width: 640px) 25vw, 96px"
               className="object-cover"
             />
           </button>
