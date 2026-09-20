@@ -189,7 +189,7 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
               loading="lazy"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               itemProp="image"
-              className="w-full object-contain transition-transform duration-300 group-hover:scale-105"
+              className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
             />
           </div>
         </Link>

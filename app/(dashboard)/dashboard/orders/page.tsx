@@ -368,7 +368,7 @@ export default function Orders() {
                         width={36}
                         height={36}
                         sizes="36px"
-                        className="rounded-lg border bg-white object-cover"
+                        className="h-9 w-9 rounded-lg border bg-white object-cover"
                       />
                       <div className="min-w-0">
                         <p className="text-xs font-semibold text-gray-800 truncate">
@@ -484,7 +484,7 @@ export default function Orders() {
                       width={36}
                       height={36}
                       sizes="36px"
-                      className="rounded-lg border bg-white object-cover"
+                      className="h-9 w-9 rounded-lg border bg-white object-cover"
                     />
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-gray-800 truncate">
