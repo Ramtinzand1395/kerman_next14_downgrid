@@ -43,6 +43,7 @@ const normalizeOtpCode = (value: string) => {
 export default function LoginWithOtp() {
   const [mobile, setMobile] = useState("");
   const [referralCode, setReferralCode] = useState("");
+  const [callbackUrl, setCallbackUrl] = useState("/");
   const [otpSent, setOtpSent] = useState(false);
   const [enteredOtp, setEnteredOtp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,6 +71,20 @@ export default function LoginWithOtp() {
     const params = new URLSearchParams(window.location.search);
     const ref = params.get("ref") ?? params.get("referral") ?? params.get("referralCode");
     if (ref) setReferralCode(ref.trim().toUpperCase());
+    const requestedCallbackUrl = params.get("callbackUrl");
+    if (requestedCallbackUrl) {
+      try {
+        const parsedCallbackUrl = new URL(requestedCallbackUrl, window.location.origin);
+        if (parsedCallbackUrl.origin === window.location.origin) {
+          setCallbackUrl(
+            `${parsedCallbackUrl.pathname}${parsedCallbackUrl.search}${parsedCallbackUrl.hash}`,
+          );
+        }
+      } catch {
+        // مقصد نامعتبر است؛ پس از ورود به صفحه اصلی برمی‌گردیم.
+      }
+    }
+
 
     const savedMeta = localStorage.getItem(OTP_META_KEY);
     if (savedMeta) {
@@ -275,14 +290,19 @@ export default function LoginWithOtp() {
 
       // isVerifying را true نگه می‌داریم چون در حال redirect هستیم و
       // دکمه‌ی «تایید و ورود» باید غیرفعال بماند تا کلیک مضاعف پیش نیاید.
-      await signIn("credentials", {
+      const signInResult = await signIn("credentials", {
         mobile,
-        callbackUrl: "/",
+        callbackUrl,
         redirect: false,
-      }).then(() => {
-        // ریدایرکت نهایی
-        window.location.href = "/";
       });
+
+      if (!signInResult?.ok) {
+        toast.error("ورود با خطا مواجه شد. لطفاً دوباره تلاش کنید.");
+        setIsVerifying(false);
+        return;
+      }
+
+      window.location.href = callbackUrl;
     } catch (err) {
       console.log(err);
       toast.error("مشکلی در تایید کد پیش آمد");
