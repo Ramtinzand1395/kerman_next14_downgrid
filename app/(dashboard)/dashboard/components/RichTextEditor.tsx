@@ -13,6 +13,7 @@ interface RichTextEditorProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  imageUpload?: (file: File) => Promise<string>;
 }
 
 export default function RichTextEditor({
@@ -21,12 +22,13 @@ export default function RichTextEditor({
   onChange,
   placeholder,
   className = "",
+  imageUpload,
 }: RichTextEditorProps) {
   const modules = useMemo(
     () => ({
       toolbar: {
         container: [
-          [{ header: [1, 2, 3, false] }],
+          [{ header: [2, 3, 4, false] }],
           ["bold", "italic", "underline", "strike"],
           [{ list: "ordered" }, { list: "bullet" }],
           ["blockquote", "code-block"],
@@ -40,20 +42,49 @@ export default function RichTextEditor({
             input.setAttribute("accept", "image/*");
             input.click();
 
-            input.onchange = () => {
+            input.onchange = async () => {
               const file = input.files?.[0];
               if (!file) return;
 
-              const reader = new FileReader();
-              reader.onload = () => {
+              const insertImage = (source: string) => {
                 const editor = this.quill;
                 if (!editor) return;
 
                 const range = editor.getSelection(true);
                 const cursorPosition = range?.index ?? editor.getLength();
-
-                editor.insertEmbed(cursorPosition, "image", reader.result);
+                editor.insertEmbed(cursorPosition, "image", source);
                 editor.setSelection(cursorPosition + 1);
+
+                if (imageUpload) {
+                  const alt = window.prompt(
+                    "متن جایگزین تصویر را کوتاه و توصیفی بنویسید:",
+                    "",
+                  );
+                  const imageNode = editor.root.querySelectorAll("img")[cursorPosition]
+                    || editor.root.querySelectorAll("img")[
+                      editor.root.querySelectorAll("img").length - 1
+                    ];
+                  if (imageNode && alt?.trim()) {
+                    imageNode.setAttribute("alt", alt.trim());
+                    editor.update("user");
+                  }
+                }
+              };
+
+              if (imageUpload) {
+                try {
+                  insertImage(await imageUpload(file));
+                } catch (error) {
+                  window.alert(
+                    error instanceof Error ? error.message : "آپلود تصویر ناموفق بود",
+                  );
+                }
+                return;
+              }
+
+              const reader = new FileReader();
+              reader.onload = () => {
+                if (typeof reader.result === "string") insertImage(reader.result);
               };
 
               reader.readAsDataURL(file);
@@ -62,7 +93,7 @@ export default function RichTextEditor({
         },
       },
     }),
-    [],
+    [imageUpload],
   );
 
   const formats = [

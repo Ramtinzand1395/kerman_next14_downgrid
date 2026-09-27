@@ -302,10 +302,15 @@ export interface BlogPost {
   excerpt?: string;
   content: string;
   coverImage?: string;
+  coverImageAlt?: string;
   published: boolean;
+  publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+  seoTitle?: string;
   metaDescription?: string;
   focusKeyword?: string[];
+  category?: string;
+  tags?: string[];
 }
 

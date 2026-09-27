@@ -3,29 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/mongodb";
 import Blog from "@/model/Blog";
-
-const slugify = (value: string) =>
-  value
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/[^\w\u0600-\u06FF-]/g, "")
-    .replace(/-+/g, "-");
-
-const parseFocusKeywords = (value: unknown) => {
-  if (Array.isArray(value)) {
-    return value.map((item) => String(item || "").trim()).filter(Boolean);
-  }
-
-  if (typeof value === "string") {
-    return value
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
-  }
-
-  return [];
-};
+import { buildBlogPayload } from "@/lib/blogPayload";
 
 export async function GET() {
   try {
@@ -64,23 +42,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
     }
 
-    const body = await req.json();
-    const title = String(body.title || "").trim();
-    const content = String(body.content || "").trim();
-
-    if (!title || !content) {
-      return NextResponse.json(
-        { error: "عنوان و محتوای وبلاگ الزامی است" },
-        { status: 400 },
-      );
+    const body = (await req.json()) as Record<string, unknown>;
+    const { error, payload, seoIssues } = buildBlogPayload(body);
+    if (error) {
+      return NextResponse.json({ error, seoIssues }, { status: 400 });
     }
 
-    const slugBase = slugify(body.slug || title);
-    if (!slugBase) {
-      return NextResponse.json({ error: "اسلاگ نامعتبر است" }, { status: 400 });
-    }
-
-    const slugExists = await Blog.findOne({ slug: slugBase });
+    const slugExists = await Blog.findOne({ slug: payload.slug });
     if (slugExists) {
       return NextResponse.json(
         { error: "این اسلاگ قبلاً ثبت شده است" },
@@ -88,16 +56,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const blog = await Blog.create({
-      title,
-      slug: slugBase,
-      excerpt: String(body.excerpt || "").trim(),
-      content,
-      coverImage: String(body.coverImage || "").trim(),
-      published: Boolean(body.published),
-      metaDescription: String(body.metaDescription || "").trim(),
-      focusKeyword: parseFocusKeywords(body.focusKeyword),
-    });
+    const blog = await Blog.create(payload);
 
     return NextResponse.json(blog, { status: 201 });
   } catch (error) {
