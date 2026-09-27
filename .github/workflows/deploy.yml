@@ -32,3 +32,5 @@ on:
 
             echo "restarting app..."
             pm2 restart kermanAtari 
+
+# test
