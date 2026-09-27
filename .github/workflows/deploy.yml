@@ -17,7 +17,9 @@ jobs:
           username: ${{ secrets.SERVER_USERS }}
           key: ${{ secrets.PRIVATE_KEY }}
           script: |
-            set -e
+            export NVM_DIR="/home/ramtin/.nvm"
+            source "$NVM_DIR/nvm.sh"
+            export PATH="$PATH:/home/ramtin/.nvm/versions/node/v24.21.0/bin"
 
             cd /home/ramtin/projects/kerman_next14_downgrid
 
