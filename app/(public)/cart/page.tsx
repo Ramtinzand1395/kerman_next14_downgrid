@@ -17,11 +17,25 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function page() {
+interface CartPageProps {
+  searchParams?: {
+    step?: string | string[];
+  };
+}
+
+export default async function page({ searchParams }: CartPageProps) {
   const session = await getServerSession(authOptions);
 
   if (!session) {
-    redirect("/auth/login?callbackUrl=%2Fcart");
+    const requestedStep = Array.isArray(searchParams?.step)
+      ? searchParams.step[0]
+      : searchParams?.step;
+    const safeStep = ["1", "2", "3"].includes(requestedStep ?? "")
+      ? requestedStep
+      : undefined;
+    const callbackUrl = safeStep ? `/cart?step=${safeStep}` : "/cart";
+
+    redirect(`/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
   }
 
   return (

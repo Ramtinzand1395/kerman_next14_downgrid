@@ -358,6 +358,13 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
     })),
   });
 
+  const redirectToLogin = () => {
+    toast.info("نشست کاربری شما منقضی شده است؛ لطفاً دوباره وارد شوید.");
+    router.push(
+      `/auth/login?callbackUrl=${encodeURIComponent("/cart?step=3")}`,
+    );
+  };
+
   const submitOrder = async () => {
     if (cart.length === 0 || loading || walletLoading) return;
 
@@ -366,6 +373,7 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
     try {
       const paymentResponse = await fetch("/api/payment-zarinpal/request", {
         method: "POST",
+        credentials: "same-origin",
         headers: {
           "Content-Type": "application/json",
           "Idempotency-Key": idempotencyKeyRef.current,
@@ -374,6 +382,14 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
       });
 
       const paymentData = await paymentResponse.json().catch(() => ({}));
+
+      if (
+        paymentResponse.status === 401 ||
+        paymentData.code === "AUTH_REQUIRED"
+      ) {
+        redirectToLogin();
+        return;
+      }
 
       if (!paymentResponse.ok || !paymentData.success || !paymentData.url) {
         throw new Error(paymentData.error || "PAYMENT_REQUEST_FAILED");
@@ -402,6 +418,7 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
     try {
       const res = await fetch("/api/payment-wallet", {
         method: "POST",
+        credentials: "same-origin",
         headers: {
           "Content-Type": "application/json",
           "Idempotency-Key": idempotencyKeyRef.current,
@@ -410,6 +427,11 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
       });
 
       const data = await res.json().catch(() => ({}));
+
+      if (res.status === 401) {
+        redirectToLogin();
+        return;
+      }
 
       if (!res.ok || !data.success || !data.orderId) {
         throw new Error(data.error || "پرداخت با کیف پول ناموفق بود");

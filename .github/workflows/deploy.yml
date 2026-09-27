@@ -1,11 +1,12 @@
-
 name: Deploy on Production server
 
 on:
   push:
     branches: ["main"]
+  pull_request:
+    branches: ["main"]
 
-jobs:
+  jobs:
   deploy:
     runs-on: ubuntu-latest
 
@@ -17,22 +18,17 @@ jobs:
           username: ${{ secrets.SERVER_USERS }}
           key: ${{ secrets.PRIVATE_KEY }}
           script: |
-            set -e
-
-            export NVM_DIR="/home/ramtin/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
             cd /home/ramtin/projects/kerman_next14_downgrid
 
-            echo "pulling new changes"
-            git fetch --all
-            git reset --hard origin/main
+            echo "pulling new changes..."
+            git pull origin main
 
-            echo "install modules"
+            echo "installing modules..."
             npm install
 
-            echo "run build"
+            echo "running build..." 
             npm run build
 
-            echo "restart app"
-            pm2 restart kermanAtari --update-env
+            echo "restarting app..."
+            pm2 restart kermanAtari 

@@ -30,17 +30,24 @@ type ZarinpalResponse = {
 };
 const PENDING_PAYMENT_TTL_MS = 15 * 60 * 1000;
 export async function POST(req: NextRequest) {
-  await dbConnect();
-
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json(
-      { success: false, error: "Unauthorized" },
-      { status: 401 },
+      {
+        success: false,
+        code: "AUTH_REQUIRED",
+        error: "نشست کاربری شما منقضی شده است؛ لطفاً دوباره وارد شوید.",
+      },
+      {
+        status: 401,
+        headers: { "Cache-Control": "no-store" },
+      },
     );
   }
 
   try {
+    await dbConnect();
+
     const payload: {
       addressId?: string;
       items?: CheckoutItem[];
