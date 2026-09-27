@@ -18,7 +18,15 @@ import {
   Line,
 } from "recharts";
 import DashboardSkeleton from "./components/DashboardSkeleton";
-import { Activity, Package, ShoppingCart, Users } from "lucide-react";
+import {
+  Activity,
+  Download,
+  LoaderCircle,
+  Package,
+  ShoppingCart,
+  Users,
+} from "lucide-react";
+import { toast } from "react-toastify";
 
 const COLORS = ["#6366f1", "#14b8a6", "#f59e0b", "#f43f5e", "#22c55e"];
 
@@ -63,7 +71,55 @@ export default function DashboardPage() {
   const [revenueData, setRevenueData] = useState<RevenuePoint[]>([]);
   const [storeOrdersData, setStoreOrdersData] = useState<StorePoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [backupLoading, setBackupLoading] = useState(false);
   const [range, setRange] = useState("monthly");
+
+  const handleDatabaseBackup = async () => {
+    if (backupLoading) return;
+
+    const confirmed = window.confirm(
+      "فایل بک‌آپ شامل اطلاعات کامل دیتابیس است. از نگهداری امن آن مطمئن هستید؟"
+    );
+
+    if (!confirmed) return;
+
+    setBackupLoading(true);
+
+    try {
+      const response = await fetch("/api/admin/database/backup", {
+        method: "POST",
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        const result = await response.json().catch(() => null);
+        throw new Error(result?.error || "دریافت فایل بک‌آپ ناموفق بود");
+      }
+
+      const blob = await response.blob();
+      const disposition = response.headers.get("content-disposition");
+      const fileName =
+        disposition?.match(/filename="?([^";]+)"?/i)?.[1] ||
+        `kermanatari-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      const downloadUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+
+      anchor.href = downloadUrl;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+
+      toast.success("فایل بک‌آپ دیتابیس دریافت شد");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "خطا در دریافت فایل بک‌آپ"
+      );
+    } finally {
+      setBackupLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -154,17 +210,33 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <select
-          title="بازه زمانی"
-          value={range}
-          onChange={(e) => setRange(e.target.value)}
-          className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm shadow-sm"
-        >
-          <option value="daily">روزانه</option>
-          <option value="weekly">هفتگی</option>
-          <option value="monthly">ماهانه</option>
-          <option value="yearly">سالانه</option>
-        </select>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={handleDatabaseBackup}
+            disabled={backupLoading}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-400"
+          >
+            {backupLoading ? (
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            {backupLoading ? "در حال تهیه بک‌آپ..." : "بک‌آپ دیتابیس"}
+          </button>
+
+          <select
+            title="بازه زمانی"
+            value={range}
+            onChange={(e) => setRange(e.target.value)}
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm shadow-sm"
+          >
+            <option value="daily">روزانه</option>
+            <option value="weekly">هفتگی</option>
+            <option value="monthly">ماهانه</option>
+            <option value="yearly">سالانه</option>
+          </select>
+        </div>
       </section>
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
