@@ -40,7 +40,7 @@ async function sendSMS({
   return { status: res.status, body: text };
 }
 
-export async function sendOtpToUser(mobile: string) {
+export async function sendOtpToUser(mobile: string, referralCode?: string) {
   await dbConnect();
 
   // پاک کردن OTP قبلی شماره موبایل
@@ -53,6 +53,7 @@ export async function sendOtpToUser(mobile: string) {
   const otpDoc = await Otp.create({
     mobile,
     otp,
+    referralCode: referralCode?.trim().toUpperCase().slice(0, 32) || undefined,
     createdAt: new Date(),
   });
   await sendSMS({

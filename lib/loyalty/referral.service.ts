@@ -10,6 +10,15 @@ import Referral from "@/model/Loyalty Club/Referral";
 import { notifyUser } from "@/lib/notifications/service";
 import { credit } from "./wallet.service";
 import { grantXp, getSettings } from "./experience.service";
+import { randomUUID } from "node:crypto";
+import {
+  isRewardOrderEligible,
+  normalizeReferralCode,
+  referralRewardKeys,
+  REFERRAL_CODE_PATTERN,
+} from "./referral.policy";
+
+const REWARD_LOCK_MS = 2 * 60_000;
 
 /** ساخت کد دعوت خوانا و یکتا: KA-XXXXXX */
 export function generateReferralCode(): string {
@@ -56,12 +65,50 @@ export async function attachReferral(
   newUserId: string,
   code: string,
 ): Promise<{ ok: boolean; error?: string }> {
-  const normalized = code.trim().toUpperCase();
+  const normalized = normalizeReferralCode(code);
   if (!normalized) return { ok: false, error: "کد دعوت خالی است" };
 
+  const newUser = await User.findById(newUserId)
+    .select("pendingReferralCode")
+    .lean();
+  if (!newUser) return { ok: false, error: "کاربر یافت نشد" };
+  if (!REFERRAL_CODE_PATTERN.test(normalized)) {
+    await User.updateOne(
+      { _id: newUserId, pendingReferralCode: normalized },
+      { $unset: { pendingReferralCode: 1 } },
+    );
+    return { ok: false, error: "فرمت کد دعوت باید به شکل KA-XXXXXX باشد" };
+  }
+
+  const existingReferral = await Referral.findOne({ referee: newUserId })
+    .select("_id")
+    .lean();
+  if (existingReferral) {
+    return { ok: false, error: "این کاربر قبلاً با کد دعوت ثبت شده است" };
+  }
+
+  if (newUser.pendingReferralCode !== normalized) {
+    return {
+      ok: false,
+      error: "کد دعوت فقط در همان جریان معتبر تکمیل ثبت‌نام قابل استفاده است",
+    };
+  }
+
   const referrer = await User.findOne({ referralCode: normalized }).select("_id").lean();
-  if (!referrer) return { ok: false, error: "کد دعوت معتبر نیست" };
-  if (referrer._id.toString() === newUserId) return { ok: false, error: "امکان استفاده از کد دعوت خودتان وجود ندارد" };
+  if (!referrer) {
+    await User.updateOne(
+      { _id: newUserId, pendingReferralCode: normalized },
+      { $unset: { pendingReferralCode: 1 } },
+    );
+    return { ok: false, error: "کد دعوت معتبر نیست" };
+  }
+  if (referrer._id.toString() === newUserId) {
+    await User.updateOne(
+      { _id: newUserId, pendingReferralCode: normalized },
+      { $unset: { pendingReferralCode: 1 } },
+    );
+    return { ok: false, error: "امکان استفاده از کد دعوت خودتان وجود ندارد" };
+  }
 
   const settings = await getSettings();
   try {
@@ -72,7 +119,12 @@ export async function attachReferral(
       status: "registered",
       referrerReward: settings.referral.referrerReward,
       refereeReward: settings.referral.refereeReward,
+      xpReward: settings.xp.referral,
     });
+    await User.updateOne(
+      { _id: newUserId, pendingReferralCode: normalized },
+      { $unset: { pendingReferralCode: 1 } },
+    );
     return { ok: true };
   } catch (err) {
     if ((err as { code?: number })?.code === 11000) {
@@ -90,76 +142,176 @@ export async function rewardReferralOnFirstPurchase(
   refereeId: string,
   orderId: string,
   orderAmount: number,
-): Promise<{ rewarded: boolean }> {
-  const referral = await Referral.findOne({ referee: refereeId, status: { $in: ["registered", "first_purchase"] } });
+): Promise<{ rewarded: boolean; retryable?: boolean }> {
+  let referral = await Referral.findOne({ referee: refereeId });
   if (!referral) return { rewarded: false };
+  if (referral.status === "rewarded") return { rewarded: true };
+
+  if (!referral.firstOrder) {
+    const claimedFirstOrder = await Referral.findOneAndUpdate(
+      {
+        _id: referral._id,
+        firstOrder: { $exists: false },
+        status: { $in: ["registered", "first_purchase"] },
+      },
+      { $set: { firstOrder: orderId, status: "first_purchase" } },
+      { returnDocument: "after" },
+    );
+    referral = claimedFirstOrder ?? (await Referral.findById(referral._id));
+    if (!referral) return { rewarded: false };
+  }
 
   const settings = await getSettings();
-  if (orderAmount < settings.referral.minFirstPurchase) return { rewarded: false };
+  if (
+    !isRewardOrderEligible({
+      firstOrderId: referral.firstOrder?.toString(),
+      orderId,
+      orderAmount,
+      minimumAmount: settings.referral.minFirstPurchase,
+    })
+  ) {
+    return { rewarded: false };
+  }
 
-  // قفل اتمیک وضعیت — فقط یک پرداخت می‌تواند پاداش را فعال کند
+  const operationId = randomUUID();
+  const now = new Date();
   const locked = await Referral.findOneAndUpdate(
-    { _id: referral._id, status: { $in: ["registered", "first_purchase"] } },
-    { $set: { status: "rewarded", firstOrder: orderId, rewardedAt: new Date() } },
+    {
+      _id: referral._id,
+      firstOrder: orderId,
+      status: { $ne: "rewarded" },
+      $or: [
+        { processingExpiresAt: { $exists: false } },
+        { processingExpiresAt: null },
+        { processingExpiresAt: { $lte: now } },
+      ],
+    },
+    {
+      $set: {
+        status: "rewarding",
+        processingToken: operationId,
+        processingStartedAt: now,
+        processingExpiresAt: new Date(now.getTime() + REWARD_LOCK_MS),
+        xpReward: referral.xpReward ?? settings.xp.referral,
+      },
+    },
     { returnDocument: "after" },
   );
-  if (!locked) return { rewarded: false };
+  if (!locked) return { rewarded: false, retryable: true };
+  const rewardKeys = referralRewardKeys(locked._id.toString());
 
-  // پاداش معرف
-  if (locked.referrerReward > 0) {
-    await credit({
-      userId: locked.referrer.toString(),
-      amount: locked.referrerReward,
+  try {
+    if (!locked.referrerRewardedAt) {
+      if (locked.referrerReward > 0) {
+        const result = await credit({
+          userId: locked.referrer.toString(),
+          amount: locked.referrerReward,
+          type: "referral_reward",
+          idempotencyKey: rewardKeys.referrer,
+          ref: { kind: "Referral", item: locked._id },
+          description: "پاداش معرفی دوستان",
+          notify: {
+            title: "پاداش معرفی دوستان",
+            message: `مبلغ ${locked.referrerReward.toLocaleString("fa-IR")} تومان بابت خرید اول دوست دعوت‌شده‌تان به کیف پول‌تان اضافه شد.`,
+          },
+        });
+        if (!result.ok) throw new Error(`REFERRER_CREDIT_FAILED:${result.error ?? "unknown"}`);
+      }
+      await Referral.updateOne(
+        { _id: locked._id, processingToken: operationId },
+        { $set: { referrerRewardedAt: new Date() } },
+      );
+    }
+
+    if (!locked.refereeRewardedAt) {
+      if (locked.refereeReward > 0) {
+        const result = await credit({
+          userId: refereeId,
+          amount: locked.refereeReward,
+          type: "gift",
+          idempotencyKey: rewardKeys.referee,
+          ref: { kind: "Referral", item: locked._id },
+          description: "هدیه ثبت‌نام با کد دعوت",
+          notify: {
+            title: "هدیه خوش‌آمد",
+            message: `مبلغ ${locked.refereeReward.toLocaleString("fa-IR")} تومان هدیه کد دعوت به کیف پول شما اضافه شد.`,
+          },
+        });
+        if (!result.ok) throw new Error(`REFEREE_CREDIT_FAILED:${result.error ?? "unknown"}`);
+      }
+      await Referral.updateOne(
+        { _id: locked._id, processingToken: operationId },
+        { $set: { refereeRewardedAt: new Date() } },
+      );
+    }
+
+    if (!locked.xpRewardedAt) {
+      if (locked.xpReward > 0) {
+        const result = await grantXp({
+          userId: locked.referrer.toString(),
+          amount: locked.xpReward,
+          reason: "referral",
+          idempotencyKey: rewardKeys.xp,
+          ref: { kind: "Referral", item: locked._id.toString() },
+          description: "دعوت موفق دوستان",
+        });
+        if (!result.ok) throw new Error(`REFERRAL_XP_FAILED:${result.error ?? "unknown"}`);
+      }
+      await Referral.updateOne(
+        { _id: locked._id, processingToken: operationId },
+        { $set: { xpRewardedAt: new Date() } },
+      );
+    }
+
+    const completed = await Referral.findOneAndUpdate(
+      {
+        _id: locked._id,
+        processingToken: operationId,
+        referrerRewardedAt: { $exists: true },
+        refereeRewardedAt: { $exists: true },
+        xpRewardedAt: { $exists: true },
+      },
+      {
+        $set: { status: "rewarded", rewardedAt: new Date() },
+        $unset: {
+          processingToken: 1,
+          processingStartedAt: 1,
+          processingExpiresAt: 1,
+        },
+      },
+      { returnDocument: "after" },
+    );
+    if (!completed) throw new Error("REFERRAL_FINALIZE_FAILED");
+
+    await notifyUser({
+      userId: locked.referrer,
+      title: "معرفی موفق",
+      message: "یکی از دوستان دعوت‌شده شما اولین خریدش را انجام داد!",
       type: "referral_reward",
-      idempotencyKey: `referral:referrer:${locked._id}`,
-      ref: { kind: "Referral", item: locked._id },
-      description: "پاداش معرفی دوستان",
-      notify: {
-        title: "پاداش معرفی دوستان",
-        message: `مبلغ ${locked.referrerReward.toLocaleString("fa-IR")} تومان بابت خرید اول دوست دعوت‌شده‌تان به کیف پول‌تان اضافه شد.`,
+      category: "loyalty",
+      link: "/my-profile?step=9",
+      eventKey: `REFERRAL_REWARD:${locked._id}`,
+    }).catch(() => {});
+
+    return { rewarded: true };
+  } catch (error) {
+    console.error(
+      `[loyalty] referral reward failed operationId=${operationId} referralId=${locked._id}`,
+      error,
+    );
+    await Referral.updateOne(
+      { _id: locked._id, processingToken: operationId },
+      {
+        $set: { status: "first_purchase" },
+        $unset: {
+          processingToken: 1,
+          processingStartedAt: 1,
+          processingExpiresAt: 1,
+        },
       },
-    });
+    ).catch(() => undefined);
+    return { rewarded: false, retryable: true };
   }
-
-  // هدیه کاربر جدید
-  if (locked.refereeReward > 0) {
-    await credit({
-      userId: refereeId,
-      amount: locked.refereeReward,
-      type: "gift",
-      idempotencyKey: `referral:referee:${locked._id}`,
-      ref: { kind: "Referral", item: locked._id },
-      description: "هدیه ثبت‌نام با کد دعوت",
-      notify: {
-        title: "هدیه خوش‌آمد",
-        message: `مبلغ ${locked.refereeReward.toLocaleString("fa-IR")} تومان هدیه کد دعوت به کیف پول شما اضافه شد.`,
-      },
-    });
-  }
-
-  // XP معرف
-  if (settings.xp.referral > 0) {
-    await grantXp({
-      userId: locked.referrer.toString(),
-      amount: settings.xp.referral,
-      reason: "referral",
-      idempotencyKey: `xp:referral:${locked._id}`,
-      ref: { kind: "Referral", item: locked._id.toString() },
-      description: "دعوت موفق دوستان",
-    });
-  }
-
-  await notifyUser({
-    userId: locked.referrer,
-    title: "معرفی موفق",
-    message: "یکی از دوستان دعوت‌شده شما اولین خریدش را انجام داد!",
-    type: "referral_reward",
-    category: "loyalty",
-    link: "/my-profile?step=9",
-    eventKey: `REFERRAL_REWARD:${locked._id}`,
-  }).catch(() => {});
-
-  return { rewarded: true };
 }
 
 /** آمار رفرال کاربر */

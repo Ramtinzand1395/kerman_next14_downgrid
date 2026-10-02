@@ -310,6 +310,7 @@ export async function grantCashback(input: {
 
   if (cashback.amount <= 0) {
     return {
+      ok: true,
       granted: false,
       amount: 0,
     };
@@ -347,7 +348,7 @@ export async function grantCashback(input: {
     },
   });
 
-  if (result.ok) {
+  if (result.ok && !result.duplicate) {
     /**
      * افزایش تعداد استفاده قانون
      */
@@ -368,8 +369,10 @@ export async function grantCashback(input: {
   }
 
   return {
+    ok: result.ok,
     granted: result.ok,
 
     amount: result.ok ? cashback.amount : 0,
+    error: result.error,
   };
 }

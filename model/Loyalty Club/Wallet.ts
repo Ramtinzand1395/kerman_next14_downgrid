@@ -16,6 +16,8 @@ interface IWallet extends Document {
   }[];
   /** شمارنده نسخه برای Optimistic Locking — جلوگیری از race condition */
   version: number;
+  /** کلیدهای credit اعمال شده برای idempotency در MongoDB standalone */
+  appliedCreditKeys: string[];
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -40,6 +42,7 @@ const WalletSchema = new Schema<IWallet>(
       },
     ],
     version: { type: Number, default: 0 },
+    appliedCreditKeys: { type: [String], default: [] },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true },

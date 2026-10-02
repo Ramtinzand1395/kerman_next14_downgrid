@@ -2,11 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { toast } from "react-toastify";
 import * as yup from "yup";
 import { safeParseJSON } from "@/helpers/safeParseJSON";
-import { CheckPhoneAction } from "@/helpers/CheckPhoneAction";
 import { sendOtpToUser } from "@/helpers/sendSms";
 import { mobileSchema, otpSchema } from "@/validations/validation";
 
@@ -29,6 +29,7 @@ const OTP_META_KEY = "otpMeta";
 const OTP_EXPIRE_KEY = "otpExpireTime";
 const OTP_TOTAL_TIME = 120;
 const OTP_LENGTH = 5;
+const REFERRAL_CODE_PATTERN = /^KA-[A-Z0-9]{6}$/;
 
 const normalizeOtpCode = (value: string) => {
   const faDigits = "۰۱۲۳۴۵۶۷۸۹";
@@ -43,6 +44,9 @@ const normalizeOtpCode = (value: string) => {
 export default function LoginWithOtp() {
   const [mobile, setMobile] = useState("");
   const [referralCode, setReferralCode] = useState("");
+  const [referralBoundMobile, setReferralBoundMobile] = useState<string | null>(
+    null,
+  );
   const [callbackUrl, setCallbackUrl] = useState("/");
   const [otpSent, setOtpSent] = useState(false);
   const [enteredOtp, setEnteredOtp] = useState("");
@@ -94,6 +98,10 @@ export default function LoginWithOtp() {
         if (parsed?.mobile) {
           setMobile(parsed.mobile);
           setOtpSent(true);
+          setReferralBoundMobile(parsed.mobile);
+        }
+        if (parsed?.referralCode) {
+          setReferralCode(parsed.referralCode);
         }
       } catch {
         localStorage.removeItem(OTP_META_KEY);
@@ -210,24 +218,37 @@ export default function LoginWithOtp() {
         return;
       }
 
-      const phoneChecked = await CheckPhoneAction(mobile, referralCode || undefined);
-      if (!phoneChecked) {
-        toast.error("ثبت کاربر با خطا مواجه شد. لطفاً دوباره تلاش کنید.");
-        return;
+      const normalizedReferral = referralCode.trim().toUpperCase();
+      if (
+        normalizedReferral &&
+        !REFERRAL_CODE_PATTERN.test(normalizedReferral)
+      ) {
+        toast.warning(
+          "فرمت کد دعوت باید به شکل KA-XXXXXX باشد؛ ورود شما ادامه پیدا می‌کند.",
+        );
       }
 
-      const newOtpId = await sendOtpToUser(mobile);
+      const newOtpId = await sendOtpToUser(
+        mobile,
+        normalizedReferral || undefined,
+      );
       const expireTime = Date.now() + OTP_TOTAL_TIME * 1000;
 
       setOtpId(newOtpId);
       setOtpSent(true);
       setEnteredOtp("");
       setTimer(OTP_TOTAL_TIME);
+      setReferralCode(normalizedReferral);
+      setReferralBoundMobile(mobile);
 
       localStorage.setItem(OTP_EXPIRE_KEY, expireTime.toString());
       localStorage.setItem(
         OTP_META_KEY,
-        JSON.stringify({ otpId: newOtpId, mobile }),
+        JSON.stringify({
+          otpId: newOtpId,
+          mobile,
+          referralCode: normalizedReferral || undefined,
+        }),
       );
 
       toast.success("کد تایید ارسال شد");
@@ -268,7 +289,7 @@ export default function LoginWithOtp() {
       const res = await fetch("/api/verifyOtp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ otpId, enteredOtp, mobile }),
+        body: JSON.stringify({ otpId, enteredOtp }),
       });
 
       const data = await res.json();
@@ -279,28 +300,44 @@ export default function LoginWithOtp() {
         return;
       }
 
-      toast.success("ورود با موفقیت انجام شد");
-
-      clearOtpStorage();
-      setTimer(0);
-
-      setOtpSent(false);
-      setEnteredOtp("");
-      setOtpId(null);
+      if (!data.verificationToken) {
+        toast.error("اطلاعات امن ورود دریافت نشد؛ دوباره تلاش کنید.");
+        setIsVerifying(false);
+        return;
+      }
 
       // isVerifying را true نگه می‌داریم چون در حال redirect هستیم و
       // دکمه‌ی «تایید و ورود» باید غیرفعال بماند تا کلیک مضاعف پیش نیاید.
       const signInResult = await signIn("credentials", {
-        mobile,
+        verificationToken: data.verificationToken,
         callbackUrl,
         redirect: false,
       });
 
       if (!signInResult?.ok) {
         toast.error("ورود با خطا مواجه شد. لطفاً دوباره تلاش کنید.");
+        clearOtpStorage();
+        setOtpSent(false);
+        setEnteredOtp("");
+        setOtpId(null);
         setIsVerifying(false);
         return;
       }
+
+      toast.success("ورود با موفقیت انجام شد");
+      if (data.referral?.ok) {
+        toast.success("کد دعوت با موفقیت ثبت شد.");
+      } else if (data.referral?.error) {
+        toast.warning(data.referral.error);
+      }
+
+      clearOtpStorage();
+      setTimer(0);
+      setOtpSent(false);
+      setEnteredOtp("");
+      setOtpId(null);
+      setReferralCode("");
+      setReferralBoundMobile(null);
 
       window.location.href = callbackUrl;
     } catch (err) {
@@ -387,7 +424,18 @@ export default function LoginWithOtp() {
                   inputMode="numeric"
                   dir="ltr"
                   value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
+                  onChange={(e) => {
+                    const nextMobile = e.target.value;
+                    if (
+                      referralBoundMobile &&
+                      nextMobile !== referralBoundMobile
+                    ) {
+                      setReferralCode("");
+                      setReferralBoundMobile(null);
+                      clearOtpStorage();
+                    }
+                    setMobile(nextMobile);
+                  }}
                   placeholder="09xxxxxxxxx"
                   className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
                 />
@@ -398,7 +446,9 @@ export default function LoginWithOtp() {
                   type="text"
                   dir="ltr"
                   value={referralCode}
-                  onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                  onChange={(e) =>
+                    setReferralCode(e.target.value.trimStart().toUpperCase())
+                  }
                   placeholder="KA-XXXXXX"
                   maxLength={9}
                   className="w-full rounded-xl border border-slate-200 px-4 py-3 text-left outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
@@ -406,8 +456,21 @@ export default function LoginWithOtp() {
               </div>
 
               <p className="text-xs leading-6 text-slate-500">
-                با ورود به کرمان آتاری، شرایط استفاده و قوانین حریم خصوصی را
-                می‌پذیرید.
+                با ورود به کرمان آتاری، {" "}
+                <Link
+                  href="/terms"
+                  className="font-semibold text-indigo-700 hover:text-indigo-900"
+                >
+                  شرایط استفاده
+                </Link>{" "}
+                و {" "}
+                <Link
+                  href="/terms#privacy"
+                  className="font-semibold text-indigo-700 hover:text-indigo-900"
+                >
+                  قوانین حریم خصوصی
+                </Link>{" "}
+                را می‌پذیرید.
               </p>
 
               <button
