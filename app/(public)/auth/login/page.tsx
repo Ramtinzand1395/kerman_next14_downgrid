@@ -8,6 +8,12 @@ import { toast } from "react-toastify";
 import * as yup from "yup";
 import { safeParseJSON } from "@/helpers/safeParseJSON";
 import { sendOtpToUser } from "@/helpers/sendSms";
+import {
+  isValidReferralCode,
+  normalizeReferralCode,
+  restoredReferralCode,
+  shouldClearReferralForMobileChange,
+} from "@/lib/loyalty/referral.policy";
 import { mobileSchema, otpSchema } from "@/validations/validation";
 
 type OtpCredential = {
@@ -29,7 +35,6 @@ const OTP_META_KEY = "otpMeta";
 const OTP_EXPIRE_KEY = "otpExpireTime";
 const OTP_TOTAL_TIME = 120;
 const OTP_LENGTH = 5;
-const REFERRAL_CODE_PATTERN = /^KA-[A-Z0-9]{6}$/;
 
 const normalizeOtpCode = (value: string) => {
   const faDigits = "۰۱۲۳۴۵۶۷۸۹";
@@ -74,7 +79,9 @@ export default function LoginWithOtp() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const ref = params.get("ref") ?? params.get("referral") ?? params.get("referralCode");
-    if (ref) setReferralCode(ref.trim().toUpperCase());
+    if (ref) {
+      setReferralCode(restoredReferralCode({ urlCode: ref }));
+    }
     const requestedCallbackUrl = params.get("callbackUrl");
     if (requestedCallbackUrl) {
       try {
@@ -101,7 +108,12 @@ export default function LoginWithOtp() {
           setReferralBoundMobile(parsed.mobile);
         }
         if (parsed?.referralCode) {
-          setReferralCode(parsed.referralCode);
+          setReferralCode(
+            restoredReferralCode({
+              urlCode: ref,
+              savedOtpCode: parsed.referralCode,
+            }),
+          );
         }
       } catch {
         localStorage.removeItem(OTP_META_KEY);
@@ -218,10 +230,10 @@ export default function LoginWithOtp() {
         return;
       }
 
-      const normalizedReferral = referralCode.trim().toUpperCase();
+      const normalizedReferral = normalizeReferralCode(referralCode);
       if (
         normalizedReferral &&
-        !REFERRAL_CODE_PATTERN.test(normalizedReferral)
+        !isValidReferralCode(normalizedReferral)
       ) {
         toast.warning(
           "فرمت کد دعوت باید به شکل KA-XXXXXX باشد؛ ورود شما ادامه پیدا می‌کند.",
@@ -427,8 +439,10 @@ export default function LoginWithOtp() {
                   onChange={(e) => {
                     const nextMobile = e.target.value;
                     if (
-                      referralBoundMobile &&
-                      nextMobile !== referralBoundMobile
+                      shouldClearReferralForMobileChange(
+                        referralBoundMobile,
+                        nextMobile,
+                      )
                     ) {
                       setReferralCode("");
                       setReferralBoundMobile(null);

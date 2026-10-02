@@ -14,8 +14,9 @@ import { randomUUID } from "node:crypto";
 import {
   isRewardOrderEligible,
   normalizeReferralCode,
+  pendingReferralRewardSteps,
+  referralAttachmentError,
   referralRewardKeys,
-  REFERRAL_CODE_PATTERN,
 } from "./referral.policy";
 
 const REWARD_LOCK_MS = 2 * 60_000;
@@ -66,48 +67,44 @@ export async function attachReferral(
   code: string,
 ): Promise<{ ok: boolean; error?: string }> {
   const normalized = normalizeReferralCode(code);
-  if (!normalized) return { ok: false, error: "کد دعوت خالی است" };
-
   const newUser = await User.findById(newUserId)
     .select("pendingReferralCode")
     .lean();
   if (!newUser) return { ok: false, error: "کاربر یافت نشد" };
-  if (!REFERRAL_CODE_PATTERN.test(normalized)) {
-    await User.updateOne(
-      { _id: newUserId, pendingReferralCode: normalized },
-      { $unset: { pendingReferralCode: 1 } },
-    );
-    return { ok: false, error: "فرمت کد دعوت باید به شکل KA-XXXXXX باشد" };
-  }
 
   const existingReferral = await Referral.findOne({ referee: newUserId })
     .select("_id")
     .lean();
-  if (existingReferral) {
-    return { ok: false, error: "این کاربر قبلاً با کد دعوت ثبت شده است" };
-  }
-
-  if (newUser.pendingReferralCode !== normalized) {
-    return {
-      ok: false,
-      error: "کد دعوت فقط در همان جریان معتبر تکمیل ثبت‌نام قابل استفاده است",
-    };
-  }
-
   const referrer = await User.findOne({ referralCode: normalized }).select("_id").lean();
+
+  const eligibilityError = referralAttachmentError({
+    code: normalized,
+    pendingCode: newUser.pendingReferralCode,
+    alreadyAttached: Boolean(existingReferral),
+    newUserId,
+    referrerId: referrer?._id.toString(),
+  });
+  if (eligibilityError) {
+    // فقط intent همان کد را برای خطاهای قطعی مصرف می کنیم. کد متفاوتی که
+    // از API ارسال شده نباید intent معتبر ثبت نام را پاک کند.
+    if (
+      newUser.pendingReferralCode === normalized &&
+      !eligibilityError.includes("همان جریان معتبر")
+    ) {
+      await User.updateOne(
+        { _id: newUserId, pendingReferralCode: normalized },
+        { $unset: { pendingReferralCode: 1 } },
+      );
+    }
+    return { ok: false, error: eligibilityError };
+  }
   if (!referrer) {
+    // به کمک policy این شاخه قابل دسترس نیست؛ برای type narrowing باقی می ماند.
     await User.updateOne(
       { _id: newUserId, pendingReferralCode: normalized },
       { $unset: { pendingReferralCode: 1 } },
     );
     return { ok: false, error: "کد دعوت معتبر نیست" };
-  }
-  if (referrer._id.toString() === newUserId) {
-    await User.updateOne(
-      { _id: newUserId, pendingReferralCode: normalized },
-      { $unset: { pendingReferralCode: 1 } },
-    );
-    return { ok: false, error: "امکان استفاده از کد دعوت خودتان وجود ندارد" };
   }
 
   const settings = await getSettings();
@@ -199,9 +196,10 @@ export async function rewardReferralOnFirstPurchase(
   );
   if (!locked) return { rewarded: false, retryable: true };
   const rewardKeys = referralRewardKeys(locked._id.toString());
+  const pendingSteps = new Set(pendingReferralRewardSteps(locked));
 
   try {
-    if (!locked.referrerRewardedAt) {
+    if (pendingSteps.has("referrer")) {
       if (locked.referrerReward > 0) {
         const result = await credit({
           userId: locked.referrer.toString(),
@@ -223,7 +221,7 @@ export async function rewardReferralOnFirstPurchase(
       );
     }
 
-    if (!locked.refereeRewardedAt) {
+    if (pendingSteps.has("referee")) {
       if (locked.refereeReward > 0) {
         const result = await credit({
           userId: refereeId,
@@ -245,7 +243,7 @@ export async function rewardReferralOnFirstPurchase(
       );
     }
 
-    if (!locked.xpRewardedAt) {
+    if (pendingSteps.has("xp")) {
       if (locked.xpReward > 0) {
         const result = await grantXp({
           userId: locked.referrer.toString(),
@@ -317,11 +315,22 @@ export async function rewardReferralOnFirstPurchase(
 /** آمار رفرال کاربر */
 export async function getReferralStats(userId: string) {
   const code = await ensureReferralCode(userId);
+  const completedReward = {
+    status: "rewarded",
+    referrerRewardedAt: { $type: "date" },
+    refereeRewardedAt: { $type: "date" },
+    xpRewardedAt: { $type: "date" },
+  } as const;
   const [total, rewarded, pendingAgg] = await Promise.all([
     Referral.countDocuments({ referrer: userId }),
-    Referral.countDocuments({ referrer: userId, status: "rewarded" }),
+    Referral.countDocuments({ referrer: userId, ...completedReward }),
     Referral.aggregate<{ total: number }>([
-      { $match: { referrer: new mongoose.Types.ObjectId(userId), status: "rewarded" } },
+      {
+        $match: {
+          referrer: new mongoose.Types.ObjectId(userId),
+          ...completedReward,
+        },
+      },
       { $group: { _id: null, total: { $sum: "$referrerReward" } } },
     ]),
   ]);
