@@ -1,5 +1,9 @@
 import dbConnect from "@/lib/mongodb";
 import { onUserSignup } from "@/lib/loyalty/purchase.hooks";
+import {
+  ownsSignupIntent,
+  signupBenefitsCompleted,
+} from "@/lib/loyalty/referral.policy";
 import { notifyAdmins } from "@/lib/notifications/service";
 import Otp from "@/model/Otp";
 import User from "@/model/User";
@@ -46,6 +50,7 @@ export async function POST(req: Request) {
   const operationId = randomUUID();
   const mobile = otpDoc.mobile;
   const pendingReferralCode = otpDoc.referralCode?.trim().toUpperCase();
+  const otpSignupIntentId = otpDoc.signupIntentId;
   let user = await User.findOne({ mobile });
   let isNewUser = false;
 
@@ -56,6 +61,7 @@ export async function POST(req: Request) {
         phoneVerifiedAt: now,
         registrationCompletedAt: now,
         pendingReferralCode: pendingReferralCode || undefined,
+        signupIntentId: otpSignupIntentId || undefined,
       });
       isNewUser = true;
     } catch (error) {
@@ -72,7 +78,9 @@ export async function POST(req: Request) {
     );
   }
 
-  let referral: { ok: boolean; error?: string } | undefined;
+  let referral:
+    | { ok: boolean; error?: string; retryable?: boolean }
+    | undefined;
   if (isNewUser) {
     await notifyAdmins({
       title: "کاربر جدید",
@@ -90,12 +98,6 @@ export async function POST(req: Request) {
       ),
     );
 
-    const signupResult = await onUserSignup(
-      user._id.toString(),
-      pendingReferralCode,
-      operationId,
-    );
-    referral = signupResult.referral;
   } else {
     await User.updateOne(
       { _id: user._id },
@@ -106,22 +108,50 @@ export async function POST(req: Request) {
         },
       },
     );
+  }
+
+  const canApplySignupBenefits = ownsSignupIntent({
+    isNewUser,
+    otpIntentId: otpSignupIntentId,
+    userIntentId: user.signupIntentId,
+    alreadyCompleted: Boolean(user.loyaltySignupCompletedAt),
+  });
+
+  if (canApplySignupBenefits) {
+    const effectiveReferralCode =
+      user.pendingReferralCode || pendingReferralCode;
+    const signupResult = await onUserSignup(
+      user._id.toString(),
+      effectiveReferralCode,
+      operationId,
+    );
+    referral = signupResult.referral;
+
     if (
-      pendingReferralCode &&
-      user.pendingReferralCode === pendingReferralCode
+      signupBenefitsCompleted({
+        codeOk: signupResult.code.ok,
+        xpOk: signupResult.xp.ok,
+        hasReferralCode: Boolean(effectiveReferralCode),
+        referralRetryable: signupResult.referral?.retryable,
+      })
     ) {
-      const signupResult = await onUserSignup(
-        user._id.toString(),
-        pendingReferralCode,
-        operationId,
+      await User.updateOne(
+        {
+          _id: user._id,
+          ...(otpSignupIntentId ? { signupIntentId: otpSignupIntentId } : {}),
+        },
+        {
+          $set: { loyaltySignupCompletedAt: new Date() },
+          $unset: { signupIntentId: 1 },
+        },
       );
-      referral = signupResult.referral;
-    } else if (pendingReferralCode) {
-      referral = {
-        ok: false,
-        error: "کد دعوت فقط هنگام تکمیل ثبت‌نام کاربر جدید قابل استفاده است",
-      };
     }
+  } else if (pendingReferralCode) {
+    referral = {
+      ok: false,
+      error: "کد دعوت فقط هنگام تکمیل ثبت‌نام کاربر جدید قابل استفاده است",
+      retryable: false,
+    };
   }
 
   return new Response(

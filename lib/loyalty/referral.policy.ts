@@ -4,6 +4,47 @@ export function normalizeReferralCode(code: string): string {
   return code.trim().toUpperCase();
 }
 
+export function referralCodeForSignupOtp(input: {
+  requestedCode?: string | null;
+  pendingCode?: string | null;
+  isResumingSignup: boolean;
+}): string {
+  // در retry فقط همان کدی که سرور قبلاً به ثبت نام متصل کرده معتبر است.
+  // pending خالی یعنی مرحله معرف قبلاً به شکل قطعی مصرف شده و کد تازه مجاز نیست.
+  return normalizeReferralCode(
+    input.isResumingSignup ? input.pendingCode || "" : input.requestedCode || "",
+  );
+}
+
+export function ownsSignupIntent(input: {
+  isNewUser: boolean;
+  otpIntentId?: string | null;
+  userIntentId?: string | null;
+  alreadyCompleted: boolean;
+}): boolean {
+  return (
+    input.isNewUser ||
+    Boolean(
+      !input.alreadyCompleted &&
+        input.otpIntentId &&
+        input.userIntentId === input.otpIntentId,
+    )
+  );
+}
+
+export function signupBenefitsCompleted(input: {
+  codeOk: boolean;
+  xpOk: boolean;
+  hasReferralCode: boolean;
+  referralRetryable?: boolean;
+}): boolean {
+  return (
+    input.codeOk &&
+    input.xpOk &&
+    (!input.hasReferralCode || input.referralRetryable === false)
+  );
+}
+
 export function restoredReferralCode(input: {
   urlCode?: string | null;
   savedOtpCode?: string | null;

@@ -294,10 +294,14 @@ export async function onUserSignup(
   userId: string,
   referralCode?: string,
   operationId = randomUUID(),
-): Promise<{ referral?: { ok: boolean; error?: string } }> {
-  const settings = await getSettings();
+): Promise<{
+  code: { ok: boolean; error?: string; retryable?: boolean };
+  referral?: { ok: boolean; error?: string; retryable?: boolean };
+  xp: { ok: boolean; error?: string; retryable?: boolean };
+}> {
   const { ensureReferralCode, attachReferral } = await import("./referral.service");
 
+  let code: { ok: boolean; error?: string; retryable?: boolean } = { ok: true };
   try {
     await ensureReferralCode(userId);
   } catch (error) {
@@ -305,12 +309,22 @@ export async function onUserSignup(
       `[loyalty] signup code failed operationId=${operationId} userId=${userId}`,
       error,
     );
+    code = {
+      ok: false,
+      error: "ساخت کد دعوت شخصی موقتاً انجام نشد",
+      retryable: true,
+    };
   }
 
-  let referral: { ok: boolean; error?: string } | undefined;
+  let referral:
+    | { ok: boolean; error?: string; retryable?: boolean }
+    | undefined;
   if (referralCode) {
     try {
-      referral = await attachReferral(userId, referralCode);
+      referral = {
+        ...(await attachReferral(userId, referralCode)),
+        retryable: false,
+      };
     } catch (error) {
       console.error(
         `[loyalty] signup referral failed operationId=${operationId} userId=${userId}`,
@@ -319,12 +333,15 @@ export async function onUserSignup(
       referral = {
         ok: false,
         error: "اتصال کد دعوت موقتاً انجام نشد؛ امکان تلاش مجدد وجود دارد",
+        retryable: true,
       };
     }
   }
 
-  if (settings.xp.signup > 0) {
-    try {
+  let xp: { ok: boolean; error?: string; retryable?: boolean } = { ok: true };
+  try {
+    const settings = await getSettings();
+    if (settings.xp.signup > 0) {
       const xp = await grantXp({
         userId,
         amount: settings.xp.signup,
@@ -334,13 +351,18 @@ export async function onUserSignup(
         applyVipMultiplier: false,
       });
       if (!xp.ok) throw new Error(xp.error ?? "خطای XP ثبت‌نام");
-    } catch (error) {
-      console.error(
-        `[loyalty] signup XP failed operationId=${operationId} userId=${userId}`,
-        error,
-      );
     }
+  } catch (error) {
+    console.error(
+      `[loyalty] signup XP failed operationId=${operationId} userId=${userId}`,
+      error,
+    );
+    xp = {
+      ok: false,
+      error: "ثبت امتیاز خوش آمد موقتاً انجام نشد",
+      retryable: true,
+    };
   }
 
-  return { referral };
+  return { code, referral, xp };
 }

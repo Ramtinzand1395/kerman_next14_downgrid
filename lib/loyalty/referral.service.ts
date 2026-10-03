@@ -125,6 +125,10 @@ export async function attachReferral(
     return { ok: true };
   } catch (err) {
     if ((err as { code?: number })?.code === 11000) {
+      await User.updateOne(
+        { _id: newUserId, pendingReferralCode: normalized },
+        { $unset: { pendingReferralCode: 1 } },
+      );
       return { ok: false, error: "این کاربر قبلاً با کد دعوت ثبت شده است" };
     }
     throw err;

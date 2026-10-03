@@ -4,10 +4,13 @@ import {
   isRewardOrderEligible,
   isValidReferralCode,
   normalizeReferralCode,
+  ownsSignupIntent,
   pendingReferralRewardSteps,
+  referralCodeForSignupOtp,
   referralAttachmentError,
   referralRewardKeys,
   restoredReferralCode,
+  signupBenefitsCompleted,
   shouldClearReferralForMobileChange,
 } from "../lib/loyalty/referral.policy.ts";
 
@@ -32,6 +35,85 @@ test("saved OTP intent wins on refresh and stays bound to its mobile", () => {
   );
   assert.equal(
     shouldClearReferralForMobileChange("09120000000", "09350000000"),
+    true,
+  );
+});
+
+test("signup retries keep the original server-bound referral code", () => {
+  assert.equal(
+    referralCodeForSignupOtp({
+      requestedCode: "KA-NEWNEW",
+      pendingCode: "ka-oldold",
+      isResumingSignup: true,
+    }),
+    "KA-OLDOLD",
+  );
+  assert.equal(
+    referralCodeForSignupOtp({
+      requestedCode: "KA-NEWNEW",
+      pendingCode: null,
+      isResumingSignup: true,
+    }),
+    "",
+  );
+});
+
+test("only the owner can resume unfinished signup benefits", () => {
+  assert.equal(
+    ownsSignupIntent({
+      isNewUser: false,
+      otpIntentId: "intent-1",
+      userIntentId: "intent-1",
+      alreadyCompleted: false,
+    }),
+    true,
+  );
+  assert.equal(
+    ownsSignupIntent({
+      isNewUser: false,
+      otpIntentId: "intent-2",
+      userIntentId: "intent-1",
+      alreadyCompleted: false,
+    }),
+    false,
+  );
+  assert.equal(
+    ownsSignupIntent({
+      isNewUser: false,
+      otpIntentId: "intent-1",
+      userIntentId: "intent-1",
+      alreadyCompleted: true,
+    }),
+    false,
+  );
+});
+
+test("signup stays retryable until code, referral and XP reach terminal states", () => {
+  assert.equal(
+    signupBenefitsCompleted({
+      codeOk: true,
+      xpOk: false,
+      hasReferralCode: true,
+      referralRetryable: false,
+    }),
+    false,
+  );
+  assert.equal(
+    signupBenefitsCompleted({
+      codeOk: true,
+      xpOk: true,
+      hasReferralCode: true,
+      referralRetryable: true,
+    }),
+    false,
+  );
+  assert.equal(
+    signupBenefitsCompleted({
+      codeOk: true,
+      xpOk: true,
+      hasReferralCode: true,
+      referralRetryable: false,
+    }),
     true,
   );
 });

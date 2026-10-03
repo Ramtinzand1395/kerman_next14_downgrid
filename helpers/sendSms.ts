@@ -1,7 +1,13 @@
 "use server";
 // 
 import dbConnect from "@/lib/mongodb";
+import {
+  normalizeReferralCode,
+  referralCodeForSignupOtp,
+} from "@/lib/loyalty/referral.policy";
 import Otp from "@/model/Otp";
+import User from "@/model/User";
+import { randomUUID } from "node:crypto";
 
 async function sendSMS({
   bodyId,
@@ -43,6 +49,46 @@ async function sendSMS({
 export async function sendOtpToUser(mobile: string, referralCode?: string) {
   await dbConnect();
 
+  const normalizedReferralCode = normalizeReferralCode(referralCode ?? "");
+  const existingUser = await User.findOne({ mobile })
+    .select(
+      "pendingReferralCode signupIntentId loyaltySignupCompletedAt",
+    )
+    .lean();
+  let signupIntentId: string | undefined;
+
+  if (!existingUser) {
+    // نبودن کاربر در زمان درخواست OTP، مدرک سمت سرور برای ثبت نام جدید است.
+    signupIntentId = randomUUID();
+  } else if (!existingUser.loyaltySignupCompletedAt) {
+    if (existingUser.signupIntentId) {
+      signupIntentId = existingUser.signupIntentId;
+    } else if (existingUser.pendingReferralCode) {
+      // بازیابی جریان ثبت نامی که ساخت User در آن موفق و مرحله وفاداری ناقص مانده است.
+      signupIntentId = randomUUID();
+      const claimed = await User.updateOne(
+        {
+          _id: existingUser._id,
+          pendingReferralCode: existingUser.pendingReferralCode,
+          signupIntentId: { $exists: false },
+        },
+        { $set: { signupIntentId } },
+      );
+      if (claimed.modifiedCount !== 1) {
+        const refreshed = await User.findById(existingUser._id)
+          .select("signupIntentId")
+          .lean();
+        signupIntentId = refreshed?.signupIntentId;
+      }
+    }
+  }
+
+  const referralCodeForOtp = referralCodeForSignupOtp({
+    requestedCode: normalizedReferralCode,
+    pendingCode: existingUser?.pendingReferralCode,
+    isResumingSignup: Boolean(existingUser && signupIntentId),
+  });
+
   // پاک کردن OTP قبلی شماره موبایل
   await Otp.deleteMany({ mobile });
 
@@ -53,13 +99,14 @@ export async function sendOtpToUser(mobile: string, referralCode?: string) {
   const otpDoc = await Otp.create({
     mobile,
     otp,
-    referralCode: referralCode?.trim().toUpperCase().slice(0, 32) || undefined,
+    referralCode: referralCodeForOtp || undefined,
+    signupIntentId,
     createdAt: new Date(),
   });
-  await sendSMS({
-    bodyId: 401950,
-    to: mobile,
-    args: [otp],
-  });
+  // await sendSMS({
+  //   bodyId: 401950,
+  //   to: mobile,
+  //   args: [otp],
+  // });
   return otpDoc._id.toString();
 }
