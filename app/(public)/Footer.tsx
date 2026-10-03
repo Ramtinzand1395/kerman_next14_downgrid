@@ -2,6 +2,7 @@ import {
   ArrowLeft,
   BadgeCheck,
   Clock3,
+  FileText,
   Home,
   Info,
   Instagram,
@@ -19,6 +20,7 @@ const quickLinks = [
   { name: "فروشگاه", href: "/products", icon: ShoppingBag },
   { name: "درباره ما", href: "/about-us", icon: Info },
   { name: "تماس با ما", href: "/contact-us", icon: Phone },
+  { name: "قوانین و مقررات", href: "/terms", icon: FileText },
 ];
 
 const features = [
@@ -195,8 +197,14 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-8 border-t border-gray-200 pt-5 text-center text-xs text-gray-500 md:text-sm">
-          © 2025 KermanAtari. تمامی حقوق برای این مجموعه محفوظ است.
+        <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-gray-200 pt-5 text-center text-xs text-gray-500 md:flex-row md:text-sm">
+          <p>© 2025 KermanAtari. تمامی حقوق برای این مجموعه محفوظ است.</p>
+          <Link
+            href="/terms"
+            className="font-semibold text-gray-600 transition hover:text-[#001A6E]"
+          >
+            قوانین و مقررات
+          </Link>
         </div>
       </div>
     </footer>

@@ -11,6 +11,8 @@ interface IExperience extends Document {
   /** XP کسب‌شده در ماه جاری (برای رتبه‌بندی/گزارش) */
   monthlyXp: number;
   level: LevelCode;
+  /** کلیدهای XP اعمال شده برای idempotency در MongoDB standalone */
+  appliedXpKeys: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,6 +23,7 @@ const ExperienceSchema = new Schema<IExperience>(
     totalXp: { type: Number, default: 0, min: 0 },
     monthlyXp: { type: Number, default: 0, min: 0 },
     level: { type: String, enum: LEVEL_CODES, default: "rookie" },
+    appliedXpKeys: { type: [String], default: [] },
   },
   { timestamps: true },
 );

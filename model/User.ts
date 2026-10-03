@@ -25,6 +25,19 @@ interface IUser extends Document {
   totalPurchase: number;
   /** تعداد سفارش‌های موفق */
   successfulOrders: number;
+  /** زمان تکمیل احراز شماره و ثبت نام */
+  phoneVerifiedAt?: Date;
+  registrationCompletedAt?: Date;
+  /** کد دعوت ثبت شده در جریان OTP؛ فقط سرور می تواند آن را مصرف کند */
+  pendingReferralCode?: string;
+  /** شناسه امن جریان ثبت نام برای retry مزایای باشگاه */
+  signupIntentId?: string;
+  /** زمان تکمیل تمام مزایای ثبت نام (کد دعوت شخصی، اتصال معرف و XP) */
+  loyaltySignupCompletedAt?: Date;
+  /** سفارش هایی که شمارنده های خریدشان اتمیک اعمال شده است */
+  loyaltyProcessedOrders: mongoose.Types.ObjectId[];
+  /** اولین سفارش موفق قطعی؛ برای حفظ سیاست «اولین خرید» */
+  firstSuccessfulOrder?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -56,6 +69,18 @@ const UserSchema = new Schema<IUser>(
     vipTier: { type: String, enum: VIP_TIERS },
     totalPurchase: { type: Number, default: 0, min: 0 },
     successfulOrders: { type: Number, default: 0, min: 0 },
+    phoneVerifiedAt: Date,
+    registrationCompletedAt: Date,
+    pendingReferralCode: { type: String, maxlength: 32 },
+    signupIntentId: { type: String, maxlength: 64, index: true, sparse: true },
+    loyaltySignupCompletedAt: Date,
+    loyaltyProcessedOrders: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "Order" },
+    ],
+    firstSuccessfulOrder: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
+    },
   },
   {
     timestamps: true, // ایجاد خودکار createdAt و updatedAt

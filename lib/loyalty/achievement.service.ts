@@ -25,7 +25,13 @@ async function metricValue(userId: string, metric: MissionMetric): Promise<numbe
     case "review_count":
       return Comment.countDocuments({ user: userId, verified: true });
     case "referral_count":
-      return Referral.countDocuments({ referrer: userId, status: "rewarded" });
+      return Referral.countDocuments({
+        referrer: userId,
+        status: "rewarded",
+        referrerRewardedAt: { $type: "date" },
+        refereeRewardedAt: { $type: "date" },
+        xpRewardedAt: { $type: "date" },
+      });
     case "login_days": {
       const s = await LoginStreak.findOne({ user: userId }).lean();
       return s?.longestStreak ?? 0;

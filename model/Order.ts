@@ -143,6 +143,18 @@ const OrderSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    loyaltyProcessingToken: {
+      type: String,
+      default: null,
+    },
+    loyaltyProcessingStartedAt: {
+      type: Date,
+      default: null,
+    },
+    loyaltyProcessingExpiresAt: {
+      type: Date,
+      default: null,
+    },
 
     // کوپن اعمال‌شده روی سفارش
     couponCode: {

@@ -37,6 +37,7 @@ async function getProducts(params: {
   sort?: string;
   page?: string;
   q?: string;
+  tag?: string;
 }) {
   const url = new URL(`${SITE_URL}/api/products/all_products`);
 
@@ -53,6 +54,9 @@ async function getProducts(params: {
   }
   if (params.q) {
     url.searchParams.append("q", params.q);
+  }
+  if (params.tag) {
+    url.searchParams.append("tag", params.tag);
   }
   const res = await fetch(url.toString(), { cache: "no-store" });
 

@@ -25,6 +25,17 @@ type ZarinpalVerifyResponse = {
 
 const PAYMENT_PROCESSING_TTL_MS = 15 * 60 * 1000;
 
+async function retryLoyaltyForPaidOrder(orderId: string) {
+  try {
+    await onSuccessfulPurchase({ orderId });
+  } catch (error) {
+    console.error(
+      `[loyalty] zarinpal retry failed orderId=${orderId}`,
+      error,
+    );
+  }
+}
+
 function withPaymentQuery(
   baseUrl: string,
   path: string,
@@ -84,6 +95,9 @@ export async function GET(req: NextRequest) {
     }).lean();
 
     if (alreadyPaidOrder) {
+      if (alreadyPaidOrder.paymentStatus === "paid") {
+        await retryLoyaltyForPaidOrder(alreadyPaidOrder._id.toString());
+      }
       const successPath =
         alreadyPaidOrder.paymentStatus === "pending_refund"
           ? "/payment-pending"
@@ -135,6 +149,9 @@ export async function GET(req: NextRequest) {
     }).lean();
 
     if (duplicateOrder) {
+      if (duplicateOrder.paymentStatus === "paid") {
+        await retryLoyaltyForPaidOrder(duplicateOrder._id.toString());
+      }
       await TempPayment.deleteOne({ authority });
 
       const successPath =
@@ -175,6 +192,9 @@ export async function GET(req: NextRequest) {
       }).lean();
 
       if (completedOrder) {
+        if (completedOrder.paymentStatus === "paid") {
+          await retryLoyaltyForPaidOrder(completedOrder._id.toString());
+        }
         const completedPath =
           completedOrder.paymentStatus === "pending_refund"
             ? "/payment-pending"

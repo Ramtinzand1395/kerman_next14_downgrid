@@ -68,6 +68,17 @@ function automaticIdempotencyFingerprint(input: {
 const delay = (milliseconds: number) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
 
+async function retryLoyaltyForPaidOrder(orderId: string) {
+  try {
+    await onSuccessfulPurchase({ orderId });
+  } catch (error) {
+    console.error(
+      `[loyalty] wallet retry failed orderId=${orderId}`,
+      error,
+    );
+  }
+}
+
 async function replayAutomaticAttempt(fingerprint: string) {
   const deadline = Date.now() + AUTOMATIC_IDEMPOTENCY_WAIT_MS;
 
@@ -76,6 +87,7 @@ async function replayAutomaticAttempt(fingerprint: string) {
     if (!existing) return null;
 
     if (existing.status === "completed" && existing.order) {
+      await retryLoyaltyForPaidOrder(existing.order.toString());
       return NextResponse.json({
         success: true,
         orderId: existing.order.toString(),
@@ -344,6 +356,9 @@ export async function POST(req: NextRequest) {
         clientRequestKey: idempotencyKey,
       }).lean();
       if (existing) {
+        if (existing.paymentStatus === "paid") {
+          await retryLoyaltyForPaidOrder(existing._id.toString());
+        }
         return NextResponse.json({
           success: true,
           orderId: existing._id.toString(),
@@ -377,6 +392,9 @@ export async function POST(req: NextRequest) {
           clientRequestKey: idempotencyKey,
         }).lean();
         if (existing) {
+          if (existing.paymentStatus === "paid") {
+            await retryLoyaltyForPaidOrder(existing._id.toString());
+          }
           return NextResponse.json({
             success: true,
             orderId: existing._id.toString(),

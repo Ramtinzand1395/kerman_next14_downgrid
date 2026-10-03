@@ -8,6 +8,16 @@ body {
   background-color: #f3f4f9;
 }
 
+.landing-section {
+  margin-block: 3rem;
+}
+
+@media (min-width: 768px) {
+  .landing-section {
+    margin-block: 5rem;
+  }
+}
+
 .dashboard-shell {
   background: radial-gradient(
     circle at top right,

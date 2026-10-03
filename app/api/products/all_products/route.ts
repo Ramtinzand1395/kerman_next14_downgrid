@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 
 import Category from "@/model/Category";
 import Product from "@/model/Product";
+import Tag from "@/model/Tag";
 import dbConnect from "@/lib/mongodb";
 import "@/model/Comment";
 import "@/model/Tag";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
@@ -12,6 +15,7 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const categorySlug = searchParams.get("category");
+    const tagSlug = searchParams.get("tag");
     const sortParam = searchParams.get("sort");
     const query = (searchParams.get("q") || "").trim();
     const page = Number(searchParams.get("page") || 1);
@@ -39,6 +43,16 @@ export async function GET(req: Request) {
       ];
 
       filter.category = { $in: categoryIds };
+    }
+
+    if (tagSlug) {
+      const tag = await Tag.findOne({ slug: tagSlug }).select("_id");
+
+      if (!tag) {
+        return NextResponse.json({ products: [], total: 0, page, limit });
+      }
+
+      filter.tags = tag._id;
     }
 
     if (query) {

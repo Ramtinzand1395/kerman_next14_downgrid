@@ -34,6 +34,12 @@ const staticRoutes: MetadataRoute.Sitemap = [
     changeFrequency: "monthly",
     priority: 0.6,
   },
+  {
+    url: `${SITE_URL}/terms`,
+    lastModified: new Date("2026-10-02"),
+    changeFrequency: "yearly",
+    priority: 0.4,
+  },
 ];
 
 type ProductSitemapRow = {

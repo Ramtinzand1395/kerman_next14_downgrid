@@ -37,12 +37,26 @@ interface LoyaltyDashboard {
     monthlyXp: number;
     level: LevelCode;
     levelTitle: string;
-    nextLevel: { code: LevelCode; title: string; minXp: number; remaining: number } | null;
+    nextLevel: {
+      code: LevelCode;
+      title: string;
+      minXp: number;
+      remaining: number;
+    } | null;
   };
   vip: { tier: VipTier | null; tierTitle: string | null };
   stats: { totalPurchase: number; successfulOrders: number };
-  streak: { currentStreak: number; longestStreak: number; activeToday: boolean };
-  referral: { code: string; totalInvited: number; successful: number; totalEarned: number };
+  streak: {
+    currentStreak: number;
+    longestStreak: number;
+    activeToday: boolean;
+  };
+  referral: {
+    code: string;
+    totalInvited: number;
+    successful: number;
+    totalEarned: number;
+  };
 }
 
 interface MissionItem {
@@ -133,10 +147,16 @@ export default function MyLoyalty() {
   const claim = async (mission: MissionItem) => {
     if (claiming) return;
     setClaiming(mission._id);
-    const res = await apiFetch<{ claimed: boolean }>("/api/loyalty/missions/claim", {
-      method: "POST",
-      body: JSON.stringify({ missionId: mission._id, periodKey: mission.periodKey }),
-    });
+    const res = await apiFetch<{ claimed: boolean }>(
+      "/api/loyalty/missions/claim",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          missionId: mission._id,
+          periodKey: mission.periodKey,
+        }),
+      },
+    );
     setClaiming(null);
     if (res.ok) {
       toast.success("پاداش ماموریت دریافت شد");
@@ -149,10 +169,10 @@ export default function MyLoyalty() {
 
   const copyReferral = async () => {
     if (!dash?.referral.code) return;
+
     try {
-      const referralLink = `${window.location.origin}/auth/login?ref=${encodeURIComponent(dash.referral.code)}`;
-      await navigator.clipboard.writeText(referralLink);
-      toast.success("لینک دعوت کپی شد");
+      await navigator.clipboard.writeText(dash.referral.code);
+      toast.success("کد دعوت کپی شد");
     } catch {
       toast.error("کپی ناموفق بود");
     }
@@ -165,7 +185,8 @@ export default function MyLoyalty() {
           100,
           Math.round(
             ((xp.totalXp - (xp.nextLevel.minXp - xp.nextLevel.remaining)) /
-              (xp.nextLevel.minXp - (xp.nextLevel.minXp - xp.nextLevel.remaining) || 1)) *
+              (xp.nextLevel.minXp -
+                (xp.nextLevel.minXp - xp.nextLevel.remaining) || 1)) *
               100,
           ),
         )
@@ -193,7 +214,10 @@ export default function MyLoyalty() {
           {xp ? (
             <>
               <p className="mt-3 text-2xl font-bold text-slate-800">
-                {faNum(xp.totalXp)} <span className="text-sm font-normal text-slate-400">امتیاز</span>
+                {faNum(xp.totalXp)}{" "}
+                <span className="text-sm font-normal text-slate-400">
+                  امتیاز
+                </span>
               </p>
               <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
                 <div
@@ -225,7 +249,11 @@ export default function MyLoyalty() {
             <span className="text-sm">عضویت VIP</span>
           </div>
           <p className="mt-3 text-xl font-bold">
-            {dash ? dash.vip.tierTitle ?? "عضو عادی" : <Skeleton width={80} baseColor="#94a3b8" />}
+            {dash ? (
+              (dash.vip.tierTitle ?? "عضو عادی")
+            ) : (
+              <Skeleton width={80} baseColor="#94a3b8" />
+            )}
           </p>
           <p className="mt-1 text-xs text-white/70">
             مجموع خرید: {dash ? toman(dash.stats.totalPurchase) : "…"}
@@ -239,7 +267,11 @@ export default function MyLoyalty() {
             <span className="text-sm">زنجیره ورود</span>
           </div>
           <p className="mt-3 text-xl font-bold text-slate-800">
-            {dash ? `${faNum(dash.streak.currentStreak)} روز` : <Skeleton width={70} />}
+            {dash ? (
+              `${faNum(dash.streak.currentStreak)} روز`
+            ) : (
+              <Skeleton width={70} />
+            )}
           </p>
           <p className="mt-1 text-xs text-slate-400">
             {dash
@@ -253,10 +285,22 @@ export default function MyLoyalty() {
 
       {/* کارت‌های کوچک آمار */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="موجودی کیف پول" value={dash ? toman(dash.wallet.balance) : null} />
-        <StatCard label="امتیاز این ماه" value={dash ? faNum(dash.experience.monthlyXp) : null} />
-        <StatCard label="سفارش‌های موفق" value={dash ? faNum(dash.stats.successfulOrders) : null} />
-        <StatCard label="درآمد از دعوت" value={dash ? toman(dash.referral.totalEarned) : null} />
+        <StatCard
+          label="موجودی کیف پول"
+          value={dash ? toman(dash.wallet.balance) : null}
+        />
+        <StatCard
+          label="امتیاز این ماه"
+          value={dash ? faNum(dash.experience.monthlyXp) : null}
+        />
+        <StatCard
+          label="سفارش‌های موفق"
+          value={dash ? faNum(dash.stats.successfulOrders) : null}
+        />
+        <StatCard
+          label="درآمد از دعوت"
+          value={dash ? toman(dash.referral.totalEarned) : null}
+        />
       </div>
 
       {/* دعوت از دوستان */}
@@ -299,23 +343,34 @@ export default function MyLoyalty() {
         {!missions ? (
           <Skeleton count={3} height={64} className="mb-3" />
         ) : missions.length === 0 ? (
-          <p className="py-6 text-center text-sm text-slate-400">ماموریت فعالی وجود ندارد</p>
+          <p className="py-6 text-center text-sm text-slate-400">
+            ماموریت فعالی وجود ندارد
+          </p>
         ) : (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {missions.map((m) => {
-              const pct = Math.min(100, Math.round((m.progress / m.target) * 100));
+              const pct = Math.min(
+                100,
+                Math.round((m.progress / m.target) * 100),
+              );
               return (
                 <div
                   key={m._id}
                   className={`rounded-xl border p-4 ${
-                    m.completed ? "border-emerald-200 bg-emerald-50/50" : "border-slate-200"
+                    m.completed
+                      ? "border-emerald-200 bg-emerald-50/50"
+                      : "border-slate-200"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-sm font-bold text-slate-800">{m.title}</p>
+                      <p className="text-sm font-bold text-slate-800">
+                        {m.title}
+                      </p>
                       {m.description && (
-                        <p className="mt-0.5 text-xs text-slate-500">{m.description}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          {m.description}
+                        </p>
                       )}
                     </div>
                     <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">
@@ -333,12 +388,14 @@ export default function MyLoyalty() {
                   </div>
                   <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
                     <span>
-                      {faNum(m.progress)} از {faNum(m.target)} {METRIC_UNIT[m.metric]}
+                      {faNum(m.progress)} از {faNum(m.target)}{" "}
+                      {METRIC_UNIT[m.metric]}
                     </span>
                     <span className="text-indigo-600">
                       پاداش: {m.reward.xp > 0 && `${faNum(m.reward.xp)} XP`}
                       {m.reward.xp > 0 && m.reward.walletCredit > 0 && " + "}
-                      {m.reward.walletCredit > 0 && toman(m.reward.walletCredit)}
+                      {m.reward.walletCredit > 0 &&
+                        toman(m.reward.walletCredit)}
                     </span>
                   </div>
 
@@ -391,8 +448,12 @@ export default function MyLoyalty() {
                     <Award className="h-5 w-5 text-amber-600" />
                   </span>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-slate-700">{b.snapshot.title}</p>
-                    <p className="text-xs text-slate-400">{toPersianDate(b.createdAt)}</p>
+                    <p className="text-sm font-medium text-slate-700">
+                      {b.snapshot.title}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {toPersianDate(b.createdAt)}
+                    </p>
                   </div>
                 </li>
               ))}
@@ -408,15 +469,24 @@ export default function MyLoyalty() {
           {!xpHistory ? (
             <Skeleton count={4} height={36} className="mb-2" />
           ) : xpHistory.items.length === 0 ? (
-            <p className="py-6 text-center text-sm text-slate-400">سابقه‌ای ثبت نشده است</p>
+            <p className="py-6 text-center text-sm text-slate-400">
+              سابقه‌ای ثبت نشده است
+            </p>
           ) : (
             <>
               <ul className="divide-y divide-slate-50">
                 {xpHistory.items.map((h) => (
-                  <li key={h._id} className="flex items-center justify-between py-2.5 text-sm">
+                  <li
+                    key={h._id}
+                    className="flex items-center justify-between py-2.5 text-sm"
+                  >
                     <div>
-                      <p className="text-slate-700">{h.description || XP_REASON_FA[h.reason]}</p>
-                      <p className="text-xs text-slate-400">{toPersianDate(h.createdAt)}</p>
+                      <p className="text-slate-700">
+                        {h.description || XP_REASON_FA[h.reason]}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {toPersianDate(h.createdAt)}
+                      </p>
                     </div>
                     <span
                       className={`font-bold ${h.amount >= 0 ? "text-emerald-600" : "text-rose-600"}`}
