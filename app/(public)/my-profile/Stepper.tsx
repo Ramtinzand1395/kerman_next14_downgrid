@@ -10,6 +10,7 @@ import {
   Dices,
   WalletCards,
   Trophy,
+  CalendarClock,
 } from "lucide-react";
 
 export default function Stepper({ activeStep }: { activeStep: number }) {
@@ -19,6 +20,7 @@ export default function Stepper({ activeStep }: { activeStep: number }) {
     { id: 3, title: "آدرس‌ها", icon: MapPinHouse },
     { id: 4, title: "نظرات من", icon: MessageSquareText },
     { id: 5, title: "سفارش‌ها", icon: ShoppingBasket },
+    { id: 6, title: "دریافت نوبت", icon: CalendarClock },
     { id: 8, title: "کیف پول", icon: WalletCards },
     { id: 9, title: "باشگاه مشتریان", icon: Trophy },
     { id: 10, title: "گردونه شانس", icon: Dices },

@@ -63,6 +63,7 @@ export async function POST(req: Request) {
 
   // جمع سبد با قیمت‌های واقعی دیتابیس (همان منطق request پرداخت)
   let totalPrice = 0;
+  const pricedItems: Array<{ productId: string; categoryIds: string[]; amount: number }> = [];
   for (const item of items) {
     const product = productMap.get(item.productId);
     if (!product) continue;
@@ -74,13 +75,25 @@ export async function POST(req: Request) {
         (v: any) => String(v._id) === String(item.variantId),
       );
       if (!variant) continue;
-      totalPrice +=
+      const amount =
         Number(variant.discountPrice ?? variant.price ?? 0) *
         Number(item.quantity);
+      totalPrice += amount;
+      pricedItems.push({
+        productId: item.productId,
+        categoryIds: product.category ? [String(product.category)] : [],
+        amount,
+      });
     } else {
-      totalPrice +=
+      const amount =
         Number(product.discountPrice ?? product.price ?? 0) *
         Number(item.quantity);
+      totalPrice += amount;
+      pricedItems.push({
+        productId: item.productId,
+        categoryIds: product.category ? [String(product.category)] : [],
+        amount,
+      });
     }
   }
 
@@ -88,12 +101,7 @@ export async function POST(req: Request) {
     code,
     userId: session.user.id,
     orderAmount: totalPrice,
-    items: items.map((item) => ({
-      productId: item.productId,
-      categoryIds: productMap.get(item.productId)?.category
-        ? [String(productMap.get(item.productId)!.category)]
-        : [],
-    })),
+    items: pricedItems,
   });
 
   if (!validation.ok) {

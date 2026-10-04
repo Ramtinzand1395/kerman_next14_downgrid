@@ -19,6 +19,7 @@ import type { NotificationItem } from "./types";
 
 type DetailRecord = Record<string, unknown>;
 type RequestStatus = "pending" | "confirmed" | "rejected" | "completed";
+type AppointmentStatus = RequestStatus | "cancelled" | "no_show";
 
 const manageableKinds = new Set([
   "Comment",
@@ -26,6 +27,7 @@ const manageableKinds = new Set([
   "User",
   "ContactMessage",
   "CustomerGameOrder",
+  "Appointment",
 ]);
 
 const orderStatusLabel: Record<string, string> = {
@@ -41,6 +43,12 @@ const requestStatusLabel: Record<RequestStatus, string> = {
   confirmed: "تایید شده",
   rejected: "رد شده",
   completed: "تکمیل شده",
+};
+
+const appointmentStatusLabel: Record<AppointmentStatus, string> = {
+  ...requestStatusLabel,
+  cancelled: "لغوشده",
+  no_show: "عدم مراجعه",
 };
 
 function record(value: unknown): DetailRecord {
@@ -96,6 +104,9 @@ function DetailsModal({
   const [orderStatus, setOrderStatus] = useState(text(item.status, "pending"));
   const [requestStatus, setRequestStatus] = useState<RequestStatus>(
     (text(item.status, "pending") as RequestStatus),
+  );
+  const [appointmentStatus, setAppointmentStatus] = useState<AppointmentStatus>(
+    text(item.status, "pending") as AppointmentStatus,
   );
   const [totalPrice, setTotalPrice] = useState(String(number(item.totalPrice)));
 
@@ -161,6 +172,22 @@ function DetailsModal({
     if (!response.ok) throw new Error(result.error || "ذخیره مبلغ انجام نشد.");
     setTotalPrice(String(parsedPrice));
     toast.success("مبلغ سفارش ذخیره شد.");
+  });
+
+  const updateAppointmentStatus = (nextStatus: AppointmentStatus) => run("appointment-status", async () => {
+    const parsedPrice = Number(totalPrice.replace(/,/g, "").trim());
+    const response = await fetch(`/api/admin/appointments/${entityId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        status: nextStatus,
+        ...(nextStatus === "completed" ? { baseAmount: parsedPrice } : {}),
+      }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || "تغییر وضعیت نوبت انجام نشد.");
+    setAppointmentStatus(nextStatus);
+    toast.success("وضعیت نوبت تغییر کرد.");
   });
 
   const user = record(item.user);
@@ -229,6 +256,38 @@ function DetailsModal({
                 <label className="text-sm font-semibold text-slate-700">مبلغ کل<div className="mt-2 flex gap-2"><input type="number" min="0" value={totalPrice} onChange={(event) => setTotalPrice(event.target.value)} className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 font-normal outline-none focus:border-indigo-400" /><button type="button" onClick={() => void updateRequestPrice()} disabled={working === "price"} className="inline-flex items-center gap-1 rounded-xl bg-indigo-600 px-3 text-white disabled:opacity-50">{working === "price" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} ذخیره</button></div></label>
               </div>
               {!!products.length && <div className="space-y-2"><h3 className="font-bold text-slate-900">محصولات درخواست</h3>{products.map((entry, index) => <div key={index} className="grid gap-2 rounded-xl border border-slate-200 p-3 text-sm sm:grid-cols-4"><span className="font-semibold">{text(entry.name)}</span><span>{text(entry.platform, "بدون پلتفرم")}</span><span>{number(entry.size) ? `${number(entry.size).toLocaleString("fa-IR")} GB` : "حجم نامشخص"}</span><span>{number(entry.price).toLocaleString("fa-IR")} تومان</span></div>)}</div>}
+            </>
+          )}
+
+          {kind === "Appointment" && (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <DetailBox label="کد پیگیری" value={text(item.trackingCode)} />
+                <DetailBox label="مشتری" value={text(user.username, text(item.customerName))} />
+                <DetailBox label="موبایل" value={text(user.mobile, text(item.phone))} />
+                <DetailBox label="زمان مراجعه" value={date(item.startsAt)} />
+                <DetailBox label="خدمت" value={item.serviceType === "repair" ? "تعمیرات" : "نصب بازی"} />
+                <DetailBox label="دستگاه" value={text(item.device)} />
+                <DetailBox label="نوع نصب / مشکل" value={text(item.installationType, text(item.repairIssue))} />
+                <DetailBox label="وضعیت" value={appointmentStatusLabel[appointmentStatus]} />
+              </div>
+              {typeof item.description === "string" && item.description && <DetailBox label="توضیحات" value={item.description} />}
+              {["pending", "confirmed"].includes(appointmentStatus) && (
+                <div className="grid gap-3 rounded-2xl border border-blue-100 bg-blue-50/50 p-4 md:grid-cols-2">
+                  <label className="text-sm font-semibold text-slate-700">وضعیت نوبت
+                    <select value={appointmentStatus} onChange={(event) => void updateAppointmentStatus(event.target.value as AppointmentStatus)} disabled={working === "appointment-status"} className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 font-normal">
+                      {appointmentStatus === "pending" && <><option value="pending">در انتظار تأیید</option><option value="confirmed">تأییدشده</option></>}
+                      {appointmentStatus === "confirmed" && <option value="confirmed">تأییدشده</option>}
+                      <option value="rejected">ردشده</option>
+                      <option value="cancelled">لغوشده</option>
+                      {appointmentStatus === "confirmed" && <><option value="no_show">عدم مراجعه</option><option value="completed">انجام‌شده</option></>}
+                    </select>
+                  </label>
+                  <label className="text-sm font-semibold text-slate-700">مبلغ بررسی‌شده برای انجام خدمت
+                    <input type="number" min="0" value={totalPrice} onChange={(event) => setTotalPrice(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 font-normal" />
+                  </label>
+                </div>
+              )}
             </>
           )}
         </div>

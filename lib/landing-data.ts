@@ -6,26 +6,17 @@ import Tag from "@/model/Tag";
 import "@/model/Comment";
 import type { BlogPost, Product } from "@/types";
 
-const LANDING_CATEGORY_SLUGS = [
-  "games",
-  "consoles",
-  "accessories",
-  "gaming-accessories",
-] as const;
-
-const GENRE_SLUGS = [
-  "sports",
-  "action",
-  "adventure",
-  "family",
-  "racing",
-  "horror",
-] as const;
-
 type CategoryRecord = {
   _id: { toString(): string };
+  name: string;
   slug: string;
   parent?: { toString(): string } | null;
+};
+
+type TagRecord = {
+  _id: { toString(): string };
+  name: string;
+  slug: string;
 };
 
 export type LandingGenre = {
@@ -34,13 +25,23 @@ export type LandingGenre = {
   count: number;
 };
 
+export type LandingProductTab = {
+  id: string;
+  label: string;
+  href: string;
+  products: Product[];
+};
+
 export type LandingData = {
-  latestGames: Product[];
-  equipment: Product[];
+  gameTabs: LandingProductTab[];
+  equipmentTabs: LandingProductTab[];
   consoles: Product[];
   genres: LandingGenre[];
   articles: BlogPost[];
 };
+
+const PRODUCT_FIELDS =
+  "sku title slug description shortDesc price discountPrice stock brand mainImage mainImageAlt productType variants category tags comments createdAt updatedAt seoTitle metaDescription";
 
 function serializeProduct(document: any): Product {
   return {
@@ -129,10 +130,44 @@ function serializeArticle(document: any): BlogPost {
   };
 }
 
+function descendantsFor(categories: CategoryRecord[], rootSlug: string) {
+  const root = categories.find((category) => category.slug === rootSlug);
+  if (!root) return [];
+
+  const ids = [root._id];
+  const pending = [root._id.toString()];
+
+  while (pending.length) {
+    const parentId = pending.shift();
+    const children = categories.filter(
+      (category) => category.parent?.toString() === parentId,
+    );
+    children.forEach((child) => {
+      if (!ids.some((id) => id.toString() === child._id.toString())) {
+        ids.push(child._id);
+        pending.push(child._id.toString());
+      }
+    });
+  }
+
+  return ids;
+}
+
 export async function getLandingData(): Promise<LandingData> {
   const empty: LandingData = {
-    latestGames: [],
-    equipment: [],
+    gameTabs: [
+      { id: "ps5", label: "PS5", href: "/products?category=games&tag=ps5&sort=newest&page=1", products: [] },
+      { id: "featured", label: "ویژه", href: "/products?category=games&sort=newest&page=1", products: [] },
+      { id: "ps4", label: "PS4", href: "/products?category=games&tag=ps4&sort=newest&page=1", products: [] },
+      { id: "latest", label: "جدیدترین", href: "/products?category=games&sort=newest&page=1", products: [] },
+    ],
+    equipmentTabs: [
+      { id: "controllers", label: "دسته بازی", href: "/products?category=controllers&sort=newest&page=1", products: [] },
+      { id: "chargers", label: "شارژر", href: "/products?category=accessories&tag=controller-charger&sort=newest&page=1", products: [] },
+      { id: "stands", label: "پایه", href: "/products?category=stands-coolers&sort=newest&page=1", products: [] },
+      { id: "cables", label: "کابل", href: "/products?category=accessories&tag=cable&sort=newest&page=1", products: [] },
+      { id: "ps5-accessories", label: "لوازم PS5", href: "/products?category=accessories&tag=ps5&sort=newest&page=1", products: [] },
+    ],
     consoles: [],
     genres: [],
     articles: [],
@@ -141,49 +176,34 @@ export async function getLandingData(): Promise<LandingData> {
   try {
     await dbConnect();
 
-    const parents = (await Category.find({
-      slug: { $in: LANDING_CATEGORY_SLUGS },
-    })
-      .select("_id slug parent")
-      .lean()) as CategoryRecord[];
+    const [categories, tags] = await Promise.all([
+      Category.find({}).select("_id name slug parent").lean<CategoryRecord[]>(),
+      Tag.find({}).select("_id name slug").lean<TagRecord[]>(),
+    ]);
 
-    const children = parents.length
-      ? ((await Category.find({
-          parent: { $in: parents.map((category) => category._id) },
-        })
-          .select("_id slug parent")
-          .lean()) as CategoryRecord[])
-      : [];
-
-    const idsFor = (slug: string) => {
-      const parent = parents.find((category) => category.slug === slug);
-      if (!parent) return [];
-      const parentId = parent._id.toString();
-      return [
-        parent._id,
-        ...children
-          .filter((category) => category.parent?.toString() === parentId)
-          .map((category) => category._id),
-      ];
-    };
-
-    const gameCategoryIds = idsFor("games");
-    const consoleCategoryIds = idsFor("consoles");
+    const gameCategoryIds = descendantsFor(categories, "games");
+    const consoleCategoryIds = descendantsFor(categories, "consoles");
     const equipmentCategoryIds = [
-      ...idsFor("accessories"),
-      ...idsFor("gaming-accessories"),
+      ...descendantsFor(categories, "accessories"),
+      ...descendantsFor(categories, "gaming-accessories"),
     ];
 
-    const productFields =
-      "sku title slug description shortDesc price discountPrice stock brand mainImage mainImageAlt productType variants category tags comments createdAt updatedAt seoTitle metaDescription";
+    const categoryIdsFor = (slug: string) => descendantsFor(categories, slug);
+    const tagIdsFor = (slugs: string[]) =>
+      tags.filter((tag) => slugs.includes(tag.slug)).map((tag) => tag._id);
 
-    const productQuery = (categoryIds: any[], limit: number) =>
+    const productQuery = (
+      categoryIds: any[],
+      limit: number,
+      extraFilter: Record<string, unknown> = {},
+    ) =>
       categoryIds.length
         ? ProductModel.find({
             status: "published",
             category: { $in: categoryIds },
+            ...extraFilter,
           })
-            .select(productFields)
+            .select(PRODUCT_FIELDS)
             .populate("category", "name slug")
             .populate("tags", "name slug")
             .populate({
@@ -196,42 +216,116 @@ export async function getLandingData(): Promise<LandingData> {
             .lean()
         : Promise.resolve([]);
 
-    const [latestGamesRaw, equipmentRaw, consolesRaw, articlesRaw, genreTags] =
-      await Promise.all([
-        productQuery(gameCategoryIds, 8),
-        productQuery(equipmentCategoryIds, 8),
-        productQuery(consoleCategoryIds, 4),
-        Blog.find({ published: true })
-          .select(
-            "title slug excerpt content coverImage published createdAt updatedAt metaDescription focusKeyword",
-          )
-          .sort({ createdAt: -1 })
-          .limit(3)
-          .lean(),
-        Tag.find({ slug: { $in: GENRE_SLUGS } })
-          .select("_id name slug")
-          .lean(),
-      ]);
+    const taggedQuery = (
+      categoryIds: any[],
+      slugs: string[],
+      limit: number,
+    ) => {
+      const tagIds = tagIdsFor(slugs);
+      return tagIds.length
+        ? productQuery(categoryIds, limit, { tags: { $in: tagIds } })
+        : Promise.resolve([]);
+    };
 
-    const genreCounts = gameCategoryIds.length
-      ? await Promise.all(
-          genreTags.map(async (tag: any) => ({
-            name: tag.name,
-            slug: tag.slug,
-            count: await ProductModel.countDocuments({
+    const [
+      ps5GamesRaw,
+      featuredGamesRaw,
+      ps4GamesRaw,
+      latestGamesRaw,
+      controllersRaw,
+      chargersRaw,
+      standsRaw,
+      cablesRaw,
+      ps5AccessoriesRaw,
+      consolesRaw,
+      articlesRaw,
+    ] = await Promise.all([
+      taggedQuery(gameCategoryIds, ["ps5", "ps5-game"], 6),
+      productQuery(gameCategoryIds, 6, {
+        $expr: {
+          $and: [
+            { $ne: ["$discountPrice", null] },
+            { $lt: ["$discountPrice", "$price"] },
+          ],
+        },
+      }),
+      taggedQuery(gameCategoryIds, ["ps4", "ps4-game"], 6),
+      productQuery(gameCategoryIds, 6),
+      productQuery(categoryIdsFor("controllers"), 4),
+      taggedQuery(
+        equipmentCategoryIds,
+        ["controller-charger", "charging-dock", "controller-charging"],
+        4,
+      ),
+      productQuery(categoryIdsFor("stands-coolers"), 4),
+      taggedQuery(
+        equipmentCategoryIds,
+        ["cable", "hdmi-cable", "charging-cable", "power-cable"],
+        4,
+      ),
+      taggedQuery(
+        equipmentCategoryIds,
+        ["ps5", "dualsense", "ps5-controller"],
+        4,
+      ),
+      productQuery(consoleCategoryIds, 4),
+      Blog.find({ published: true })
+        .select(
+          "title slug excerpt content coverImage published createdAt updatedAt metaDescription focusKeyword",
+        )
+        .sort({ createdAt: -1 })
+        .limit(3)
+        .lean(),
+    ]);
+
+    const genreSlugs = [
+      "sports",
+      "action",
+      "adventure",
+      "two-player",
+      "racing",
+      "rpg",
+    ];
+    const genreTags = tags.filter((tag) => genreSlugs.includes(tag.slug));
+    const genreCounts = await Promise.all(
+      genreTags.map(async (tag) => ({
+        name: tag.name,
+        slug: tag.slug,
+        count: gameCategoryIds.length
+          ? await ProductModel.countDocuments({
               status: "published",
               category: { $in: gameCategoryIds },
               tags: tag._id,
-            }),
-          })),
-        )
-      : [];
+            })
+          : 0,
+      })),
+    );
+
+    const withProducts = (
+      tabs: LandingProductTab[],
+      products: any[][],
+    ): LandingProductTab[] =>
+      tabs.map((tab, index) => ({
+        ...tab,
+        products: (products[index] || []).map(serializeProduct),
+      }));
 
     return {
-      latestGames: latestGamesRaw.map(serializeProduct),
-      equipment: equipmentRaw.map(serializeProduct),
+      gameTabs: withProducts(empty.gameTabs, [
+        ps5GamesRaw,
+        featuredGamesRaw,
+        ps4GamesRaw,
+        latestGamesRaw,
+      ]),
+      equipmentTabs: withProducts(empty.equipmentTabs, [
+        controllersRaw,
+        chargersRaw,
+        standsRaw,
+        cablesRaw,
+        ps5AccessoriesRaw,
+      ]),
       consoles: consolesRaw.map(serializeProduct),
-      genres: genreCounts.filter((genre) => genre.count > 0),
+      genres: genreCounts,
       articles: articlesRaw.map(serializeArticle),
     };
   } catch (error) {

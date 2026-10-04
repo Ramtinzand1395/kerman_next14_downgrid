@@ -9,12 +9,47 @@ body {
 }
 
 .landing-section {
-  margin-block: 3rem;
+  margin-block: 0.65rem;
 }
 
 @media (min-width: 768px) {
   .landing-section {
-    margin-block: 5rem;
+    margin-block: 0.65rem;
+  }
+}
+
+@layer components {
+  .landing-panel {
+    @apply rounded-2xl border border-[#e3edfb] bg-white shadow-[0_5px_18px_rgba(22,66,130,0.05)];
+  }
+
+  .landing-quick-card {
+    @apply flex min-h-[74px] items-center gap-2 rounded-xl border border-[#e3edfb] bg-white p-3 shadow-[0_4px_14px_rgba(22,66,130,0.04)] transition hover:-translate-y-0.5 hover:border-blue-200;
+  }
+
+  .landing-hero-badge {
+    @apply inline-flex min-h-6 items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2;
+  }
+
+  .landing-primary,
+  .landing-secondary {
+    @apply inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-3 font-black transition focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2;
+  }
+
+  .landing-primary {
+    @apply bg-[#1469f5] text-white hover:bg-[#0c56cf];
+  }
+
+  .landing-secondary {
+    @apply border border-[#bad2ff] bg-white text-[#1258c5] hover:bg-[#edf4ff];
+  }
+
+  .landing-hero-cta.landing-primary {
+    @apply min-h-8 bg-white text-[#0b4aa8] hover:bg-blue-50;
+  }
+
+  .landing-hero-cta.landing-secondary {
+    @apply min-h-8 border-white/60 bg-white/10 text-white hover:bg-white/20;
   }
 }
 

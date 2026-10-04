@@ -1,9 +1,9 @@
-import { MessageCircleQuestion, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 const faqs = [
   {
     question: "چطور نوبت حضوری بگیرم؟",
     answer:
-      "از دکمه دریافت نوبت وارد حساب کاربری شوید، مدل کنسول و بازی‌ها یا خدمت موردنیازتان را انتخاب کنید و درخواست را ثبت کنید.",
+      "از دکمه ثبت درخواست حضوری وارد حساب کاربری شوید، مدل کنسول و بازی‌ها یا خدمت موردنیازتان را انتخاب کنید. فروشگاه برای هماهنگی مراجعه با شما تماس می‌گیرد.",
   },
   {
     question: "برای نصب بازی چه اطلاعاتی لازم است؟",
@@ -23,34 +23,35 @@ const faqs = [
 ];
 export default function Faq() {
   return (
-    <section className="landing-section" aria-labelledby="landing-faq-heading">
-      <div className="mb-6 flex items-center gap-3 md:mb-8">
-        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-700 text-white">
-          <MessageCircleQuestion className="h-6 w-6" />
-        </span>
+    <section
+      className="landing-section landing-panel p-2"
+      aria-labelledby="landing-faq-heading"
+    >
+      <div className="mb-2 text-center">
         <div>
           <h2
             id="landing-faq-heading"
-            className="text-2xl font-black text-slate-950 md:text-3xl"
+            className="text-base font-black text-[#0b1d48] sm:text-lg"
           >
             سوالات پرتکرار
           </h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="text-[10px] text-slate-400">
             پاسخ کوتاه به پرسش‌های رایج خدمات حضوری
           </p>
         </div>
       </div>
-      <div className="space-y-3">
-        {faqs.map((faq) => (
+      <div className="space-y-1">
+        {faqs.map((faq, index) => (
           <details
             key={faq.question}
-            className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm open:border-blue-200 open:shadow-md sm:p-5"
+            open={index === 0}
+            className="group rounded-md border border-[#e2ebfb] bg-white px-2 py-0.5 open:border-blue-200 open:bg-[#f7faff]"
           >
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-black text-slate-900">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 text-[8px] font-black text-[#0b1d48] sm:min-h-4 sm:text-[9px]">
               <span>{faq.question}</span>
-              <Plus className="h-5 w-5 shrink-0 text-blue-700 transition group-open:rotate-45" />
+              <Plus className="h-4 w-4 shrink-0 text-[#1469f5] transition group-open:rotate-45" />
             </summary>
-            <p className="mt-3 border-t border-slate-100 pt-3 text-sm leading-7 text-slate-600">
+            <p className="mt-1 border-t border-slate-100 pt-1 text-[7px] leading-3 text-slate-500 sm:text-[8px]">
               {faq.answer}
             </p>
           </details>

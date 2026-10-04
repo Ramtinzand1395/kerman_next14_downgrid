@@ -378,7 +378,8 @@ export async function GET(req: NextRequest) {
     // ── باشگاه مشتریان: اعمال قطعی کوپن + XP/کش‌بک/VIP/ماموریت/نشان/رفرال ──
     // خطای این بخش‌ها سفارش پرداخت‌شده را برنمی‌گرداند ولی لاگ می‌شود.
     try {
-      const itemProducts = (temp.items as Array<{ product: unknown }>).map(
+      const tempItems = temp.items as Array<{ product: unknown; total: number }>;
+      const itemProducts = tempItems.map(
         (i) => String(i.product),
       );
       const productDocs = await Product.find({ _id: { $in: itemProducts } })
@@ -388,12 +389,16 @@ export async function GET(req: NextRequest) {
         productDocs.map((p) => [String(p._id), String(p.category)]),
       );
       const categoryIds = [...new Set(categoryOf.values())];
-      const couponItems = itemProducts.map((productId) => ({
+      const couponItems = tempItems.map((item) => {
+        const productId = String(item.product);
+        return {
         productId,
+        amount: Math.max(0, Math.round(Number(item.total) || 0)),
         categoryIds: categoryOf.has(productId)
           ? [categoryOf.get(productId)!]
           : [],
-      }));
+        };
+      });
 
       if (temp.couponCode) {
         const applied = await applyCoupon({

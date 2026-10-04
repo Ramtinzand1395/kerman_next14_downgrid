@@ -194,8 +194,9 @@ export async function POST(req: NextRequest) {
         code: rawCoupon,
         userId: session.user.id,
         orderAmount: totalPrice,
-        items: normalizedItems.map((item) => ({
+        items: normalizedItems.map((item, index) => ({
           productId: item.productId,
+          amount: checkoutItems[index].total,
           categoryIds: productMap.get(item.productId)?.category
             ? [String(productMap.get(item.productId)!.category)]
             : [],

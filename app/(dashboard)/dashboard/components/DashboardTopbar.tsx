@@ -12,6 +12,7 @@ const pageTitles: Record<string, string> = {
   "/dashboard/store-order": "سفارشات دستی",
   "/dashboard/users": "مدیریت کاربران",
   "/dashboard/notifications": "مرکز اعلان‌ها",
+  "/dashboard/appointments": "مدیریت نوبت‌ها",
   "/dashboard/blogs": "مدیریت وبلاگ",
 };
 

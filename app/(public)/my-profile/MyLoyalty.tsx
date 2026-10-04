@@ -27,6 +27,7 @@ import {
   VIP_TIER_FA,
   XpReason,
 } from "@/types/loyalty";
+import VisitRewardsPanel from "./VisitRewardsPanel";
 
 // ---------- انواع داده ----------
 
@@ -194,6 +195,7 @@ export default function MyLoyalty() {
 
   return (
     <section className="space-y-5">
+      <VisitRewardsPanel />
       {/* ردیف کارت‌های وضعیت */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {/* سطح و XP */}
