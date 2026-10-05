@@ -29,6 +29,12 @@ const staticRoutes: MetadataRoute.Sitemap = [
     priority: 0.7,
   },
   {
+    url: `${SITE_URL}/guides/ps5-buying-guide`,
+    lastModified: new Date("2026-10-05"),
+    changeFrequency: "monthly",
+    priority: 0.8,
+  },
+  {
     url: `${SITE_URL}/contact-us`,
     lastModified: new Date(),
     changeFrequency: "monthly",

@@ -104,18 +104,38 @@ const steps = [
 ];
 
 const benefits = [
-  { title: "تخصص کنسول", text: "تجربه و دانش فنی", icon: Gamepad2 },
-  { title: "نصب بازی", text: "با انتخاب بازی‌ها", icon: Swords },
-  { title: "فروشگاه حضوری", text: "در قلب کرمان", icon: Store },
-  { title: "آرشیو متنوع", text: "انتخاب‌های بیشتر", icon: BookOpen },
-  { title: "راهنمایی انتخاب", text: "مشاوره متناسب", icon: MapPin },
+  {
+    title: "تخصص واقعی کنسول",
+    text: "راهنمایی توسط تیمی که هر روز با کنسول و تجهیزات گیمینگ سروکار دارد.",
+    icon: Gamepad2,
+  },
+  {
+    title: "نصب دقیق و مطمئن",
+    text: "بازی‌ها متناسب با دستگاه، سلیقه و فضای ذخیره‌سازی شما انتخاب می‌شوند.",
+    icon: Swords,
+  },
+  {
+    title: "پاسخ‌گویی حضوری",
+    text: "در فروشگاه کرمان کنار شما هستیم؛ قبل از خرید و بعد از دریافت خدمات.",
+    icon: Store,
+  },
+  {
+    title: "انتخاب‌های متنوع",
+    text: "از بازی‌های روز تا لوازم ضروری، گزینه‌های بیشتری برای مقایسه دارید.",
+    icon: BookOpen,
+  },
+  {
+    title: "پیشنهاد متناسب با شما",
+    text: "به‌جای یک پیشنهاد عمومی، براساس نیاز و بودجه‌تان راهنمایی می‌شوید.",
+    icon: MapPin,
+  },
 ];
 
 const consoleGuides = [
   {
     title: "PS5",
     text: "تجربه نسل جدید",
-    href: "/products?category=consoles&tag=ps5&sort=newest&page=1",
+    href: "/guides/ps5-buying-guide",
     icon: Sparkles,
   },
   {
@@ -471,33 +491,74 @@ export default function LandingHome({ data }: { data: LandingData }) {
           </div>
         </section>
 
-        <section className="landing-section landing-panel p-4 sm:p-5" aria-labelledby="benefits-heading">
-          <div className="text-center">
-            <h2 id="benefits-heading" className="text-xl font-black sm:text-2xl lg:text-[28px]">
-              چرا کرمان آتاری؟
-            </h2>
-            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-              تجربه‌ای مطمئن و پاسخ‌گو برای گیمرهای کرمان
-            </p>
-          </div>
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {benefits.map((benefit) => {
-              const Icon = benefit.icon;
-              return (
-                <article
-                  key={benefit.title}
-                  className="flex min-h-[72px] items-center justify-center gap-2.5 rounded-xl border border-[#e5edf9] bg-white px-3"
+        <section className="landing-section" aria-labelledby="benefits-heading">
+          <div className="relative overflow-hidden rounded-[28px] border border-[#174f9f] bg-[radial-gradient(circle_at_15%_10%,#1765c9_0%,#082d6b_42%,#051d49_100%)] p-5 text-white shadow-[0_22px_55px_rgba(5,35,86,0.2)] sm:p-8 lg:p-10">
+            <div className="relative grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center lg:gap-10">
+              <div>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-black text-blue-50 backdrop-blur-sm sm:text-sm">
+                  <BadgeCheck className="h-4 w-4 text-[#74aaff]" />
+                  انتخاب مطمئن برای گیمرهای کرمان
+                </span>
+                <h2
+                  id="benefits-heading"
+                  className="mt-4 text-3xl font-black leading-[1.35] sm:text-4xl lg:text-[42px]"
                 >
-                  <Icon className="h-6 w-6 shrink-0 text-[#1469f5]" />
-                  <div>
-                    <h3 className="text-sm font-black sm:text-base">{benefit.title}</h3>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      {benefit.text}
-                    </p>
-                  </div>
-                </article>
-              );
-            })}
+                  چرا کرمان آتاری؟
+                </h2>
+                <p className="mt-3 max-w-lg text-sm font-medium leading-7 text-blue-100 sm:text-base">
+                  اینجا فقط محصول یا بازی تحویل نمی‌گیری؛ از انتخاب درست تا
+                  راه‌اندازی و پشتیبانی، یک تیم متخصص و در دسترس کنارت است.
+                </p>
+
+                <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold text-blue-50 sm:text-sm">
+                  <span className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-white/15 bg-white/[0.08] px-3">
+                    <Store className="h-4 w-4 text-[#74aaff]" />
+                    مراجعه حضوری در کرمان
+                  </span>
+                  <span className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-white/15 bg-white/[0.08] px-3">
+                    <ShieldCheck className="h-4 w-4 text-[#74aaff]" />
+                    پشتیبانی واقعی
+                  </span>
+                </div>
+
+                <Link
+                  href="/about-us"
+                  className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-5 text-sm font-black text-[#0b4aa8] transition hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-white/70 focus:ring-offset-2 focus:ring-offset-[#082d6b]"
+                >
+                  آشنایی بیشتر با ما
+                  <ArrowLeft className="h-4 w-4" />
+                </Link>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                {benefits.map((benefit, index) => {
+                  const Icon = benefit.icon;
+                  const isLast = index === benefits.length - 1;
+
+                  return (
+                    <article
+                      key={benefit.title}
+                      className={`group relative min-h-[148px] rounded-2xl border border-white/15 bg-white/[0.09] p-4 backdrop-blur-sm transition duration-300 hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/[0.13] sm:p-5 ${
+                        isLast ? "sm:col-span-2 sm:min-h-[126px]" : ""
+                      }`}
+                    >
+                      <span className="absolute left-4 top-4 text-xs font-black tracking-widest text-white/30 sm:left-5 sm:top-5">
+                        ۰{index + 1}
+                      </span>
+                      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-[#1262e7] shadow-[0_8px_22px_rgba(0,0,0,0.14)]">
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <h3 className="mt-4 text-base font-black sm:text-lg">
+                        {benefit.title}
+                      </h3>
+                      <p className="mt-1.5 max-w-xl text-xs leading-6 text-blue-100 sm:text-sm">
+                        {benefit.text}
+                      </p>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </section>
 
