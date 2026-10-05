@@ -9,31 +9,31 @@ body {
 }
 
 .landing-section {
-  margin-block: 0.65rem;
+  margin-block: 1rem;
 }
 
 @media (min-width: 768px) {
   .landing-section {
-    margin-block: 0.65rem;
+    margin-block: 1.5rem;
   }
 }
 
 @layer components {
   .landing-panel {
-    @apply rounded-2xl border border-[#e3edfb] bg-white shadow-[0_5px_18px_rgba(22,66,130,0.05)];
+    @apply rounded-2xl border border-[#e3edfb] bg-white shadow-[0_8px_24px_rgba(22,66,130,0.06)];
   }
 
   .landing-quick-card {
-    @apply flex min-h-[74px] items-center gap-2 rounded-xl border border-[#e3edfb] bg-white p-3 shadow-[0_4px_14px_rgba(22,66,130,0.04)] transition hover:-translate-y-0.5 hover:border-blue-200;
+    @apply flex min-h-[88px] items-center gap-3 rounded-2xl border border-[#e3edfb] bg-white p-4 shadow-[0_6px_18px_rgba(22,66,130,0.05)] transition hover:-translate-y-0.5 hover:border-blue-200;
   }
 
   .landing-hero-badge {
-    @apply inline-flex min-h-6 items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2;
+    @apply inline-flex min-h-7 items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-2.5 lg:min-h-8 lg:px-3;
   }
 
   .landing-primary,
   .landing-secondary {
-    @apply inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-3 font-black transition focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 font-black transition focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2;
   }
 
   .landing-primary {
@@ -45,11 +45,11 @@ body {
   }
 
   .landing-hero-cta.landing-primary {
-    @apply min-h-8 bg-white text-[#0b4aa8] hover:bg-blue-50;
+    @apply min-h-11 bg-white text-[#0b4aa8] hover:bg-blue-50;
   }
 
   .landing-hero-cta.landing-secondary {
-    @apply min-h-8 border-white/60 bg-white/10 text-white hover:bg-white/20;
+    @apply min-h-11 border-white/60 bg-white/10 text-white hover:bg-white/20;
   }
 }
 

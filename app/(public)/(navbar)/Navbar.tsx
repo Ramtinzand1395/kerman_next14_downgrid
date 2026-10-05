@@ -29,7 +29,7 @@ const menuItems = [
   { name: "خانه", link: "/", icon: <Home className="h-4 w-4 ml-1" /> },
   {
     name: "دسته‌بندی‌ها",
-    link: "/products?sort=newest&page=1",
+    link: "#",
     icon: <Grid2x2 className="h-4 w-4 ml-1" />,
   },
   {
@@ -95,7 +95,7 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className="sticky top-0 z-50 mx-auto flex min-h-10 w-full max-w-[1360px] items-center justify-between gap-1 border-b border-slate-200/70 bg-white/95 px-2 py-1 shadow-sm backdrop-blur-md sm:px-3 lg:px-8"
+        className="sticky top-0 z-50 flex items-center justify-between gap-2 border-b border-slate-200/70 bg-white/95 px-2 py-2 shadow-lg backdrop-blur-md sm:px-3 md:px-10"
         role="navigation"
         aria-label="منوی اصلی سایت کرمان آتاری"
       >
@@ -105,19 +105,19 @@ export default function Navbar() {
           aria-label="صفحه اصلی کرمان آتاری"
         >
           <Image
-            width={28}
-            height={28}
+            width={32}
+            height={32}
             alt="لوگوی کرمان آتاری"
             src="/atari-seeklogo.svg"
-            className="h-7 w-7 shrink-0"
+          
             priority
           />
-          <span className="truncate text-xs font-extrabold tracking-tight text-slate-900 sm:block lg:text-base">
+          <span className=" truncate text-base font-extrabold tracking-tight text-slate-900 sm:block md:text-lg">
             Kerman Atari
           </span>
         </Link>
 
-        <ul className="relative hidden items-center gap-0 rounded-lg bg-white/80 px-1 text-gray-700 sm:flex">
+        <ul className="relative hidden items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-2 text-gray-700 shadow-sm md:flex">
           {menuItems.map((item) => (
             <li
               key={item.name}
@@ -132,7 +132,7 @@ export default function Navbar() {
               <Link
                 href={item.link}
                 aria-label={`رفتن به ${item.name}`}
-                className={`group relative flex items-center gap-0.5 rounded-md px-1.5 py-1.5 text-[9px] font-bold transition lg:px-2 lg:text-xs ${
+                className={`group relative flex items-center gap-1 rounded-full px-3 py-2 sm:text-xs lg:text-sm font-medium transition ${
                   pathname === item.link
                     ? "bg-blue-50 text-blue-600"
                     : "text-gray-700 hover:bg-slate-100 hover:text-blue-600"
@@ -153,7 +153,7 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute right-0 top-9 z-50 w-[min(680px,calc(100vw-24px))] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
+                    className="absolute right-0 top-12 z-50 w-[720px] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
                   >
                     <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                       <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
@@ -203,14 +203,14 @@ export default function Navbar() {
 
         <form
           onSubmit={handleSearch}
-          className="hidden w-[150px] items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-0.5 shadow-inner sm:flex lg:w-[220px]"
+          className="hidden items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 shadow-inner lg:flex lg:w-[22vw]"
           role="search"
           aria-label="جستجو در محصولات"
         >
           <input
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
-            className="min-w-0 flex-1 bg-transparent p-1 text-[9px] text-black outline-none lg:text-xs"
+            className="flex-1 bg-transparent p-1 text-sm text-black outline-none"
             placeholder="جستجو در محصولات..."
             type="search"
             name="q"
@@ -225,7 +225,7 @@ export default function Navbar() {
           </button>
         </form>
 
-        <div className="relative flex shrink-0 items-center gap-1">
+        <div className="relative flex shrink-0 items-center gap-1.5 md:gap-4">
           <NotificationBell />
           <UserBtn
             setActiveDropdown={setActiveDropdown}
@@ -238,7 +238,7 @@ export default function Navbar() {
           />
 
           <button
-            className="rounded-xl border border-slate-200 bg-white p-2 text-black shadow-sm sm:hidden"
+            className="rounded-xl border border-slate-200 bg-white p-2 text-black shadow-sm md:hidden"
             aria-label="باز کردن منو"
             onClick={() => setMobileMenuOpen(true)}
             title="Open_Menu"

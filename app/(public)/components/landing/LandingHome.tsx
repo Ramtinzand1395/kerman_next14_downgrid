@@ -141,11 +141,11 @@ function conditionLabel(product: Product) {
 
 export default function LandingHome({ data }: { data: LandingData }) {
   return (
-    <div className="overflow-x-clip bg-[#f3f8ff] pb-20 text-[#0b1d48] sm:pb-0">
-      <div className="mx-auto w-full max-w-[1320px] px-3 py-3 sm:px-5">
+    <div className="overflow-x-clip bg-[#f3f8ff] pb-24 text-[#0b1d48] sm:pb-0">
+      <div className="mx-auto w-full max-w-[1320px] px-4 py-4 sm:px-6 lg:px-8">
         <Motion direction="down" distance={12} duration={0.4}>
-          <section className="relative overflow-hidden rounded-2xl bg-[#063b93] text-white sm:h-[218px]">
-            <div className="relative h-[210px] sm:h-full">
+          <section className="relative overflow-hidden rounded-2xl bg-[#063b93] text-white sm:aspect-[3/1] sm:rounded-[24px]">
+            <div className="relative aspect-[3/1] w-full sm:absolute sm:inset-0 sm:h-full sm:aspect-auto">
               <Image
                 src="/PS5 Hero Banner with Game Cases-1.png"
                 alt="کنسول PS5، دسته و بازی‌های پلی استیشن"
@@ -155,17 +155,17 @@ export default function LandingHome({ data }: { data: LandingData }) {
                 className="object-cover object-left"
               />
             </div>
-            <div className="bg-[#063b93] p-5 sm:absolute sm:inset-y-0 sm:right-0 sm:flex sm:w-[57%] sm:flex-col sm:justify-center sm:bg-transparent sm:p-3">
-              <h1 className="text-3xl font-black leading-[1.35] sm:max-w-[440px] sm:text-[26px] sm:leading-[1.25]">
+            <div className="bg-[#063b93] p-5 sm:absolute sm:inset-y-0 sm:right-0 sm:flex sm:w-[60%] sm:flex-col sm:justify-center sm:bg-transparent sm:p-4 lg:w-[58%] lg:p-10">
+              <h1 className="text-3xl font-black leading-[1.35] sm:max-w-[560px] sm:text-[32px] sm:leading-[1.15] lg:text-5xl">
                 دنیای بازی،
                 <br />
                 همین‌جا در کرمان
               </h1>
-              <p className="mt-1 max-w-md text-xs font-medium leading-4 text-blue-50 sm:text-[9px]">
+              <p className="mt-1.5 max-w-xl text-sm font-medium leading-6 text-blue-50 sm:text-xs sm:leading-5 lg:mt-2 lg:text-base lg:leading-6">
                 خرید کنسول، نصب بازی PS4 و PS5 و خدمات تخصصی کنسول با خیال
                 راحت و پشتیبانی واقعی.
               </p>
-              <div className="mt-1.5 flex flex-wrap gap-1 text-[8px] font-bold text-blue-50 sm:flex-nowrap sm:text-[7px]">
+              <div className="mt-2 flex flex-wrap gap-1.5 text-xs font-bold text-blue-50 sm:flex-nowrap sm:text-[10px] lg:mt-3 lg:gap-2 lg:text-sm">
                 <span className="landing-hero-badge">
                   <ShieldCheck className="h-3.5 w-3.5" /> راهنمای انتخاب بازی
                 </span>
@@ -176,12 +176,12 @@ export default function LandingHome({ data }: { data: LandingData }) {
                   <MapPin className="h-3.5 w-3.5" /> خدمات حضوری در کرمان
                 </span>
               </div>
-              <div className="mt-1.5 flex flex-col gap-1.5 min-[420px]:flex-row">
-                <Link href="/products?sort=newest&page=1" className="landing-primary landing-hero-cta whitespace-nowrap text-[9px]">
+              <div className="mt-2 flex flex-col gap-2 min-[420px]:flex-row lg:mt-3">
+                <Link href="/products?sort=newest&page=1" className="landing-primary landing-hero-cta whitespace-nowrap text-sm sm:min-h-10 sm:text-xs lg:min-h-11 lg:text-sm">
                   مشاهده محصولات
                   <ArrowLeft className="h-3.5 w-3.5" />
                 </Link>
-                <Link href={REQUEST_URL} className="landing-secondary landing-hero-cta whitespace-nowrap text-[9px]">
+                <Link href={REQUEST_URL} className="landing-secondary landing-hero-cta whitespace-nowrap text-sm sm:min-h-10 sm:text-xs lg:min-h-11 lg:text-sm">
                   ثبت درخواست حضوری
                   <CalendarDays className="h-3.5 w-3.5" />
                 </Link>
@@ -190,20 +190,20 @@ export default function LandingHome({ data }: { data: LandingData }) {
           </section>
         </Motion>
 
-        <section className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="دسترسی سریع">
+        <section className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4" aria-label="دسترسی سریع">
           {quickAccess.map((item) => {
             const Icon = item.icon;
             return (
-              <Link key={item.title} href={item.href} className="landing-quick-card group">
-                <Icon className="h-7 w-7 shrink-0 text-[#1269f4]" />
+              <Link key={item.title} href={item.href} className="landing-quick-card group sm:gap-2 sm:p-3 lg:gap-3 lg:p-4">
+                <Icon className="h-8 w-8 shrink-0 text-[#1269f4] lg:h-10 lg:w-10" />
                 <div className="min-w-0 flex-1">
-                  <h2 className="text-xs font-black sm:text-sm">{item.title}</h2>
-                  <p className="mt-0.5 line-clamp-1 text-[9px] text-slate-400 sm:text-[10px]">
+                  <h2 className="text-sm font-black sm:text-base lg:text-lg">{item.title}</h2>
+                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500 sm:text-sm">
                     {item.description}
                   </p>
                 </div>
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#f0f5ff] text-[#1269f4]">
-                  <ChevronLeft className="h-3.5 w-3.5" />
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#f0f5ff] text-[#1269f4] lg:h-8 lg:w-8">
+                  <ChevronLeft className="h-4 w-4" />
                 </span>
               </Link>
             );
@@ -211,27 +211,27 @@ export default function LandingHome({ data }: { data: LandingData }) {
         </section>
 
         <Motion distance={12} duration={0.4}>
-          <section className="landing-section relative overflow-hidden rounded-2xl bg-[#073c94] text-white sm:h-[142px]">
-            <div className="relative h-[170px] sm:h-full">
+          <section className="landing-section overflow-hidden rounded-2xl bg-[#073c94] text-white sm:grid sm:min-h-[210px] sm:grid-cols-[60%_40%] sm:rounded-[24px] lg:min-h-[280px]" dir="ltr">
+            <div className="relative aspect-[3/1] w-full sm:aspect-auto sm:h-full">
               <Image
                 src="/White PS5 console with controller on blue-2.png"
                 alt="کنسول سفید PS5 و دسته روی پس‌زمینه آبی"
                 fill
                 priority
                 sizes="(max-width: 639px) 100vw, 1320px"
-                className="object-cover object-right"
+                className="object-cover object-[72%_center]"
               />
             </div>
-            <div className="bg-[#073c94] p-5 sm:absolute sm:inset-y-0 sm:left-0 sm:flex sm:w-[51%] sm:flex-col sm:justify-center sm:bg-transparent sm:px-7 sm:py-3">
-              <div className="flex items-center gap-2 text-[10px] font-black">
+            <div className="flex flex-col items-start justify-center bg-[#073c94] p-5 text-right sm:px-6 sm:py-4 lg:px-10" dir="rtl">
+              <div className="flex items-center gap-2 text-xs font-black sm:text-sm">
                 <span className="rounded-md bg-red-500 px-2 py-1">جدید</span>
                 <span>PS5 تا ورژن ۱۳.۶۰</span>
               </div>
-              <h2 className="mt-1 text-2xl font-black sm:text-[30px]">بالاخره کپی‌خور شد</h2>
-              <p className="mt-0.5 text-[10px] text-blue-50 sm:text-xs">
+              <h2 className="mt-2 text-2xl font-black leading-tight sm:text-[26px] lg:text-4xl">بالاخره کپی‌خور شد</h2>
+              <p className="mt-2 text-sm leading-6 text-blue-50 sm:text-sm lg:text-base">
                 در حال تست و آماده‌سازی بازی‌های نسل هشتم.
               </p>
-              <Link href={REQUEST_URL} className="mt-2 inline-flex min-h-8 w-fit items-center gap-2 rounded-lg bg-white px-4 text-[10px] font-black text-[#0c51b9]">
+              <Link href={REQUEST_URL} className="mt-4 inline-flex min-h-11 w-fit items-center gap-2 rounded-xl bg-white px-5 text-sm font-black text-[#0c51b9]">
                 ثبت درخواست
                 <CalendarDays className="h-3.5 w-3.5" />
               </Link>
@@ -248,15 +248,15 @@ export default function LandingHome({ data }: { data: LandingData }) {
           />
         </div>
 
-        <section className="landing-section landing-panel p-2">
-          <div className="mb-1.5">
-            <h2 className="text-base font-black sm:text-lg">نمی‌دونی چی بازی کنی؟</h2>
-            <p className="text-[9px] text-slate-400 sm:text-[10px]">
+        <section className="landing-section landing-panel p-4 sm:p-5">
+          <div className="mb-3">
+            <h2 className="text-xl font-black sm:text-2xl lg:text-[28px]">نمی‌دونی چی بازی کنی؟</h2>
+            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
               براساس تگ‌های واقعی بازی‌های فروشگاه انتخاب کن
             </p>
           </div>
           {data.genres.length > 0 ? (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
               {data.genres.map((genre) => {
                 const Icon =
                   genreIcons[genre.slug as keyof typeof genreIcons] || Gamepad2;
@@ -264,9 +264,9 @@ export default function LandingHome({ data }: { data: LandingData }) {
                   <Link
                     key={genre.slug}
                     href={"/products?category=games&tag=" + genre.slug + "&sort=newest&page=1"}
-                    className="flex min-h-12 items-center justify-center gap-1.5 rounded-lg border border-[#e5edf9] bg-white px-2 text-[9px] font-black transition hover:border-blue-300 hover:bg-blue-50"
+                    className="flex min-h-16 items-center justify-center gap-2 rounded-xl border border-[#e5edf9] bg-white px-3 text-sm font-black transition hover:border-blue-300 hover:bg-blue-50"
                   >
-                    <Icon className="h-4 w-4 text-[#1469f5]" />
+                    <Icon className="h-5 w-5 text-[#1469f5]" />
                     {genre.name}
                     <ChevronLeft className="mr-auto h-3.5 w-3.5 text-slate-400" />
                   </Link>
@@ -289,27 +289,27 @@ export default function LandingHome({ data }: { data: LandingData }) {
           />
         </div>
 
-        <section className="landing-section landing-panel p-2" aria-labelledby="console-heading">
-          <div className="mb-1.5 flex items-end justify-between gap-3">
+        <section className="landing-section landing-panel p-4 sm:p-5" aria-labelledby="console-heading">
+          <div className="mb-4 flex items-end justify-between gap-3">
             <div>
-              <h2 id="console-heading" className="text-base font-black sm:text-lg">
+              <h2 id="console-heading" className="text-xl font-black sm:text-2xl lg:text-[28px]">
                 کنسول بعدیت رو انتخاب کن
               </h2>
-              <p className="text-[9px] text-slate-400 sm:text-[10px]">
+              <p className="mt-1 text-xs text-slate-500 sm:text-sm">
                 کنسول‌های نو و کارکرده منتشرشده فروشگاه
               </p>
             </div>
-            <Link href="/products?category=consoles&sort=newest&page=1" className="inline-flex items-center gap-1 text-[10px] font-black text-[#1469f5]">
+            <Link href="/products?category=consoles&sort=newest&page=1" className="inline-flex min-h-10 items-center gap-1 text-sm font-black text-[#1469f5]">
               همه کنسول‌ها <ChevronLeft className="h-3.5 w-3.5" />
             </Link>
           </div>
           {data.consoles.length > 0 ? (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className={"grid gap-4 " + (data.consoles.length <= 2 ? "mx-auto grid-cols-1 min-[480px]:grid-cols-2 sm:max-w-[760px]" : "grid-cols-2 sm:grid-cols-4")}>
               {data.consoles.map((product) => {
                 const condition = conditionLabel(product);
                 return (
-                  <article key={product._id} className="rounded-xl border border-[#e2ebfb] bg-white p-2">
-                    <Link href={"/product/" + product.slug} className="relative block aspect-[4/3] overflow-hidden rounded-lg bg-[#f7f9fd] sm:h-[86px] sm:aspect-auto">
+                  <article key={product._id} className="rounded-xl border border-[#e2ebfb] bg-white p-3 shadow-[0_6px_18px_rgba(15,61,130,0.05)]">
+                    <Link href={"/product/" + product.slug} className="relative block aspect-[4/3] overflow-hidden rounded-lg bg-[#f7f9fd]">
                       <ProductImage
                         src={product.mainImage}
                         alt={product.mainImageAlt || product.title}
@@ -320,13 +320,13 @@ export default function LandingHome({ data }: { data: LandingData }) {
                         className="h-full w-full object-contain p-1"
                       />
                     </Link>
-                    <h3 className="mt-1 line-clamp-1 text-[10px] font-black">{product.title}</h3>
+                    <h3 className="mt-2 line-clamp-2 min-h-10 text-sm font-black leading-5 sm:text-base">{product.title}</h3>
                     {condition && (
-                      <span className="mt-1 inline-flex rounded-md bg-[#edf4ff] px-2 py-0.5 text-[9px] font-bold text-[#1469f5]">
+                      <span className="mt-1 inline-flex rounded-md bg-[#edf4ff] px-2 py-1 text-xs font-bold text-[#1469f5]">
                         {condition}
                       </span>
                     )}
-                    <Link href={"/product/" + product.slug} className="mt-1 flex min-h-11 items-center justify-center gap-1 rounded-md border border-[#bad2ff] text-[9px] font-black text-[#1262e7] sm:min-h-7">
+                    <Link href={"/product/" + product.slug} className="mt-3 flex min-h-11 items-center justify-center gap-1 rounded-lg border border-[#bad2ff] px-3 text-sm font-black text-[#1262e7]">
                       مشاهده کنسول <ChevronLeft className="h-3.5 w-3.5" />
                     </Link>
                   </article>
@@ -341,10 +341,10 @@ export default function LandingHome({ data }: { data: LandingData }) {
         </section>
 
         <section
-          className="landing-section landing-panel overflow-hidden sm:grid sm:min-h-[158px] sm:grid-cols-2"
+          className="landing-section landing-panel overflow-hidden sm:grid sm:min-h-[clamp(160px,20vw,280px)] sm:grid-cols-2"
           dir="ltr"
         >
-            <div className="relative h-[220px] sm:h-[158px]">
+            <div className="relative h-[260px] sm:h-full">
               <Image
                 src="/White controller on blue repair bench-3.png"
                 alt="دسته پلی استیشن روی میز تعمیرات تخصصی"
@@ -354,23 +354,23 @@ export default function LandingHome({ data }: { data: LandingData }) {
                 className="object-cover object-center"
               />
             </div>
-            <div className="flex flex-col justify-center p-2.5 text-right" dir="rtl">
-              <h2 className="text-lg font-black sm:text-xl">
+            <div className="flex flex-col justify-center p-4 text-right sm:p-6" dir="rtl">
+              <h2 className="text-xl font-black sm:text-2xl lg:text-[28px]">
                 کنسول یا دستگاهت مشکل داره؟
               </h2>
-              <p className="mt-1 text-[10px] leading-5 text-slate-400 sm:text-xs">
+              <p className="mt-2 text-sm leading-6 text-slate-500 sm:text-base">
                 کنسول‌های تخصصی و دسته‌ات را به کارشناس بسپار
               </p>
-              <div className="mt-2 grid grid-cols-3 gap-1.5">
+              <div className="mt-4 grid grid-cols-3 gap-2">
                 {serviceCards.map((service) => {
                   const Icon = service.icon;
                   return (
                     <div
                       key={service.title}
-                      className="flex min-h-11 flex-col items-center justify-center rounded-lg bg-[#f6f9fe] px-1 text-center"
+                      className="flex min-h-20 flex-col items-center justify-center rounded-xl bg-[#f6f9fe] px-2 text-center"
                     >
-                      <Icon className="h-4 w-4 text-[#1469f5]" />
-                      <span className="mt-1 text-[9px] font-black sm:text-[10px]">
+                      <Icon className="h-6 w-6 text-[#1469f5]" />
+                      <span className="mt-2 text-xs font-black sm:text-sm">
                         {service.title}
                       </span>
                     </div>
@@ -379,7 +379,7 @@ export default function LandingHome({ data }: { data: LandingData }) {
               </div>
               <Link
                 href="/services"
-                className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#1469f5] px-4 text-[9px] font-black text-white sm:min-h-7 sm:w-fit"
+                className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#1469f5] px-5 text-sm font-black text-white sm:w-fit"
               >
                 مشاوره تعمیرات
                 <ArrowLeft className="h-3.5 w-3.5" />
@@ -387,24 +387,24 @@ export default function LandingHome({ data }: { data: LandingData }) {
             </div>
         </section>
 
-        <section className="landing-section landing-panel p-2" aria-labelledby="steps-heading">
-          <h2 id="steps-heading" className="text-center text-base font-black sm:text-lg">
+        <section className="landing-section landing-panel p-4 sm:p-5" aria-labelledby="steps-heading">
+          <h2 id="steps-heading" className="text-center text-xl font-black sm:text-2xl lg:text-[28px]">
             فقط ۳ مرحله تا بازی کردن
           </h2>
-          <div className="mt-1.5 grid gap-1.5 sm:grid-cols-3">
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
             {steps.map((step, index) => {
               const Icon = step.icon;
               return (
                 <div
                   key={step.title}
-                  className="relative flex min-h-12 items-center gap-2 rounded-lg bg-[#f8fbff] px-2"
+                  className="relative flex min-h-[76px] items-center gap-3 rounded-xl bg-[#f8fbff] px-4"
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#edf4ff] text-[#1469f5]">
-                    <Icon className="h-4 w-4" />
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#edf4ff] text-[#1469f5]">
+                    <Icon className="h-5 w-5" />
                   </span>
                   <div>
-                    <h3 className="text-[10px] font-black">{step.title}</h3>
-                    <p className="text-[8px] leading-3 text-slate-400">
+                    <h3 className="text-sm font-black sm:text-base">{step.title}</h3>
+                    <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
                       {step.text}
                     </p>
                   </div>
@@ -417,52 +417,52 @@ export default function LandingHome({ data }: { data: LandingData }) {
           </div>
         </section>
 
-        <section className="landing-section landing-panel p-2" aria-labelledby="delivery-heading">
+        <section className="landing-section landing-panel p-4 sm:p-5" aria-labelledby="delivery-heading">
           <div className="text-center">
-            <h2 id="delivery-heading" className="text-base font-black sm:text-lg">
+            <h2 id="delivery-heading" className="text-xl font-black sm:text-2xl lg:text-[28px]">
               چطور می‌خوای خدمات بگیری؟
             </h2>
-            <p className="text-[9px] text-slate-400">
+            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
               روش فعال فعلی را انتخاب کن
             </p>
           </div>
-          <div className="mt-1.5 grid gap-1.5 sm:grid-cols-2">
-            <article className="flex items-center gap-2 rounded-lg border-2 border-[#b8d2ff] bg-white p-2">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#edf4ff] text-[#1469f5]">
-                <Store className="h-5 w-5" />
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <article className="flex items-center gap-3 rounded-xl border-2 border-[#b8d2ff] bg-white p-4">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#edf4ff] text-[#1469f5]">
+                <Store className="h-7 w-7" />
               </span>
               <div className="min-w-0 flex-1">
-                <h3 className="text-xs font-black text-[#1469f5]">مراجعه حضوری</h3>
-                <p className="text-[8px] leading-3 text-slate-400">
+                <h3 className="text-base font-black text-[#1469f5] sm:text-lg">مراجعه حضوری</h3>
+                <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
                   درخواستت را ثبت کن تا برای مراجعه با تو هماهنگ کنیم.
                 </p>
                 <Link
                   href={REQUEST_URL}
-                  className="mt-1 flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#1469f5] text-[9px] font-black text-white sm:min-h-7"
+                  className="mt-3 flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#1469f5] px-4 text-sm font-black text-white"
                 >
                   ثبت درخواست
                   <CalendarDays className="h-3.5 w-3.5" />
                 </Link>
               </div>
             </article>
-            <article className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2 text-slate-400">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-200">
-                <Truck className="h-5 w-5" />
+            <article className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-400">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-slate-200">
+                <Truck className="h-7 w-7" />
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-xs font-black">ارسال با پیک</h3>
-                  <span className="rounded-md bg-slate-200 px-2 py-0.5 text-[8px] font-black">
+                  <h3 className="text-base font-black sm:text-lg">ارسال با پیک</h3>
+                  <span className="rounded-md bg-slate-200 px-2 py-1 text-xs font-black">
                     به‌زودی
                   </span>
                 </div>
-                <p className="text-[8px] leading-3">
+                <p className="mt-1 text-xs leading-5 sm:text-sm">
                   دریافت و بازگرداندن دستگاه هنوز فعال نشده است.
                 </p>
                 <button
                   type="button"
                   disabled
-                  className="mt-1 flex min-h-11 w-full cursor-not-allowed items-center justify-center rounded-md bg-slate-200 text-[9px] font-black sm:min-h-7"
+                  className="mt-3 flex min-h-11 w-full cursor-not-allowed items-center justify-center rounded-lg bg-slate-200 text-sm font-black"
                 >
                   فعلاً غیرفعال
                 </button>
@@ -471,27 +471,27 @@ export default function LandingHome({ data }: { data: LandingData }) {
           </div>
         </section>
 
-        <section className="landing-section landing-panel p-2" aria-labelledby="benefits-heading">
+        <section className="landing-section landing-panel p-4 sm:p-5" aria-labelledby="benefits-heading">
           <div className="text-center">
-            <h2 id="benefits-heading" className="text-base font-black sm:text-lg">
+            <h2 id="benefits-heading" className="text-xl font-black sm:text-2xl lg:text-[28px]">
               چرا کرمان آتاری؟
             </h2>
-            <p className="text-[10px] text-slate-400">
+            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
               تجربه‌ای مطمئن و پاسخ‌گو برای گیمرهای کرمان
             </p>
           </div>
-          <div className="mt-1.5 grid grid-cols-2 gap-1.5 sm:grid-cols-5">
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {benefits.map((benefit) => {
               const Icon = benefit.icon;
               return (
                 <article
                   key={benefit.title}
-                  className="flex min-h-12 items-center justify-center gap-1.5 rounded-lg border border-[#e5edf9] bg-white px-1.5"
+                  className="flex min-h-[72px] items-center justify-center gap-2.5 rounded-xl border border-[#e5edf9] bg-white px-3"
                 >
-                  <Icon className="h-4 w-4 shrink-0 text-[#1469f5]" />
+                  <Icon className="h-6 w-6 shrink-0 text-[#1469f5]" />
                   <div>
-                    <h3 className="text-[9px] font-black sm:text-[10px]">{benefit.title}</h3>
-                    <p className="text-[7px] text-slate-400 sm:text-[8px]">
+                    <h3 className="text-sm font-black sm:text-base">{benefit.title}</h3>
+                    <p className="mt-0.5 text-xs text-slate-500">
                       {benefit.text}
                     </p>
                   </div>
@@ -501,33 +501,33 @@ export default function LandingHome({ data }: { data: LandingData }) {
           </div>
         </section>
 
-        <section className="landing-section landing-panel p-2" aria-labelledby="guide-heading">
+        <section className="landing-section landing-panel p-4 sm:p-5" aria-labelledby="guide-heading">
           <div className="text-center">
-            <h2 id="guide-heading" className="text-base font-black sm:text-lg">
+            <h2 id="guide-heading" className="text-xl font-black sm:text-2xl lg:text-[28px]">
               کدوم کنسول برای تو مناسبه؟
             </h2>
-            <p className="text-[10px] text-slate-400">
+            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
               با راهنمایی تخصصی، انتخابت رو دقیق‌تر کن
             </p>
           </div>
-          <div className="mt-1.5 grid gap-1.5 sm:grid-cols-3">
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
             {consoleGuides.map((guide) => {
               const Icon = guide.icon;
               return (
                 <article
                   key={guide.title}
-                  className="flex min-h-14 items-center gap-2 rounded-lg border border-[#e5edf9] bg-white p-2"
+                  className="flex min-h-[84px] items-center gap-3 rounded-xl border border-[#e5edf9] bg-white p-3"
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#f0f5ff] text-[#1469f5]">
-                    <Icon className="h-4 w-4" />
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#f0f5ff] text-[#1469f5]">
+                    <Icon className="h-6 w-6" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-[10px] font-black">{guide.title}</h3>
-                    <p className="text-[8px] text-slate-400">{guide.text}</p>
+                    <h3 className="text-sm font-black sm:text-base">{guide.title}</h3>
+                    <p className="mt-0.5 text-xs text-slate-500">{guide.text}</p>
                   </div>
                   <Link
                     href={guide.href}
-                    className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-md border border-[#bad2ff] px-1.5 text-[8px] font-black text-[#1469f5] sm:min-h-7"
+                    className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-lg border border-[#bad2ff] px-3 text-xs font-black text-[#1469f5] sm:text-sm"
                   >
                     راهنمای خرید
                     <ChevronLeft className="h-3.5 w-3.5" />
@@ -540,26 +540,26 @@ export default function LandingHome({ data }: { data: LandingData }) {
 
         <Faq />
 
-        <section className="landing-section landing-panel p-2" aria-labelledby="articles-heading">
-          <div className="mb-2 text-center">
-            <h2 id="articles-heading" className="text-base font-black sm:text-lg">
+        <section className="landing-section landing-panel p-4 sm:p-5" aria-labelledby="articles-heading">
+          <div className="mb-4 text-center">
+            <h2 id="articles-heading" className="text-xl font-black sm:text-2xl lg:text-[28px]">
               از دنیای بازی بیشتر بخون
             </h2>
-            <p className="text-[10px] text-slate-400">
+            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
               مطالب منتشرشده و خبرهای کرمان آتاری
             </p>
           </div>
-          <div className="grid gap-2 sm:grid-cols-4">
+          <div className={"grid gap-4 sm:grid-cols-2 " + (data.articles.length <= 1 ? "lg:mx-auto lg:max-w-[760px] lg:grid-cols-2" : "lg:grid-cols-4")}>
             <a
               href={INSTAGRAM_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex min-h-24 flex-col justify-between rounded-lg bg-gradient-to-br from-fuchsia-600 via-rose-500 to-orange-400 p-2.5 text-white"
+              className="flex min-h-40 flex-col justify-between rounded-xl bg-gradient-to-br from-fuchsia-600 via-rose-500 to-orange-400 p-4 text-white"
             >
-              <Instagram className="h-6 w-6" />
+              <Instagram className="h-8 w-8" />
               <div>
-                <h3 className="text-xs font-black">ما را در اینستاگرام دنبال کنید</h3>
-                <span className="mt-2 inline-flex min-h-7 items-center gap-1 rounded-lg bg-white px-3 text-[9px] font-black text-rose-600">
+                <h3 className="text-base font-black sm:text-lg">ما را در اینستاگرام دنبال کنید</h3>
+                <span className="mt-3 inline-flex min-h-10 items-center gap-1 rounded-lg bg-white px-4 text-sm font-black text-rose-600">
                   مشاهده صفحه <ArrowLeft className="h-3 w-3" />
                 </span>
               </div>
@@ -569,7 +569,7 @@ export default function LandingHome({ data }: { data: LandingData }) {
                 key={article._id}
                 className="group overflow-hidden rounded-xl border border-[#e5edf9] bg-white"
               >
-                <Link href={"/blog/" + article.slug} className="relative block h-[52px] overflow-hidden bg-slate-100">
+                <Link href={"/blog/" + article.slug} className="relative block aspect-[16/8] overflow-hidden bg-slate-100">
                   <Image
                     src={article.coverImage || "/atari-seeklogo.svg"}
                     alt={article.title}
@@ -579,18 +579,18 @@ export default function LandingHome({ data }: { data: LandingData }) {
                     className="object-cover transition duration-300 group-hover:scale-[1.03]"
                   />
                 </Link>
-                <div className="p-1.5">
-                  <h3 className="line-clamp-2 min-h-6 text-[9px] font-black leading-3 sm:text-[10px]">
+                <div className="p-3">
+                  <h3 className="line-clamp-2 min-h-10 text-sm font-black leading-5 sm:text-base">
                     {article.title}
                   </h3>
-                  <p className="mt-1 line-clamp-1 text-[8px] text-slate-400 sm:hidden">
+                  <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500 lg:hidden">
                     {stripHtmlTags(
                       article.metaDescription || article.excerpt || article.content,
                     )}
                   </p>
                   <Link
                     href={"/blog/" + article.slug}
-                    className="mt-1 inline-flex items-center gap-1 text-[9px] font-black text-[#1469f5]"
+                    className="mt-2 inline-flex min-h-10 items-center gap-1 text-sm font-black text-[#1469f5]"
                   >
                     مطالعه مقاله <ChevronLeft className="h-3 w-3" />
                   </Link>
@@ -606,7 +606,7 @@ export default function LandingHome({ data }: { data: LandingData }) {
         </section>
 
         <section
-          className="landing-section landing-panel overflow-hidden sm:grid sm:min-h-[126px] sm:grid-cols-[1.15fr_0.85fr]"
+          className="landing-section landing-panel overflow-hidden sm:grid sm:min-h-[240px] sm:grid-cols-[1.15fr_0.85fr] lg:min-h-[280px]"
           dir="ltr"
           aria-labelledby="visit-heading"
         >
@@ -615,16 +615,16 @@ export default function LandingHome({ data }: { data: LandingData }) {
             src={MAP_EMBED_URL}
             loading="eager"
             referrerPolicy="no-referrer-when-downgrade"
-            className="min-h-[210px] w-full border-0 sm:min-h-full"
+            className="min-h-[260px] w-full border-0 sm:min-h-full"
           />
-          <div className="flex flex-col justify-center p-2.5 text-right" dir="rtl">
-            <h2 id="visit-heading" className="text-base font-black sm:text-lg">
+          <div className="flex flex-col justify-center p-5 text-right sm:p-6" dir="rtl">
+            <h2 id="visit-heading" className="text-xl font-black sm:text-2xl lg:text-[28px]">
               حضوری منتظرتیم
             </h2>
-            <p className="mt-1 text-[9px] font-bold leading-4 text-slate-600">
+            <p className="mt-2 text-sm font-bold leading-6 text-slate-600 sm:text-base">
               کرمان، خیابان ناصریه، بین کوچه ۲ و ۴، نبش داروخانه مادر
             </p>
-            <div className="mt-1 flex flex-wrap gap-x-3 text-[9px] text-slate-400">
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-500 sm:text-sm">
               <span className="inline-flex items-center gap-1">
                 <Clock3 className="h-3.5 w-3.5 text-[#1469f5]" /> صبح ۹ تا ۱۲
               </span>
@@ -632,15 +632,15 @@ export default function LandingHome({ data }: { data: LandingData }) {
                 <Clock3 className="h-3.5 w-3.5 text-[#1469f5]" /> عصر ۴ تا ۸
               </span>
             </div>
-            <div className="mt-1.5 flex gap-1.5">
-              <Link href={REQUEST_URL} className="landing-primary min-h-8 flex-1 text-[9px]">
+            <div className="mt-4 flex flex-col gap-2 min-[440px]:flex-row">
+              <Link href={REQUEST_URL} className="landing-primary flex-1 text-sm">
                 ثبت درخواست حضوری
               </Link>
               <a
                 href={MAP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="landing-secondary min-h-8 flex-1 text-[9px]"
+                className="landing-secondary flex-1 text-sm"
               >
                 مسیریابی <Send className="h-3.5 w-3.5" />
               </a>
@@ -663,7 +663,7 @@ export default function LandingHome({ data }: { data: LandingData }) {
               <Link
                 key={item.label}
                 href={item.href}
-                className="flex min-h-12 flex-col items-center justify-center gap-1 text-[9px] font-black text-slate-500"
+                className="flex min-h-12 flex-col items-center justify-center gap-1 text-xs font-black text-slate-500"
               >
                 <Icon className="h-5 w-5 text-[#1469f5]" />
                 {item.label}

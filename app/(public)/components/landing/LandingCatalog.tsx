@@ -27,14 +27,12 @@ function ProductCard({
   const isGame = variant === "games";
 
   return (
-    <article className="group flex min-w-0 flex-col rounded-lg border border-[#e2ebfb] bg-white p-1 shadow-[0_3px_12px_rgba(15,61,130,0.04)]">
+    <article className="group flex min-w-0 flex-col rounded-xl border border-[#e2ebfb] bg-white p-2 shadow-[0_6px_18px_rgba(15,61,130,0.06)] sm:p-3">
       <Link
         href={"/product/" + product.slug}
         className={
           "relative block overflow-hidden rounded-lg bg-[#f7f9fd] " +
-          (isGame
-            ? "aspect-[3/4] sm:h-[88px] sm:aspect-auto"
-            : "aspect-[4/3] sm:h-[78px] sm:aspect-auto")
+          (isGame ? "aspect-[3/4]" : "aspect-[4/3]")
         }
         aria-label={"مشاهده " + product.title}
       >
@@ -55,17 +53,17 @@ function ProductCard({
           }
         />
       </Link>
-      <h3 className="mt-1 line-clamp-2 min-h-6 text-[10px] font-black leading-3 text-[#0b1d48]">
+      <h3 className="mt-2 line-clamp-2 min-h-10 text-sm font-black leading-5 text-[#0b1d48] sm:text-base">
         {product.title}
       </h3>
       {isGame && (
-        <span className="mt-0.5 w-fit rounded-md bg-[#edf4ff] px-1.5 py-0.5 text-[8px] font-black text-[#1769ff]">
+        <span className="mt-1 w-fit rounded-md bg-[#edf4ff] px-2 py-1 text-xs font-black text-[#1769ff]">
           {platformLabel(product)}
         </span>
       )}
       <Link
         href={"/product/" + product.slug}
-        className="mt-1 inline-flex min-h-11 items-center justify-center gap-1 rounded-md border border-[#bcd4ff] px-1 text-[9px] font-black text-[#1262e7] transition hover:bg-[#edf4ff] focus:outline-none focus:ring-2 focus:ring-blue-400 sm:min-h-7"
+        className="mt-3 inline-flex min-h-11 items-center justify-center gap-1 rounded-lg border border-[#bcd4ff] px-3 text-xs font-black text-[#1262e7] transition hover:bg-[#edf4ff] focus:outline-none focus:ring-2 focus:ring-blue-400 sm:text-sm"
       >
         {isGame ? "مشاهده بازی" : "مشاهده قیمت"}
         <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
@@ -90,23 +88,33 @@ export default function LandingCatalog({
   const activeTab =
     tabs.find((tab) => tab.id === activeId) || firstPopulated || tabs[0];
   const products = activeTab?.products || [];
+  const densityClass =
+    products.length <= 1
+      ? "mx-auto grid-cols-1 max-w-[220px] lg:max-w-[280px]"
+      : products.length === 2
+        ? "mx-auto grid-cols-2 max-w-[760px]"
+        : products.length === 3
+          ? "mx-auto grid-cols-2 sm:grid-cols-3 max-w-[980px]"
+          : variant === "games"
+            ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6"
+            : "grid-cols-2 sm:grid-cols-4";
 
   return (
     <section className="landing-panel" aria-labelledby={variant + "-heading"}>
-      <div className="flex flex-col gap-2 px-2 pt-2 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-3 px-4 pt-4 sm:flex-row sm:items-end sm:justify-between sm:px-5 sm:pt-5">
         <div className="sm:order-1">
           <h2
             id={variant + "-heading"}
-            className="text-base font-black text-[#0b1d48] sm:text-lg"
+            className="text-xl font-black leading-tight text-[#0b1d48] sm:text-2xl lg:text-[28px]"
           >
             {title}
           </h2>
-          <p className="text-[9px] leading-4 text-slate-400 sm:text-[10px]">
+          <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
             {description}
           </p>
         </div>
         <div
-          className="flex max-w-full gap-1 overflow-x-auto rounded-lg bg-[#f4f7fc] p-1 sm:order-2"
+          className="flex max-w-full gap-1.5 overflow-x-auto rounded-xl bg-[#f4f7fc] p-1.5 sm:order-2"
           role="tablist"
           aria-label={"فیلتر " + title}
         >
@@ -119,7 +127,7 @@ export default function LandingCatalog({
               aria-controls={variant + "-catalog-panel"}
               onClick={() => setActiveId(tab.id)}
               className={
-                "min-h-11 shrink-0 rounded-md px-2.5 text-[9px] font-black transition focus:outline-none focus:ring-2 focus:ring-blue-400 sm:min-h-7 sm:px-3 " +
+                "min-h-11 shrink-0 rounded-lg px-4 text-xs font-black transition focus:outline-none focus:ring-2 focus:ring-blue-400 sm:text-sm " +
                 (activeTab?.id === tab.id
                   ? "bg-[#1469f5] text-white shadow-sm"
                   : "text-slate-500 hover:bg-white")
@@ -134,16 +142,11 @@ export default function LandingCatalog({
       <div
         id={variant + "-catalog-panel"}
         role="tabpanel"
-        className="p-2 pt-1.5"
+        className="p-4 pt-3 sm:p-5 sm:pt-4"
       >
         {products.length > 0 ? (
           <div
-            className={
-              "grid grid-cols-2 gap-2 " +
-              (variant === "games"
-                ? "sm:grid-cols-6"
-                : "sm:grid-cols-4")
-            }
+            className={"grid w-full gap-3 sm:gap-4 " + densityClass}
           >
             {products.map((product) => (
               <ProductCard
@@ -154,12 +157,12 @@ export default function LandingCatalog({
             ))}
           </div>
         ) : (
-          <div className="flex min-h-32 flex-col items-center justify-center rounded-xl border border-dashed border-blue-200 bg-blue-50/50 px-4 text-center">
+          <div className="flex min-h-48 flex-col items-center justify-center rounded-xl border border-dashed border-blue-200 bg-blue-50/50 px-5 text-center">
             <PackageSearch
               className="h-7 w-7 text-blue-500"
               aria-hidden="true"
             />
-            <p className="mt-2 text-xs font-bold text-slate-600">
+            <p className="mt-3 text-sm font-bold text-slate-600">
               هنوز محصول منتشرشده‌ای برای این فیلتر ثبت نشده است.
             </p>
           </div>
@@ -167,7 +170,7 @@ export default function LandingCatalog({
         {activeTab && (
           <Link
             href={activeTab.href}
-            className="mx-auto mt-1 flex w-fit items-center gap-1 text-[9px] font-black text-[#1262e7] hover:underline"
+            className="mx-auto mt-3 flex min-h-10 w-fit items-center gap-1 px-3 text-sm font-black text-[#1262e7] hover:underline"
           >
             مشاهده همه
             <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />

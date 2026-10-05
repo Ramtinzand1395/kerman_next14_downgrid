@@ -24,34 +24,34 @@ const faqs = [
 export default function Faq() {
   return (
     <section
-      className="landing-section landing-panel p-2"
+      className="landing-section landing-panel p-4 sm:p-5"
       aria-labelledby="landing-faq-heading"
     >
-      <div className="mb-2 text-center">
+      <div className="mb-4 text-center">
         <div>
           <h2
             id="landing-faq-heading"
-            className="text-base font-black text-[#0b1d48] sm:text-lg"
+            className="text-xl font-black text-[#0b1d48] sm:text-2xl lg:text-[28px]"
           >
             سوالات پرتکرار
           </h2>
-          <p className="text-[10px] text-slate-400">
+          <p className="mt-1 text-xs text-slate-500 sm:text-sm">
             پاسخ کوتاه به پرسش‌های رایج خدمات حضوری
           </p>
         </div>
       </div>
-      <div className="space-y-1">
+      <div className="space-y-2">
         {faqs.map((faq, index) => (
           <details
             key={faq.question}
             open={index === 0}
-            className="group rounded-md border border-[#e2ebfb] bg-white px-2 py-0.5 open:border-blue-200 open:bg-[#f7faff]"
+            className="group rounded-xl border border-[#e2ebfb] bg-white px-4 py-1 open:border-blue-200 open:bg-[#f7faff]"
           >
-            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 text-[8px] font-black text-[#0b1d48] sm:min-h-4 sm:text-[9px]">
+            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 text-sm font-black text-[#0b1d48] sm:text-base">
               <span>{faq.question}</span>
               <Plus className="h-4 w-4 shrink-0 text-[#1469f5] transition group-open:rotate-45" />
             </summary>
-            <p className="mt-1 border-t border-slate-100 pt-1 text-[7px] leading-3 text-slate-500 sm:text-[8px]">
+            <p className="border-t border-slate-100 py-3 text-xs leading-6 text-slate-600 sm:text-sm">
               {faq.answer}
             </p>
           </details>
