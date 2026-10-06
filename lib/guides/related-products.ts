@@ -97,37 +97,50 @@ function toGuideProduct(document: any): GuideProduct {
   };
 }
 
-export async function getPs5GuideProducts(): Promise<GuideProductsResult> {
+type GuideProductQuery = {
+  consoleLabel: string;
+  tagSlugs: string[];
+  titlePattern: RegExp;
+  slugPattern: RegExp;
+};
+
+async function getGuideProducts({
+  consoleLabel,
+  tagSlugs,
+  titlePattern,
+  slugPattern,
+}: GuideProductQuery): Promise<GuideProductsResult> {
   try {
     await dbConnect();
 
-    const [categories, ps5Tags] = await Promise.all([
+    const [categories, matchingTags] = await Promise.all([
       Category.find({}).select("_id slug parent").lean<CategoryRecord[]>(),
       Tag.find({
-        slug: { $in: ["ps5", "playstation-5", "ps5-console"] },
+        slug: { $in: tagSlugs },
       })
         .select("_id")
         .lean(),
     ]);
     const consoleCategoryIds = descendantIds(categories, "consoles");
-    const tagIds = ps5Tags.map((tag: any) => tag._id);
-    const ps5Signals: Record<string, unknown>[] = [
-      { title: /(^|\s)(ps5|playstation\s*5)(\s|$)/i },
-      { slug: /(^|[-_])(ps5|playstation-5)([-_]|$)/i },
+    if (consoleCategoryIds.length === 0) {
+      return { status: "success", products: [] };
+    }
+
+    const tagIds = matchingTags.map((tag: any) => tag._id);
+    const signals: Record<string, unknown>[] = [
+      { title: titlePattern },
+      { slug: slugPattern },
     ];
 
     if (tagIds.length > 0) {
-      ps5Signals.unshift({ tags: { $in: tagIds } });
+      signals.unshift({ tags: { $in: tagIds } });
     }
 
     const filter: Record<string, unknown> = {
       status: "published",
-      $or: ps5Signals,
+      category: { $in: consoleCategoryIds },
+      $or: signals,
     };
-
-    if (consoleCategoryIds.length > 0) {
-      filter.category = { $in: consoleCategoryIds };
-    }
 
     const products = await Product.find(filter)
       .select(
@@ -142,7 +155,25 @@ export async function getPs5GuideProducts(): Promise<GuideProductsResult> {
       products: products.map(toGuideProduct),
     };
   } catch (error) {
-    console.error("PS5 guide products error:", error);
+    console.error(`${consoleLabel} guide products error:`, error);
     return { status: "error", products: [] };
   }
+}
+
+export function getPs5GuideProducts(): Promise<GuideProductsResult> {
+  return getGuideProducts({
+    consoleLabel: "PS5",
+    tagSlugs: ["ps5", "playstation-5", "ps5-console"],
+    titlePattern: /(^|\s)(ps5|playstation\s*5)(\s|$)/i,
+    slugPattern: /(^|[-_])(ps5|playstation-5)([-_]|$)/i,
+  });
+}
+
+export function getPs4GuideProducts(): Promise<GuideProductsResult> {
+  return getGuideProducts({
+    consoleLabel: "PS4",
+    tagSlugs: ["ps4", "playstation-4", "ps4-console"],
+    titlePattern: /(^|\s)(ps4|playstation\s*4|پلی\s*استیشن\s*4)(\s|$)/i,
+    slugPattern: /(^|[-_])(ps4|playstation-4)([-_]|$)/i,
+  });
 }

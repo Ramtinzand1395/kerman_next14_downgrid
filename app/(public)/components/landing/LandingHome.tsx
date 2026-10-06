@@ -12,7 +12,6 @@ import {
   Gauge,
   Headphones,
   Instagram,
-  ListChecks,
   Map,
   MapPin,
   PackageOpen,
@@ -23,7 +22,6 @@ import {
   Sparkles,
   Store,
   Swords,
-  Truck,
   UsersRound,
   Wrench,
 } from "lucide-react";
@@ -34,6 +32,7 @@ import ProductImage from "@/app/components/ProductImage";
 import Motion from "../Motion";
 import Faq from "./Faq";
 import LandingCatalog from "./LandingCatalog";
+import ServiceOrderSection from "./ServiceOrderSection";
 
 const REQUEST_URL = "/my-profile?step=6";
 const INSTAGRAM_URL =
@@ -85,24 +84,6 @@ const serviceCards = [
   { title: "سرویس و نگهداری", icon: Settings2 },
 ];
 
-const steps = [
-  {
-    title: "خدمتت رو انتخاب کن",
-    text: "نصب بازی، خرید یا تعمیر",
-    icon: ListChecks,
-  },
-  {
-    title: "درخواست ثبت کن",
-    text: "جزئیات را برای هماهنگی بفرست",
-    icon: CalendarDays,
-  },
-  {
-    title: "بیا کرمان آتاری",
-    text: "حضوری تحویل بده و پیگیری کن",
-    icon: Store,
-  },
-];
-
 const benefits = [
   {
     title: "تخصص واقعی کنسول",
@@ -141,7 +122,7 @@ const consoleGuides = [
   {
     title: "PS4",
     text: "انتخاب اقتصادی",
-    href: "/products?category=consoles&tag=ps4&sort=newest&page=1",
+    href: "/guides/ps4-buying-guide",
     icon: Gamepad2,
   },
   {
@@ -407,89 +388,7 @@ export default function LandingHome({ data }: { data: LandingData }) {
             </div>
         </section>
 
-        <section className="landing-section landing-panel p-4 sm:p-5" aria-labelledby="steps-heading">
-          <h2 id="steps-heading" className="text-center text-xl font-black sm:text-2xl lg:text-[28px]">
-            فقط ۳ مرحله تا بازی کردن
-          </h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            {steps.map((step, index) => {
-              const Icon = step.icon;
-              return (
-                <div
-                  key={step.title}
-                  className="relative flex min-h-[76px] items-center gap-3 rounded-xl bg-[#f8fbff] px-4"
-                >
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#edf4ff] text-[#1469f5]">
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <h3 className="text-sm font-black sm:text-base">{step.title}</h3>
-                    <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
-                      {step.text}
-                    </p>
-                  </div>
-                  {index < steps.length - 1 && (
-                    <ChevronLeft className="absolute -left-3 top-1/2 z-10 hidden h-4 w-4 -translate-y-1/2 text-[#1469f5] sm:block" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="landing-section landing-panel p-4 sm:p-5" aria-labelledby="delivery-heading">
-          <div className="text-center">
-            <h2 id="delivery-heading" className="text-xl font-black sm:text-2xl lg:text-[28px]">
-              چطور می‌خوای خدمات بگیری؟
-            </h2>
-            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-              روش فعال فعلی را انتخاب کن
-            </p>
-          </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <article className="flex items-center gap-3 rounded-xl border-2 border-[#b8d2ff] bg-white p-4">
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#edf4ff] text-[#1469f5]">
-                <Store className="h-7 w-7" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-base font-black text-[#1469f5] sm:text-lg">مراجعه حضوری</h3>
-                <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
-                  درخواستت را ثبت کن تا برای مراجعه با تو هماهنگ کنیم.
-                </p>
-                <Link
-                  href={REQUEST_URL}
-                  className="mt-3 flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#1469f5] px-4 text-sm font-black text-white"
-                >
-                  ثبت درخواست
-                  <CalendarDays className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-            </article>
-            <article className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-400">
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-slate-200">
-                <Truck className="h-7 w-7" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base font-black sm:text-lg">ارسال با پیک</h3>
-                  <span className="rounded-md bg-slate-200 px-2 py-1 text-xs font-black">
-                    به‌زودی
-                  </span>
-                </div>
-                <p className="mt-1 text-xs leading-5 sm:text-sm">
-                  دریافت و بازگرداندن دستگاه هنوز فعال نشده است.
-                </p>
-                <button
-                  type="button"
-                  disabled
-                  className="mt-3 flex min-h-11 w-full cursor-not-allowed items-center justify-center rounded-lg bg-slate-200 text-sm font-black"
-                >
-                  فعلاً غیرفعال
-                </button>
-              </div>
-            </article>
-          </div>
-        </section>
+        <ServiceOrderSection />
 
         <section className="landing-section" aria-labelledby="benefits-heading">
           <div className="relative overflow-hidden rounded-[28px] border border-[#174f9f] bg-[radial-gradient(circle_at_15%_10%,#1765c9_0%,#082d6b_42%,#051d49_100%)] p-5 text-white shadow-[0_22px_55px_rgba(5,35,86,0.2)] sm:p-8 lg:p-10">

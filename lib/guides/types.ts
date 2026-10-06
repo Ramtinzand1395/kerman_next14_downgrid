@@ -4,6 +4,13 @@ export type GuideImage = {
   caption: string;
   aspect: "4/3" | "16/9" | "3/1";
   objectPosition?: string;
+  fit?: "cover" | "contain";
+};
+
+export type GuideInspectionGroup = {
+  title: string;
+  tone: "check" | "ask" | "expert";
+  items: string[];
 };
 
 export type GuideTable = {
@@ -20,6 +27,12 @@ export type GuideBlock =
   | { type: "subheading"; title: string }
   | { type: "list"; items: string[]; ordered?: boolean }
   | { type: "callout"; title: string; text: string }
+  | {
+      type: "inspection";
+      intro: string;
+      groups: GuideInspectionGroup[];
+      note: string;
+    }
   | { type: "figure"; image: GuideImage }
   | { type: "table"; table: GuideTable };
 
@@ -50,6 +63,12 @@ export type BuyingGuide = {
   publishedAt: string;
   modifiedAt: string;
   publishedLabel: string;
+  breadcrumbLabel: string;
+  comparisonCtaLabel: string;
+  productsCtaLabel: string;
+  productsSectionTitle: string;
+  productsEmptyMessage: string;
+  faqTitle: string;
   heroImage: GuideImage;
   productHref: string;
   quickChoices: Array<{
@@ -59,4 +78,9 @@ export type BuyingGuide = {
   sections: GuideSection[];
   faqs: GuideFaqItem[];
   sources: GuideSource[];
+  relatedGuides: Array<{
+    title: string;
+    description: string;
+    href: string;
+  }>;
 };

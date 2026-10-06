@@ -7,9 +7,13 @@ import type { GuideProductsResult } from "@/lib/guides/related-products";
 export default function GuideProducts({
   result,
   productsHref,
+  title,
+  emptyMessage,
 }: {
   result: GuideProductsResult;
   productsHref: string;
+  title: string;
+  emptyMessage: string;
 }) {
   return (
     <Motion distance={12} duration={0.4}>
@@ -21,7 +25,7 @@ export default function GuideProducts({
           <div>
             <p className="text-xs font-black text-blue-600">از راهنما تا انتخاب واقعی</p>
             <h2 id="related-products-heading" className="mt-1 text-2xl font-black text-[#0a265b] sm:text-[28px]">
-              کنسول‌های PS5 مرتبط
+              {title}
             </h2>
           </div>
           <Link href={productsHref} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-black text-blue-700 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -37,7 +41,7 @@ export default function GuideProducts({
         ) : result.products.length === 0 ? (
           <div className="mt-5 flex min-h-32 flex-col items-center justify-center rounded-2xl border border-dashed border-blue-200 bg-blue-50/60 px-4 text-center">
             <PackageSearch className="h-7 w-7 text-blue-600" aria-hidden="true" />
-            <p className="mt-2 text-sm font-bold text-slate-700">در حال حاضر محصول منتشرشده‌ای با برچسب PS5 پیدا نشد.</p>
+            <p className="mt-2 text-sm font-bold text-slate-700">{emptyMessage}</p>
           </div>
         ) : (
           <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">

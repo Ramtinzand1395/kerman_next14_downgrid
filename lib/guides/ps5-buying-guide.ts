@@ -1,4 +1,4 @@
-import type { BuyingGuide, GuideBlock, GuideSection } from "./types";
+import type { BuyingGuide, GuideSection } from "./types";
 
 export const PS5_GUIDE_PATH = "/guides/ps5-buying-guide";
 export const PS5_PRODUCTS_PATH =
@@ -290,6 +290,12 @@ export const ps5BuyingGuide: BuyingGuide = {
   publishedAt: "2026-10-05T00:00:00+03:30",
   modifiedAt: "2026-10-05T00:00:00+03:30",
   publishedLabel: "۱۳ مهر ۱۴۰۵",
+  breadcrumbLabel: "راهنمای خرید PS5",
+  comparisonCtaLabel: "مقایسه مدل‌های PS5",
+  productsCtaLabel: "مشاهده کنسول‌های PS5",
+  productsSectionTitle: "کنسول‌های PS5 مرتبط",
+  productsEmptyMessage: "در حال حاضر کنسول PS5 منتشرشده‌ای در این فیلتر پیدا نشد.",
+  faqTitle: "پرسش‌های متداول راهنمای خرید PS5",
   heroImage: {
     src: "/PS5 Hero Banner with Game Cases-1.png",
     alt: "کنسول PS5 کنار دسته و بازی‌ها",
@@ -391,41 +397,7 @@ export const ps5BuyingGuide: BuyingGuide = {
       note: "بازی‌های PS4، دیسک، DualShock 4 و محدودیت‌ها",
     },
   ],
+  relatedGuides: [
+    { title: "راهنمای خرید PS4", description: "مقایسه Fat، Slim و Pro و چک‌لیست خرید دستگاه کارکرده", href: "/guides/ps4-buying-guide" },
+  ],
 };
-
-function blockText(block: GuideBlock): string[] {
-  switch (block.type) {
-    case "paragraph":
-      return [block.text];
-    case "subheading":
-      return [block.title];
-    case "list":
-      return block.items;
-    case "callout":
-      return [block.title, block.text];
-    case "figure":
-      return [block.image.alt, block.image.caption];
-    case "table":
-      return [
-        block.table.caption,
-        ...block.table.columns,
-        ...block.table.rows.flatMap((row) => [row.label, ...row.cells]),
-      ];
-  }
-}
-
-export function getGuideReadingMinutes(guide: BuyingGuide): number {
-  const text = [
-    guide.title,
-    guide.intro,
-    ...guide.quickChoices.flatMap((choice) => [choice.title, choice.answer]),
-    ...guide.sections.flatMap((section) => [
-      section.title,
-      ...section.blocks.flatMap(blockText),
-    ]),
-    ...guide.faqs.flatMap((faq) => [faq.question, faq.answer]),
-  ].join(" ");
-
-  const words = text.trim().split(/\s+/u).filter(Boolean).length;
-  return Math.max(1, Math.ceil(words / 180));
-}

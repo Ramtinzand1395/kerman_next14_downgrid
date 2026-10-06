@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import {
   GuideContent,
   GuideHero,
@@ -8,45 +9,43 @@ import {
 import GuideProducts from "../_components/GuideProducts";
 import {
   PRODUCTION_SITE_URL,
-  PS5_GUIDE_PATH,
-  ps5BuyingGuide,
-} from "@/lib/guides/ps5-buying-guide";
+  PS4_GUIDE_PATH,
+  ps4BuyingGuide,
+} from "@/lib/guides/ps4-buying-guide";
 import { getGuideReadingMinutes } from "@/lib/guides/reading-time";
-import { getPs5GuideProducts } from "@/lib/guides/related-products";
+import { getPs4GuideProducts } from "@/lib/guides/related-products";
 
 export const dynamic = "force-dynamic";
 
-const canonicalUrl = `${PRODUCTION_SITE_URL}${PS5_GUIDE_PATH}`;
-const socialImage = `${PRODUCTION_SITE_URL}/PS5%20Hero%20Banner%20with%20Game%20Cases-1.png`;
+const canonicalUrl = `${PRODUCTION_SITE_URL}${PS4_GUIDE_PATH}`;
+const socialImage = `${PRODUCTION_SITE_URL}/guides/ps4/ps4-fat-dualshock.jpg`;
 
 export const metadata: Metadata = {
-  title: ps5BuyingGuide.seoTitle,
-  description: ps5BuyingGuide.description,
-  alternates: {
-    canonical: canonicalUrl,
-  },
+  title: ps4BuyingGuide.seoTitle,
+  description: ps4BuyingGuide.description,
+  alternates: { canonical: canonicalUrl },
   openGraph: {
-    title: ps5BuyingGuide.seoTitle,
-    description: ps5BuyingGuide.description,
+    title: ps4BuyingGuide.seoTitle,
+    description: ps4BuyingGuide.description,
     url: canonicalUrl,
     type: "article",
     locale: "fa_IR",
     siteName: "کرمان آتاری",
-    publishedTime: ps5BuyingGuide.publishedAt,
-    modifiedTime: ps5BuyingGuide.modifiedAt,
+    publishedTime: ps4BuyingGuide.publishedAt,
+    modifiedTime: ps4BuyingGuide.modifiedAt,
     images: [
       {
         url: socialImage,
-        width: 2172,
-        height: 724,
-        alt: ps5BuyingGuide.heroImage.alt,
+        width: 1600,
+        height: 800,
+        alt: ps4BuyingGuide.heroImage.alt,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: ps5BuyingGuide.seoTitle,
-    description: ps5BuyingGuide.description,
+    title: ps4BuyingGuide.seoTitle,
+    description: ps4BuyingGuide.description,
     images: [socialImage],
   },
 };
@@ -65,19 +64,15 @@ function getStructuredData() {
       {
         "@type": "Article",
         "@id": `${canonicalUrl}#article`,
-        headline: ps5BuyingGuide.title,
-        description: ps5BuyingGuide.description,
+        headline: ps4BuyingGuide.title,
+        description: ps4BuyingGuide.description,
         image: [socialImage],
-        datePublished: ps5BuyingGuide.publishedAt,
-        dateModified: ps5BuyingGuide.modifiedAt,
+        datePublished: ps4BuyingGuide.publishedAt,
+        dateModified: ps4BuyingGuide.modifiedAt,
         inLanguage: "fa-IR",
         mainEntityOfPage: canonicalUrl,
-        publisher: {
-          "@id": `${PRODUCTION_SITE_URL}/#organization`,
-        },
-        isPartOf: {
-          "@id": `${PRODUCTION_SITE_URL}/#website`,
-        },
+        publisher: { "@id": `${PRODUCTION_SITE_URL}/#organization` },
+        isPartOf: { "@id": `${PRODUCTION_SITE_URL}/#website` },
       },
       {
         "@type": "BreadcrumbList",
@@ -93,12 +88,12 @@ function getStructuredData() {
             "@type": "ListItem",
             position: 2,
             name: "کنسول‌ها",
-            item: `${PRODUCTION_SITE_URL}/products`,
+            item: `${PRODUCTION_SITE_URL}/products?category=consoles`,
           },
           {
             "@type": "ListItem",
             position: 3,
-            name: "راهنمای خرید PS5",
+            name: ps4BuyingGuide.breadcrumbLabel,
             item: canonicalUrl,
           },
         ],
@@ -106,40 +101,38 @@ function getStructuredData() {
       {
         "@type": "FAQPage",
         "@id": `${canonicalUrl}#faq-schema`,
-        mainEntity: ps5BuyingGuide.faqs.map((faq) => ({
+        mainEntity: ps4BuyingGuide.faqs.map((faq) => ({
           "@type": "Question",
           name: faq.question,
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: faq.answer,
-          },
+          acceptedAnswer: { "@type": "Answer", text: faq.answer },
         })),
       },
     ],
   };
 }
 
-export default async function Ps5BuyingGuidePage() {
-  const productsResult = await getPs5GuideProducts();
-  const readingMinutes = getGuideReadingMinutes(ps5BuyingGuide);
+export default async function Ps4BuyingGuidePage() {
+  const productsResult = await getPs4GuideProducts();
+  const readingMinutes = getGuideReadingMinutes(ps4BuyingGuide);
 
   return (
     <div className="overflow-x-clip bg-[#f3f8ff] pb-14 text-right text-[#0b1d48] sm:pb-20">
-      <script
+      <Script
+        id="ps4-buying-guide-jsonld"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(getStructuredData()) }}
       />
       <div className="mx-auto w-full max-w-[1280px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-9">
-        <GuideHero guide={ps5BuyingGuide} readingMinutes={readingMinutes} />
-        <QuickChoices guide={ps5BuyingGuide} />
-        <GuideContent guide={ps5BuyingGuide} />
+        <GuideHero guide={ps4BuyingGuide} readingMinutes={readingMinutes} />
+        <QuickChoices guide={ps4BuyingGuide} />
+        <GuideContent guide={ps4BuyingGuide} />
         <GuideProducts
           result={productsResult}
-          productsHref={ps5BuyingGuide.productHref}
-          title={ps5BuyingGuide.productsSectionTitle}
-          emptyMessage={ps5BuyingGuide.productsEmptyMessage}
+          productsHref={ps4BuyingGuide.productHref}
+          title={ps4BuyingGuide.productsSectionTitle}
+          emptyMessage={ps4BuyingGuide.productsEmptyMessage}
         />
-        <GuideNextSteps guide={ps5BuyingGuide} />
+        <GuideNextSteps guide={ps4BuyingGuide} />
       </div>
     </div>
   );
