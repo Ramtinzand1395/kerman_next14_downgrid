@@ -21,6 +21,10 @@ import { debit, credit } from "@/lib/loyalty/wallet.service";
 import { validateCoupon, applyCoupon } from "@/lib/loyalty/coupon.service";
 import { onSuccessfulPurchase } from "@/lib/loyalty/purchase.hooks";
 import { notifyInventoryFailure, notifyLowInventory, notifyOrderPaid, notifyPaymentFailed } from "@/lib/notifications/events";
+import {
+  calculateShippingCost,
+  InvalidShippingDestinationError,
+} from "@/lib/shipping";
 
 interface CheckoutItem {
   productId: string;
@@ -139,7 +143,6 @@ export async function POST(req: NextRequest) {
     const payload: {
       addressId?: string;
       items?: CheckoutItem[];
-      shippingCost?: number;
       couponCode?: string;
     } = await req.json();
 
@@ -257,13 +260,10 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    const shippingCost = Number(payload.shippingCost ?? 0);
-    if (!Number.isFinite(shippingCost) || shippingCost < 0) {
-      return NextResponse.json(
-        { success: false, error: "هزینه ارسال نامعتبر است." },
-        { status: 400 },
-      );
-    }
+    const shippingCost = calculateShippingCost({
+      province: address.province,
+      city: address.city,
+    });
 
     const totalPrice = checkoutItems.reduce((acc, item) => acc + item.total, 0);
 
@@ -631,6 +631,12 @@ export async function POST(req: NextRequest) {
     if (error instanceof Error && error.message === "INVALID_VARIANT") {
       return NextResponse.json(
         { success: false, error: "مدل انتخابی برای محصول معتبر نیست." },
+        { status: 400 },
+      );
+    }
+    if (error instanceof InvalidShippingDestinationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
         { status: 400 },
       );
     }

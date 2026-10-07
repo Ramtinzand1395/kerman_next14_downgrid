@@ -10,6 +10,10 @@ import { createAddressSnapshot } from "@/lib/addressSnapshot";
 import { NextRequest, NextResponse } from "next/server";
 import { getSiteUrl } from "@/lib/baseUrl";
 import { validateCoupon } from "@/lib/loyalty/coupon.service";
+import {
+  calculateShippingCost,
+  InvalidShippingDestinationError,
+} from "@/lib/shipping";
 
 interface CheckoutItem {
   productId: string;
@@ -51,7 +55,6 @@ export async function POST(req: NextRequest) {
     const payload: {
       addressId?: string;
       items?: CheckoutItem[];
-      shippingCost?: number;
       couponCode?: string;
     } = await req.json();
     const idempotencyKey = req.headers.get("Idempotency-Key")?.trim() || null;
@@ -175,13 +178,10 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    const shippingCost = Number(payload.shippingCost ?? 0);
-    if (!Number.isFinite(shippingCost) || shippingCost < 0) {
-      return NextResponse.json(
-        { success: false, error: "هزینه ارسال نامعتبر است." },
-        { status: 400 },
-      );
-    }
+    const shippingCost = calculateShippingCost({
+      province: address.province,
+      city: address.city,
+    });
 
     const totalPrice = checkoutItems.reduce((acc, item) => acc + item.total, 0);
 
@@ -328,6 +328,13 @@ export async function POST(req: NextRequest) {
       url: `https://payment.zarinpal.com/pg/StartPay/${authority}`,
     });
   } catch (error) {
+    if (error instanceof InvalidShippingDestinationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 400 },
+      );
+    }
+
     if (error instanceof Error && error.message === "INSUFFICIENT_STOCK") {
       return NextResponse.json(
         { success: false, error: "موجودی برخی محصولات کافی نیست." },
