@@ -177,3 +177,19 @@ export function getPs4GuideProducts(): Promise<GuideProductsResult> {
     slugPattern: /(^|[-_])(ps4|playstation-4)([-_]|$)/i,
   });
 }
+
+export function getXboxGuideProducts(): Promise<GuideProductsResult> {
+  return getGuideProducts({
+    consoleLabel: "Xbox",
+    tagSlugs: [
+      "xbox",
+      "xbox-series-s",
+      "xbox-series-x",
+      "xbox-one",
+    ],
+    titlePattern:
+      /(^|\s)(xbox|xbox\s*series\s*[sx]|xbox\s*one|ایکس\s*باکس)(\s|$)/i,
+    slugPattern:
+      /(^|[-_])(xbox|xbox-series-s|xbox-series-x|xbox-one)([-_]|$)/i,
+  });
+}

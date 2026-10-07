@@ -446,5 +446,10 @@ export const ps4BuyingGuide: BuyingGuide = {
       description: "مقایسه استاندارد، Slim، Pro و نسخه‌های دیجیتال و دیسک‌خور",
       href: "/guides/ps5-buying-guide",
     },
+    {
+      title: "راهنمای خرید Xbox",
+      description: "مقایسه Series S و Series X، دیسک، Game Pass و هزینه‌ها",
+      href: "/guides/xbox-buying-guide",
+    },
   ],
 };

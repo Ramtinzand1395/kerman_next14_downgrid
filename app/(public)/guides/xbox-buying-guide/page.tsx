@@ -7,44 +7,44 @@ import {
 } from "../_components/BuyingGuideView";
 import GuideProducts from "../_components/GuideProducts";
 import {
-  PRODUCTION_SITE_URL,
-  PS4_GUIDE_PATH,
-  ps4BuyingGuide,
-} from "@/lib/guides/ps4-buying-guide";
+  XBOX_GUIDE_PATH,
+  XBOX_PRODUCTION_SITE_URL,
+  xboxBuyingGuide,
+} from "@/lib/guides/xbox-buying-guide";
 import { getGuideReadingMinutes } from "@/lib/guides/reading-time";
-import { getPs4GuideProducts } from "@/lib/guides/related-products";
+import { getXboxGuideProducts } from "@/lib/guides/related-products";
 
 export const dynamic = "force-dynamic";
 
-const canonicalUrl = `${PRODUCTION_SITE_URL}${PS4_GUIDE_PATH}`;
-const socialImage = `${PRODUCTION_SITE_URL}/guides/ps4/ps4-fat-dualshock.jpg`;
+const canonicalUrl = `${XBOX_PRODUCTION_SITE_URL}${XBOX_GUIDE_PATH}`;
+const socialImage = `${XBOX_PRODUCTION_SITE_URL}/guides/xbox/series-x-and-s.jpg`;
 
 export const metadata: Metadata = {
-  title: ps4BuyingGuide.seoTitle,
-  description: ps4BuyingGuide.description,
+  title: xboxBuyingGuide.seoTitle,
+  description: xboxBuyingGuide.description,
   alternates: { canonical: canonicalUrl },
   openGraph: {
-    title: ps4BuyingGuide.seoTitle,
-    description: ps4BuyingGuide.description,
+    title: xboxBuyingGuide.seoTitle,
+    description: xboxBuyingGuide.description,
     url: canonicalUrl,
     type: "article",
     locale: "fa_IR",
     siteName: "کرمان آتاری",
-    publishedTime: ps4BuyingGuide.publishedAt,
-    modifiedTime: ps4BuyingGuide.modifiedAt,
+    publishedTime: xboxBuyingGuide.publishedAt,
+    modifiedTime: xboxBuyingGuide.modifiedAt,
     images: [
       {
         url: socialImage,
-        width: 1600,
-        height: 800,
-        alt: ps4BuyingGuide.heroImage.alt,
+        width: 1920,
+        height: 1254,
+        alt: xboxBuyingGuide.heroImage.alt,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: ps4BuyingGuide.seoTitle,
-    description: ps4BuyingGuide.description,
+    title: xboxBuyingGuide.seoTitle,
+    description: xboxBuyingGuide.description,
     images: [socialImage],
   },
 };
@@ -63,15 +63,15 @@ function getStructuredData() {
       {
         "@type": "Article",
         "@id": `${canonicalUrl}#article`,
-        headline: ps4BuyingGuide.title,
-        description: ps4BuyingGuide.description,
+        headline: xboxBuyingGuide.title,
+        description: xboxBuyingGuide.description,
         image: [socialImage],
-        datePublished: ps4BuyingGuide.publishedAt,
-        dateModified: ps4BuyingGuide.modifiedAt,
+        datePublished: xboxBuyingGuide.publishedAt,
+        dateModified: xboxBuyingGuide.modifiedAt,
         inLanguage: "fa-IR",
         mainEntityOfPage: canonicalUrl,
-        publisher: { "@id": `${PRODUCTION_SITE_URL}/#organization` },
-        isPartOf: { "@id": `${PRODUCTION_SITE_URL}/#website` },
+        publisher: { "@id": `${XBOX_PRODUCTION_SITE_URL}/#organization` },
+        isPartOf: { "@id": `${XBOX_PRODUCTION_SITE_URL}/#website` },
       },
       {
         "@type": "BreadcrumbList",
@@ -81,18 +81,18 @@ function getStructuredData() {
             "@type": "ListItem",
             position: 1,
             name: "خانه",
-            item: PRODUCTION_SITE_URL,
+            item: XBOX_PRODUCTION_SITE_URL,
           },
           {
             "@type": "ListItem",
             position: 2,
             name: "کنسول‌ها",
-            item: `${PRODUCTION_SITE_URL}/products?category=consoles`,
+            item: `${XBOX_PRODUCTION_SITE_URL}/products?category=consoles`,
           },
           {
             "@type": "ListItem",
             position: 3,
-            name: ps4BuyingGuide.breadcrumbLabel,
+            name: xboxBuyingGuide.breadcrumbLabel,
             item: canonicalUrl,
           },
         ],
@@ -100,7 +100,7 @@ function getStructuredData() {
       {
         "@type": "FAQPage",
         "@id": `${canonicalUrl}#faq-schema`,
-        mainEntity: ps4BuyingGuide.faqs.map((faq) => ({
+        mainEntity: xboxBuyingGuide.faqs.map((faq) => ({
           "@type": "Question",
           name: faq.question,
           acceptedAnswer: { "@type": "Answer", text: faq.answer },
@@ -110,9 +110,9 @@ function getStructuredData() {
   };
 }
 
-export default async function Ps4BuyingGuidePage() {
-  const productsResult = await getPs4GuideProducts();
-  const readingMinutes = getGuideReadingMinutes(ps4BuyingGuide);
+export default async function XboxBuyingGuidePage() {
+  const productsResult = await getXboxGuideProducts();
+  const readingMinutes = getGuideReadingMinutes(xboxBuyingGuide);
 
   return (
     <div className="overflow-x-clip bg-[#f3f8ff] pb-14 text-right text-[#0b1d48] sm:pb-20">
@@ -121,16 +121,16 @@ export default async function Ps4BuyingGuidePage() {
         dangerouslySetInnerHTML={{ __html: safeJsonLd(getStructuredData()) }}
       />
       <div className="mx-auto w-full max-w-[1280px] px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-9">
-        <GuideHero guide={ps4BuyingGuide} readingMinutes={readingMinutes} />
-        <QuickChoices guide={ps4BuyingGuide} />
-        <GuideContent guide={ps4BuyingGuide} />
+        <GuideHero guide={xboxBuyingGuide} readingMinutes={readingMinutes} />
+        <QuickChoices guide={xboxBuyingGuide} />
+        <GuideContent guide={xboxBuyingGuide} />
         <GuideProducts
           result={productsResult}
-          productsHref={ps4BuyingGuide.productHref}
-          title={ps4BuyingGuide.productsSectionTitle}
-          emptyMessage={ps4BuyingGuide.productsEmptyMessage}
+          productsHref={xboxBuyingGuide.productHref}
+          title={xboxBuyingGuide.productsSectionTitle}
+          emptyMessage={xboxBuyingGuide.productsEmptyMessage}
         />
-        <GuideNextSteps guide={ps4BuyingGuide} />
+        <GuideNextSteps guide={xboxBuyingGuide} />
       </div>
     </div>
   );

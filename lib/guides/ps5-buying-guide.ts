@@ -399,5 +399,6 @@ export const ps5BuyingGuide: BuyingGuide = {
   ],
   relatedGuides: [
     { title: "راهنمای خرید PS4", description: "مقایسه Fat، Slim و Pro و چک‌لیست خرید دستگاه کارکرده", href: "/guides/ps4-buying-guide" },
+    { title: "راهنمای خرید Xbox", description: "مقایسه Series S و Series X، دیسک، Game Pass و هزینه‌ها", href: "/guides/xbox-buying-guide" },
   ],
 };

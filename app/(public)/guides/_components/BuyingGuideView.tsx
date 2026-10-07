@@ -9,6 +9,7 @@ import {
   Clock3,
   Disc3,
   Gamepad2,
+  HardDrive,
   ListTree,
   Monitor,
   PackageCheck,
@@ -25,7 +26,7 @@ import type {
   GuideImage,
 } from "@/lib/guides/types";
 
-const quickChoiceIcons = [Gamepad2, Disc3, Monitor, PackageCheck];
+const quickChoiceIcons = [Gamepad2, Disc3, Monitor, HardDrive, PackageCheck];
 
 function GuideFigure({ image }: { image: GuideImage }) {
   const aspectClass = {
@@ -245,7 +246,7 @@ export function QuickChoices({ guide }: { guide: BuyingGuide }) {
           <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-100 text-blue-700"><ListTree className="h-5 w-5" aria-hidden="true" /></span>
           <div><p className="text-xs font-black text-blue-600">خلاصه انتخاب</p><h2 id="quick-choice-heading" className="mt-0.5 text-xl font-black text-slate-900 sm:text-2xl">از سناریوی خودتان شروع کنید</h2></div>
         </div>
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className={`mt-5 grid gap-3 md:grid-cols-2 ${guide.quickChoices.length === 5 ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}>
           {guide.quickChoices.map((choice, index) => {
             const Icon = quickChoiceIcons[index] || Gamepad2;
             return (
@@ -311,7 +312,7 @@ export function GuideContent({ guide }: { guide: BuyingGuide }) {
 
         <section id="sources" className="scroll-mt-24 mt-10 rounded-2xl border border-slate-200 bg-slate-50 p-5">
           <h2 className="text-xl font-black text-slate-900">منابع و اعتبار تصاویر</h2>
-          <p className="mt-2 text-sm leading-7 text-slate-600">مشخصات متغیر و نکات سازگاری در تاریخ بازبینی مقاله با صفحات رسمی PlayStation تطبیق داده شده‌اند؛ اعتبار و مجوز تصاویر خارجی نیز کنار هر تصویر و در فهرست زیر آمده است.</p>
+          <p className="mt-2 text-sm leading-7 text-slate-600">مشخصات متغیر و نکات سازگاری در تاریخ بازبینی مقاله با صفحات رسمی سازنده تطبیق داده شده‌اند؛ اعتبار و مجوز تصاویر خارجی نیز کنار هر تصویر و در فهرست زیر آمده است.</p>
           <ul className="mt-4 space-y-3">
             {guide.sources.map((source) => (
               <li key={source.href}>

@@ -41,6 +41,12 @@ const staticRoutes: MetadataRoute.Sitemap = [
     priority: 0.8,
   },
   {
+    url: `${SITE_URL}/guides/xbox-buying-guide`,
+    lastModified: new Date("2026-10-07"),
+    changeFrequency: "monthly",
+    priority: 0.8,
+  },
+  {
     url: `${SITE_URL}/contact-us`,
     lastModified: new Date(),
     changeFrequency: "monthly",

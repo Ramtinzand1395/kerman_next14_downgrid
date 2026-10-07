@@ -210,6 +210,9 @@ export interface Tag {
   name: string;
   slug: string;
 }
+export interface ProductTagFacet extends Tag {
+  count: number;
+}
 interface Favorite {
   _id: number;
   userId: number;

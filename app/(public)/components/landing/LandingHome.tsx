@@ -127,8 +127,8 @@ const consoleGuides = [
   },
   {
     title: "Xbox",
-    text: "آشنایی با Xbox",
-    href: "/products?category=consoles&tag=xbox&sort=newest&page=1",
+    text: "مقایسه Series S و X",
+    href: "/guides/xbox-buying-guide",
     icon: PackageOpen,
   },
 ];

@@ -1,13 +1,55 @@
 import { NextResponse } from "next/server";
 
 import Category from "@/model/Category";
+import Comment from "@/model/Comment";
 import Product from "@/model/Product";
 import Tag from "@/model/Tag";
 import dbConnect from "@/lib/mongodb";
-import "@/model/Comment";
-import "@/model/Tag";
 
 export const dynamic = "force-dynamic";
+
+const DEFAULT_PAGE_SIZE = 12;
+const MAX_PAGE_SIZE = 48;
+
+function positiveInteger(value: string | null, fallback: number, max?: number) {
+  const parsed = Number.parseInt(value || "", 10);
+
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return fallback;
+  }
+
+  return max ? Math.min(parsed, max) : parsed;
+}
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+async function getTagFacets(filter: Record<string, unknown>) {
+  return Product.aggregate([
+    { $match: filter },
+    { $unwind: "$tags" },
+    { $group: { _id: "$tags", count: { $sum: 1 } } },
+    {
+      $lookup: {
+        from: Tag.collection.name,
+        localField: "_id",
+        foreignField: "_id",
+        as: "tag",
+      },
+    },
+    { $unwind: "$tag" },
+    {
+      $project: {
+        _id: "$tag._id",
+        name: "$tag.name",
+        slug: "$tag.slug",
+        count: 1,
+      },
+    },
+    { $sort: { count: -1, name: 1 } },
+  ]);
+}
 
 export async function GET(req: Request) {
   try {
@@ -17,12 +59,18 @@ export async function GET(req: Request) {
     const categorySlug = searchParams.get("category");
     const tagSlug = searchParams.get("tag");
     const sortParam = searchParams.get("sort");
-    const query = (searchParams.get("q") || "").trim();
-    const page = Number(searchParams.get("page") || 1);
-    const limit = Number(searchParams.get("limit") || 12);
+    const query = (searchParams.get("q") || "").trim().slice(0, 80);
+    const page = positiveInteger(searchParams.get("page"), 1);
+    const limit = positiveInteger(
+      searchParams.get("limit"),
+      DEFAULT_PAGE_SIZE,
+      MAX_PAGE_SIZE,
+    );
     const skip = (page - 1) * limit;
 
-     const filter: Record<string, any> = { status: "published" };
+    // Excluding `tag` here lets the UI offer other tags without losing the
+    // current category and text-search context.
+    const baseFilter: Record<string, any> = { status: "published" };
 
     if (categorySlug) {
       const mainCategory = await Category.findOne({
@@ -30,7 +78,13 @@ export async function GET(req: Request) {
       }).select("_id");
 
       if (!mainCategory) {
-        return NextResponse.json({ products: [], total: 0, page, limit });
+        return NextResponse.json({
+          products: [],
+          total: 0,
+          page,
+          limit,
+          filters: { tags: [], selectedTag: null },
+        });
       }
 
       const subCategories = await Category.find({
@@ -42,24 +96,38 @@ export async function GET(req: Request) {
         ...subCategories.map((c) => c._id),
       ];
 
-      filter.category = { $in: categoryIds };
-    }
-
-    if (tagSlug) {
-      const tag = await Tag.findOne({ slug: tagSlug }).select("_id");
-
-      if (!tag) {
-        return NextResponse.json({ products: [], total: 0, page, limit });
-      }
-
-      filter.tags = tag._id;
+      baseFilter.category = { $in: categoryIds };
     }
 
     if (query) {
-      filter.$or = [
-        { title: { $regex: query, $options: "i" } },
-        { slug: { $regex: query, $options: "i" } },
+      const safeQuery = escapeRegex(query);
+      baseFilter.$or = [
+        { title: { $regex: safeQuery, $options: "i" } },
+        { slug: { $regex: safeQuery, $options: "i" } },
+        { brand: { $regex: safeQuery, $options: "i" } },
       ];
+    }
+
+    const [availableTags, selectedTag] = await Promise.all([
+      getTagFacets(baseFilter),
+      tagSlug
+        ? Tag.findOne({ slug: tagSlug }).select("_id name slug").lean()
+        : Promise.resolve(null),
+    ]);
+
+    if (tagSlug && !selectedTag) {
+      return NextResponse.json({
+        products: [],
+        total: 0,
+        page,
+        limit,
+        filters: { tags: availableTags, selectedTag: null },
+      });
+    }
+
+    const filter: Record<string, any> = { ...baseFilter };
+    if (selectedTag) {
+      filter.tags = selectedTag._id;
     }
 
     const total = await Product.countDocuments(filter);
@@ -70,10 +138,39 @@ export async function GET(req: Request) {
         { $match: filter },
         {
           $lookup: {
-            from: "comments",
-            localField: "comments",
-            foreignField: "_id",
+            from: Comment.collection.name,
+            let: { commentIds: "$comments" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $in: ["$_id", "$$commentIds"] },
+                  verified: true,
+                },
+              },
+            ],
             as: "comments",
+          },
+        },
+        {
+          $lookup: {
+            from: Tag.collection.name,
+            localField: "tags",
+            foreignField: "_id",
+            as: "tags",
+          },
+        },
+        {
+          $lookup: {
+            from: Category.collection.name,
+            localField: "category",
+            foreignField: "_id",
+            as: "category",
+          },
+        },
+        {
+          $unwind: {
+            path: "$category",
+            preserveNullAndEmptyArrays: true,
           },
         },
         {
@@ -88,7 +185,13 @@ export async function GET(req: Request) {
         { $limit: limit },
       ]);
 
-      return NextResponse.json({ products, total, page, limit });
+      return NextResponse.json({
+        products,
+        total,
+        page,
+        limit,
+        filters: { tags: availableTags, selectedTag },
+      });
     }
 
     let sort: Record<string, 1 | -1> = { createdAt: -1 };
@@ -120,12 +223,19 @@ export async function GET(req: Request) {
       })
       .populate("images")
       .populate("tags")
+      .populate("category")
       .sort(sort)
       .skip(skip)
       .limit(limit)
       .lean();
 
-    return NextResponse.json({ products, total, page, limit });
+    return NextResponse.json({
+      products,
+      total,
+      page,
+      limit,
+      filters: { tags: availableTags, selectedTag },
+    });
   } catch (err) {
     console.error(err);
     return NextResponse.json(
