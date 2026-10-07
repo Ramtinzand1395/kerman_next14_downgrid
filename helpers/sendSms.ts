@@ -103,10 +103,10 @@ export async function sendOtpToUser(mobile: string, referralCode?: string) {
     signupIntentId,
     createdAt: new Date(),
   });
-  // await sendSMS({
-  //   bodyId: 401950,
-  //   to: mobile,
-  //   args: [otp],
-  // });
+  await sendSMS({
+    bodyId: 401950,
+    to: mobile,
+    args: [otp],
+  });
   return otpDoc._id.toString();
 }

@@ -1,4 +1,3 @@
-// 
 import type { BuyingGuide, GuideSection } from "./types";
 
 export const PS5_GUIDE_PATH = "/guides/ps5-buying-guide";
