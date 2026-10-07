@@ -48,7 +48,7 @@ function ProductCard({
               : "(max-width: 639px) 46vw, 24vw"
           }
           className={
-            "h-full w-full transition duration-300 group-hover:scale-[1.03] " +
+            "h-full w-full  transition duration-300 group-hover:scale-[1.03] " +
             (isGame ? "object-cover" : "object-contain p-1")
           }
         />

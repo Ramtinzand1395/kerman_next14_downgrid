@@ -18,9 +18,10 @@ async function sendSMS({
   to: string;
   args: string[];
 }) {
-  const defaultSharedUrl =
-    "https://console.melipayamak.com/api/send/shared/cba17fa6705a4348b2e2d10279cf3fb9";
-  const url = process.env.MELIPAYAMAK_SHARED_URL?.trim() || defaultSharedUrl;
+  const url = process.env.MELIPAYAMAK_SHARED_URL?.trim();
+  if (!url) {
+    throw new Error("MELIPAYAMAK_SHARED_URL is not configured.");
+  }
   
   const payload = { bodyId, to, args };
   let res: Response;
@@ -41,7 +42,7 @@ async function sendSMS({
   }
   const text = await res.text();
   if (!res.ok) {
-    throw new Error(`SMS provider error (${res.status}): ${text}`);
+    throw new Error(`SMS provider error (${res.status})`);
   }
   return { status: res.status, body: text };
 }
