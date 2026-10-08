@@ -33,6 +33,9 @@ export async function POST(req: Request) {
     ...parsed.data,
     customerName: stripHtmlTags(parsed.data.customerName),
     description: stripHtmlTags(parsed.data.description),
+    ...(parsed.data.fulfillment === "courier" && parsed.data.recipientName
+      ? { recipientName: stripHtmlTags(parsed.data.recipientName) }
+      : {}),
   });
   if ("error" in result) return NextResponse.json({ error: result.error }, { status: result.status });
   return NextResponse.json(result, { status: result.reused ? 200 : 201 });
@@ -43,9 +46,19 @@ export async function PATCH(req: Request) {
   if ("error" in auth) return auth.error;
   const parsed = appointmentUserUpdateSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "درخواست نامعتبر است." }, { status: 422 });
-  const result = parsed.data.action === "cancel"
-    ? await cancelAppointment(auth.userId, parsed.data.appointmentId)
-    : await rescheduleAppointment(auth.userId, parsed.data.appointmentId, parsed.data.startsAt);
+  const result =
+    parsed.data.action === "cancel"
+      ? await cancelAppointment(auth.userId, parsed.data.appointmentId)
+      : await rescheduleAppointment(
+          auth.userId,
+          parsed.data.appointmentId,
+          parsed.data.startsAt
+            ? parsed.data.startsAt
+            : {
+                pickupDate: parsed.data.pickupDate,
+                pickupWindow: parsed.data.pickupWindow,
+              },
+        );
   if ("error" in result) return NextResponse.json({ error: result.error }, { status: result.status });
   return NextResponse.json(result);
 }

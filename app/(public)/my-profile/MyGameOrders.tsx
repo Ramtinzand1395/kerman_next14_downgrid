@@ -3,19 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarClock, Gamepad2, Loader2, MapPin, RefreshCw, Wrench } from "lucide-react";
-
-type Appointment = {
-  _id: string;
-  trackingCode: string;
-  serviceType: "game_install" | "repair";
-  device: string;
-  installationType?: "account" | "copy" | null;
-  repairIssue?: string | null;
-  description?: string;
-  startsAt: string;
-  status: "pending" | "confirmed" | "completed" | "cancelled" | "no_show" | "rejected";
-  pricing?: { known: boolean; baseAmount?: number | null; discountAmount: number; finalAmount?: number | null };
-};
+import type { AppointmentItem } from "@/types/appointments";
 
 type LegacyOrder = {
   _id: string;
@@ -59,6 +47,17 @@ const issues: Record<string, string> = {
   other: "سایر",
 };
 
+const courierSteps = [
+  ["pending", "درخواست ثبت شد"],
+  ["scheduled", "پیک زمان‌بندی شد"],
+  ["assigned", "پیک اختصاص یافت"],
+  ["picked_up", "دستگاه دریافت شد"],
+  ["at_store", "به فروشگاه رسید"],
+  ["return_ready", "آماده بازگشت"],
+  ["returning", "در مسیر"],
+  ["delivered", "تحویل شد"],
+] as const;
+
 function dateTime(value: string) {
   return new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
     timeZone: "Asia/Tehran",
@@ -71,7 +70,7 @@ function dateTime(value: string) {
   }).format(new Date(value));
 }
 export default function MyGameOrders() {
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointments, setAppointments] = useState<AppointmentItem[]>([]);
   const [legacy, setLegacy] = useState<LegacyOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -163,7 +162,10 @@ export default function MyGameOrders() {
                       <p className="mt-1 font-mono text-xs text-slate-500" dir="ltr">{item.trackingCode}</p>
                     </div>
                   </div>
-                  <span className={`rounded-full border px-2.5 py-1 text-[11px] font-bold ${statusClass[item.status]}`}>{statusLabel[item.status]}</span>
+                  <div className="flex flex-col items-end gap-2">
+                    <span className={`rounded-full border px-2.5 py-1 text-[11px] font-bold ${statusClass[item.status]}`}>{statusLabel[item.status]}</span>
+                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${item.fulfillment === "courier" ? "bg-cyan-50 text-cyan-700" : "bg-blue-50 text-[#001A6E]"}`}>{item.fulfillment === "courier" ? "ارسال با پیک" : "مراجعه حضوری"}</span>
+                  </div>
                 </header>
                 <div className="space-y-3 p-4 text-sm">
                   <p className="flex items-start gap-2 text-slate-700"><CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-[#001A6E]" /><strong>{dateTime(item.startsAt)}</strong></p>
@@ -171,7 +173,10 @@ export default function MyGameOrders() {
                   {item.installationType && <p className="text-slate-600">نوع نصب: <strong className="text-slate-900">{item.installationType === "copy" ? "کپی‌خور" : "اکانتی / قانونی"}</strong></p>}
                   {item.repairIssue && <p className="text-slate-600">مشکل: <strong className="text-slate-900">{issues[item.repairIssue] || item.repairIssue}</strong></p>}
                   {item.description && <p className="rounded-xl bg-slate-50 p-3 leading-6 text-slate-600">{item.description}</p>}
-                  <p className="flex items-start gap-2 rounded-xl bg-blue-50 p-3 text-xs leading-6 text-blue-900"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /> خیابان ناصریه بین کوچه ۲ و ۴ نبش داروخانه مادر</p>
+                  {item.fulfillment === "courier" && item.courier?.addressSnapshot ? <p className="flex items-start gap-2 rounded-xl bg-cyan-50 p-3 text-xs leading-6 text-cyan-900"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /> {item.courier.addressSnapshot.city}، {item.courier.addressSnapshot.address}</p> : <p className="flex items-start gap-2 rounded-xl bg-blue-50 p-3 text-xs leading-6 text-blue-900"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /> خیابان ناصریه بین کوچه ۲ و ۴ نبش داروخانه مادر</p>}
+                  {item.fulfillment === "courier" && item.courier && (
+                    <div className="rounded-2xl border border-slate-200 p-3"><p className="text-xs font-bold text-slate-700">پیگیری پیک</p><ol className="mt-3 grid gap-2 sm:grid-cols-2">{courierSteps.map(([status, label], index) => { const currentIndex = courierSteps.findIndex(([value]) => value === item.courier?.status); const done = index <= currentIndex; return <li key={status} className={`flex items-center gap-2 text-xs ${done ? "font-bold text-emerald-700" : "text-slate-400"}`}><span className={`flex h-5 w-5 items-center justify-center rounded-full border ${done ? "border-emerald-500 bg-emerald-50" : "border-slate-200"}`}>{done ? "✓" : ""}</span>{label}</li>; })}</ol><div className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-600"><div className="flex justify-between"><span>هزینه پیک</span><strong>{item.pricing?.shippingFinalAmount !== undefined ? `${item.pricing.shippingFinalAmount.toLocaleString("fa-IR")} تومان` : item.courier.finalShippingCost !== undefined ? `${item.courier.finalShippingCost.toLocaleString("fa-IR")} تومان` : "نامشخص"}</strong></div></div></div>
+                  )}
                   <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
                     <span className="text-xs text-slate-500">
                       {item.pricing?.known

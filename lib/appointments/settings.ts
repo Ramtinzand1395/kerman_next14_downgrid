@@ -50,3 +50,46 @@ export function slotIsConfigured(
   });
 }
 
+export function courierWindowIsConfigured(
+  date: string,
+  window: { start: string; end: string },
+  settings: {
+    courierWorkingWindows: Array<{ start: string; end: string }>;
+    courierClosedWeekdays: number[];
+    courierClosedDates: string[];
+  },
+) {
+  if (
+    settings.courierClosedDates.includes(date) ||
+    settings.courierClosedWeekdays.includes(weekdayForTehranDate(date))
+  ) {
+    return false;
+  }
+  return settings.courierWorkingWindows.some(
+    (w) => w.start === window.start && w.end === window.end,
+  );
+}
+
+export function isWindowInPast(date: string, endTime: string, now: Date = new Date()): boolean {
+  const windowEnd = tehranDateTime(date, endTime);
+  if (!windowEnd) return true;
+  return windowEnd.getTime() <= now.getTime();
+}
+
+export function findCourierRegion(
+  city: string,
+  regions: Array<{ id: string; title: string; city: string; shippingCost: number; isActive: boolean }>,
+  regionId?: string,
+) {
+  if (regionId) {
+    const byId = regions.find((r) => r.id === regionId && r.isActive);
+    if (byId) return byId;
+  }
+  const normalizedCity = city.trim().toLowerCase();
+  return (
+    regions.find(
+      (r) => r.isActive && r.city.trim().toLowerCase() === normalizedCity,
+    ) ?? null
+  );
+}
+

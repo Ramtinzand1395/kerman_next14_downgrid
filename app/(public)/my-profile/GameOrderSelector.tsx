@@ -20,10 +20,19 @@ import {
   Truck,
   Wrench,
 } from "lucide-react";
+import type {
+  Fulfillment,
+  InstallationType,
+  RepairIssue,
+  RewardType,
+  ServiceType,
+} from "@/types/appointments";
 
-type ServiceType = "game_install" | "repair";
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 type Slot = { startsAt: string; endsAt: string; time: string; remaining: number; available: boolean };
+type CourierWindow = { start: string; end: string; remaining: number; available: boolean };
+type AddressItem = { _id: string; province: string; city: string; address: string; plaque?: string; unit?: string; postalCode?: string };
+type CourierRegion = { id: string; title: string; city: string; shippingCost: number; isActive?: boolean };
 type Reward = {
   _id: string;
   status: "available" | "reserved" | "redeemed" | "expired" | "revoked";
@@ -32,7 +41,7 @@ type Reward = {
     title: string;
     eligibleServices: ServiceType[];
     reward: {
-      type: "fixed" | "percent" | "free_game" | "free_shipping";
+      type: RewardType;
       value: number;
       maxDiscountAmount?: number | null;
       minAmount?: number;
@@ -41,7 +50,20 @@ type Reward = {
     };
   };
 };
-type CreatedAppointment = { trackingCode: string; startsAt: string };
+type CreatedAppointment = {
+  trackingCode: string;
+  startsAt: string;
+  fulfillment?: Fulfillment;
+  courier?: {
+    pickupWindow?: { start: string; end: string };
+    addressSnapshot?: AddressItem & { recipientName?: string; recipientPhone?: string };
+  };
+  pricing?: {
+    shippingBaseAmount?: number;
+    shippingDiscountAmount?: number;
+    shippingFinalAmount?: number;
+  };
+};
 
 const services = [
   {
@@ -58,12 +80,12 @@ const services = [
   },
 ];
 
-const devices = [
-  { value: "ps5", label: "PlayStation 5" },
-  { value: "ps4", label: "PlayStation 4" },
-  { value: "xbox-series", label: "Xbox Series" },
-  { value: "xbox-one", label: "Xbox One" },
-];
+const deviceLabels: Record<string, string> = {
+  ps5: "PlayStation 5",
+  ps4: "PlayStation 4",
+  "xbox-series": "Xbox Series",
+  "xbox-one": "Xbox One",
+};
 
 const issues = [
   { value: "power", label: "روشن‌نشدن" },
@@ -72,7 +94,7 @@ const issues = [
   { value: "sound", label: "صدا" },
   { value: "overheating", label: "داغ‌شدن" },
   { value: "other", label: "سایر" },
-];
+] satisfies Array<{ value: RepairIssue; label: string }>;
 
 const storeAddress = "خیابان ناصریه بین کوچه ۲ و ۴ نبش داروخانه مادر";
 const fa = (value: number | string) => String(value).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)]);
@@ -117,14 +139,28 @@ export default function GameOrderSelector() {
   const [step, setStep] = useState<Step>(1);
   const [serviceType, setServiceType] = useState<ServiceType | null>(null);
   const [device, setDevice] = useState("");
-  const [installationType, setInstallationType] = useState<"account" | "copy" | "">("");
-  const [repairIssue, setRepairIssue] = useState("");
+  const [installationType, setInstallationType] = useState<InstallationType | "">("");
+  const [repairIssue, setRepairIssue] = useState<RepairIssue | "">("");
+  const [fulfillment, setFulfillment] = useState<Fulfillment | null>(null);
+  const [supportedDeviceIds, setSupportedDeviceIds] = useState<string[]>([]);
+  const [devicesLoading, setDevicesLoading] = useState(false);
+  const [devicesError, setDevicesError] = useState("");
   const [description, setDescription] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [slotsError, setSlotsError] = useState("");
+  const [addresses, setAddresses] = useState<AddressItem[]>([]);
+  const [addressesLoading, setAddressesLoading] = useState(true);
+  const [selectedAddressId, setSelectedAddressId] = useState("");
+  const [courierSupported, setCourierSupported] = useState(false);
+  const [courierBookingDays, setCourierBookingDays] = useState(14);
+  const [courierRegions, setCourierRegions] = useState<CourierRegion[]>([]);
+  const [courierWindows, setCourierWindows] = useState<CourierWindow[]>([]);
+  const [selectedCourierWindow, setSelectedCourierWindow] = useState<CourierWindow | null>(null);
+  const [courierLoading, setCourierLoading] = useState(false);
+  const [courierError, setCourierError] = useState("");
   const [availabilityReload, setAvailabilityReload] = useState(0);
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
@@ -151,8 +187,10 @@ export default function GameOrderSelector() {
     Promise.all([
       fetch("/api/profile/account", { cache: "no-store" }),
       fetch("/api/profile/visit-rewards", { cache: "no-store" }),
+      fetch("/api/profile/address", { cache: "no-store" }),
+      fetch(`/api/profile/appointments/courier-availability?date=${dates[0]?.key}`, { cache: "no-store" }),
     ])
-      .then(async ([profileResponse, rewardsResponse]) => {
+      .then(async ([profileResponse, rewardsResponse, addressesResponse, courierResponse]) => {
         if (!active) return;
         if (profileResponse.ok) {
           const profile = await profileResponse.json();
@@ -163,23 +201,70 @@ export default function GameOrderSelector() {
           const payload = await rewardsResponse.json();
           setRewards(Array.isArray(payload?.data?.rewards) ? payload.data.rewards : []);
         }
+        if (addressesResponse.ok) {
+          const payload = await addressesResponse.json();
+          setAddresses(Array.isArray(payload) ? payload : []);
+        }
+        if (courierResponse.ok) {
+          const payload = await courierResponse.json();
+          setCourierSupported(Boolean(payload?.settings?.courierEnabled));
+          setCourierBookingDays(Number(payload?.settings?.bookingDaysAhead) || 14);
+          setCourierRegions(Array.isArray(payload?.settings?.regions) ? payload.settings.regions : []);
+        }
       })
-      .finally(() => active && setProfileLoading(false));
+      .finally(() => {
+        if (active) {
+          setProfileLoading(false);
+          setAddressesLoading(false);
+        }
+      });
     return () => {
       active = false;
     };
-  }, []);
+  }, [dates]);
+
+  useEffect(() => {
+    setDevice("");
+    setSupportedDeviceIds([]);
+    setDevicesError("");
+    if (!serviceType) return;
+    const controller = new AbortController();
+    setDevicesLoading(true);
+    const firstDate = dates[0]?.key;
+    fetch(
+      `/api/profile/appointments/availability?serviceType=${serviceType}&date=${firstDate}`,
+      { cache: "no-store", signal: controller.signal },
+    )
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "دریافت دستگاه‌ها انجام نشد.");
+        const ids = Array.isArray(payload?.settings?.supportedDevices)
+          ? payload.settings.supportedDevices.filter((item: unknown): item is string => typeof item === "string")
+          : [];
+        setSupportedDeviceIds(ids);
+      })
+      .catch((reason) => {
+        if (reason instanceof Error && reason.name !== "AbortError") {
+          setDevicesError("فهرست دستگاه‌های قابل پذیرش دریافت نشد.");
+        }
+      })
+      .finally(() => setDevicesLoading(false));
+    return () => controller.abort();
+  }, [dates, serviceType]);
 
   useEffect(() => {
     setSelectedDate("");
     setSelectedSlot(null);
     setSlots([]);
     setSelectedRewardId("");
+    setFulfillment(null);
+    setSelectedAddressId("");
+    setSelectedCourierWindow(null);
   }, [serviceType, device]);
 
   useEffect(() => {
     setSelectedSlot(null);
-    if (!serviceType || !selectedDate) {
+    if (fulfillment !== "in_store" || !serviceType || !selectedDate) {
       setSlots([]);
       return;
     }
@@ -202,7 +287,32 @@ export default function GameOrderSelector() {
       })
       .finally(() => setSlotsLoading(false));
     return () => controller.abort();
-  }, [availabilityReload, serviceType, selectedDate]);
+  }, [availabilityReload, fulfillment, serviceType, selectedDate]);
+
+  useEffect(() => {
+    setSelectedCourierWindow(null);
+    if (fulfillment !== "courier" || !selectedDate) {
+      setCourierWindows([]);
+      return;
+    }
+    const controller = new AbortController();
+    setCourierLoading(true);
+    setCourierError("");
+    fetch(`/api/profile/appointments/courier-availability?date=${selectedDate}`, { cache: "no-store", signal: controller.signal })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "دریافت بازه‌های پیک انجام نشد.");
+        setCourierSupported(Boolean(payload?.settings?.courierEnabled));
+        setCourierBookingDays(Number(payload?.settings?.bookingDaysAhead) || 14);
+        setCourierRegions(Array.isArray(payload?.settings?.regions) ? payload.settings.regions : []);
+        setCourierWindows(Array.isArray(payload?.windows) ? payload.windows : []);
+      })
+      .catch((reason) => {
+        if (reason instanceof Error && reason.name !== "AbortError") setCourierError(reason.message);
+      })
+      .finally(() => setCourierLoading(false));
+    return () => controller.abort();
+  }, [fulfillment, selectedDate]);
 
   const usableRewards = useMemo(
     () =>
@@ -210,7 +320,7 @@ export default function GameOrderSelector() {
         if (reward.status !== "available" || !serviceType) return false;
         if (!reward.snapshot.eligibleServices.includes(serviceType)) return false;
         const details = reward.snapshot.reward;
-        if (details.type === "free_shipping") return true;
+        if (details.type === "free_shipping") return fulfillment === "courier";
         if (details.eligibleDevices?.length && !details.eligibleDevices.includes(device)) return false;
         if (
           details.eligibleInstallationTypes?.length &&
@@ -218,17 +328,27 @@ export default function GameOrderSelector() {
         ) return false;
         return true;
       }),
-    [device, installationType, rewards, serviceType],
+    [device, fulfillment, installationType, rewards, serviceType],
   );
+
+  const selectedAddress = addresses.find((item) => item._id === selectedAddressId);
+  const selectedCourierRegion = selectedAddress
+    ? courierRegions.find((region) => region.city.trim().toLowerCase() === selectedAddress.city.trim().toLowerCase())
+    : undefined;
 
   const stageOneValid =
     Boolean(serviceType && device) &&
     (serviceType === "game_install" ? Boolean(installationType) : Boolean(repairIssue));
   const stageThreeValid = customerName.trim().length >= 2 && /^09\d{9}$/.test(phone.trim());
+  const scheduleValid = fulfillment === "in_store"
+    ? Boolean(selectedSlot)
+    : fulfillment === "courier"
+      ? Boolean(selectedAddress && selectedCourierRegion && selectedDate && selectedCourierWindow)
+      : false;
   const selectedService = services.find((item) => item.value === serviceType);
 
   const submit = async () => {
-    if (submittingRef.current || !serviceType || !selectedSlot || !stageThreeValid) return;
+    if (submittingRef.current || !serviceType || !fulfillment || !scheduleValid || !stageThreeValid) return;
     submittingRef.current = true;
     setSubmitting(true);
     setError("");
@@ -247,9 +367,20 @@ export default function GameOrderSelector() {
           description,
           customerName: customerName.trim(),
           phone: phone.trim(),
-          startsAt: selectedSlot.startsAt,
           selectedRewardId: selectedRewardId || null,
-          fulfillment: "in_store",
+          fulfillment,
+          ...(fulfillment === "in_store" && selectedSlot
+            ? { startsAt: selectedSlot.startsAt }
+            : fulfillment === "courier" && selectedCourierWindow
+              ? {
+                  addressId: selectedAddressId,
+                  pickupDate: selectedDate,
+                  pickupWindow: {
+                    start: selectedCourierWindow.start,
+                    end: selectedCourierWindow.end,
+                  },
+                }
+              : {}),
         }),
       });
       const payload = await response.json().catch(() => ({}));
@@ -270,7 +401,7 @@ export default function GameOrderSelector() {
           <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/20">
             <Check className="h-9 w-9" />
           </span>
-          <h1 className="mt-4 text-2xl font-black">نوبت شما ثبت شد</h1>
+          <h1 className="mt-4 text-2xl font-black">{created.fulfillment === "courier" ? "درخواست پیک شما ثبت شد" : "نوبت شما ثبت شد"}</h1>
           <p className="mt-2 text-emerald-50">این کد را برای پیگیری نگه دارید</p>
           <p className="mt-4 font-mono text-2xl font-black tracking-wider" dir="ltr">
             {created.trackingCode}
@@ -278,15 +409,16 @@ export default function GameOrderSelector() {
         </div>
         <div className="grid gap-4 p-5 md:grid-cols-2 md:p-8">
           <div className="rounded-2xl bg-slate-50 p-4">
-            <p className="text-xs text-slate-500">زمان مراجعه</p>
+            <p className="text-xs text-slate-500">{created.fulfillment === "courier" ? "زمان دریافت دستگاه" : "زمان مراجعه"}</p>
             <p className="mt-2 font-bold text-slate-900">
               {persianDate(created.startsAt, { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}
             </p>
           </div>
-          <div className="rounded-2xl bg-slate-50 p-4">
-            <p className="text-xs text-slate-500">آدرس فروشگاه</p>
-            <p className="mt-2 text-sm font-bold leading-7 text-slate-900">{storeAddress}</p>
-          </div>
+          {created.fulfillment === "courier" ? (
+            <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs text-slate-500">هزینه پیک</p><p className="mt-2 font-bold text-slate-900">{created.pricing?.shippingFinalAmount !== undefined ? `${created.pricing.shippingFinalAmount.toLocaleString("fa-IR")} تومان` : "در پاسخ Server اعلام نشد"}</p><p className="mt-1 text-xs text-slate-500">مبلغ خدمت پس از بررسی مشخص می‌شود.</p></div>
+          ) : (
+            <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs text-slate-500">آدرس فروشگاه</p><p className="mt-2 text-sm font-bold leading-7 text-slate-900">{storeAddress}</p></div>
+          )}
           <Link href="/my-profile?step=5" className="md:col-span-2 flex min-h-12 items-center justify-center rounded-2xl bg-[#001A6E] px-5 font-bold text-white">
             مشاهده نوبت‌های من
           </Link>
@@ -300,16 +432,16 @@ export default function GameOrderSelector() {
       <div className="mb-5 overflow-hidden rounded-3xl bg-[#001A6E] p-5 text-white shadow-xl shadow-blue-950/10 md:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-bold text-blue-200">رزرو حضوری کرمان آتاری</p>
+            <p className="text-sm font-bold text-blue-200">دریافت خدمات کرمان آتاری</p>
             <h1 className="mt-2 text-2xl font-black md:text-3xl">دریافت نوبت</h1>
             <p className="mt-2 max-w-2xl text-sm leading-7 text-blue-100">
-              در سه مرحله کوتاه، زمان مراجعه برای نصب بازی یا پذیرش اولیه تعمیرات را انتخاب کنید.
+              خدمت، دستگاه و روش دریافت را انتخاب کنید؛ ظرفیت‌ها مستقیماً از سامانه خوانده می‌شوند.
             </p>
           </div>
           <span className="rounded-2xl bg-white/10 px-4 py-2 text-xs font-bold">منطقه زمانی تهران</span>
         </div>
-        <ol className="mt-6 grid grid-cols-3 gap-2" aria-label="مراحل ثبت نوبت">
-          {["خدمت و دستگاه", "روز و ساعت", "تأیید و ثبت"].map((label, index) => {
+        <ol className="mt-6 grid grid-cols-4 gap-2" aria-label="مراحل ثبت نوبت">
+          {["خدمت و دستگاه", "روش دریافت", "روز و ساعت", "تأیید و ثبت"].map((label, index) => {
             const number = (index + 1) as Step;
             return (
               <li key={label} className="min-w-0">
@@ -355,14 +487,24 @@ export default function GameOrderSelector() {
                   {serviceType && (
                     <div>
                       <h3 className="font-black text-slate-900">دستگاه</h3>
+                    {devicesLoading ? (
+                      <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4" aria-label="در حال دریافت دستگاه‌ها">
+                        {[0, 1, 2, 3].map((item) => <div key={item} className="h-24 animate-pulse rounded-2xl bg-slate-100" />)}
+                      </div>
+                    ) : devicesError ? (
+                      <div role="alert" className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{devicesError}</div>
+                    ) : supportedDeviceIds.length === 0 ? (
+                      <div className="mt-3 rounded-2xl border border-dashed border-slate-300 p-5 text-sm text-slate-500">دستگاهی برای این خدمت اعلام نشده است.</div>
+                    ) : (
                       <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
-                        {devices.map((item) => (
-                          <button key={item.value} type="button" aria-pressed={device === item.value} onClick={() => setDevice(item.value)} className={choiceClass(device === item.value)}>
+                        {supportedDeviceIds.map((item) => (
+                          <button key={item} type="button" aria-pressed={device === item} onClick={() => setDevice(item)} className={choiceClass(device === item)}>
                             <MonitorCog className="h-5 w-5" />
-                            <span className="mt-2 block text-sm font-bold">{item.label}</span>
+                            <span className="mt-2 block text-sm font-bold">{deviceLabels[item] || item}</span>
                           </button>
                         ))}
                       </div>
+                    )}
                     </div>
                   )}
 
@@ -409,11 +551,54 @@ export default function GameOrderSelector() {
 
               {step === 2 && (
                 <div>
-                  <h2 className="text-xl font-black text-slate-950">روز و ساعت مراجعه</h2>
-                  <p className="mt-1 text-sm leading-7 text-slate-500">ساعت کاری: ۹ تا ۱۲ و ۱۶ تا ۲۰. بازه ظهر قابل رزرو نیست.</p>
+                  <h2 className="text-xl font-black text-slate-950">چگونه می‌خواهید خدمات بگیرید؟</h2>
+                  <p className="mt-1 text-sm leading-7 text-slate-500">روش دریافت، زمان‌بندی و مراحل بعدی را مشخص می‌کند.</p>
+                  <div className="mt-5 grid gap-3 md:grid-cols-2">
+                    <button type="button" aria-pressed={fulfillment === "in_store"} onClick={() => setFulfillment("in_store")} className={choiceClass(fulfillment === "in_store")}>
+                      <MapPin className="h-7 w-7" />
+                      <strong className="mt-3 block text-base">مراجعه حضوری</strong>
+                      <span className="mt-2 block text-xs leading-6 text-slate-500">زمان مراجعه را رزرو کنید و دستگاه را حضوری به فروشگاه بیاورید.</span>
+                    </button>
+                    <button type="button" disabled={!courierSupported} aria-disabled={!courierSupported} aria-pressed={fulfillment === "courier"} onClick={() => setFulfillment("courier")} className={`${choiceClass(fulfillment === "courier")} ${!courierSupported ? "cursor-not-allowed opacity-65" : ""}`}>
+                      <Truck className="h-7 w-7" />
+                      <span className="mt-3 flex items-center justify-between gap-2">
+                        <strong className="text-base">ارسال با پیک</strong>
+                        {!courierSupported && <span className="rounded-full bg-slate-200 px-2 py-1 text-[11px] font-bold text-slate-600">فعلاً در دسترس نیست</span>}
+                      </span>
+                      <span className="mt-2 block text-xs leading-6 text-slate-500">پیک دستگاه را از آدرس شما دریافت می‌کند و پس از انجام کار بازمی‌گرداند.</span>
+                    </button>
+                  </div>
+                  {!courierSupported && (
+                    <p className="mt-4 rounded-2xl bg-amber-50 p-4 text-xs leading-6 text-amber-900">
+                      در حال حاضر ارسال با پیک از سمت سامانه غیرفعال است.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {step === 3 && (
+                <div>
+                  <h2 className="text-xl font-black text-slate-950">{fulfillment === "courier" ? "آدرس و زمان دریافت دستگاه" : "روز و ساعت مراجعه"}</h2>
+                  <p className="mt-1 text-sm leading-7 text-slate-500">{fulfillment === "courier" ? "آدرس، روز و بازه دریافت پیک را انتخاب کنید." : "روز و ساعت آزاد را از ظرفیت واقعی فروشگاه انتخاب کنید."}</p>
+                  {fulfillment === "courier" && (
+                    <div className="mt-5">
+                      <h3 className="font-black text-slate-900">آدرس دریافت</h3>
+                      {addressesLoading ? <div className="mt-3 h-24 animate-pulse rounded-2xl bg-slate-100" /> : addresses.length === 0 ? (
+                        <div className="mt-3 rounded-2xl border border-dashed border-slate-300 p-5 text-sm text-slate-600"><p>برای استفاده از پیک ابتدا یک آدرس ثبت کنید.</p><Link href="/my-profile?step=2" className="mt-3 inline-flex rounded-xl bg-[#001A6E] px-4 py-2 font-bold text-white">افزودن آدرس</Link></div>
+                      ) : (
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                          {addresses.map((address) => {
+                            const supported = courierRegions.some((region) => region.city.trim().toLowerCase() === address.city.trim().toLowerCase());
+                            return <button key={address._id} type="button" onClick={() => setSelectedAddressId(address._id)} aria-pressed={selectedAddressId === address._id} className={choiceClass(selectedAddressId === address._id)}><strong className="block">{address.city}</strong><span className="mt-1 block text-xs leading-6 text-slate-500">{address.address}{address.plaque ? `، پلاک ${address.plaque}` : ""}</span><span className={`mt-2 inline-flex rounded-full px-2 py-1 text-[11px] font-bold ${supported ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>{supported ? "در محدوده پیک" : "خارج از محدوده"}</span></button>;
+                          })}
+                        </div>
+                      )}
+                      {selectedAddress && !selectedCourierRegion && <p role="alert" className="mt-3 rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">در حال حاضر ارسال با پیک برای این آدرس فعال نیست. آدرس دیگری یا مراجعه حضوری را انتخاب کنید.</p>}
+                    </div>
+                  )}
                   <div className="mt-5 flex gap-2 overflow-x-auto pb-2" role="list" aria-label="انتخاب روز">
-                    {dates.map((item) => (
-                      <button key={item.key} type="button" onClick={() => setSelectedDate(item.key)} aria-pressed={selectedDate === item.key} className={`min-w-28 rounded-2xl border px-3 py-3 text-center outline-none focus-visible:ring-4 focus-visible:ring-blue-200 ${selectedDate === item.key ? "border-[#001A6E] bg-[#001A6E] text-white" : "border-slate-200 bg-white text-slate-700"}`}>
+                    {dates.map((item, index) => (
+                      <button key={item.key} type="button" disabled={fulfillment === "courier" && index >= courierBookingDays} onClick={() => setSelectedDate(item.key)} aria-pressed={selectedDate === item.key} className={`min-w-28 rounded-2xl border px-3 py-3 text-center outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-40 ${selectedDate === item.key ? "border-[#001A6E] bg-[#001A6E] text-white" : "border-slate-200 bg-white text-slate-700"}`}>
                         <span className="block text-xs">{persianDate(item.date, { weekday: "long" })}</span>
                         <strong className="mt-1 block text-sm">{persianDate(item.date, { month: "short", day: "numeric" })}</strong>
                       </button>
@@ -421,7 +606,9 @@ export default function GameOrderSelector() {
                   </div>
                   <div className="mt-5 min-h-36">
                     {!selectedDate ? (
-                      <div className="rounded-2xl border border-dashed border-slate-300 p-7 text-center text-sm text-slate-500">ابتدا روز مراجعه را انتخاب کنید.</div>
+                      <div className="rounded-2xl border border-dashed border-slate-300 p-7 text-center text-sm text-slate-500">ابتدا روز را انتخاب کنید.</div>
+                    ) : fulfillment === "courier" ? (
+                      courierLoading ? <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500"><Loader2 className="h-5 w-5 animate-spin" /> در حال دریافت ظرفیت پیک…</div> : courierError ? <div role="alert" className="rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">{courierError}</div> : courierWindows.length === 0 ? <div className="rounded-2xl bg-slate-50 p-7 text-center text-sm text-slate-500">برای این روز بازه پیک فعالی وجود ندارد.</div> : <div className="grid gap-2 sm:grid-cols-2">{courierWindows.map((window) => <button key={`${window.start}-${window.end}`} type="button" disabled={!window.available} onClick={() => setSelectedCourierWindow(window)} aria-pressed={selectedCourierWindow?.start === window.start} className={`rounded-2xl border p-4 text-right disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 ${selectedCourierWindow?.start === window.start ? "border-[#001A6E] bg-blue-50 text-[#001A6E]" : "border-slate-200"}`}><strong className="block">{fa(window.start)} تا {fa(window.end)}</strong><span className="mt-1 block text-xs">{window.available ? `${fa(window.remaining)} ظرفیت باقی‌مانده` : "تکمیل ظرفیت"}</span></button>)}</div>
                     ) : slotsLoading ? (
                       <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500"><Loader2 className="h-5 w-5 animate-spin" /> در حال دریافت ظرفیت واقعی…</div>
                     ) : slotsError ? (
@@ -442,7 +629,7 @@ export default function GameOrderSelector() {
                 </div>
               )}
 
-              {step === 3 && (
+              {step === 4 && (
                 <div className="space-y-6">
                   <div>
                     <h2 className="text-xl font-black text-slate-950">تأیید اطلاعات</h2>
@@ -469,7 +656,7 @@ export default function GameOrderSelector() {
                             <button key={reward._id} type="button" disabled={shipping} onClick={() => setSelectedRewardId(reward._id)} className={`w-full ${choiceClass(selectedRewardId === reward._id)} disabled:cursor-not-allowed disabled:opacity-60`}>
                               <strong>{reward.snapshot.title}</strong>
                               <span className="mt-1 block text-xs text-slate-500">{rewardLabel(reward)}</span>
-                              {shipping && <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2 py-1 text-[11px] font-bold text-amber-800">با فعال‌شدن پیک قابل مصرف است</span>}
+                              {shipping && <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2 py-1 text-[11px] font-bold text-amber-800">فقط برای سفارش پیکی قابل مصرف است</span>}
                             </button>
                           );
                         })}
@@ -494,8 +681,8 @@ export default function GameOrderSelector() {
 
           <div className="mt-7 hidden items-center justify-between border-t border-slate-100 pt-5 lg:flex">
             <button type="button" disabled={step === 1} onClick={() => setStep((value) => Math.max(1, value - 1) as Step)} className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-slate-200 px-5 font-bold text-slate-700 disabled:opacity-40"><ChevronRight className="h-4 w-4" /> قبل</button>
-            {step < 3 ? (
-              <button type="button" disabled={step === 1 ? !stageOneValid || (repairIssue === "other" && !description.trim()) : !selectedSlot} onClick={() => setStep((value) => Math.min(3, value + 1) as Step)} className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-[#001A6E] px-7 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300">ادامه <ChevronLeft className="h-4 w-4" /></button>
+            {step < 4 ? (
+              <button type="button" disabled={step === 1 ? !stageOneValid || (repairIssue === "other" && !description.trim()) : step === 2 ? !fulfillment : !scheduleValid} onClick={() => setStep((value) => Math.min(4, value + 1) as Step)} className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-[#001A6E] px-7 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300">ادامه <ChevronLeft className="h-4 w-4" /></button>
             ) : (
               <button type="button" disabled={!stageThreeValid || submitting} onClick={() => void submit()} className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-[#001A6E] px-7 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300">{submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />} ثبت نوبت</button>
             )}
@@ -506,13 +693,16 @@ export default function GameOrderSelector() {
           <h2 className="flex items-center gap-2 font-black text-slate-900"><PackageOpen className="h-5 w-5 text-[#001A6E]" /> خلاصه نوبت</h2>
           <dl className="mt-4 space-y-3 text-sm">
             <div className="flex justify-between gap-3"><dt className="text-slate-500">خدمت</dt><dd className="font-bold">{selectedService?.title || "انتخاب نشده"}</dd></div>
-            <div className="flex justify-between gap-3"><dt className="text-slate-500">دستگاه</dt><dd className="font-bold">{devices.find((item) => item.value === device)?.label || "انتخاب نشده"}</dd></div>
-            <div className="flex justify-between gap-3"><dt className="text-slate-500">روز</dt><dd className="text-left font-bold">{selectedSlot ? persianDate(selectedSlot.startsAt, { weekday: "long", month: "long", day: "numeric" }) : "انتخاب نشده"}</dd></div>
-            <div className="flex justify-between gap-3"><dt className="text-slate-500">ساعت</dt><dd className="font-bold">{selectedSlot ? fa(selectedSlot.time) : "انتخاب نشده"}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-slate-500">دستگاه</dt><dd className="font-bold">{device ? deviceLabels[device] || device : "انتخاب نشده"}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-slate-500">روش دریافت</dt><dd className="font-bold">{fulfillment === "in_store" ? "مراجعه حضوری" : fulfillment === "courier" ? "ارسال با پیک" : "انتخاب نشده"}</dd></div>
+            {fulfillment === "courier" && <div className="flex justify-between gap-3"><dt className="text-slate-500">آدرس</dt><dd className="max-w-44 text-left text-xs font-bold leading-6">{selectedAddress ? `${selectedAddress.city}، ${selectedAddress.address}` : "انتخاب نشده"}</dd></div>}
+            <div className="flex justify-between gap-3"><dt className="text-slate-500">روز</dt><dd className="text-left font-bold">{selectedDate ? persianDate(`${selectedDate}T12:00:00+03:30`, { weekday: "long", month: "long", day: "numeric" }) : "انتخاب نشده"}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-slate-500">ساعت</dt><dd className="font-bold">{fulfillment === "courier" && selectedCourierWindow ? `${fa(selectedCourierWindow.start)} تا ${fa(selectedCourierWindow.end)}` : selectedSlot ? fa(selectedSlot.time) : "انتخاب نشده"}</dd></div>
+            {fulfillment === "courier" && <div className="flex justify-between gap-3"><dt className="text-slate-500">هزینه پیک</dt><dd className="text-left text-xs font-bold">در پاسخ ثبت نهایی از Server</dd></div>}
           </dl>
           <div className="mt-5 rounded-2xl bg-amber-50 p-4 text-xs leading-6 text-amber-900">
             <Clock3 className="mb-2 h-5 w-5" />
-            هزینه خدمت پس از بررسی مشخص می‌شود؛ مبلغ صفر به‌عنوان قیمت قطعی ثبت نمی‌شود.
+            {fulfillment === "courier" ? "هزینه پیک در ثبت نهایی از Server دریافت می‌شود؛ هزینه خود خدمت پس از بررسی مشخص می‌شود." : "هزینه خدمت پس از بررسی مشخص می‌شود؛ مبلغ صفر به‌عنوان قیمت قطعی ثبت نمی‌شود."}
           </div>
           <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-xs leading-6 text-slate-600">
             <CalendarDays className="mb-2 h-5 w-5 text-[#001A6E]" />
@@ -524,8 +714,8 @@ export default function GameOrderSelector() {
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-screen-md items-center gap-2">
           <button type="button" disabled={step === 1} onClick={() => setStep((value) => Math.max(1, value - 1) as Step)} aria-label="مرحله قبل" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200 text-slate-700 disabled:opacity-40"><ChevronRight className="h-5 w-5" /></button>
-          {step < 3 ? (
-            <button type="button" disabled={step === 1 ? !stageOneValid || (repairIssue === "other" && !description.trim()) : !selectedSlot} onClick={() => setStep((value) => Math.min(3, value + 1) as Step)} className="h-12 flex-1 rounded-2xl bg-[#001A6E] font-black text-white disabled:bg-slate-300">ادامه</button>
+          {step < 4 ? (
+            <button type="button" disabled={step === 1 ? !stageOneValid || (repairIssue === "other" && !description.trim()) : step === 2 ? !fulfillment : !scheduleValid} onClick={() => setStep((value) => Math.min(4, value + 1) as Step)} className="h-12 flex-1 rounded-2xl bg-[#001A6E] font-black text-white disabled:bg-slate-300">ادامه</button>
           ) : (
             <button type="button" disabled={!stageThreeValid || submitting} onClick={() => void submit()} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#001A6E] font-black text-white disabled:bg-slate-300">{submitting && <Loader2 className="h-5 w-5 animate-spin" />} ثبت نوبت</button>
           )}

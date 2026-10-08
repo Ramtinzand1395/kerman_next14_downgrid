@@ -2,6 +2,7 @@ import { createAddressSnapshot } from "@/lib/addressSnapshot";
 import CustomerGameOrder from "@/model/CustomerGameOrder";
 import Order from "@/model/Order";
 import TempPayment from "@/model/TempPayment";
+import Appointment from "@/model/Appointment";
 
 type PersistedAddress = Parameters<typeof createAddressSnapshot>[0] & {
   _id: unknown;
@@ -30,6 +31,24 @@ export async function preserveAddressSnapshots(address: PersistedAddress) {
       { addressRef: address._id, ...missingSnapshot },
       { $set: { addressSnapshot } },
     ),
+    Appointment.updateMany(
+      {
+        "courier.addressId": address._id,
+        $or: [
+          { "courier.addressSnapshot": { $exists: false } },
+          { "courier.addressSnapshot": null },
+        ],
+      },
+      {
+        $set: {
+          "courier.addressSnapshot": {
+            ...addressSnapshot,
+            recipientName: "",
+            recipientPhone: "",
+          },
+        },
+      },
+    ),
   ]);
 }
 
@@ -44,6 +63,10 @@ export async function detachAddressReferences(addressId: unknown) {
     CustomerGameOrder.updateMany(
       { addressRef: addressId },
       { $set: { addressRef: null } },
+    ),
+    Appointment.updateMany(
+      { "courier.addressId": addressId },
+      { $set: { "courier.addressId": null } },
     ),
   ]);
 }
