@@ -1,4 +1,5 @@
 import AppointmentSettings from "@/model/AppointmentSettings";
+export { normalizeCityName, findCourierRegion } from "./courier.utils";
 
 export async function getAppointmentSettings() {
   return AppointmentSettings.findOneAndUpdate(
@@ -75,21 +76,3 @@ export function isWindowInPast(date: string, endTime: string, now: Date = new Da
   if (!windowEnd) return true;
   return windowEnd.getTime() <= now.getTime();
 }
-
-export function findCourierRegion(
-  city: string,
-  regions: Array<{ id: string; title: string; city: string; shippingCost: number; isActive: boolean }>,
-  regionId?: string,
-) {
-  if (regionId) {
-    const byId = regions.find((r) => r.id === regionId && r.isActive);
-    if (byId) return byId;
-  }
-  const normalizedCity = city.trim().toLowerCase();
-  return (
-    regions.find(
-      (r) => r.isActive && r.city.trim().toLowerCase() === normalizedCity,
-    ) ?? null
-  );
-}
-

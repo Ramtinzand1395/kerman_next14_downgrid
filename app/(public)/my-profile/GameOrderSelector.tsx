@@ -32,7 +32,20 @@ type Step = 1 | 2 | 3 | 4;
 type Slot = { startsAt: string; endsAt: string; time: string; remaining: number; available: boolean };
 type CourierWindow = { start: string; end: string; remaining: number; available: boolean };
 type AddressItem = { _id: string; province: string; city: string; address: string; plaque?: string; unit?: string; postalCode?: string };
-type CourierRegion = { id: string; title: string; city: string; shippingCost: number; isActive?: boolean };
+type CourierPreview = {
+  eligible: boolean;
+  courierEnabled: boolean;
+  reason?: "COURIER_DISABLED" | "OUT_OF_REGION";
+  region?: { id: string; title: string; city: string };
+  pricing?: {
+    pickupShippingCost: number;
+    returnShippingCost: number;
+    shippingBaseAmount: number;
+    shippingDiscountAmount: number;
+    shippingFinalAmount: number;
+  };
+  reward?: { applicable: boolean; type: string };
+};
 type Reward = {
   _id: string;
   status: "available" | "reserved" | "redeemed" | "expired" | "revoked";
@@ -133,6 +146,10 @@ function rewardLabel(reward: Reward) {
   return `${fa(details.value.toLocaleString("fa-IR"))} تومان تخفیف`;
 }
 
+function toman(value: number) {
+  return value === 0 ? "رایگان" : `${value.toLocaleString("fa-IR")} تومان`;
+}
+
 export default function GameOrderSelector() {
   const reduceMotion = useReducedMotion();
   const submittingRef = useRef(false);
@@ -156,11 +173,13 @@ export default function GameOrderSelector() {
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [courierSupported, setCourierSupported] = useState(false);
   const [courierBookingDays, setCourierBookingDays] = useState(14);
-  const [courierRegions, setCourierRegions] = useState<CourierRegion[]>([]);
   const [courierWindows, setCourierWindows] = useState<CourierWindow[]>([]);
   const [selectedCourierWindow, setSelectedCourierWindow] = useState<CourierWindow | null>(null);
   const [courierLoading, setCourierLoading] = useState(false);
   const [courierError, setCourierError] = useState("");
+  const [courierPreview, setCourierPreview] = useState<CourierPreview | null>(null);
+  const [courierPreviewLoading, setCourierPreviewLoading] = useState(false);
+  const [courierPreviewError, setCourierPreviewError] = useState("");
   const [availabilityReload, setAvailabilityReload] = useState(0);
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
@@ -209,7 +228,6 @@ export default function GameOrderSelector() {
           const payload = await courierResponse.json();
           setCourierSupported(Boolean(payload?.settings?.courierEnabled));
           setCourierBookingDays(Number(payload?.settings?.bookingDaysAhead) || 14);
-          setCourierRegions(Array.isArray(payload?.settings?.regions) ? payload.settings.regions : []);
         }
       })
       .finally(() => {
@@ -304,7 +322,6 @@ export default function GameOrderSelector() {
         if (!response.ok) throw new Error(payload.error || "دریافت بازه‌های پیک انجام نشد.");
         setCourierSupported(Boolean(payload?.settings?.courierEnabled));
         setCourierBookingDays(Number(payload?.settings?.bookingDaysAhead) || 14);
-        setCourierRegions(Array.isArray(payload?.settings?.regions) ? payload.settings.regions : []);
         setCourierWindows(Array.isArray(payload?.windows) ? payload.windows : []);
       })
       .catch((reason) => {
@@ -313,6 +330,43 @@ export default function GameOrderSelector() {
       .finally(() => setCourierLoading(false));
     return () => controller.abort();
   }, [fulfillment, selectedDate]);
+
+  useEffect(() => {
+    setCourierPreview(null);
+    setCourierPreviewError("");
+    setCourierPreviewLoading(false);
+    if (fulfillment !== "courier" || !selectedAddressId || !serviceType) return;
+
+    const controller = new AbortController();
+    setCourierPreviewLoading(true);
+    fetch("/api/profile/appointments/courier-preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        addressId: selectedAddressId,
+        serviceType,
+        device,
+        selectedRewardId: selectedRewardId || null,
+      }),
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "محاسبه هزینه پیک انجام نشد.");
+        setCourierPreview(payload as CourierPreview);
+        setCourierSupported(Boolean(payload.courierEnabled));
+      })
+      .catch((reason) => {
+        if (reason instanceof Error && reason.name !== "AbortError") {
+          setCourierPreviewError(reason.message);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setCourierPreviewLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [device, fulfillment, selectedAddressId, selectedRewardId, serviceType]);
 
   const usableRewards = useMemo(
     () =>
@@ -331,10 +385,13 @@ export default function GameOrderSelector() {
     [device, fulfillment, installationType, rewards, serviceType],
   );
 
+  useEffect(() => {
+    if (selectedRewardId && !usableRewards.some((reward) => reward._id === selectedRewardId)) {
+      setSelectedRewardId("");
+    }
+  }, [selectedRewardId, usableRewards]);
+
   const selectedAddress = addresses.find((item) => item._id === selectedAddressId);
-  const selectedCourierRegion = selectedAddress
-    ? courierRegions.find((region) => region.city.trim().toLowerCase() === selectedAddress.city.trim().toLowerCase())
-    : undefined;
 
   const stageOneValid =
     Boolean(serviceType && device) &&
@@ -343,7 +400,7 @@ export default function GameOrderSelector() {
   const scheduleValid = fulfillment === "in_store"
     ? Boolean(selectedSlot)
     : fulfillment === "courier"
-      ? Boolean(selectedAddress && selectedCourierRegion && selectedDate && selectedCourierWindow)
+      ? Boolean(selectedAddress && courierPreview?.eligible && selectedDate && selectedCourierWindow)
       : false;
   const selectedService = services.find((item) => item.value === serviceType);
 
@@ -588,12 +645,17 @@ export default function GameOrderSelector() {
                       ) : (
                         <div className="mt-3 grid gap-2 sm:grid-cols-2">
                           {addresses.map((address) => {
-                            const supported = courierRegions.some((region) => region.city.trim().toLowerCase() === address.city.trim().toLowerCase());
-                            return <button key={address._id} type="button" onClick={() => setSelectedAddressId(address._id)} aria-pressed={selectedAddressId === address._id} className={choiceClass(selectedAddressId === address._id)}><strong className="block">{address.city}</strong><span className="mt-1 block text-xs leading-6 text-slate-500">{address.address}{address.plaque ? `، پلاک ${address.plaque}` : ""}</span><span className={`mt-2 inline-flex rounded-full px-2 py-1 text-[11px] font-bold ${supported ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>{supported ? "در محدوده پیک" : "خارج از محدوده"}</span></button>;
+                            const selected = selectedAddressId === address._id;
+                            const eligible = selected && courierPreview?.eligible;
+                            const rejected = selected && courierPreview && !courierPreview.eligible;
+                            return <button key={address._id} type="button" onClick={() => setSelectedAddressId(address._id)} aria-pressed={selected} className={choiceClass(selected)}><strong className="block">{address.city}</strong><span className="mt-1 block text-xs leading-6 text-slate-500">{address.address}{address.plaque ? `، پلاک ${address.plaque}` : ""}</span><span className={`mt-2 inline-flex rounded-full px-2 py-1 text-[11px] font-bold ${eligible ? "bg-emerald-100 text-emerald-700" : rejected ? "bg-rose-100 text-rose-700" : "bg-slate-100 text-slate-600"}`}>{selected && courierPreviewLoading ? "در حال بررسی سرور…" : eligible ? "محدوده تأیید شد" : rejected ? "خارج از محدوده" : "انتخاب برای بررسی"}</span></button>;
                           })}
                         </div>
                       )}
-                      {selectedAddress && !selectedCourierRegion && <p role="alert" className="mt-3 rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">در حال حاضر ارسال با پیک برای این آدرس فعال نیست. آدرس دیگری یا مراجعه حضوری را انتخاب کنید.</p>}
+                      {selectedAddress && courierPreviewLoading && <p aria-live="polite" className="mt-3 flex items-center gap-2 rounded-2xl bg-blue-50 p-4 text-sm text-blue-800"><Loader2 className="h-4 w-4 animate-spin" /> در حال بررسی محدوده و محاسبه هزینه توسط سرور…</p>}
+                      {selectedAddress && courierPreviewError && <p role="alert" className="mt-3 rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">{courierPreviewError}</p>}
+                      {selectedAddress && courierPreview && !courierPreview.eligible && <p role="alert" className="mt-3 rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">{courierPreview.reason === "COURIER_DISABLED" ? "سرویس پیک در حال حاضر غیرفعال است." : "این آدرس خارج از محدوده فعال پیک است. آدرس دیگری یا مراجعه حضوری را انتخاب کنید."}</p>}
+                      {selectedAddress && courierPreview?.eligible && <p className="mt-3 rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-800">محدوده «{courierPreview.region?.title || courierPreview.region?.city}» توسط سرور تأیید شد؛ هزینه نهایی پیک {courierPreview.pricing ? toman(courierPreview.pricing.shippingFinalAmount) : "در حال محاسبه"} است.</p>}
                     </div>
                   )}
                   <div className="mt-5 flex gap-2 overflow-x-auto pb-2" role="list" aria-label="انتخاب روز">
@@ -653,10 +715,10 @@ export default function GameOrderSelector() {
                         {usableRewards.map((reward) => {
                           const shipping = reward.snapshot.reward.type === "free_shipping";
                           return (
-                            <button key={reward._id} type="button" disabled={shipping} onClick={() => setSelectedRewardId(reward._id)} className={`w-full ${choiceClass(selectedRewardId === reward._id)} disabled:cursor-not-allowed disabled:opacity-60`}>
+                            <button key={reward._id} type="button" onClick={() => setSelectedRewardId(reward._id)} className={`w-full ${choiceClass(selectedRewardId === reward._id)}`}>
                               <strong>{reward.snapshot.title}</strong>
                               <span className="mt-1 block text-xs text-slate-500">{rewardLabel(reward)}</span>
-                              {shipping && <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2 py-1 text-[11px] font-bold text-amber-800">فقط برای سفارش پیکی قابل مصرف است</span>}
+                              {shipping && <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2 py-1 text-[11px] font-bold text-amber-800">مخصوص سفارش پیکی</span>}
                             </button>
                           );
                         })}
@@ -668,9 +730,9 @@ export default function GameOrderSelector() {
                       <p className="flex items-center gap-2 text-sm font-black text-[#001A6E]"><MapPin className="h-4 w-4" /> مراجعه حضوری</p>
                       <p className="mt-2 text-xs leading-6 text-slate-600">{storeAddress}</p>
                     </div>
-                    <div aria-disabled="true" className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 opacity-70">
-                      <p className="flex items-center gap-2 text-sm font-black text-slate-600"><Truck className="h-4 w-4" /> ارسال با پیک</p>
-                      <span className="mt-2 inline-flex rounded-full bg-slate-200 px-2 py-1 text-[11px] font-bold text-slate-600">به‌زودی</span>
+                    <div className={`rounded-2xl border p-4 ${fulfillment === "courier" ? "border-emerald-200 bg-emerald-50" : "border-slate-200 bg-slate-50"}`}>
+                      <p className="flex items-center gap-2 text-sm font-black text-slate-700"><Truck className="h-4 w-4" /> ارسال با پیک</p>
+                      <span className={`mt-2 inline-flex rounded-full px-2 py-1 text-[11px] font-bold ${fulfillment === "courier" ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"}`}>{fulfillment === "courier" ? "انتخاب‌شده" : courierSupported ? "در دسترس" : "فعلاً غیرفعال"}</span>
                     </div>
                   </div>
                   {error && <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-bold text-rose-700">{error}</div>}
@@ -684,7 +746,7 @@ export default function GameOrderSelector() {
             {step < 4 ? (
               <button type="button" disabled={step === 1 ? !stageOneValid || (repairIssue === "other" && !description.trim()) : step === 2 ? !fulfillment : !scheduleValid} onClick={() => setStep((value) => Math.min(4, value + 1) as Step)} className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-[#001A6E] px-7 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300">ادامه <ChevronLeft className="h-4 w-4" /></button>
             ) : (
-              <button type="button" disabled={!stageThreeValid || submitting} onClick={() => void submit()} className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-[#001A6E] px-7 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300">{submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />} ثبت نوبت</button>
+              <button type="button" disabled={!stageThreeValid || !scheduleValid || submitting} onClick={() => void submit()} className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-[#001A6E] px-7 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300">{submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />} ثبت نوبت</button>
             )}
           </div>
         </div>
@@ -698,11 +760,12 @@ export default function GameOrderSelector() {
             {fulfillment === "courier" && <div className="flex justify-between gap-3"><dt className="text-slate-500">آدرس</dt><dd className="max-w-44 text-left text-xs font-bold leading-6">{selectedAddress ? `${selectedAddress.city}، ${selectedAddress.address}` : "انتخاب نشده"}</dd></div>}
             <div className="flex justify-between gap-3"><dt className="text-slate-500">روز</dt><dd className="text-left font-bold">{selectedDate ? persianDate(`${selectedDate}T12:00:00+03:30`, { weekday: "long", month: "long", day: "numeric" }) : "انتخاب نشده"}</dd></div>
             <div className="flex justify-between gap-3"><dt className="text-slate-500">ساعت</dt><dd className="font-bold">{fulfillment === "courier" && selectedCourierWindow ? `${fa(selectedCourierWindow.start)} تا ${fa(selectedCourierWindow.end)}` : selectedSlot ? fa(selectedSlot.time) : "انتخاب نشده"}</dd></div>
-            {fulfillment === "courier" && <div className="flex justify-between gap-3"><dt className="text-slate-500">هزینه پیک</dt><dd className="text-left text-xs font-bold">در پاسخ ثبت نهایی از Server</dd></div>}
+            {fulfillment === "courier" && <div className="flex justify-between gap-3"><dt className="text-slate-500">هزینه پیک</dt><dd className="text-left text-xs font-bold">{courierPreviewLoading ? "در حال محاسبه…" : courierPreview?.pricing ? toman(courierPreview.pricing.shippingFinalAmount) : courierPreviewError ? "دریافت نشد" : "پس از انتخاب آدرس"}</dd></div>}
+            {fulfillment === "courier" && courierPreview?.pricing && courierPreview.pricing.shippingDiscountAmount > 0 && <div className="flex justify-between gap-3"><dt className="text-slate-500">تخفیف ارسال</dt><dd className="text-left text-xs font-bold text-emerald-700">− {toman(courierPreview.pricing.shippingDiscountAmount)}</dd></div>}
           </dl>
           <div className="mt-5 rounded-2xl bg-amber-50 p-4 text-xs leading-6 text-amber-900">
             <Clock3 className="mb-2 h-5 w-5" />
-            {fulfillment === "courier" ? "هزینه پیک در ثبت نهایی از Server دریافت می‌شود؛ هزینه خود خدمت پس از بررسی مشخص می‌شود." : "هزینه خدمت پس از بررسی مشخص می‌شود؛ مبلغ صفر به‌عنوان قیمت قطعی ثبت نمی‌شود."}
+            {fulfillment === "courier" ? "پیش‌نمایش هزینه پیک از سرور دریافت می‌شود و هنگام ثبت دوباره اعتبارسنجی خواهد شد؛ هزینه خود خدمت پس از بررسی مشخص می‌شود." : "هزینه خدمت پس از بررسی مشخص می‌شود؛ مبلغ صفر به‌عنوان قیمت قطعی ثبت نمی‌شود."}
           </div>
           <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-xs leading-6 text-slate-600">
             <CalendarDays className="mb-2 h-5 w-5 text-[#001A6E]" />
@@ -717,7 +780,7 @@ export default function GameOrderSelector() {
           {step < 4 ? (
             <button type="button" disabled={step === 1 ? !stageOneValid || (repairIssue === "other" && !description.trim()) : step === 2 ? !fulfillment : !scheduleValid} onClick={() => setStep((value) => Math.min(4, value + 1) as Step)} className="h-12 flex-1 rounded-2xl bg-[#001A6E] font-black text-white disabled:bg-slate-300">ادامه</button>
           ) : (
-            <button type="button" disabled={!stageThreeValid || submitting} onClick={() => void submit()} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#001A6E] font-black text-white disabled:bg-slate-300">{submitting && <Loader2 className="h-5 w-5 animate-spin" />} ثبت نوبت</button>
+            <button type="button" disabled={!stageThreeValid || !scheduleValid || submitting} onClick={() => void submit()} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#001A6E] font-black text-white disabled:bg-slate-300">{submitting && <Loader2 className="h-5 w-5 animate-spin" />} ثبت نوبت</button>
           )}
         </div>
       </div>
