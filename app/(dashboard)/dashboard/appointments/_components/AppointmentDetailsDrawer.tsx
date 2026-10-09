@@ -15,6 +15,7 @@ import {
   courierLabel,
   courierTimeline,
   courierTone,
+  discountToman,
   formatTehranDate,
   getCourierView,
   selectedRewardLabel,
@@ -304,7 +305,7 @@ export default function AppointmentDetailsDrawer({ item, onClose }: Props) {
                 />
                 <PriceRow
                   label="تخفیف خدمت"
-                  value={toman(item.pricing.serviceDiscountAmount ?? 0)}
+                  value={discountToman(item.pricing.serviceDiscountAmount ?? 0)}
                   discount
                 />
                 {courier ? (
@@ -316,7 +317,7 @@ export default function AppointmentDetailsDrawer({ item, onClose }: Props) {
                     />
                     <PriceRow
                       label="تخفیف ارسال"
-                      value={toman(courier.shippingDiscountAmount)}
+                      value={discountToman(courier.shippingDiscountAmount)}
                       discount
                     />
                     <PriceRow
@@ -409,4 +410,3 @@ function PriceRow({
     </div>
   );
 }
-

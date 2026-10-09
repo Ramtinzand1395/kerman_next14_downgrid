@@ -3,6 +3,7 @@
 import { Check, Loader2, X } from "lucide-react";
 import type { AppointmentItem } from "@/types/appointments";
 import {
+  discountToman,
   getCourierView,
   selectedRewardLabel,
   toman,
@@ -71,7 +72,7 @@ export default function SettlementModal({
             <div className="flex justify-between">
               <dt>تخفیف ارسال</dt>
               <dd className="font-bold text-rose-600">
-                {toman(courier.shippingDiscountAmount)}
+                {discountToman(courier.shippingDiscountAmount)}
               </dd>
             </div>
             <div className="flex justify-between border-t border-slate-200 pt-2">
@@ -134,4 +135,3 @@ export default function SettlementModal({
     </div>
   );
 }
-

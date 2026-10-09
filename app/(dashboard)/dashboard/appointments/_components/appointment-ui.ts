@@ -92,6 +92,12 @@ export function toman(value: number | null | undefined) {
   return `${Math.round(value).toLocaleString("fa-IR")} تومان`;
 }
 
+export function discountToman(value: number | null | undefined) {
+  if (value === null || value === undefined) return "نامشخص";
+  if (value === 0) return "بدون تخفیف";
+  return `${Math.round(value).toLocaleString("fa-IR")} تومان`;
+}
+
 export function formatTehranDate(value: string) {
   return new Date(value).toLocaleString("fa-IR", {
     timeZone: "Asia/Tehran",

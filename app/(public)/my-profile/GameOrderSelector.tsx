@@ -150,6 +150,10 @@ function toman(value: number) {
   return value === 0 ? "رایگان" : `${value.toLocaleString("fa-IR")} تومان`;
 }
 
+function discountToman(value: number) {
+  return value === 0 ? "بدون تخفیف" : `${value.toLocaleString("fa-IR")} تومان`;
+}
+
 export default function GameOrderSelector({
   initialFulfillment = null,
 }: {
@@ -674,7 +678,7 @@ export default function GameOrderSelector({
                             <div className="flex items-center justify-between gap-3"><dt>هزینه رفت</dt><dd className="font-black">{toman(courierPreview.pricing.pickupShippingCost)}</dd></div>
                             <div className="flex items-center justify-between gap-3"><dt>هزینه برگشت</dt><dd className="font-black">{toman(courierPreview.pricing.returnShippingCost)}</dd></div>
                             <div className="flex items-center justify-between gap-3"><dt>جمع ارسال</dt><dd className="font-black">{toman(courierPreview.pricing.shippingBaseAmount)}</dd></div>
-                            <div className="flex items-center justify-between gap-3"><dt>تخفیف ارسال</dt><dd className="font-black text-emerald-700">{toman(courierPreview.pricing.shippingDiscountAmount)}</dd></div>
+                            <div className="flex items-center justify-between gap-3"><dt>تخفیف ارسال</dt><dd className="font-black text-emerald-700">{discountToman(courierPreview.pricing.shippingDiscountAmount)}</dd></div>
                             <div className="flex items-center justify-between gap-3 border-t border-emerald-200 pt-2 sm:col-span-2"><dt className="font-black">هزینه نهایی پیک</dt><dd className="text-base font-black">{toman(courierPreview.pricing.shippingFinalAmount)}</dd></div>
                           </dl>
                         </div>
@@ -787,7 +791,7 @@ export default function GameOrderSelector({
             {fulfillment === "courier" && courierPreview?.pricing && <>
               <div className="flex justify-between gap-3"><dt className="text-slate-500">هزینه رفت</dt><dd className="text-left text-xs font-bold">{toman(courierPreview.pricing.pickupShippingCost)}</dd></div>
               <div className="flex justify-between gap-3"><dt className="text-slate-500">هزینه برگشت</dt><dd className="text-left text-xs font-bold">{toman(courierPreview.pricing.returnShippingCost)}</dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-slate-500">تخفیف ارسال</dt><dd className="text-left text-xs font-bold text-emerald-700">{toman(courierPreview.pricing.shippingDiscountAmount)}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-slate-500">تخفیف ارسال</dt><dd className="text-left text-xs font-bold text-emerald-700">{discountToman(courierPreview.pricing.shippingDiscountAmount)}</dd></div>
               <div className="flex justify-between gap-3 border-t border-slate-200 pt-3"><dt className="font-black text-slate-700">هزینه نهایی پیک</dt><dd className="text-left text-xs font-black text-[#001A6E]">{toman(courierPreview.pricing.shippingFinalAmount)}</dd></div>
             </>}
             {fulfillment === "courier" && !courierPreview?.pricing && <div className="flex justify-between gap-3"><dt className="text-slate-500">هزینه پیک</dt><dd className="text-left text-xs font-bold">{courierPreviewLoading ? "در حال دریافت از سرور…" : courierPreviewError ? "دریافت نشد" : "پس از انتخاب آدرس"}</dd></div>}
