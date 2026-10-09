@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import LandingHome from "./components/landing/LandingHome";
 import { getLandingData } from "@/lib/landing-data";
+import { getAppointmentSettings } from "@/lib/appointments/settings";
 
 export const metadata: Metadata = {
   alternates: {
@@ -11,7 +12,15 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const data = await getLandingData();
+  const [data, appointmentSettings] = await Promise.all([
+    getLandingData(),
+    getAppointmentSettings(),
+  ]);
 
-  return <LandingHome data={data} />;
+  return (
+    <LandingHome
+      data={data}
+      courierEnabled={Boolean(appointmentSettings.courierEnabled)}
+    />
+  );
 }

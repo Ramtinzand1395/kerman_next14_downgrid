@@ -9,10 +9,6 @@ export type AppointmentStatus =
   | "no_show"
   | "rejected";
 
-/**
- * Frontend vocabulary for the requested courier experience. The current API
- * does not expose this field yet, so these values are not sent to an endpoint.
- */
 export type CourierStatus =
   | "pending"
   | "scheduled"

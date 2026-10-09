@@ -62,8 +62,8 @@ const quickAccess = [
     icon: Headphones,
   },
   {
-    title: "درخواست حضوری",
-    description: "ثبت سریع و هماهنگی",
+    title: "درخواست خدمات",
+    description: "انتخاب مراجعه حضوری یا پیک",
     href: REQUEST_URL,
     icon: CalendarDays,
   },
@@ -140,7 +140,13 @@ function conditionLabel(product: Product) {
   return null;
 }
 
-export default function LandingHome({ data }: { data: LandingData }) {
+export default function LandingHome({
+  data,
+  courierEnabled,
+}: {
+  data: LandingData;
+  courierEnabled: boolean;
+}) {
   return (
     <div className="overflow-x-clip bg-[#f3f8ff] pb-24 text-[#0b1d48] sm:pb-0">
       <div className="mx-auto w-full max-w-[1320px] px-4 py-4 sm:px-6 lg:px-8">
@@ -183,7 +189,7 @@ export default function LandingHome({ data }: { data: LandingData }) {
                   <ArrowLeft className="h-3.5 w-3.5" />
                 </Link>
                 <Link href={REQUEST_URL} className="landing-secondary landing-hero-cta whitespace-nowrap text-sm sm:min-h-10 sm:text-xs lg:min-h-11 lg:text-sm">
-                  ثبت درخواست حضوری
+                  ثبت درخواست خدمات
                   <CalendarDays className="h-3.5 w-3.5" />
                 </Link>
               </div>
@@ -388,7 +394,7 @@ export default function LandingHome({ data }: { data: LandingData }) {
             </div>
         </section>
 
-        <ServiceOrderSection />
+        <ServiceOrderSection courierEnabled={courierEnabled} />
 
         <section className="landing-section" aria-labelledby="benefits-heading">
           <div className="relative overflow-hidden rounded-[28px] border border-[#174f9f] bg-[radial-gradient(circle_at_15%_10%,#1765c9_0%,#082d6b_42%,#051d49_100%)] p-5 text-white shadow-[0_22px_55px_rgba(5,35,86,0.2)] sm:p-8 lg:p-10">
@@ -594,7 +600,7 @@ export default function LandingHome({ data }: { data: LandingData }) {
             </div>
             <div className="mt-4 flex flex-col gap-2 min-[440px]:flex-row">
               <Link href={REQUEST_URL} className="landing-primary flex-1 text-sm">
-                ثبت درخواست حضوری
+                ثبت درخواست خدمات
               </Link>
               <a
                 href={MAP_URL}

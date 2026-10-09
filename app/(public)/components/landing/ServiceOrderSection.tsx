@@ -14,7 +14,8 @@ import {
   Zap,
 } from "lucide-react";
 
-const REQUEST_URL = "/my-profile?step=6";
+const COURIER_REQUEST_URL = "/my-profile?step=6&fulfillment=courier";
+const IN_STORE_REQUEST_URL = "/my-profile?step=6&fulfillment=in_store";
 const ASSET_ROOT = "/بنر دریافت سفارش";
 const steps = [
   { number: "۱", title: "انتخاب خدمت", description: "نصب بازی یا تعمیرات را مشخص کن", image: ASSET_ROOT + "/Royal Blue Document Cursor Icon-3.png" },
@@ -35,7 +36,11 @@ function Connector() {
   );
 }
 
-export default function ServiceOrderSection() {
+export default function ServiceOrderSection({
+  courierEnabled,
+}: {
+  courierEnabled: boolean;
+}) {
   const reduceMotion = useReducedMotion();
   const transition = reduceMotion ? { duration: 0 } : { duration: 0.42, ease: [0.22, 1, 0.36, 1] as const };
 
@@ -96,21 +101,32 @@ export default function ServiceOrderSection() {
         </motion.header>
 
         <div className="relative z-10 mx-auto mt-7 grid max-w-[1260px] gap-5 lg:grid-cols-2">
-          <motion.article variants={cardVariants} transition={transition} className="relative overflow-hidden rounded-[24px] border-2 border-[#b9d8ff] bg-white shadow-[0_16px_38px_rgba(40,101,171,0.1)]">
+          <motion.article variants={cardVariants} transition={transition} className={`relative overflow-hidden rounded-[24px] border-2 bg-white shadow-[0_16px_38px_rgba(40,101,171,0.1)] ${courierEnabled ? "border-emerald-300" : "border-[#b9d8ff]"}`}>
             <div className="grid min-h-[390px] sm:grid-cols-[1.03fr_0.97fr]" dir="rtl">
               <div className="relative z-10 flex flex-col p-5 sm:p-6 lg:p-7">
-                <span className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-black text-slate-500"><span className="h-2.5 w-2.5 rounded-full bg-slate-400" />به‌زودی</span>
+                <span className={`inline-flex w-fit items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-black ${courierEnabled ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-500"}`}>
+                  <span className={`h-2.5 w-2.5 rounded-full ${courierEnabled ? "bg-emerald-500" : "bg-slate-400"}`} />
+                  {courierEnabled ? "فعال" : "به‌زودی"}
+                </span>
                 <h3 className="mt-4 text-2xl font-black text-[#071943] sm:text-3xl">ارسال با پیک</h3>
-                <p className="mt-2 max-w-md text-sm leading-7 text-[#52658d] sm:text-base">ارسال و دریافت کنسول و لوازم در محل مورد نظر شما</p>
+                <p className="mt-2 max-w-md text-sm leading-7 text-[#52658d] sm:text-base">{courierEnabled ? "دریافت و تحویل دستگاه با پیک در کرمان" : "ارسال و دریافت کنسول و لوازم در محل مورد نظر شما"}</p>
                 <ul className="mt-5 space-y-3 text-sm font-bold text-[#52658d] sm:text-base">
                   <li className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-[#1269f5]" /> تحویل و دریافت در محل</li>
                   <li className="flex items-center gap-2"><Zap className="h-5 w-5 text-[#1269f5]" /> ثبت سریع سفارش</li>
                   <li className="flex items-center gap-2"><ShoppingCart className="h-5 w-5 text-[#1269f5]" /> مناسب برای سفارش آنلاین</li>
                 </ul>
-                <p className="mt-5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-500">این خدمت به‌زودی فعال می‌شود</p>
-                <button type="button" disabled className="mt-3 flex min-h-12 w-full cursor-not-allowed items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-slate-200 px-2 text-xs font-black text-slate-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-300 sm:mt-auto lg:text-[13px] xl:text-base">
-                  <Truck className="h-5 w-5" />ارسال با پیک؛ به‌زودی
-                </button>
+                {courierEnabled ? (
+                  <Link href={COURIER_REQUEST_URL} className="mt-3 flex min-h-12 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-emerald-600 px-2 text-xs font-black text-white transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-200 sm:mt-auto lg:text-[13px] xl:text-base">
+                    <Truck className="h-5 w-5" />ثبت درخواست پیک<ArrowLeft className="mr-auto h-5 w-5" />
+                  </Link>
+                ) : (
+                  <>
+                    <p className="mt-5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-500">این خدمت به‌زودی فعال می‌شود</p>
+                    <button type="button" disabled className="mt-3 flex min-h-12 w-full cursor-not-allowed items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-slate-200 px-2 text-xs font-black text-slate-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-300 sm:mt-auto lg:text-[13px] xl:text-base">
+                      <Truck className="h-5 w-5" />ارسال با پیک؛ به‌زودی
+                    </button>
+                  </>
+                )}
               </div>
               <CardImage src={ASSET_ROOT + "/Blue courier with gamepad box-2.png"} alt="پیک موتوری برای جابه‌جایی کنسول و لوازم" position="object-[43%_center]" />
             </div>
@@ -127,7 +143,7 @@ export default function ServiceOrderSection() {
                   <li className="flex items-center gap-2"><MapPin className="h-5 w-5 text-[#1269f5]" /> مراجعه به فروشگاه</li>
                   <li className="flex items-center gap-2"><UsersRound className="h-5 w-5 text-[#1269f5]" /> مناسب خدمات حضوری</li>
                 </ul>
-                <Link href={REQUEST_URL} className="mt-3 flex min-h-12 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border-2 border-[#1269f5] bg-white px-2 text-xs font-black text-[#1269f5] transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 sm:mt-auto lg:text-[13px] xl:text-base">
+                <Link href={IN_STORE_REQUEST_URL} className="mt-3 flex min-h-12 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border-2 border-[#1269f5] bg-white px-2 text-xs font-black text-[#1269f5] transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 sm:mt-auto lg:text-[13px] xl:text-base">
                   <CalendarDays className="h-5 w-5" />دریافت نوبت حضوری<ArrowLeft className="mr-auto h-5 w-5" />
                 </Link>
               </div>
