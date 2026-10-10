@@ -240,10 +240,25 @@ export default function LoginWithOtp() {
         );
       }
 
-      const newOtpId = await sendOtpToUser(
+      const result = await sendOtpToUser(
         mobile,
         normalizedReferral || undefined,
       );
+
+      if (!result.success) {
+        if (result.code === "OTP_RATE_LIMITED" && result.retryAfter) {
+          const remaining = Math.max(1, result.retryAfter);
+          setTimer(remaining);
+          const expireTime = Date.now() + remaining * 1000;
+          localStorage.setItem(OTP_EXPIRE_KEY, expireTime.toString());
+          toast.warning(result.error);
+        } else {
+          toast.error(result.error || "ارسال کد با خطا مواجه شد");
+        }
+        return;
+      }
+
+      const newOtpId = result.otpId;
       const expireTime = Date.now() + OTP_TOTAL_TIME * 1000;
 
       setOtpId(newOtpId);

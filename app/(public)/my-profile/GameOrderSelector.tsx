@@ -96,9 +96,13 @@ const services = [
 const deviceLabels: Record<string, string> = {
   ps5: "PlayStation 5",
   ps4: "PlayStation 4",
+  ps2: "PlayStation 2",
+  ps1: "PlayStation 1",
   "xbox-series": "Xbox Series",
   "xbox-one": "Xbox One",
 };
+
+const installationDeviceIds = new Set(["ps5", "ps4"]);
 
 const issues = [
   { value: "power", label: "روشن‌نشدن" },
@@ -253,6 +257,8 @@ export default function GameOrderSelector({
 
   useEffect(() => {
     setDevice("");
+    if (serviceType !== "game_install") setInstallationType("");
+    if (serviceType !== "repair") setRepairIssue("");
     setSupportedDeviceIds([]);
     setDevicesError("");
     if (!serviceType) return;
@@ -406,9 +412,13 @@ export default function GameOrderSelector({
 
   const selectedAddress = addresses.find((item) => item._id === selectedAddressId);
 
+  const installationTypeAvailable =
+    serviceType === "game_install" && installationDeviceIds.has(device);
   const stageOneValid =
     Boolean(serviceType && device) &&
-    (serviceType === "game_install" ? Boolean(installationType) : Boolean(repairIssue));
+    (serviceType === "game_install"
+      ? installationTypeAvailable && Boolean(installationType)
+      : Boolean(repairIssue));
   const stageThreeValid = customerName.trim().length >= 2 && /^09\d{9}$/.test(phone.trim());
   const scheduleValid = fulfillment === "in_store"
     ? Boolean(selectedSlot)
@@ -578,7 +588,7 @@ export default function GameOrderSelector({
                     </div>
                   )}
 
-                  {serviceType === "game_install" && device && (
+                  {installationTypeAvailable && (
                     <fieldset>
                       <legend className="font-black text-slate-900">نوع نصب</legend>
                       <div className="mt-3 grid gap-2 sm:grid-cols-2">

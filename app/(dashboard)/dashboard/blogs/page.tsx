@@ -4,12 +4,18 @@ import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import {
+  BarChart3,
   BookOpen,
+  CheckCircle2,
+  Clock3,
   Edit3,
   Eye,
+  FileText,
   FilePlus2,
   ImageOff,
+  LayoutGrid,
   Loader2,
+  PenLine,
   Save,
   Search,
   Send,
@@ -72,6 +78,9 @@ export default function BlogsAdminPage() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [activeView, setActiveView] = useState<"editor" | "library">("editor");
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "published" | "draft"
+  >("all");
   const [serverIssues, setServerIssues] = useState<string[]>([]);
 
   const analysis = useMemo(
@@ -85,13 +94,42 @@ export default function BlogsAdminPage() {
 
   const filteredBlogs = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase("fa");
-    if (!query) return blogs;
-    return blogs.filter((blog) =>
-      [blog.title, blog.slug, blog.category, ...(blog.tags || [])]
-        .filter(Boolean)
-        .some((value) => String(value).toLocaleLowerCase("fa").includes(query)),
+    return blogs.filter((blog) => {
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "published" && blog.published) ||
+        (statusFilter === "draft" && !blog.published);
+      const matchesQuery =
+        !query ||
+        [blog.title, blog.slug, blog.category, ...(blog.tags || [])]
+          .filter(Boolean)
+          .some((value) =>
+            String(value).toLocaleLowerCase("fa").includes(query),
+          );
+      return matchesStatus && matchesQuery;
+    });
+  }, [blogs, searchQuery, statusFilter]);
+
+  const publishedCount = useMemo(
+    () => blogs.filter((blog) => blog.published).length,
+    [blogs],
+  );
+  const draftCount = blogs.length - publishedCount;
+  const blogAnalyses = useMemo(
+    () =>
+      new Map(
+        blogs.map((blog) => [blog._id, analyzeBlogSeo(blog)] as const),
+      ),
+    [blogs],
+  );
+  const averageSeoScore = useMemo(() => {
+    if (!blogAnalyses.size) return 0;
+    const total = Array.from(blogAnalyses.values()).reduce(
+      (sum, blogAnalysis) => sum + blogAnalysis.score,
+      0,
     );
-  }, [blogs, searchQuery]);
+    return Math.round(total / blogAnalyses.size);
+  }, [blogAnalyses]);
 
   const fetchBlogs = useCallback(async () => {
     try {
@@ -279,68 +317,151 @@ export default function BlogsAdminPage() {
   const previewImage = getValidImage(form.coverImage);
 
   return (
-    <div className="space-y-6 pb-10" dir="rtl">
-      <header className="overflow-hidden rounded-3xl bg-gradient-to-l from-slate-950 via-slate-900 to-indigo-950 p-5 text-white shadow-lg md:p-7">
-        <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
+    <div className="mx-auto max-w-[1500px] space-y-5 pb-10" dir="rtl">
+      <header className="overflow-hidden rounded-[28px] border border-slate-200 bg-[linear-gradient(135deg,#ffffff_0%,#f5f7ff_52%,#eef2ff_100%)] p-5 shadow-[0_18px_50px_rgba(30,41,59,0.08)] md:p-7">
+        <div className="flex flex-col justify-between gap-5 xl:flex-row xl:items-start">
           <div>
-            <div className="mb-2 flex items-center gap-2 text-xs font-bold text-indigo-200">
-              <BookOpen className="h-4 w-4" />
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white px-3 py-1.5 text-xs font-black text-indigo-700 shadow-sm">
+              <BookOpen className="h-4 w-4" aria-hidden="true" />
               مرکز محتوای کرمان آتاری
             </div>
-            <h1 className="text-2xl font-black md:text-3xl">مدیریت حرفه‌ای مقاله‌ها</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-              مقاله را بنویسید، کیفیت سئو را همان لحظه بسنجید و فقط پس از عبور از
-              کنترل‌های ضروری منتشر کنید.
+            <h1 className="text-2xl font-black leading-tight text-slate-950 md:text-[34px]">
+              مدیریت وبلاگ
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm font-medium leading-7 text-slate-500">
+              مقاله‌ها را بنویسید، وضعیت انتشار را کنترل کنید و کیفیت سئو را
+              پیش از انتشار بسنجید.
             </p>
           </div>
           <button
             type="button"
             onClick={startNewArticle}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-black text-slate-900 transition hover:bg-indigo-50"
+            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 text-sm font-black text-white shadow-[0_10px_22px_rgba(79,70,229,0.24)] transition hover:-translate-y-0.5 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 sm:w-fit"
           >
-            <FilePlus2 className="h-4 w-4" />
-            مقاله جدید
+            <FilePlus2 className="h-5 w-5" aria-hidden="true" />
+            ساخت مقاله جدید
           </button>
         </div>
 
-        <div className="mt-6 flex w-fit rounded-xl bg-white/10 p-1">
-          <button
-            type="button"
-            onClick={() => setActiveView("editor")}
-            className={`rounded-lg px-4 py-2 text-xs font-bold transition ${
-              activeView === "editor"
-                ? "bg-white text-slate-900"
-                : "text-slate-200 hover:bg-white/10"
-            }`}
-          >
-            ویرایشگر مقاله
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveView("library")}
-            className={`rounded-lg px-4 py-2 text-xs font-bold transition ${
-              activeView === "library"
-                ? "bg-white text-slate-900"
-                : "text-slate-200 hover:bg-white/10"
-            }`}
-          >
-            کتابخانه ({blogs.length.toLocaleString("fa-IR")})
-          </button>
+        <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[
+            {
+              label: "همه مقاله‌ها",
+              value: blogs.length,
+              icon: FileText,
+              color: "bg-indigo-50 text-indigo-600",
+            },
+            {
+              label: "منتشرشده",
+              value: publishedCount,
+              icon: CheckCircle2,
+              color: "bg-emerald-50 text-emerald-600",
+            },
+            {
+              label: "پیش‌نویس",
+              value: draftCount,
+              icon: Clock3,
+              color: "bg-amber-50 text-amber-600",
+            },
+            {
+              label: "میانگین سئو",
+              value: averageSeoScore,
+              icon: BarChart3,
+              color: "bg-sky-50 text-sky-600",
+              suffix: "از ۱۰۰",
+            },
+          ].map((stat) => {
+            const StatIcon = stat.icon;
+            return (
+              <div
+                key={stat.label}
+                className="flex min-h-[88px] items-center gap-3 rounded-2xl border border-white bg-white/90 p-3.5 shadow-[0_8px_22px_rgba(30,41,59,0.06)]"
+              >
+                <span
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${stat.color}`}
+                >
+                  <StatIcon className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold text-slate-500 sm:text-xs">
+                    {stat.label}
+                  </p>
+                  <p className="mt-1 text-xl font-black text-slate-900">
+                    {stat.value.toLocaleString("fa-IR")}
+                    {stat.suffix ? (
+                      <span className="mr-1 text-[10px] font-bold text-slate-400">
+                        {stat.suffix}
+                      </span>
+                    ) : null}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </header>
 
+      <nav
+        className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_8px_24px_rgba(30,41,59,0.06)]"
+        aria-label="بخش‌های مدیریت وبلاگ"
+      >
+        <button
+          type="button"
+          onClick={() => setActiveView("editor")}
+          aria-pressed={activeView === "editor"}
+          className={`flex min-h-[58px] items-center justify-center gap-3 rounded-xl px-3 text-right transition focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
+            activeView === "editor"
+              ? "bg-slate-950 text-white shadow-md"
+              : "text-slate-500 hover:bg-slate-50"
+          }`}
+        >
+          <PenLine className="h-5 w-5 shrink-0" aria-hidden="true" />
+          <span>
+            <span className="block text-sm font-black">ویرایشگر مقاله</span>
+            <span className="hidden text-[11px] opacity-70 sm:block">
+              نوشتن، سئو و انتشار
+            </span>
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveView("library")}
+          aria-pressed={activeView === "library"}
+          className={`flex min-h-[58px] items-center justify-center gap-3 rounded-xl px-3 text-right transition focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
+            activeView === "library"
+              ? "bg-slate-950 text-white shadow-md"
+              : "text-slate-500 hover:bg-slate-50"
+          }`}
+        >
+          <LayoutGrid className="h-5 w-5 shrink-0" aria-hidden="true" />
+          <span>
+            <span className="block text-sm font-black">
+              کتابخانه ({blogs.length.toLocaleString("fa-IR")})
+            </span>
+            <span className="hidden text-[11px] opacity-70 sm:block">
+              مدیریت مقاله‌های موجود
+            </span>
+          </span>
+        </button>
+      </nav>
+
       {activeView === "editor" ? (
-        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
           <main className="space-y-5">
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+            <section className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(30,41,59,0.06)] md:p-6">
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-bold text-indigo-600">
-                    {editingBlog ? "در حال ویرایش" : "مقاله جدید"}
-                  </p>
-                  <h2 className="mt-1 text-lg font-black text-slate-900">
-                    {editingBlog?.title || "اطلاعات اصلی مقاله"}
-                  </h2>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-sm font-black text-indigo-600">
+                    ۱
+                  </span>
+                  <div>
+                    <p className="text-xs font-bold text-indigo-600">
+                      {editingBlog ? "در حال ویرایش" : "مقاله جدید"}
+                    </p>
+                    <h2 className="mt-1 text-lg font-black text-slate-900">
+                      {editingBlog?.title || "اطلاعات اصلی مقاله"}
+                    </h2>
+                  </div>
                 </div>
                 {editingBlog ? (
                   <button
@@ -453,13 +574,18 @@ export default function BlogsAdminPage() {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+            <section className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(30,41,59,0.06)] md:p-6">
               <div className="mb-4 flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-base font-black text-slate-900">تصویر شاخص</h2>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    تصویر افقی با نسبت ۱۶:۹ و حداقل عرض ۱۲۰۰ پیکسل پیشنهاد می‌شود.
-                  </p>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-sm font-black text-violet-600">
+                    ۲
+                  </span>
+                  <div>
+                    <h2 className="text-base font-black text-slate-900">تصویر شاخص</h2>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      تصویر افقی با نسبت ۱۶:۹ و حداقل عرض ۱۲۰۰ پیکسل پیشنهاد می‌شود.
+                    </p>
+                  </div>
                 </div>
                 {previewImage ? (
                   <button
@@ -543,13 +669,18 @@ export default function BlogsAdminPage() {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+            <section className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(30,41,59,0.06)] md:p-6">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-base font-black text-slate-900">متن مقاله</h2>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    مقدمه را با پاسخ مستقیم شروع کنید و بخش‌ها را با H2 و H3 بچینید.
-                  </p>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sm font-black text-sky-600">
+                    ۳
+                  </span>
+                  <div>
+                    <h2 className="text-base font-black text-slate-900">متن مقاله</h2>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      مقدمه را با پاسخ مستقیم شروع کنید و بخش‌ها را با H2 و H3 بچینید.
+                    </p>
+                  </div>
                 </div>
                 <div className="flex gap-2 text-[11px] font-bold text-slate-500">
                   <span className="rounded-lg bg-slate-100 px-2.5 py-1.5">
@@ -570,12 +701,17 @@ export default function BlogsAdminPage() {
               />
             </section>
 
-            <section className="rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4 shadow-sm md:p-6">
-              <div className="mb-5">
-                <p className="text-xs font-bold text-indigo-600">تنظیمات موتور جستجو</p>
-                <h2 className="mt-1 text-base font-black text-slate-900">
-                  عنوان، کلمه کلیدی و توضیحات متا
-                </h2>
+            <section className="rounded-[24px] border border-indigo-100 bg-[linear-gradient(145deg,#ffffff_0%,#f5f3ff_100%)] p-4 shadow-[0_10px_30px_rgba(79,70,229,0.07)] md:p-6">
+              <div className="mb-5 flex items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-sm font-black text-white">
+                  ۴
+                </span>
+                <div>
+                  <p className="text-xs font-bold text-indigo-600">تنظیمات موتور جستجو</p>
+                  <h2 className="mt-1 text-base font-black text-slate-900">
+                    عنوان، کلمه کلیدی و توضیحات متا
+                  </h2>
+                </div>
               </div>
               <div className="space-y-4">
                 <label className="block space-y-1.5">
@@ -646,7 +782,7 @@ export default function BlogsAdminPage() {
               </div>
             </section>
 
-            <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <section className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-[0_18px_45px_rgba(15,23,42,0.16)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-black text-slate-900">
                   {analysis.readyToPublish
@@ -701,37 +837,70 @@ export default function BlogsAdminPage() {
           />
         </div>
       ) : (
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+        <section className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_12px_36px_rgba(30,41,59,0.07)] md:p-6">
+          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
             <div>
-              <p className="text-xs font-bold text-indigo-600">آرشیو محتوا</p>
-              <h2 className="mt-1 text-xl font-black text-slate-900">
+              <span className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-black text-indigo-700">
+                <LayoutGrid className="h-4 w-4" aria-hidden="true" />
+                آرشیو محتوا
+              </span>
+              <h2 className="mt-3 text-2xl font-black text-slate-950">
                 کتابخانه مقاله‌ها
               </h2>
-              <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-bold">
-                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-emerald-700">
-                  {blogs
-                    .filter((blog) => blog.published)
-                    .length.toLocaleString("fa-IR")}{" "}
-                  منتشرشده
-                </span>
-                <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-700">
-                  {blogs
-                    .filter((blog) => !blog.published)
-                    .length.toLocaleString("fa-IR")}{" "}
-                  پیش‌نویس
-                </span>
-              </div>
+              <p className="mt-1 text-sm leading-6 text-slate-500">
+                جستجو، ویرایش و کنترل وضعیت انتشار همه محتواها در یک نگاه
+              </p>
             </div>
-            <label className="relative block w-full md:max-w-sm">
-              <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <label className="relative block w-full lg:max-w-md">
+              <Search className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="جستجو در عنوان، نشانی یا برچسب..."
-                className="w-full rounded-xl border border-slate-300 py-3 pl-3 pr-10 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-4 pr-11 text-sm outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100"
               />
             </label>
+          </div>
+
+          <div
+            className="mt-5 flex max-w-full gap-2 overflow-x-auto border-b border-slate-100 pb-4"
+            aria-label="فیلتر وضعیت مقاله‌ها"
+          >
+            {[
+              { id: "all" as const, label: "همه", count: blogs.length },
+              {
+                id: "published" as const,
+                label: "منتشرشده",
+                count: publishedCount,
+              },
+              { id: "draft" as const, label: "پیش‌نویس", count: draftCount },
+            ].map((filter) => (
+              <button
+                key={filter.id}
+                type="button"
+                onClick={() => setStatusFilter(filter.id)}
+                aria-pressed={statusFilter === filter.id}
+                className={`inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-4 text-xs font-black transition focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
+                  statusFilter === filter.id
+                    ? "bg-slate-950 text-white shadow-sm"
+                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                }`}
+              >
+                {filter.label}
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] ${
+                    statusFilter === filter.id
+                      ? "bg-white/15 text-white"
+                      : "bg-white text-slate-500"
+                  }`}
+                >
+                  {filter.count.toLocaleString("fa-IR")}
+                </span>
+              </button>
+            ))}
+            <span className="mr-auto self-center whitespace-nowrap text-xs font-bold text-slate-400">
+              {filteredBlogs.length.toLocaleString("fa-IR")} نتیجه
+            </span>
           </div>
 
           {loading ? (
@@ -746,9 +915,11 @@ export default function BlogsAdminPage() {
               <div>
                 <ImageOff className="mx-auto h-9 w-9 text-slate-300" />
                 <p className="mt-3 text-sm font-black text-slate-700">
-                  {searchQuery ? "نتیجه‌ای پیدا نشد" : "هنوز مقاله‌ای ندارید"}
+                  {searchQuery || statusFilter !== "all"
+                    ? "نتیجه‌ای پیدا نشد"
+                    : "هنوز مقاله‌ای ندارید"}
                 </p>
-                {!searchQuery ? (
+                {!searchQuery && statusFilter === "all" ? (
                   <button
                     type="button"
                     onClick={startNewArticle}
@@ -760,16 +931,17 @@ export default function BlogsAdminPage() {
               </div>
             </div>
           ) : (
-            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-5 grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
               {filteredBlogs.map((blog) => {
-                const blogAnalysis = analyzeBlogSeo(blog);
+                const blogAnalysis =
+                  blogAnalyses.get(blog._id) || analyzeBlogSeo(blog);
                 const image = getValidImage(blog.coverImage);
                 return (
                   <article
                     key={blog._id}
-                    className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-lg"
+                    className="group flex min-w-0 flex-col overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-[0_8px_24px_rgba(30,41,59,0.05)] transition duration-300 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-[0_16px_34px_rgba(30,41,59,0.11)]"
                   >
-                    <div className="relative h-40 bg-slate-100">
+                    <div className="relative aspect-[16/8.5] overflow-hidden bg-slate-100">
                       {image ? (
                         <Image
                           src={image}
@@ -777,7 +949,7 @@ export default function BlogsAdminPage() {
                           fill
                           unoptimized
                           sizes="(max-width: 768px) 100vw, 33vw"
-                          className="object-cover"
+                          className="object-cover transition duration-500 group-hover:scale-[1.03]"
                         />
                       ) : (
                         <div className="grid h-full place-items-center text-slate-300">
@@ -804,7 +976,7 @@ export default function BlogsAdminPage() {
                       </div>
                     </div>
 
-                    <div className="p-4">
+                    <div className="flex flex-1 flex-col p-4">
                       <div className="mb-2 flex items-center gap-2 text-[11px] text-slate-400">
                         {blog.category ? <span>{blog.category}</span> : null}
                         {blog.category ? <span>•</span> : null}
@@ -815,14 +987,31 @@ export default function BlogsAdminPage() {
                       <h3 className="line-clamp-2 min-h-12 text-base font-black leading-6 text-slate-900">
                         {blog.title}
                       </h3>
+                      {blog.excerpt ? (
+                        <p className="mt-2 line-clamp-2 min-h-10 text-xs leading-5 text-slate-500">
+                          {blog.excerpt}
+                        </p>
+                      ) : null}
                       <p dir="ltr" className="mt-1 truncate text-left text-xs text-slate-400">
                         /blog/{blog.slug}
                       </p>
-                      <div className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3">
+                      {blog.tags?.length ? (
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {blog.tags.slice(0, 3).map((tag) => (
+                            <span
+                              key={tag}
+                              className="rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-500"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                      <div className="mt-auto flex items-center gap-2 border-t border-slate-100 pt-4">
                         <button
                           type="button"
                           onClick={() => startEdit(blog)}
-                          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700"
+                          className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-3 text-xs font-black text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400"
                         >
                           <Edit3 className="h-3.5 w-3.5" />
                           ویرایش
@@ -833,7 +1022,7 @@ export default function BlogsAdminPage() {
                             target="_blank"
                             rel="noreferrer"
                             title="مشاهده مقاله"
-                            className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+                            className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-400"
                           >
                             <Eye className="h-4 w-4" />
                           </a>
@@ -842,7 +1031,7 @@ export default function BlogsAdminPage() {
                           type="button"
                           onClick={() => void handleDelete(blog)}
                           title="حذف مقاله"
-                          className="grid h-9 w-9 place-items-center rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50"
+                          className="grid h-10 w-10 place-items-center rounded-xl border border-rose-200 text-rose-600 transition hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-300"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>

@@ -14,6 +14,7 @@ import {
   FulfillmentType,
   ServiceType,
   slotKey,
+  supportedDevicesForService,
   USER_CANCELLABLE_STATUSES,
 } from "./policy";
 import {
@@ -121,11 +122,18 @@ export async function createAppointment(userId: string, input: CreateAppointment
   const now = new Date();
   const fulfillment: FulfillmentType = input.fulfillment || "in_store";
 
-  if (!settings.supportedDevices.includes(input.device)) {
+  const supportedDevices = supportedDevicesForService(
+    input.serviceType,
+    settings.supportedDevices,
+  );
+  if (!supportedDevices.includes(input.device)) {
     return { error: "دستگاه انتخاب‌شده پشتیبانی نمی‌شود.", status: 422 } as const;
   }
   if (input.serviceType === "game_install" && !input.installationType) {
     return { error: "نوع نصب را انتخاب کنید.", status: 422 } as const;
+  }
+  if (input.serviceType === "repair" && input.installationType) {
+    return { error: "نوع نصب فقط برای PlayStation 4 و PlayStation 5 قابل انتخاب است.", status: 422 } as const;
   }
   if (input.serviceType === "repair" && !input.repairIssue) {
     return { error: "نوع مشکل را انتخاب کنید.", status: 422 } as const;

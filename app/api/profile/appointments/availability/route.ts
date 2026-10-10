@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import AppointmentReservation from "@/model/AppointmentReservation";
 import { requireUser } from "@/lib/loyalty/api";
-import { ServiceType, slotKey } from "@/lib/appointments/policy";
+import {
+  ServiceType,
+  slotKey,
+  supportedDevicesForService,
+} from "@/lib/appointments/policy";
 import { getAppointmentSettings, slotIsConfigured, tehranDateTime } from "@/lib/appointments/settings";
 
 export const dynamic = "force-dynamic";
@@ -46,9 +50,11 @@ export async function GET(req: Request) {
       timezone: settings.timezone,
       slotMinutes: settings.slotMinutes,
       bookingDaysAhead: settings.bookingDaysAhead,
-      supportedDevices: settings.supportedDevices,
+      supportedDevices: supportedDevicesForService(
+        serviceType,
+        settings.supportedDevices,
+      ),
       closed: slots.length === 0,
     },
   });
 }
-

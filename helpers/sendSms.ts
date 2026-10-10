@@ -5,9 +5,23 @@ import {
   normalizeReferralCode,
   referralCodeForSignupOtp,
 } from "@/lib/loyalty/referral.policy";
+import {
+  commitOtpSlot,
+  reserveOtpSlot,
+  rollbackOtpSlot,
+} from "@/lib/rateLimit/otpRateLimit";
 import Otp from "@/model/Otp";
 import User from "@/model/User";
 import { randomUUID } from "node:crypto";
+
+export type SendOtpResult =
+  | { success: true; otpId: string }
+  | {
+      success: false;
+      error: string;
+      code?: string;
+      retryAfter?: number;
+    };
 
 async function sendSMS({
   bodyId,
@@ -47,67 +61,118 @@ async function sendSMS({
   return { status: res.status, body: text };
 }
 
-export async function sendOtpToUser(mobile: string, referralCode?: string) {
+export async function sendOtpToUser(
+  mobile: string,
+  referralCode?: string,
+): Promise<SendOtpResult> {
   await dbConnect();
 
-  const normalizedReferralCode = normalizeReferralCode(referralCode ?? "");
-  const existingUser = await User.findOne({ mobile })
-    .select(
-      "pendingReferralCode signupIntentId loyaltySignupCompletedAt",
-    )
-    .lean();
-  let signupIntentId: string | undefined;
-
-  if (!existingUser) {
-    // نبودن کاربر در زمان درخواست OTP، مدرک سمت سرور برای ثبت نام جدید است.
-    signupIntentId = randomUUID();
-  } else if (!existingUser.loyaltySignupCompletedAt) {
-    if (existingUser.signupIntentId) {
-      signupIntentId = existingUser.signupIntentId;
-    } else if (existingUser.pendingReferralCode) {
-      // بازیابی جریان ثبت نامی که ساخت User در آن موفق و مرحله وفاداری ناقص مانده است.
-      signupIntentId = randomUUID();
-      const claimed = await User.updateOne(
-        {
-          _id: existingUser._id,
-          pendingReferralCode: existingUser.pendingReferralCode,
-          signupIntentId: { $exists: false },
-        },
-        { $set: { signupIntentId } },
-      );
-      if (claimed.modifiedCount !== 1) {
-        const refreshed = await User.findById(existingUser._id)
-          .select("signupIntentId")
-          .lean();
-        signupIntentId = refreshed?.signupIntentId;
-      }
+  let slot;
+  try {
+    // رزرو اسلات Rate Limit به صورت اتمیک قبل از هرگونه تغییر دیتابیس یا حذف OTP قبلی
+    slot = await reserveOtpSlot(mobile);
+  } catch (rateErr: any) {
+    if (rateErr?.code === "OTP_RATE_LIMITED") {
+      return {
+        success: false,
+        error: rateErr.message,
+        code: "OTP_RATE_LIMITED",
+        retryAfter: rateErr.retryAfter,
+      };
     }
+    return {
+      success: false,
+      error: rateErr?.message || "خطا در پردازش درخواست",
+    };
   }
 
-  const referralCodeForOtp = referralCodeForSignupOtp({
-    requestedCode: normalizedReferralCode,
-    pendingCode: existingUser?.pendingReferralCode,
-    isResumingSignup: Boolean(existingUser && signupIntentId),
-  });
 
-  // پاک کردن OTP قبلی شماره موبایل
-  await Otp.deleteMany({ mobile });
+  try {
+    const normalizedReferralCode = normalizeReferralCode(referralCode ?? "");
+    const existingUser = await User.findOne({ mobile })
+      .select(
+        "pendingReferralCode signupIntentId loyaltySignupCompletedAt",
+      )
+      .lean();
+    let signupIntentId: string | undefined;
 
-  // تولید OTP 5 رقمی
-  const otp = Math.floor(10000 + Math.random() * 90000).toString();
+    if (!existingUser) {
+      // نبودن کاربر در زمان درخواست OTP، مدرک سمت سرور برای ثبت نام جدید است.
+      signupIntentId = randomUUID();
+    } else if (!existingUser.loyaltySignupCompletedAt) {
+      if (existingUser.signupIntentId) {
+        signupIntentId = existingUser.signupIntentId;
+      } else if (existingUser.pendingReferralCode) {
+        // بازیابی جریان ثبت نامی که ساخت User در آن موفق و مرحله وفاداری ناقص مانده است.
+        signupIntentId = randomUUID();
+        const claimed = await User.updateOne(
+          {
+            _id: existingUser._id,
+            pendingReferralCode: existingUser.pendingReferralCode,
+            signupIntentId: { $exists: false },
+          },
+          { $set: { signupIntentId } },
+        );
+        if (claimed.modifiedCount !== 1) {
+          const refreshed = await User.findById(existingUser._id)
+            .select("signupIntentId")
+            .lean();
+          signupIntentId = refreshed?.signupIntentId;
+        }
+      }
+    }
 
-  // ذخیره OTP در دیتابیس با انقضای 2 دقیقه (TTL index در مدل)
-  const otpDoc = await Otp.create({
-    mobile,
-    otp,
-    referralCode: referralCodeForOtp || undefined,
-    signupIntentId,
-    createdAt: new Date(),
-  });
-  await sendSMS({
-    bodyId: 401950,
-    to: mobile,
-    args: [otp],
-  });
-  return otpDoc._id.toString();
+    const referralCodeForOtp = referralCodeForSignupOtp({
+      requestedCode: normalizedReferralCode,
+      pendingCode: existingUser?.pendingReferralCode,
+      isResumingSignup: Boolean(existingUser && signupIntentId),
+    });
+
+    // پاک کردن OTP قبلی شماره موبایل فقط پس از عبور موفقیت‌آمیز از Rate Limit
+    await Otp.deleteMany({ mobile });
+
+    // تولید OTP 5 رقمی
+    const otp = Math.floor(10000 + Math.random() * 90000).toString();
+
+    // ذخیره OTP در دیتابیس با انقضای 2 دقیقه (TTL index در مدل)
+    const otpDoc = await Otp.create({
+      mobile,
+      otp,
+      referralCode: referralCodeForOtp || undefined,
+      signupIntentId,
+      createdAt: new Date(),
+    });
+
+    try {
+      await sendSMS({
+        bodyId: 401950,
+        to: mobile,
+        args: [otp],
+      });
+    } catch (smsErr) {
+      // در صورت خطای سرویس پیامک، OTP ساخته‌شده پاک شده و قفل Rate Limit آزاد می‌شود تا کاربر بی‌دلیل ۲ دقیقه قفل نشود
+      await Otp.deleteOne({ _id: otpDoc._id }).catch(() => {});
+      await rollbackOtpSlot(slot).catch(() => {});
+      throw smsErr;
+    }
+
+    // ثبت نهایی ارسال موفق در Rate Limiter
+    await commitOtpSlot(slot).catch((err) => {
+      console.error("[RateLimit] Failed to commit slot:", err);
+    });
+
+    return {
+      success: true,
+      otpId: otpDoc._id.toString(),
+    };
+  } catch (error: any) {
+    // در صورتی که قبل از sendSMS خطایی رخ داده باشد، قفل رزرو آزاد شود
+    await rollbackOtpSlot(slot).catch(() => {});
+    return {
+      success: false,
+      error: error?.message || "خطا در ارسال کد تایید",
+    };
+  }
 }
+
+

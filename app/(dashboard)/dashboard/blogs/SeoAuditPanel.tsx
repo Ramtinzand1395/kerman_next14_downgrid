@@ -47,8 +47,8 @@ export default function SeoAuditPanel({
   const passed = analysis.checks.filter((check) => check.status === "pass").length;
 
   return (
-    <aside id="seo-audit" className="space-y-4 lg:sticky lg:top-4">
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <aside id="seo-audit" className="space-y-4 xl:sticky xl:top-4">
+      <section className="rounded-[24px] border border-indigo-100 bg-[linear-gradient(145deg,#ffffff_0%,#eef2ff_100%)] p-5 shadow-[0_12px_32px_rgba(79,70,229,0.09)]">
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -63,7 +63,7 @@ export default function SeoAuditPanel({
             </p>
           </div>
           <div
-            className="grid h-20 w-20 shrink-0 place-items-center rounded-full p-2"
+            className="grid h-20 w-20 shrink-0 place-items-center rounded-full p-2 shadow-[0_8px_20px_rgba(30,41,59,0.12)]"
             style={{
               background: `conic-gradient(${scoreColor} ${analysis.score}%, #e2e8f0 0)`,
             }}
@@ -77,7 +77,7 @@ export default function SeoAuditPanel({
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-2">
-          <div className="rounded-xl bg-slate-50 p-3">
+          <div className="rounded-xl border border-white bg-white/80 p-3">
             <div className="flex items-center gap-1.5 text-xs text-slate-500">
               <FileText className="h-3.5 w-3.5" />
               تعداد کلمه
@@ -86,7 +86,7 @@ export default function SeoAuditPanel({
               {analysis.stats.wordCount.toLocaleString("fa-IR")}
             </p>
           </div>
-          <div className="rounded-xl bg-slate-50 p-3">
+          <div className="rounded-xl border border-white bg-white/80 p-3">
             <div className="flex items-center gap-1.5 text-xs text-slate-500">
               <Clock3 className="h-3.5 w-3.5" />
               زمان مطالعه
@@ -95,7 +95,7 @@ export default function SeoAuditPanel({
               {analysis.stats.readingTime.toLocaleString("fa-IR")} دقیقه
             </p>
           </div>
-          <div className="rounded-xl bg-slate-50 p-3">
+          <div className="rounded-xl border border-white bg-white/80 p-3">
             <div className="flex items-center gap-1.5 text-xs text-slate-500">
               <Search className="h-3.5 w-3.5" />
               تراکم کلیدی
@@ -104,7 +104,7 @@ export default function SeoAuditPanel({
               {analysis.stats.keywordDensity.toLocaleString("fa-IR")}٪
             </p>
           </div>
-          <div className="rounded-xl bg-slate-50 p-3">
+          <div className="rounded-xl border border-white bg-white/80 p-3">
             <div className="flex items-center gap-1.5 text-xs text-slate-500">
               <Link2 className="h-3.5 w-3.5" />
               لینک‌ها
@@ -118,12 +118,12 @@ export default function SeoAuditPanel({
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_10px_28px_rgba(30,41,59,0.06)]">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-sm font-black text-slate-900">پیش‌نمایش گوگل</h3>
           <span className="text-[11px] text-slate-400">نمایش تقریبی</span>
         </div>
-        <div className="rounded-xl border border-slate-100 bg-slate-50 p-3" dir="rtl">
+        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4" dir="rtl">
           <p className="truncate text-xs text-emerald-700">
             kermanatari.com › blog › {slug || "..."}
           </p>
@@ -137,7 +137,7 @@ export default function SeoAuditPanel({
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <section className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_10px_28px_rgba(30,41,59,0.06)]">
         <div className="mb-3 flex items-center justify-between gap-3">
           <h3 className="text-sm font-black text-slate-900">چک‌لیست انتشار</h3>
           <span
@@ -154,7 +154,7 @@ export default function SeoAuditPanel({
           {analysis.checks.map((check) => (
             <div
               key={check.id}
-              className={`rounded-xl border p-3 ${statusStyles[check.status]}`}
+              className={`rounded-xl border p-3.5 ${statusStyles[check.status]}`}
             >
               <div className="flex items-center gap-2">
                 <StatusIcon status={check.status} />

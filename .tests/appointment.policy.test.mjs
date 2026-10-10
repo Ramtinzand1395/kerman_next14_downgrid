@@ -13,8 +13,26 @@ import {
   formatRewardDescription,
   normalizeRewardRuleData,
   slotKey,
+  supportedDevicesForService,
   validateRewardRuleData,
 } from "../lib/appointments/policy.ts";
+
+test("device options are scoped to the selected appointment service", () => {
+  const configured = ["ps5", "ps4", "xbox-series", "xbox-one"];
+
+  assert.deepEqual(supportedDevicesForService("game_install", configured), [
+    "ps5",
+    "ps4",
+  ]);
+  assert.deepEqual(supportedDevicesForService("repair", configured), [
+    "ps5",
+    "ps4",
+    "xbox-series",
+    "xbox-one",
+    "ps2",
+    "ps1",
+  ]);
+});
 
 test("two concurrent requests cannot both claim the final seat", async () => {
   const occupied = new Set();
