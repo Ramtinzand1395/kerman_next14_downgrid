@@ -1,9 +1,9 @@
-import { BlogPost } from "@/types";
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { stripHtmlTags } from "@/helpers/stripHtmlTags";
-import { SITE_URL } from "@/lib/site";
+import { getPublishedBlogs } from "@/services/blog/getPublishedBlogs";
+
 export const metadata: Metadata = {
   title: "وبلاگ | کرمان آتاری",
   description: "جدیدترین مقالات و راهنمای خرید کنسول و بازی در کرمان آتاری.",
@@ -12,21 +12,8 @@ export const metadata: Metadata = {
   },
 };
 
-async function getBlogs(): Promise<BlogPost[]> {
-  try {
-    const res = await fetch(`${SITE_URL}/api/blog?limit=30`, {
-      cache: "no-store",
-    });
-
-    if (!res.ok) return [];
-    return res.json();
-  } catch {
-    return [];
-  }
-}
-
 export default async function BlogPage() {
-  const blogs = await getBlogs();
+  const blogs = await getPublishedBlogs(30);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 md:py-12">

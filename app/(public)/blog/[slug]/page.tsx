@@ -49,20 +49,12 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { SITE_URL } from "@/lib/site";
 import { sanitizeBlogContent, stripBlogHtml } from "@/lib/blogSeo";
+import { getBlogBySlug } from "@/services/blog/getBlogBySlug";
 
 type Params = Promise<{ slug: string }>;
 
 async function getBlog(slug: string): Promise<BlogPost | null> {
-  try {
-    const res = await fetch(`${SITE_URL}/api/blog/${slug}`, { cache: "no-store" });
-
-    if (res.status === 404) return null;
-    if (!res.ok) return null;
-
-    return res.json();
-  } catch {
-    return null;
-  }
+  return getBlogBySlug(slug);
 }
 
 export async function generateMetadata({

@@ -78,6 +78,15 @@ const genreIcons = {
   rpg: BookOpen,
 } as const;
 
+const genreThemes = {
+  sports: "bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white",
+  action: "bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white",
+  adventure: "bg-amber-50 text-amber-600 group-hover:bg-amber-500 group-hover:text-white",
+  "two-player": "bg-violet-50 text-violet-600 group-hover:bg-violet-600 group-hover:text-white",
+  racing: "bg-sky-50 text-sky-600 group-hover:bg-sky-600 group-hover:text-white",
+  rpg: "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white",
+} as const;
+
 const serviceCards = [
   { title: "عیب‌یابی کنسول", icon: Search },
   { title: "تعمیر دسته", icon: Gamepad2 },
@@ -116,20 +125,41 @@ const consoleGuides = [
   {
     title: "PS5",
     text: "تجربه نسل جدید",
+    description:
+      "برای کیفیت تصویر بالاتر، بازی‌های جدید و انتخابی که چند سال همراهت بماند.",
+    badge: "نسل نهم",
     href: "/guides/ps5-buying-guide",
     icon: Sparkles,
+    cardClass:
+      "border-blue-100 bg-[linear-gradient(145deg,#ffffff_0%,#edf4ff_100%)] hover:border-blue-300",
+    iconClass: "bg-[#1469f5] text-white shadow-[0_10px_22px_rgba(20,105,245,0.24)]",
+    badgeClass: "bg-blue-100 text-blue-700",
   },
   {
     title: "PS4",
     text: "انتخاب اقتصادی",
+    description:
+      "برای دسترسی اقتصادی‌تر به آرشیو بزرگ بازی‌های پلی‌استیشن و هزینه شروع کمتر.",
+    badge: "به‌صرفه",
     href: "/guides/ps4-buying-guide",
     icon: Gamepad2,
+    cardClass:
+      "border-violet-100 bg-[linear-gradient(145deg,#ffffff_0%,#f4f1ff_100%)] hover:border-violet-300",
+    iconClass: "bg-violet-600 text-white shadow-[0_10px_22px_rgba(124,58,237,0.22)]",
+    badgeClass: "bg-violet-100 text-violet-700",
   },
   {
     title: "Xbox",
     text: "مقایسه Series S و X",
+    description:
+      "برای مقایسه قدرت، فضای ذخیره‌سازی و انتخاب مدل مناسب با بودجه و نوع بازی.",
+    badge: "دو مدل",
     href: "/guides/xbox-buying-guide",
     icon: PackageOpen,
+    cardClass:
+      "border-emerald-100 bg-[linear-gradient(145deg,#ffffff_0%,#ecfdf5_100%)] hover:border-emerald-300",
+    iconClass: "bg-emerald-600 text-white shadow-[0_10px_22px_rgba(5,150,105,0.2)]",
+    badgeClass: "bg-emerald-100 text-emerald-700",
   },
 ];
 
@@ -255,35 +285,87 @@ export default function LandingHome({
           />
         </div>
 
-        <section className="landing-section landing-panel p-4 sm:p-5">
-          <div className="mb-3">
-            <h2 className="text-xl font-black sm:text-2xl lg:text-[28px]">نمی‌دونی چی بازی کنی؟</h2>
-            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-              براساس تگ‌های واقعی بازی‌های فروشگاه انتخاب کن
-            </p>
-          </div>
+        <section
+          className="landing-section overflow-hidden rounded-[28px] border border-[#174f9f] bg-[#061f4f] p-4 text-white shadow-[0_22px_55px_rgba(5,35,86,0.18)] sm:p-6 lg:p-8"
+          aria-labelledby="genre-heading"
+        >
           {data.genres.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              {data.genres.map((genre) => {
-                const Icon =
-                  genreIcons[genre.slug as keyof typeof genreIcons] || Gamepad2;
-                return (
-                  <Link
-                    key={genre.slug}
-                    href={"/products?category=games&tag=" + genre.slug + "&sort=newest&page=1"}
-                    className="flex min-h-16 items-center justify-center gap-2 rounded-xl border border-[#e5edf9] bg-white px-3 text-sm font-black transition hover:border-blue-300 hover:bg-blue-50"
-                  >
-                    <Icon className="h-5 w-5 text-[#1469f5]" />
-                    {genre.name}
-                    <ChevronLeft className="mr-auto h-3.5 w-3.5 text-slate-400" />
-                  </Link>
-                );
-              })}
+            <div className="grid gap-6 lg:grid-cols-[0.72fr_1.28fr] lg:items-center lg:gap-8">
+              <div>
+                <span className="inline-flex min-h-8 items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 text-xs font-black text-blue-100 sm:text-sm">
+                  <Sparkles className="h-4 w-4 text-[#78aaff]" aria-hidden="true" />
+                  انتخاب سریع با حال‌وهوای تو
+                </span>
+                <h2
+                  id="genre-heading"
+                  className="mt-4 text-2xl font-black leading-[1.4] sm:text-3xl lg:text-[36px]"
+                >
+                  نمی‌دونی چی بازی کنی؟
+                </h2>
+                <p className="mt-2 max-w-md text-sm font-medium leading-7 text-blue-100 sm:text-base">
+                  سبک موردعلاقه‌ات را انتخاب کن و مستقیم به بازی‌های همان تگ در
+                  فروشگاه برو.
+                </p>
+                <Link
+                  href="/products?category=games&sort=newest&page=1"
+                  className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 text-sm font-black text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/70 focus:ring-offset-2 focus:ring-offset-[#061f4f]"
+                >
+                  دیدن همه بازی‌ها
+                  <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
+                {data.genres.map((genre) => {
+                  const Icon =
+                    genreIcons[genre.slug as keyof typeof genreIcons] || Gamepad2;
+                  const theme =
+                    genreThemes[genre.slug as keyof typeof genreThemes] ||
+                    "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white";
+                  return (
+                    <Link
+                      key={genre.slug}
+                      href={"/products?category=games&tag=" + genre.slug + "&sort=newest&page=1"}
+                      className="group flex min-h-[112px] flex-col rounded-2xl border border-white/10 bg-white p-3.5 text-[#0b1d48] shadow-[0_10px_24px_rgba(0,10,35,0.16)] transition duration-300 hover:-translate-y-1 hover:border-white hover:shadow-[0_16px_30px_rgba(0,10,35,0.24)] focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#061f4f] sm:min-h-[126px] sm:p-4"
+                    >
+                      <span
+                        className={
+                          "flex h-10 w-10 items-center justify-center rounded-xl transition-colors duration-300 sm:h-11 sm:w-11 " +
+                          theme
+                        }
+                      >
+                        <Icon className="h-5 w-5" aria-hidden="true" />
+                      </span>
+                      <span className="mt-3 flex w-full items-end gap-2">
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-black sm:text-base">
+                            {genre.name}
+                          </span>
+                          <span className="mt-0.5 block text-[11px] font-bold text-slate-400 sm:text-xs">
+                            {genre.count.toLocaleString("fa-IR")} بازی
+                          </span>
+                        </span>
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition group-hover:bg-[#1469f5] group-hover:text-white">
+                          <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                        </span>
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           ) : (
-            <p className="rounded-xl border border-dashed border-blue-200 bg-blue-50 p-5 text-center text-xs text-slate-500">
-              هنوز تگ بازیِ دارای محصول منتشرشده ثبت نشده است.
-            </p>
+            <div className="py-2 text-center">
+              <h2
+                id="genre-heading"
+                className="text-xl font-black sm:text-2xl lg:text-[28px]"
+              >
+                نمی‌دونی چی بازی کنی؟
+              </h2>
+              <p className="mx-auto mt-4 max-w-lg rounded-xl border border-dashed border-white/25 bg-white/10 p-5 text-xs text-blue-100">
+                هنوز تگ بازیِ دارای محصول منتشرشده ثبت نشده است.
+              </p>
+            </div>
           )}
         </section>
 
@@ -467,38 +549,80 @@ export default function LandingHome({
           </div>
         </section>
 
-        <section className="landing-section landing-panel p-4 sm:p-5" aria-labelledby="guide-heading">
-          <div className="text-center">
-            <h2 id="guide-heading" className="text-xl font-black sm:text-2xl lg:text-[28px]">
-              کدوم کنسول برای تو مناسبه؟
-            </h2>
-            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-              با راهنمایی تخصصی، انتخابت رو دقیق‌تر کن
-            </p>
+        <section
+          className="landing-section landing-panel overflow-hidden p-4 sm:p-6 lg:p-8"
+          aria-labelledby="guide-heading"
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <span className="inline-flex min-h-8 items-center gap-2 rounded-full bg-[#edf4ff] px-3 text-xs font-black text-[#1469f5] sm:text-sm">
+                <BookOpen className="h-4 w-4" aria-hidden="true" />
+                راهنمای انتخاب کنسول
+              </span>
+              <h2
+                id="guide-heading"
+                className="mt-3 text-2xl font-black leading-[1.35] text-[#0b1d48] sm:text-3xl lg:text-[34px]"
+              >
+                کدوم کنسول برای تو مناسبه؟
+              </h2>
+              <p className="mt-1.5 text-sm font-medium leading-6 text-slate-500 sm:text-base">
+                با مقایسه‌ی ساده و راهنمایی تخصصی، انتخابت رو دقیق‌تر کن.
+              </p>
+            </div>
+            <span className="inline-flex w-fit items-center gap-2 rounded-xl border border-[#dbe8fb] bg-[#f8fbff] px-3 py-2 text-xs font-bold text-slate-500">
+              <BadgeCheck className="h-4 w-4 text-[#1469f5]" aria-hidden="true" />
+              ۳ راهنمای کاربردی و کوتاه
+            </span>
           </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-3 sm:gap-4">
             {consoleGuides.map((guide) => {
               const Icon = guide.icon;
               return (
-                <article
+                <Link
                   key={guide.title}
-                  className="flex min-h-[84px] items-center gap-3 rounded-xl border border-[#e5edf9] bg-white p-3"
+                  href={guide.href}
+                  className={
+                    "group flex min-h-[224px] flex-col rounded-2xl border p-4 shadow-[0_8px_22px_rgba(22,66,130,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_16px_32px_rgba(22,66,130,0.12)] focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 sm:p-5 " +
+                    guide.cardClass
+                  }
+                  aria-label={"مطالعه راهنمای خرید " + guide.title}
                 >
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#f0f5ff] text-[#1469f5]">
-                    <Icon className="h-6 w-6" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-sm font-black sm:text-base">{guide.title}</h3>
-                    <p className="mt-0.5 text-xs text-slate-500">{guide.text}</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <span
+                      className={
+                        "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl sm:h-14 sm:w-14 " +
+                        guide.iconClass
+                      }
+                    >
+                      <Icon className="h-6 w-6 sm:h-7 sm:w-7" aria-hidden="true" />
+                    </span>
+                    <span
+                      className={
+                        "rounded-full px-3 py-1.5 text-[11px] font-black sm:text-xs " +
+                        guide.badgeClass
+                      }
+                    >
+                      {guide.badge}
+                    </span>
                   </div>
-                  <Link
-                    href={guide.href}
-                    className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-lg border border-[#bad2ff] px-3 text-xs font-black text-[#1469f5] sm:text-sm"
-                  >
-                    راهنمای خرید
-                    <ChevronLeft className="h-3.5 w-3.5" />
-                  </Link>
-                </article>
+                  <h3 className="mt-5 text-2xl font-black tracking-tight text-[#0b1d48] sm:text-[26px]">
+                    {guide.title}
+                  </h3>
+                  <p className="mt-1 text-sm font-black text-[#1469f5]">
+                    {guide.text}
+                  </p>
+                  <p className="mt-2 text-xs font-medium leading-6 text-slate-500 sm:text-sm">
+                    {guide.description}
+                  </p>
+                  <span className="mt-auto flex min-h-10 items-center gap-1.5 pt-4 text-sm font-black text-[#125ed8]">
+                    مطالعه راهنمای خرید
+                    <ChevronLeft
+                      className="h-4 w-4 transition-transform group-hover:-translate-x-1"
+                      aria-hidden="true"
+                    />
+                  </span>
+                </Link>
               );
             })}
           </div>

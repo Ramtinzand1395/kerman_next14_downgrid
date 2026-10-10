@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb";
-import Blog from "@/model/Blog";
+import { getPublishedBlogs } from "@/services/blog/getPublishedBlogs";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
-    await dbConnect();
-
     const limit = Number(req.nextUrl.searchParams.get("limit") || "9");
-
-    const blogs = await Blog.find({ published: true })
-      .sort({ createdAt: -1 })
-      .limit(Number.isNaN(limit) ? 9 : limit)
-      .lean();
-
+    const blogs = await getPublishedBlogs(Number.isNaN(limit) ? 9 : limit);
     return NextResponse.json(blogs);
   } catch (error) {
     console.error(error);

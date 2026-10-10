@@ -1,27 +1,10 @@
 import { stripHtmlTags } from "@/helpers/stripHtmlTags";
-import { BlogPost } from "@/types";
 import Image from "next/image";
 import Link from "next/link";
-
-async function getBlogs(): Promise<BlogPost[]> {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const res = await fetch(`${baseUrl}/api/blog?limit=3`, {
-      cache: "no-store",
-    });
-
-    if (!res.ok) {
-      return [];
-    }
-
-    return res.json();
-  } catch {
-    return [];
-  }
-}
+import { getPublishedBlogs } from "@/services/blog/getPublishedBlogs";
 
 export default async function UsersComments() {
-  const blogs = await getBlogs();
+  const blogs = await getPublishedBlogs(3);
 
   if (!blogs.length) return null;
 
