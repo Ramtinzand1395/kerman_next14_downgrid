@@ -1,7 +1,9 @@
+import dbConnect from "@/lib/mongodb";
 import AppointmentSettings from "@/model/AppointmentSettings";
 export { normalizeCityName, findCourierRegion } from "./courier.utils";
 
 export async function getAppointmentSettings() {
+  await dbConnect();
   return AppointmentSettings.findOneAndUpdate(
     { key: "global" },
     { $setOnInsert: { key: "global" } },
