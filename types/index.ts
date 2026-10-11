@@ -210,6 +210,9 @@ export interface Tag {
   name: string;
   slug: string;
 }
+export interface ProductTagFacet extends Tag {
+  count: number;
+}
 interface Favorite {
   _id: number;
   userId: number;
@@ -302,10 +305,15 @@ export interface BlogPost {
   excerpt?: string;
   content: string;
   coverImage?: string;
+  coverImageAlt?: string;
   published: boolean;
+  publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+  seoTitle?: string;
   metaDescription?: string;
   focusKeyword?: string[];
+  category?: string;
+  tags?: string[];
 }
 

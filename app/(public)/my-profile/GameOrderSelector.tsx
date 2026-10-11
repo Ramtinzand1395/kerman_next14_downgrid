@@ -2,1079 +2,830 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Search, X } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import {
+  CalendarDays,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  Gamepad2,
+  Loader2,
+  MapPin,
+  MonitorCog,
+  PackageOpen,
+  RefreshCw,
+  ShieldCheck,
+  Sparkles,
+  Truck,
+  Wrench,
+} from "lucide-react";
+import type {
+  Fulfillment,
+  InstallationType,
+  RepairIssue,
+  RewardType,
+  ServiceType,
+} from "@/types/appointments";
 
-type ConsoleOption = {
-  id: string;
-  platform: string;
-  platforms: string[];
-  title: string;
-  subtitle: string;
+type Step = 1 | 2 | 3 | 4;
+type Slot = { startsAt: string; endsAt: string; time: string; remaining: number; available: boolean };
+type CourierWindow = { start: string; end: string; remaining: number; available: boolean };
+type AddressItem = { _id: string; province: string; city: string; address: string; plaque?: string; unit?: string; postalCode?: string };
+type CourierPreview = {
+  eligible: boolean;
+  courierEnabled: boolean;
+  reason?: "COURIER_DISABLED" | "OUT_OF_REGION";
+  region?: { id: string; title: string; city: string };
+  pricing?: {
+    pickupShippingCost: number;
+    returnShippingCost: number;
+    shippingBaseAmount: number;
+    shippingDiscountAmount: number;
+    shippingFinalAmount: number;
+  };
+  reward?: { applicable: boolean; type: string };
 };
-
-type GameData = {
-  _id?: string;
-  name: string;
-  size?: number;
-  gameType?: GameType;
-  platform?: string;
-};
-
-type GameType = "capacity1" | "capacity2" | "capacity3" | "offline" | "legal";
-
-type GameListResponse = {
-  gameList?: Array<{
-    _id: string;
-    platform: string;
-    items?: GameData[];
-  }>;
-};
-
-type AddressItem = {
+type Reward = {
   _id: string;
-  province: string;
-  city: string;
-  address: string;
-  plaque?: string;
-  unit?: string;
-  postalCode?: string;
+  status: "available" | "reserved" | "redeemed" | "expired" | "revoked";
+  expiresAt: string;
+  snapshot: {
+    title: string;
+    eligibleServices: ServiceType[];
+    reward: {
+      type: RewardType;
+      value: number;
+      maxDiscountAmount?: number | null;
+      minAmount?: number;
+      eligibleDevices?: string[];
+      eligibleInstallationTypes?: string[];
+    };
+  };
+};
+type CreatedAppointment = {
+  trackingCode: string;
+  startsAt: string;
+  fulfillment?: Fulfillment;
+  courier?: {
+    pickupWindow?: { start: string; end: string };
+    addressSnapshot?: AddressItem & { recipientName?: string; recipientPhone?: string };
+  };
+  pricing?: {
+    shippingBaseAmount?: number;
+    shippingDiscountAmount?: number;
+    shippingFinalAmount?: number;
+  };
 };
 
-type ApiErrorResponse = {
-  error?: string;
-  details?: string[];
-  message?: string;
-};
-
-const consoleOptions: ConsoleOption[] = [
+const services = [
   {
-    id: "ps5-standard",
-    platform: "ps5",
-    platforms: ["ps5"],
-    title: "PlayStation 5",
-    subtitle: "اکانتی / Standard",
+    value: "game_install" as const,
+    title: "نصب بازی",
+    description: "رزرو مراجعه برای نصب بازی اکانتی یا کپی‌خور",
+    icon: Gamepad2,
   },
   {
-    id: "ps5-copy",
-    platform: "ps5Copy",
-    platforms: ["ps5Copy", "copy"],
-    title: "PlayStation 5",
-    subtitle: "کپی‌خور",
-  },
-  {
-    id: "ps4-copy",
-    platform: "copy",
-    platforms: ["copy"],
-    title: "PlayStation 4",
-    subtitle: "کپی‌خور",
-  },
-  {
-    id: "ps4-standard",
-    platform: "ps4",
-    platforms: ["ps4"],
-    title: "PlayStation 4",
-    subtitle: "اکانتی / Standard",
-  },
-  {
-    id: "xbox",
-    platform: "xbox",
-    platforms: ["xbox"],
-    title: "Xbox",
-    subtitle: "اکانت و بازی",
+    value: "repair" as const,
+    title: "تعمیرات",
+    description: "تحویل دستگاه و بررسی اولیه؛ زمان پایان پس از عیب‌یابی اعلام می‌شود",
+    icon: Wrench,
   },
 ];
 
-const normalize = (value: string) =>
-  value
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^\w؀-ۿ-]/g, "");
+const deviceLabels: Record<string, string> = {
+  ps5: "PlayStation 5",
+  ps4: "PlayStation 4",
+  ps2: "PlayStation 2",
+  ps1: "PlayStation 1",
+  "xbox-series": "Xbox Series",
+  "xbox-one": "Xbox One",
+};
 
-const formatSize = (size?: number) => {
-  if (!size) {
-    return "حجم نامشخص";
+const installationDeviceIds = new Set(["ps5", "ps4"]);
+
+const issues = [
+  { value: "power", label: "روشن‌نشدن" },
+  { value: "display", label: "مشکل تصویر" },
+  { value: "controller", label: "دسته" },
+  { value: "sound", label: "صدا" },
+  { value: "overheating", label: "داغ‌شدن" },
+  { value: "other", label: "سایر" },
+] satisfies Array<{ value: RepairIssue; label: string }>;
+
+const storeAddress = "خیابان ناصریه بین کوچه ۲ و ۴ نبش داروخانه مادر";
+const fa = (value: number | string) => String(value).replace(/\d/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)]);
+
+function persianDate(value: string | Date, options?: Intl.DateTimeFormatOptions) {
+  return new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
+    timeZone: "Asia/Tehran",
+    ...options,
+  }).format(new Date(value));
+}
+
+function dateKey(date: Date) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tehran",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function choiceClass(active: boolean) {
+  return `rounded-2xl border p-4 text-right outline-none transition focus-visible:ring-4 focus-visible:ring-blue-200 ${
+    active
+      ? "border-[#001A6E] bg-blue-50 text-[#001A6E] shadow-sm"
+      : "border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50/50"
+  }`;
+}
+
+function rewardLabel(reward: Reward) {
+  const details = reward.snapshot.reward;
+  if (details.type === "free_game") return "یک نصب بازی واجد شرایط رایگان";
+  if (details.type === "free_shipping") return "ارسال رایگان";
+  if (details.type === "percent") {
+    return `${fa(details.value)}٪ تخفیف${details.maxDiscountAmount ? ` تا سقف ${fa(details.maxDiscountAmount.toLocaleString("fa-IR"))} تومان` : ""}`;
   }
-
-  return `${size.toLocaleString("fa-IR")} گیگ`;
-};
-
-const ps5GameTypes: Array<{ value: GameType; label: string }> = [
-  { value: "capacity1", label: "ظرفیت ۱" },
-  { value: "capacity2", label: "ظرفیت ۲" },
-  { value: "capacity3", label: "ظرفیت ۳" },
-  { value: "offline", label: "آفلاین" },
-  { value: "legal", label: "قانونی" },
-];
-
-const gameTypeLabels = ps5GameTypes.reduce<Record<string, string>>(
-  (labels, gameType) => ({ ...labels, [gameType.value]: gameType.label }),
-  {},
-);
-
-const getGameId = (game: GameData) =>
-  `${game.platform}-${game._id ?? normalize(game.name)}`;
-
-const normalizeGamePlatform = (platform?: string) =>
-  platform?.trim().toLowerCase() === "ps5copy"
-    ? "ps5Copy"
-    : platform?.trim().toLowerCase() || "";
-
-// Capacity / execution type is only applicable to the standard PS5 account.
-const isPs5Platform = (platform?: string) =>
-  normalizeGamePlatform(platform) === "ps5";
-
-function StepHeader({
-  number,
-  title,
-  description,
-}: {
-  number: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="mb-5 flex items-start gap-3">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#001A6E] text-sm font-black text-white shadow-lg shadow-indigo-900/15">
-        {number}
-      </span>
-      <div>
-        <h3 className="text-lg font-black text-slate-950 md:text-xl">
-          {title}
-        </h3>
-        <p className="mt-1 text-sm leading-7 text-slate-500">{description}</p>
-      </div>
-    </div>
-  );
+  return `${fa(details.value.toLocaleString("fa-IR"))} تومان تخفیف`;
 }
 
-function OptionCard({
-  isActive,
-  title,
-  subtitle,
-  onClick,
-  disabled,
-}: {
-  isActive: boolean;
-  title: string;
-  subtitle: string;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className={`rounded-2xl border p-4 text-right transition duration-300 ${isActive
-        ? "border-[#001A6E] bg-indigo-50 shadow-lg shadow-indigo-950/10"
-        : "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50/60"
-        } ${disabled ? "cursor-not-allowed opacity-55 hover:translate-y-0" : ""}`}
-    >
-      <span
-        className={`block text-sm font-black md:text-base ${isActive ? "text-[#001A6E]" : "text-slate-900"
-          }`}
-      >
-        {title}
-      </span>
-      <span className="mt-1 block text-xs font-bold text-slate-500 md:text-sm">
-        {subtitle}
-      </span>
-    </button>
-  );
+function toman(value: number) {
+  return value === 0 ? "رایگان" : `${value.toLocaleString("fa-IR")} تومان`;
 }
 
-function GameCard({
-  game,
-  gameId,
-  isSelected,
-  onAdd,
-}: {
-  game: GameData;
-  gameId: string;
-  isSelected: boolean;
-  onAdd: () => void;
-}) {
-  const needsCapacity = false;
-  const activeGameType: GameType | undefined = undefined;
-  const onGameType = (_value: GameType) => { };
-  const setDraftGameType = (_value: GameType) => { };
-  const canAdd = true;
-
-  return (
-    <div
-      className={`group rounded-2xl border bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-indigo-100/70 ${isSelected
-        ? "border-[#001A6E] bg-indigo-50/50"
-        : "border-slate-200 hover:border-indigo-200"
-        }`}
-    >
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-3">
-          <h4 className="truncate text-sm font-black text-slate-950 md:text-base">
-            {game.name}
-          </h4>
-          {isSelected && (
-            <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-700">
-              در سبد
-            </span>
-          )}
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-bold">
-          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
-            {game.platform === "ps5Copy" ? "PS5 کپی‌خور" : game.platform?.toUpperCase()}
-          </span>
-          <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[#001A6E]">
-            {formatSize(game.size)}
-          </span>
-        </div>
-        {needsCapacity && (
-          <div className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3">
-            <div className="flex items-center gap-2 text-[11px] font-black text-[#001A6E]">
-              <span>انتخاب ظرفیت / نوع اجرا</span>
-              <span className="text-red-500">*</span>
-            </div>
-            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {ps5GameTypes.map((gameType) => {
-                const isActive = activeGameType === gameType.value;
-                return (
-                  <button
-                    key={gameType.value}
-                    type="button"
-                    onClick={() =>
-                      isSelected
-                        ? onGameType(gameType.value)
-                        : setDraftGameType(gameType.value)
-                    }
-                    className={`rounded-lg border px-2 py-2 text-[11px] font-black transition ${isActive
-                      ? "border-[#001A6E] bg-[#001A6E] text-white"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-[#001A6E]"
-                      }`}
-                  >
-                    {gameType.label}
-                  </button>
-                );
-              })}
-            </div>
-            {!activeGameType && (
-              <p className="mt-2 text-[11px] font-black text-red-500">
-                ابتدا یکی از گزینه‌ها را انتخاب کنید.
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-      <button
-        type="button"
-        disabled={isSelected}
-        onClick={onAdd}
-        className={`mt-3 w-full rounded-xl px-3 py-2 text-xs font-black transition ${isSelected
-          ? "cursor-not-allowed bg-emerald-50 text-emerald-700"
-          : "bg-[#001A6E] text-white hover:bg-[#000e3c]"
-          }`}
-      >
-        {isSelected
-          ? "اضافه شد"
-          : canAdd
-            ? "افزودن"
-            : "ابتدا ظرفیت را انتخاب کنید"}
-      </button>
-    </div>
-  );
+function discountToman(value: number) {
+  return value === 0 ? "بدون تخفیف" : `${value.toLocaleString("fa-IR")} تومان`;
 }
 
-export default function GameOrderSelector() {
-  const [selectedConsoleId, setSelectedConsoleId] = useState(
-    consoleOptions[0].id,
-  );
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [games, setGames] = useState<GameData[]>([]);
-  const [selectedGames, setSelectedGames] = useState<GameData[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  // اطلاعات کاربر (از پروفایل) + دفترچه آدرس
+export default function GameOrderSelector({
+  initialFulfillment = null,
+}: {
+  initialFulfillment?: Fulfillment | null;
+}) {
+  const reduceMotion = useReducedMotion();
+  const submittingRef = useRef(false);
+  const [step, setStep] = useState<Step>(1);
+  const [serviceType, setServiceType] = useState<ServiceType | null>(null);
+  const [device, setDevice] = useState("");
+  const [installationType, setInstallationType] = useState<InstallationType | "">("");
+  const [repairIssue, setRepairIssue] = useState<RepairIssue | "">("");
+  const [fulfillment, setFulfillment] = useState<Fulfillment | null>(initialFulfillment);
+  const [supportedDeviceIds, setSupportedDeviceIds] = useState<string[]>([]);
+  const [devicesLoading, setDevicesLoading] = useState(false);
+  const [devicesError, setDevicesError] = useState("");
+  const [description, setDescription] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
+  const [slots, setSlots] = useState<Slot[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState("");
+  const [addresses, setAddresses] = useState<AddressItem[]>([]);
+  const [addressesLoading, setAddressesLoading] = useState(true);
+  const [selectedAddressId, setSelectedAddressId] = useState("");
+  const [courierSupported, setCourierSupported] = useState(false);
+  const [courierBookingDays, setCourierBookingDays] = useState(14);
+  const [courierWindows, setCourierWindows] = useState<CourierWindow[]>([]);
+  const [selectedCourierWindow, setSelectedCourierWindow] = useState<CourierWindow | null>(null);
+  const [courierLoading, setCourierLoading] = useState(false);
+  const [courierError, setCourierError] = useState("");
+  const [courierPreview, setCourierPreview] = useState<CourierPreview | null>(null);
+  const [courierPreviewLoading, setCourierPreviewLoading] = useState(false);
+  const [courierPreviewError, setCourierPreviewError] = useState("");
+  const [availabilityReload, setAvailabilityReload] = useState(0);
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
-  const [message, setMessage] = useState("");
-  const [addresses, setAddresses] = useState<AddressItem[]>([]);
-  const [selectedAddressId, setSelectedAddressId] = useState("");
   const [profileLoading, setProfileLoading] = useState(true);
-
+  const [rewards, setRewards] = useState<Reward[]>([]);
+  const [selectedRewardId, setSelectedRewardId] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [submitError, setSubmitError] = useState("");
-  const idempotencyKeyRef = useRef<string | null>(null);
-  const submittingRef = useRef(false);
+  const [error, setError] = useState("");
+  const [created, setCreated] = useState<CreatedAppointment | null>(null);
+  const [idempotencyKey, setIdempotencyKey] = useState("");
 
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-
-  const resetForm = () => {
-    idempotencyKeyRef.current = null;
-    submittingRef.current = false;
-    setSelectedGames([]);
-    setMessage("");
-    setFieldErrors({});
-    setSubmitError("");
-    setSubmitSuccess(false);
-  };
-
-  const selectedConsole = useMemo(
-    () => consoleOptions.find((option) => option.id === selectedConsoleId),
-    [selectedConsoleId],
-  );
-
-  const selectedPlatforms = useMemo(
-    () => selectedConsole?.platforms ?? [],
-    [selectedConsole],
-  );
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedSearch(search), 300);
-    return () => window.clearTimeout(timer);
-  }, [search]);
-
-  useEffect(() => {
-    setSelectedGames([]);
-    setFieldErrors((currentErrors) => ({
-      ...currentErrors,
-      products: "",
-    }));
-  }, [selectedConsoleId]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const getData = async () => {
-      if (selectedPlatforms.length === 0) {
-        setGames([]);
-        return;
-      }
-
-      setLoading(true);
-
-      try {
-        const results = await Promise.all(
-          selectedPlatforms.map(async (platform) => {
-            const params = new URLSearchParams();
-
-            if (debouncedSearch.trim()) {
-              params.set("search", debouncedSearch.trim());
-            }
-            params.set("limit", "200");
-
-            params.set("platform", platform);
-
-            const res = await fetch(
-              `/api/profile/game-list/?${params.toString()}`,
-              { signal: controller.signal },
-            );
-
-            if (!res.ok) return [];
-
-            const data = (await res.json()) as GameListResponse;
-            const gameList = data.gameList || [];
-
-            return gameList.flatMap((game) =>
-              (game.items || []).map((item) => ({
-                ...item,
-                platform: normalizeGamePlatform(game.platform || platform),
-              })),
-            );
-          }),
-        );
-
-        const allGames = results.flat();
-
-        const uniqueGames = Array.from(
-          new Map(
-            allGames.map((game) => [
-              `${game.platform}-${game._id ?? normalize(game.name)}`,
-              game,
-            ]),
-          ).values(),
-        );
-
-        setGames(uniqueGames);
-      } catch (err) {
-        if ((err as Error).name !== "AbortError") {
-          console.error(err);
-          setGames([]);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getData();
-
-    return () => controller.abort();
-  }, [debouncedSearch, selectedPlatforms]);
-
-  // pre-fill نام و شماره تماس از پروفایل + بارگذاری دفترچه آدرس
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadProfile = async () => {
-      setProfileLoading(true);
-
-      try {
-        const [profileRes, addressRes] = await Promise.all([
-          fetch("/api/profile/account"),
-          fetch("/api/profile/address"),
-        ]);
-
-        if (!cancelled && profileRes.ok) {
-          const user = await profileRes.json();
-          setCustomerName(user.username || "");
-          setPhone(user.mobile || "");
-        }
-
-        if (!cancelled && addressRes.ok) {
-          const data = (await addressRes.json()) as AddressItem[];
-          const list = Array.isArray(data) ? data : [];
-          setAddresses(list);
-          if (list.length > 0) {
-            setSelectedAddressId(list[0]._id);
-          }
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        if (!cancelled) setProfileLoading(false);
-      }
-    };
-
-    loadProfile();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const filteredGames = useMemo(() => {
-    if (selectedPlatforms.length === 0) {
-      return games;
-    }
-
-    const allowed = new Set(selectedPlatforms.map(normalizeGamePlatform));
-
-    return games.filter((game) => {
-      const platform = normalizeGamePlatform(game.platform);
-      return platform ? allowed.has(platform) : false;
-    });
-  }, [games, selectedPlatforms]);
-
-  const selectedGameIds = useMemo(
-    () => new Set(selectedGames.map((game) => getGameId(game))),
-    [selectedGames],
-  );
-
-  const pendingCapacityGames = useMemo(
+  const dates = useMemo(
     () =>
-      selectedGames.filter(
-        (game) => isPs5Platform(game.platform) && !game.gameType,
-      ),
-    [selectedGames],
+      Array.from({ length: 21 }, (_, index) => {
+        const date = new Date();
+        date.setDate(date.getDate() + index);
+        return { key: dateKey(date), date };
+      }),
+    [],
   );
 
-  const addGame = (game: GameData, gameType?: GameType) => {
-    const gameId = getGameId(game);
-
-    if (selectedGameIds.has(gameId)) {
-      return;
-    }
-
-    setSelectedGames((currentGames) => [
-      ...currentGames,
-      gameType ? { ...game, gameType } : game,
-    ]);
-  };
-
-  const removeGame = (game: GameData) => {
-    const gameId = getGameId(game);
-
-    setSelectedGames((currentGames) =>
-      currentGames.filter(
-        (currentGame) =>
-          `${currentGame.platform}-${currentGame._id ?? normalize(currentGame.name)}` !==
-          gameId,
-      ),
-    );
-  };
-
-  const updateGameType = (gameId: string, gameType: GameType) => {
-    setSelectedGames((currentGames) =>
-      currentGames.map((currentGame) =>
-        getGameId(currentGame) === gameId
-          ? { ...currentGame, gameType }
-          : currentGame,
-      ),
-    );
-    setFieldErrors((currentErrors) => ({
-      ...currentErrors,
-      products: "",
-    }));
-  };
-
-  const validateFields = (): boolean => {
-    const errors: Record<string, string> = {};
-
-    if (!customerName.trim() || customerName.trim().length < 2) {
-      errors.customerName = "نام مشتری الزامی است (حداقل ۲ کاراکتر).";
-    }
-
-    if (!/^09\d{9}$/.test(phone.trim())) {
-      errors.phone = "شماره تماس باید ۱۱ رقم باشد و با 09 شروع شود.";
-    }
-
-    if (!selectedAddressId) {
-      errors.address = "انتخاب یک آدرس الزامی است.";
-    }
-
-    if (selectedGames.length === 0) {
-      errors.products = "حداقل یک بازی باید انتخاب شود.";
-    } else if (
-      selectedGames.some(
-        (game) => isPs5Platform(game.platform) && !game.gameType,
-      )
-    ) {
-      errors.products = "برای هر بازی PS5 نوع بازی را انتخاب کنید.";
-    }
-
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSubmit = async () => {
-    // State updates are asynchronous; this also closes the same-tick click race.
-    if (submittingRef.current) return;
-
-    setSubmitError("");
-
-    if (!validateFields()) {
-      return;
-    }
-
-    submittingRef.current = true;
-    setSubmitting(true);
-
-    if (!idempotencyKeyRef.current) {
-      idempotencyKeyRef.current = crypto.randomUUID();
-    }
-
-    const payload = {
-      clientRequestKey: idempotencyKeyRef.current,
-      customerName: customerName.trim(),
-      phone: phone.trim(),
-      addressId: selectedAddressId,
-      message: message.trim(),
-      products: selectedGames.map((game) => ({
-        name: game.name,
-        platform: game.platform || "",
-        size: game.size || 0,
-        gameType: game.gameType || "",
-      })),
-      totalPrice: 0,
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      fetch("/api/profile/account", { cache: "no-store" }),
+      fetch("/api/profile/visit-rewards", { cache: "no-store" }),
+      fetch("/api/profile/address", { cache: "no-store" }),
+      fetch(`/api/profile/appointments/courier-availability?date=${dates[0]?.key}`, { cache: "no-store" }),
+    ])
+      .then(async ([profileResponse, rewardsResponse, addressesResponse, courierResponse]) => {
+        if (!active) return;
+        if (profileResponse.ok) {
+          const profile = await profileResponse.json();
+          setCustomerName(profile.username || "");
+          setPhone(profile.mobile || "");
+        }
+        if (rewardsResponse.ok) {
+          const payload = await rewardsResponse.json();
+          setRewards(Array.isArray(payload?.data?.rewards) ? payload.data.rewards : []);
+        }
+        if (addressesResponse.ok) {
+          const payload = await addressesResponse.json();
+          setAddresses(Array.isArray(payload) ? payload : []);
+        }
+        if (courierResponse.ok) {
+          const payload = await courierResponse.json();
+          const enabled = Boolean(payload?.settings?.courierEnabled);
+          setCourierSupported(enabled);
+          if (!enabled) setFulfillment((current) => current === "courier" ? null : current);
+          setCourierBookingDays(Number(payload?.settings?.bookingDaysAhead) || 14);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setProfileLoading(false);
+          setAddressesLoading(false);
+        }
+      });
+    return () => {
+      active = false;
     };
+  }, [dates]);
 
-    try {
-      const res = await fetch("/api/profile/customer-game-orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Idempotency-Key": idempotencyKeyRef.current,
-        },
-        body: JSON.stringify(payload),
+  useEffect(() => {
+    setDevice("");
+    if (serviceType !== "game_install") setInstallationType("");
+    if (serviceType !== "repair") setRepairIssue("");
+    setSupportedDeviceIds([]);
+    setDevicesError("");
+    if (!serviceType) return;
+    const controller = new AbortController();
+    setDevicesLoading(true);
+    const firstDate = dates[0]?.key;
+    fetch(
+      `/api/profile/appointments/availability?serviceType=${serviceType}&date=${firstDate}`,
+      { cache: "no-store", signal: controller.signal },
+    )
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "دریافت دستگاه‌ها انجام نشد.");
+        const ids = Array.isArray(payload?.settings?.supportedDevices)
+          ? payload.settings.supportedDevices.filter((item: unknown): item is string => typeof item === "string")
+          : [];
+        setSupportedDeviceIds(ids);
+      })
+      .catch((reason) => {
+        if (reason instanceof Error && reason.name !== "AbortError") {
+          setDevicesError("فهرست دستگاه‌های قابل پذیرش دریافت نشد.");
+        }
+      })
+      .finally(() => setDevicesLoading(false));
+    return () => controller.abort();
+  }, [dates, serviceType]);
+
+  useEffect(() => {
+    setSelectedDate("");
+    setSelectedSlot(null);
+    setSlots([]);
+    setSelectedRewardId("");
+    setSelectedAddressId("");
+    setSelectedCourierWindow(null);
+  }, [serviceType, device]);
+
+  useEffect(() => {
+    setSelectedSlot(null);
+    if (fulfillment !== "in_store" || !serviceType || !selectedDate) {
+      setSlots([]);
+      return;
+    }
+    const controller = new AbortController();
+    setSlotsLoading(true);
+    setSlotsError("");
+    fetch(
+      `/api/profile/appointments/availability?serviceType=${serviceType}&date=${selectedDate}`,
+      { cache: "no-store", signal: controller.signal },
+    )
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || "دریافت ساعت‌ها انجام نشد.");
+        setSlots(Array.isArray(data.slots) ? data.slots : []);
+      })
+      .catch((reason) => {
+        if (reason instanceof Error && reason.name !== "AbortError") {
+          setSlotsError("ساعت‌های آزاد دریافت نشد. دوباره تلاش کنید.");
+        }
+      })
+      .finally(() => setSlotsLoading(false));
+    return () => controller.abort();
+  }, [availabilityReload, fulfillment, serviceType, selectedDate]);
+
+  useEffect(() => {
+    setSelectedCourierWindow(null);
+    if (fulfillment !== "courier" || !selectedDate) {
+      setCourierWindows([]);
+      return;
+    }
+    const controller = new AbortController();
+    setCourierLoading(true);
+    setCourierError("");
+    fetch(`/api/profile/appointments/courier-availability?date=${selectedDate}`, { cache: "no-store", signal: controller.signal })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "دریافت بازه‌های پیک انجام نشد.");
+        const enabled = Boolean(payload?.settings?.courierEnabled);
+        setCourierSupported(enabled);
+        if (!enabled) setFulfillment((current) => current === "courier" ? null : current);
+        setCourierBookingDays(Number(payload?.settings?.bookingDaysAhead) || 14);
+        setCourierWindows(Array.isArray(payload?.windows) ? payload.windows : []);
+      })
+      .catch((reason) => {
+        if (reason instanceof Error && reason.name !== "AbortError") setCourierError(reason.message);
+      })
+      .finally(() => setCourierLoading(false));
+    return () => controller.abort();
+  }, [fulfillment, selectedDate]);
+
+  useEffect(() => {
+    setCourierPreview(null);
+    setCourierPreviewError("");
+    setCourierPreviewLoading(false);
+    if (fulfillment !== "courier" || !selectedAddressId || !serviceType) return;
+
+    const controller = new AbortController();
+    setCourierPreviewLoading(true);
+    fetch("/api/profile/appointments/courier-preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        addressId: selectedAddressId,
+        serviceType,
+        device,
+        selectedRewardId: selectedRewardId || null,
+      }),
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "محاسبه هزینه پیک انجام نشد.");
+        setCourierPreview(payload as CourierPreview);
+        const enabled = Boolean(payload.courierEnabled);
+        setCourierSupported(enabled);
+        if (!enabled) setFulfillment((current) => current === "courier" ? null : current);
+      })
+      .catch((reason) => {
+        if (reason instanceof Error && reason.name !== "AbortError") {
+          setCourierPreviewError(reason.message);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setCourierPreviewLoading(false);
       });
 
-      let data: ApiErrorResponse = {};
+    return () => controller.abort();
+  }, [device, fulfillment, selectedAddressId, selectedRewardId, serviceType]);
 
-      try {
-        data = (await res.json()) as ApiErrorResponse;
-      } catch {
-        data = {
-          error: `سرور خطای HTTP ${res.status} برگرداند و پاسخ قابل خواندن نبود.`,
-        };
-        setSubmitError(data.error || `خطای HTTP ${res.status}`);
-        return;
-      }
+  const usableRewards = useMemo(
+    () =>
+      rewards.filter((reward) => {
+        if (reward.status !== "available" || !serviceType) return false;
+        if (!reward.snapshot.eligibleServices.includes(serviceType)) return false;
+        const details = reward.snapshot.reward;
+        if (details.type === "free_shipping") return fulfillment === "courier";
+        if (details.eligibleDevices?.length && !details.eligibleDevices.includes(device)) return false;
+        if (
+          details.eligibleInstallationTypes?.length &&
+          (!installationType || !details.eligibleInstallationTypes.includes(installationType))
+        ) return false;
+        return true;
+      }),
+    [device, fulfillment, installationType, rewards, serviceType],
+  );
 
-      if (!res.ok) {
-        const messages = [
-          ...(data.error ? [`خطای سرور (${res.status}): ${data.error}`] : []),
-          ...(data.details ?? []),
-          ...(data.message ? [data.message] : []),
-        ];
+  useEffect(() => {
+    if (selectedRewardId && !usableRewards.some((reward) => reward._id === selectedRewardId)) {
+      setSelectedRewardId("");
+    }
+  }, [selectedRewardId, usableRewards]);
 
-        setSubmitError(
-          messages.length > 0
-            ? messages.join(" | ")
-            : `خطای ناشناخته HTTP ${res.status}`,
-        );
-        return;
-      }
+  const selectedAddress = addresses.find((item) => item._id === selectedAddressId);
 
-      setSubmitSuccess(true);
-    } catch {
-      setSubmitError(
-        "خطا در ارتباط با سرور. لطفاً اتصال اینترنت را بررسی کنید.",
-      );
+  const installationTypeAvailable =
+    serviceType === "game_install" && installationDeviceIds.has(device);
+  const stageOneValid =
+    Boolean(serviceType && device) &&
+    (serviceType === "game_install"
+      ? installationTypeAvailable && Boolean(installationType)
+      : Boolean(repairIssue));
+  const stageThreeValid = customerName.trim().length >= 2 && /^09\d{9}$/.test(phone.trim());
+  const scheduleValid = fulfillment === "in_store"
+    ? Boolean(selectedSlot)
+    : fulfillment === "courier"
+      ? Boolean(selectedAddress && courierPreview?.eligible && selectedDate && selectedCourierWindow)
+      : false;
+  const selectedService = services.find((item) => item.value === serviceType);
+
+  const submit = async () => {
+    if (submittingRef.current || !serviceType || !fulfillment || !scheduleValid || !stageThreeValid) return;
+    submittingRef.current = true;
+    setSubmitting(true);
+    setError("");
+    const key = idempotencyKey || crypto.randomUUID();
+    if (!idempotencyKey) setIdempotencyKey(key);
+    try {
+      const response = await fetch("/api/profile/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Idempotency-Key": key },
+        body: JSON.stringify({
+          clientRequestKey: key,
+          serviceType,
+          device,
+          installationType: serviceType === "game_install" ? installationType : null,
+          repairIssue: serviceType === "repair" ? repairIssue : null,
+          description,
+          customerName: customerName.trim(),
+          phone: phone.trim(),
+          selectedRewardId: selectedRewardId || null,
+          fulfillment,
+          ...(fulfillment === "in_store" && selectedSlot
+            ? { startsAt: selectedSlot.startsAt }
+            : fulfillment === "courier" && selectedCourierWindow
+              ? {
+                  addressId: selectedAddressId,
+                  pickupDate: selectedDate,
+                  pickupWindow: {
+                    start: selectedCourierWindow.start,
+                    end: selectedCourierWindow.end,
+                  },
+                }
+              : {}),
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "ثبت نوبت انجام نشد.");
+      setCreated(payload.appointment as CreatedAppointment);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "ثبت نوبت انجام نشد.");
     } finally {
       submittingRef.current = false;
       setSubmitting(false);
     }
   };
 
-  return (
-    <section className="relative overflow-hidden rounded-3xl border border-indigo-100 bg-white p-4 shadow-[0_18px_60px_rgba(15,23,42,0.08)] md:p-8">
-      <div className="pointer-events-none absolute -right-28 -top-28 h-72 w-72 rounded-full bg-indigo-100 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-32 left-0 h-80 w-80 rounded-full bg-blue-50 blur-3xl" />
-
-      <div className="relative z-10">
-        {submitSuccess ? (
-          <div className="flex flex-col items-center gap-6 py-12 text-center">
-            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-emerald-100">
-              <svg
-                className="h-12 w-12 text-emerald-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-2xl font-black text-slate-950 md:text-3xl">
-                سفارش شما با موفقیت ثبت شد!
-              </h2>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
-                در اسرع وقت با شما تماس خواهیم گرفت.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={resetForm}
-              className="rounded-2xl bg-[#001A6E] px-8 py-3 text-sm font-black text-white shadow-lg shadow-indigo-950/20 transition hover:-translate-y-0.5 hover:bg-[#000e3c]"
-            >
-              ثبت سفارش جدید
-            </button>
+  if (created) {
+    return (
+      <section className="overflow-hidden rounded-3xl border border-emerald-200 bg-white shadow-sm">
+        <div className="bg-gradient-to-l from-emerald-600 to-teal-500 px-5 py-8 text-center text-white md:px-10">
+          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/20">
+            <Check className="h-9 w-9" />
+          </span>
+          <h1 className="mt-4 text-2xl font-black">{created.fulfillment === "courier" ? "درخواست پیک شما ثبت شد" : "نوبت شما ثبت شد"}</h1>
+          <p className="mt-2 text-emerald-50">این کد را برای پیگیری نگه دارید</p>
+          <p className="mt-4 font-mono text-2xl font-black tracking-wider" dir="ltr">
+            {created.trackingCode}
+          </p>
+        </div>
+        <div className="grid gap-4 p-5 md:grid-cols-2 md:p-8">
+          <div className="rounded-2xl bg-slate-50 p-4">
+            <p className="text-xs text-slate-500">{created.fulfillment === "courier" ? "زمان دریافت دستگاه" : "زمان مراجعه"}</p>
+            <p className="mt-2 font-bold text-slate-900">
+              {persianDate(created.startsAt, { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+            </p>
           </div>
-        ) : (
-          <>
-            <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-              <div>
-                <span className="inline-flex rounded-full bg-indigo-50 px-4 py-1.5 text-xs font-black text-[#001A6E]">
-                  سفارش بازی و اکانت
-                </span>
-                <h2 className="mt-4 text-2xl font-black text-slate-950 md:text-4xl">
-                  انتخاب بازی برای ثبت درخواست
-                </h2>
-                <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 md:text-base">
-                  کنسول، نوع اکانت و بازی‌های موردنظرت را انتخاب کن تا سفارش ثبت
-                  شود.
+          {created.fulfillment === "courier" ? (
+            <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs text-slate-500">هزینه پیک</p><p className="mt-2 font-bold text-slate-900">{created.pricing?.shippingFinalAmount !== undefined ? `${created.pricing.shippingFinalAmount.toLocaleString("fa-IR")} تومان` : "در پاسخ Server اعلام نشد"}</p><p className="mt-1 text-xs text-slate-500">مبلغ خدمت پس از بررسی مشخص می‌شود.</p></div>
+          ) : (
+            <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs text-slate-500">آدرس فروشگاه</p><p className="mt-2 text-sm font-bold leading-7 text-slate-900">{storeAddress}</p></div>
+          )}
+          <Link href="/my-profile?step=5" className="md:col-span-2 flex min-h-12 items-center justify-center rounded-2xl bg-[#001A6E] px-5 font-bold text-white">
+            مشاهده نوبت‌های من
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section dir="rtl" className="relative pb-24 lg:pb-0">
+      <div className="mb-5 overflow-hidden rounded-3xl bg-[#001A6E] p-5 text-white shadow-xl shadow-blue-950/10 md:p-8">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-bold text-blue-200">دریافت خدمات کرمان آتاری</p>
+            <h1 className="mt-2 text-2xl font-black md:text-3xl">دریافت نوبت</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-7 text-blue-100">
+              خدمت، دستگاه و روش دریافت را انتخاب کنید؛ ظرفیت‌ها مستقیماً از سامانه خوانده می‌شوند.
+            </p>
+          </div>
+          <span className="rounded-2xl bg-white/10 px-4 py-2 text-xs font-bold">منطقه زمانی تهران</span>
+        </div>
+        <ol className="mt-6 grid grid-cols-4 gap-2" aria-label="مراحل ثبت نوبت">
+          {["خدمت و دستگاه", "روش دریافت", "روز و ساعت", "تأیید و ثبت"].map((label, index) => {
+            const number = (index + 1) as Step;
+            return (
+              <li key={label} className="min-w-0">
+                <div className={`h-1 rounded-full ${step >= number ? "bg-cyan-300" : "bg-white/20"}`} />
+                <p className={`mt-2 truncate text-[11px] sm:text-xs ${step === number ? "font-black text-white" : "text-blue-200"}`}>
+                  {fa(number)}. {label}
                 </p>
-              </div>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
 
-              <div className="rounded-2xl border border-indigo-100 bg-indigo-50 px-5 py-4 text-center">
-                <span className="block text-3xl font-black text-[#001A6E]">
-                  {selectedGames.length.toLocaleString("fa-IR")}
-                </span>
-                <span className="text-xs font-bold text-indigo-900">
-                  بازی انتخاب‌شده
-                </span>
-              </div>
-            </div>
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={step}
+              initial={reduceMotion ? false : { opacity: 0, x: -14 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={reduceMotion ? undefined : { opacity: 0, x: 14 }}
+              transition={{ duration: 0.18 }}
+            >
+              {step === 1 && (
+                <div className="space-y-7">
+                  <div>
+                    <h2 className="text-xl font-black text-slate-950">چه خدمتی نیاز دارید؟</h2>
+                    <p className="mt-1 text-sm text-slate-500">هر زمان انتخاب را عوض کنید، زمان وابسته پاک می‌شود.</p>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      {services.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <button key={item.value} type="button" aria-pressed={serviceType === item.value} onClick={() => setServiceType(item.value)} className={choiceClass(serviceType === item.value)}>
+                            <Icon className="h-7 w-7" />
+                            <strong className="mt-3 block">{item.title}</strong>
+                            <span className="mt-1 block text-xs leading-6 text-slate-500">{item.description}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-            <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-              <div className="space-y-6">
-                <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
-                  <StepHeader
-                    number="۱"
-                    title="انتخاب کنسول"
-                    description="لیست بازی‌ها براساس پلتفرم انتخابی فیلتر می‌شود."
-                  />
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {consoleOptions.map((option) => (
-                      <OptionCard
-                        key={option.id}
-                        isActive={selectedConsoleId === option.id}
-                        title={option.title}
-                        subtitle={option.subtitle}
-                        onClick={() => setSelectedConsoleId(option.id)}
-                      />
+                  {serviceType && (
+                    <div>
+                      <h3 className="font-black text-slate-900">دستگاه</h3>
+                    {devicesLoading ? (
+                      <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4" aria-label="در حال دریافت دستگاه‌ها">
+                        {[0, 1, 2, 3].map((item) => <div key={item} className="h-24 animate-pulse rounded-2xl bg-slate-100" />)}
+                      </div>
+                    ) : devicesError ? (
+                      <div role="alert" className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{devicesError}</div>
+                    ) : supportedDeviceIds.length === 0 ? (
+                      <div className="mt-3 rounded-2xl border border-dashed border-slate-300 p-5 text-sm text-slate-500">دستگاهی برای این خدمت اعلام نشده است.</div>
+                    ) : (
+                      <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+                        {supportedDeviceIds.map((item) => (
+                          <button key={item} type="button" aria-pressed={device === item} onClick={() => setDevice(item)} className={choiceClass(device === item)}>
+                            <MonitorCog className="h-5 w-5" />
+                            <span className="mt-2 block text-sm font-bold">{deviceLabels[item] || item}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    </div>
+                  )}
+
+                  {installationTypeAvailable && (
+                    <fieldset>
+                      <legend className="font-black text-slate-900">نوع نصب</legend>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                        <button type="button" aria-pressed={installationType === "account"} onClick={() => setInstallationType("account")} className={choiceClass(installationType === "account")}>
+                          <strong>اکانتی / قانونی</strong>
+                          <span className="mt-1 block text-xs text-slate-500">هزینه اکانت جداگانه و پس از بررسی مشخص می‌شود.</span>
+                        </button>
+                        <button type="button" aria-pressed={installationType === "copy"} onClick={() => setInstallationType("copy")} className={choiceClass(installationType === "copy")}>
+                          <strong>کپی‌خور</strong>
+                          <span className="mt-1 block text-xs text-slate-500">فقط برای دستگاه و شرایط فنی واجد شرایط.</span>
+                        </button>
+                      </div>
+                    </fieldset>
+                  )}
+
+                  {serviceType === "repair" && device && (
+                    <fieldset>
+                      <legend className="font-black text-slate-900">مشکل دستگاه</legend>
+                      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        {issues.map((item) => (
+                          <button key={item.value} type="button" aria-pressed={repairIssue === item.value} onClick={() => setRepairIssue(item.value)} className={choiceClass(repairIssue === item.value)}>
+                            <span className="text-sm font-bold">{item.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs leading-6 text-amber-800">
+                        این نوبت فقط برای تحویل و بررسی اولیه است؛ قیمت و زمان پایان تعمیر پس از عیب‌یابی اعلام می‌شود.
+                      </p>
+                    </fieldset>
+                  )}
+
+                  {serviceType && device && (
+                    <label className="block text-sm font-bold text-slate-700">
+                      توضیحات {serviceType === "repair" && repairIssue === "other" ? "(برای گزینه سایر ضروری)" : "(اختیاری)"}
+                      <textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={4} maxLength={1000} placeholder="اطلاعاتی که به پذیرش بهتر کمک می‌کند…" className="mt-2 w-full resize-none rounded-2xl border border-slate-200 px-4 py-3 font-normal outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
+                    </label>
+                  )}
+                </div>
+              )}
+
+              {step === 2 && (
+                <div>
+                  <h2 className="text-xl font-black text-slate-950">چگونه می‌خواهید خدمات بگیرید؟</h2>
+                  <p className="mt-1 text-sm leading-7 text-slate-500">روش دریافت، زمان‌بندی و مراحل بعدی را مشخص می‌کند.</p>
+                  <div className="mt-5 grid gap-3 md:grid-cols-2">
+                    <button type="button" aria-pressed={fulfillment === "in_store"} onClick={() => setFulfillment("in_store")} className={choiceClass(fulfillment === "in_store")}>
+                      <MapPin className="h-7 w-7" />
+                      <strong className="mt-3 block text-base">مراجعه حضوری</strong>
+                      <span className="mt-2 block text-xs leading-6 text-slate-500">زمان مراجعه را رزرو کنید و دستگاه را حضوری به فروشگاه بیاورید.</span>
+                    </button>
+                    <button type="button" disabled={!courierSupported} aria-disabled={!courierSupported} aria-pressed={fulfillment === "courier"} onClick={() => setFulfillment("courier")} className={`${choiceClass(fulfillment === "courier")} ${!courierSupported ? "cursor-not-allowed opacity-65" : ""}`}>
+                      <Truck className="h-7 w-7" />
+                      <span className="mt-3 flex items-center justify-between gap-2">
+                        <strong className="text-base">ارسال با پیک</strong>
+                        {!courierSupported && <span className="rounded-full bg-slate-200 px-2 py-1 text-[11px] font-bold text-slate-600">فعلاً در دسترس نیست</span>}
+                      </span>
+                      <span className="mt-2 block text-xs leading-6 text-slate-500">پیک دستگاه را از آدرس شما دریافت می‌کند و پس از انجام کار بازمی‌گرداند.</span>
+                    </button>
+                  </div>
+                  {!courierSupported && (
+                    <p className="mt-4 rounded-2xl bg-amber-50 p-4 text-xs leading-6 text-amber-900">
+                      در حال حاضر ارسال با پیک از سمت سامانه غیرفعال است.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {step === 3 && (
+                <div>
+                  <h2 className="text-xl font-black text-slate-950">{fulfillment === "courier" ? "آدرس و زمان دریافت دستگاه" : "روز و ساعت مراجعه"}</h2>
+                  <p className="mt-1 text-sm leading-7 text-slate-500">{fulfillment === "courier" ? "آدرس، روز و بازه دریافت پیک را انتخاب کنید." : "روز و ساعت آزاد را از ظرفیت واقعی فروشگاه انتخاب کنید."}</p>
+                  {fulfillment === "courier" && (
+                    <div className="mt-5">
+                      <h3 className="font-black text-slate-900">آدرس دریافت</h3>
+                      {addressesLoading ? <div className="mt-3 h-24 animate-pulse rounded-2xl bg-slate-100" /> : addresses.length === 0 ? (
+                        <div className="mt-3 rounded-2xl border border-dashed border-slate-300 p-5 text-sm text-slate-600"><p>برای استفاده از پیک ابتدا یک آدرس ثبت کنید.</p><Link href="/my-profile?step=2" className="mt-3 inline-flex rounded-xl bg-[#001A6E] px-4 py-2 font-bold text-white">افزودن آدرس</Link></div>
+                      ) : (
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                          {addresses.map((address) => {
+                            const selected = selectedAddressId === address._id;
+                            const eligible = selected && courierPreview?.eligible;
+                            const rejected = selected && courierPreview && !courierPreview.eligible;
+                            return <button key={address._id} type="button" onClick={() => setSelectedAddressId(address._id)} aria-pressed={selected} className={choiceClass(selected)}><strong className="block">{address.city}</strong><span className="mt-1 block text-xs leading-6 text-slate-500">{address.address}{address.plaque ? `، پلاک ${address.plaque}` : ""}</span><span className={`mt-2 inline-flex rounded-full px-2 py-1 text-[11px] font-bold ${eligible ? "bg-emerald-100 text-emerald-700" : rejected ? "bg-rose-100 text-rose-700" : "bg-slate-100 text-slate-600"}`}>{selected && courierPreviewLoading ? "در حال بررسی سرور…" : eligible ? "محدوده تأیید شد" : rejected ? "خارج از محدوده" : "انتخاب برای بررسی"}</span></button>;
+                          })}
+                        </div>
+                      )}
+                      {selectedAddress && courierPreviewLoading && <p aria-live="polite" className="mt-3 flex items-center gap-2 rounded-2xl bg-blue-50 p-4 text-sm text-blue-800"><Loader2 className="h-4 w-4 animate-spin" /> در حال بررسی محدوده و محاسبه هزینه توسط سرور…</p>}
+                      {selectedAddress && courierPreviewError && <p role="alert" className="mt-3 rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">{courierPreviewError}</p>}
+                      {selectedAddress && courierPreview && !courierPreview.eligible && <p role="alert" className="mt-3 rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">{courierPreview.reason === "COURIER_DISABLED" ? "سرویس پیک در حال حاضر غیرفعال است." : "این آدرس خارج از محدوده فعال پیک است. آدرس دیگری یا مراجعه حضوری را انتخاب کنید."}</p>}
+                      {selectedAddress && courierPreview?.eligible && courierPreview.pricing && (
+                        <div className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <strong>محدوده «{courierPreview.region?.title || courierPreview.region?.city}» تأیید شد</strong>
+                            <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-black text-emerald-800">واجد شرایط پیک</span>
+                          </div>
+                          <dl className="mt-4 grid gap-2 border-t border-emerald-200 pt-3 sm:grid-cols-2">
+                            <div className="flex items-center justify-between gap-3"><dt>هزینه رفت</dt><dd className="font-black">{toman(courierPreview.pricing.pickupShippingCost)}</dd></div>
+                            <div className="flex items-center justify-between gap-3"><dt>هزینه برگشت</dt><dd className="font-black">{toman(courierPreview.pricing.returnShippingCost)}</dd></div>
+                            <div className="flex items-center justify-between gap-3"><dt>جمع ارسال</dt><dd className="font-black">{toman(courierPreview.pricing.shippingBaseAmount)}</dd></div>
+                            <div className="flex items-center justify-between gap-3"><dt>تخفیف ارسال</dt><dd className="font-black text-emerald-700">{discountToman(courierPreview.pricing.shippingDiscountAmount)}</dd></div>
+                            <div className="flex items-center justify-between gap-3 border-t border-emerald-200 pt-2 sm:col-span-2"><dt className="font-black">هزینه نهایی پیک</dt><dd className="text-base font-black">{toman(courierPreview.pricing.shippingFinalAmount)}</dd></div>
+                          </dl>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div className="mt-5 flex gap-2 overflow-x-auto pb-2" role="list" aria-label="انتخاب روز">
+                    {dates.map((item, index) => (
+                      <button key={item.key} type="button" disabled={fulfillment === "courier" && index >= courierBookingDays} onClick={() => setSelectedDate(item.key)} aria-pressed={selectedDate === item.key} className={`min-w-28 rounded-2xl border px-3 py-3 text-center outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-40 ${selectedDate === item.key ? "border-[#001A6E] bg-[#001A6E] text-white" : "border-slate-200 bg-white text-slate-700"}`}>
+                        <span className="block text-xs">{persianDate(item.date, { weekday: "long" })}</span>
+                        <strong className="mt-1 block text-sm">{persianDate(item.date, { month: "short", day: "numeric" })}</strong>
+                      </button>
                     ))}
                   </div>
-                </div>
-
-                <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
-                  <StepHeader
-                    number="۲"
-                    title="جستجوی بازی"
-                    description="داده‌ها از API لیست بازی‌های فروشگاه خوانده می‌شود."
-                  />
-
-                  <div className="rounded-2xl border border-indigo-100 bg-white p-4 shadow-sm">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-black text-slate-900">کتابخانه بازی‌ها</p>
-                        <p className="mt-1 text-xs font-semibold text-slate-500">نام بازی را جست‌وجو کنید یا از فهرست انتخاب کنید</p>
-                      </div>
-                      <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-[#001A6E]">
-                        {filteredGames.length.toLocaleString("fa-IR")} بازی
-                      </span>
-                    </div>
-                    <div className="relative">
-                      <Search className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                      <input
-                        value={search}
-                        onChange={(event) => setSearch(event.target.value)}
-                        placeholder="نام بازی را جست‌وجو کنید..."
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-12 py-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 hover:bg-white focus:border-[#001A6E] focus:bg-white focus:ring-4 focus:ring-indigo-100"
-                        aria-label="جست‌وجوی بازی"
-                      />
-                      {search && (
-                        <button type="button" onClick={() => setSearch("")} aria-label="پاک کردن جست‌وجو" className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
-                          <X className="h-4 w-4" />
-                        </button>
-                      )}
-                      {loading && <span className="absolute left-10 top-1/2 -translate-y-1/2 text-xs font-bold text-[#001A6E]">در حال دریافت...</span>}
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between text-xs font-bold text-slate-500">
-                    <span>{filteredGames.length.toLocaleString("fa-IR")} بازی موجود</span>
-                    {search && <span>نتایج برای «{search}»</span>}
-                  </div>
-
-                  <div className="mt-4 grid max-h-[34rem] gap-3 overflow-y-auto pl-1 sm:grid-cols-2">
-                    {filteredGames.map((game) => {
-                      const gameId = getGameId(game);
-                      const isSelected = selectedGameIds.has(gameId);
-
-                      return (
-                        <GameCard
-                          key={gameId}
-                          game={game}
-                          gameId={gameId}
-                          isSelected={isSelected}
-                          onAdd={() => addGame(game)}
-                        />
-                      );
-                    })}
-                  </div>
-
-                  {!loading && filteredGames.length === 0 && (
-                    <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm font-bold text-slate-500">
-                      بازی‌ای برای این جستجو یا پلتفرم پیدا نشد.
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <aside className="h-fit rounded-3xl border border-indigo-100 bg-white p-5 shadow-xl shadow-slate-200/80 xl:sticky xl:top-6">
-                <StepHeader
-                  number="۳"
-                  title="خلاصه درخواست"
-                  description="اطلاعات خود را وارد کن و درخواست را ارسال کن."
-                />
-
-                <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-slate-500">کنسول</span>
-                    <span className="text-left font-black text-slate-950">
-                      {selectedConsole?.title} / {selectedConsole?.subtitle}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="mt-5">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h4 className="font-black text-slate-950">
-                      بازی‌های انتخابی
-                    </h4>
-                    <span className="rounded-full bg-[#001A6E] px-3 py-1 text-xs font-black text-white">
-                      {selectedGames.length.toLocaleString("fa-IR")}
-                    </span>
-                  </div>
-
-                  {pendingCapacityGames.length > 0 && (
-                    <div className="mb-3 flex items-start gap-2 rounded-2xl border border-red-100 bg-red-50 p-3 text-xs font-black leading-6 text-red-600">
-                      <span>⚠</span>
-                      <span>
-                        برای{" "}
-                        {pendingCapacityGames.length.toLocaleString("fa-IR")}{" "}
-                        بازی PS5 هنوز ظرفیت انتخاب نشده است.
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="max-h-80 space-y-3 overflow-y-auto pl-1">
-                    {selectedGames.map((game) => {
-                      const gameId = getGameId(game);
-                      const needsCapacity = isPs5Platform(game.platform);
-
-                      return (
-                        <div
-                          key={gameId}
-                          className={`rounded-2xl border p-3 ${needsCapacity && !game.gameType
-                            ? "border-red-200 bg-red-50/70"
-                            : "border-slate-200 bg-slate-50"
-                            }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-sm font-black text-[#001A6E]">
-                              {game.name.slice(0, 1)}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-black text-slate-950">
-                                {game.name}
-                              </p>
-                              <p className="text-xs font-semibold text-slate-500">
-                                {game.platform} • {formatSize(game.size)}
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => removeGame(game)}
-                              className="shrink-0 rounded-lg border border-red-100 bg-red-50 px-2.5 py-1.5 text-xs font-black text-red-600 transition hover:bg-red-100"
-                            >
-                              حذف
-                            </button>
-                          </div>
-
-                          {needsCapacity && (
-                            <div className="mt-3 border-t border-slate-200 pt-3">
-                              <div className="mb-2 text-[11px] font-black text-slate-600">
-                                ظرفیت / نوع اجرا:{" "}
-                                <span
-                                  className={
-                                    game.gameType
-                                      ? "text-[#001A6E]"
-                                      : "text-red-500"
-                                  }
-                                >
-                                  {game.gameType
-                                    ? gameTypeLabels[game.gameType]
-                                    : "انتخاب نشده"}
-                                </span>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                                {ps5GameTypes.map((gameType) => {
-                                  const isActive =
-                                    game.gameType === gameType.value;
-                                  return (
-                                    <button
-                                      key={gameType.value}
-                                      type="button"
-                                      onClick={() =>
-                                        updateGameType(gameId, gameType.value)
-                                      }
-                                      className={`rounded-lg border px-2 py-2 text-[11px] font-black transition ${isActive
-                                        ? "border-[#001A6E] bg-[#001A6E] text-white"
-                                        : "border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-[#001A6E]"
-                                        }`}
-                                    >
-                                      {gameType.label}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {selectedGames.length === 0 && (
-                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm leading-7 text-slate-500">
-                      هنوز بازی‌ای انتخاب نشده است.
-                    </div>
-                  )}
-                </div>
-
-                {/* Customer Information — pre-filled از پروفایل و دفترچه آدرس */}
-                <div className="mt-6 space-y-4">
-                  <h4 className="font-black text-slate-950">اطلاعات مشتری</h4>
-
-                  <div>
-                    <label
-                      htmlFor="customer-name"
-                      className="mb-1.5 block text-xs font-bold text-slate-600"
-                    >
-                      نام و نام خانوادگی <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      id="customer-name"
-                      value={customerName}
-                      disabled={profileLoading}
-                      onChange={(e) => {
-                        setCustomerName(e.target.value);
-                        setFieldErrors((prev) => ({
-                          ...prev,
-                          customerName: "",
-                        }));
-                      }}
-                      placeholder="مثال: علی رضایی"
-                      className={`w-full rounded-2xl border bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-4 disabled:opacity-60 ${fieldErrors.customerName
-                        ? "border-red-300 focus:border-red-400 focus:ring-red-100"
-                        : "border-slate-200 focus:border-[#001A6E] focus:ring-indigo-100"
-                        }`}
-                    />
-                    {fieldErrors.customerName && (
-                      <p className="mt-1.5 text-xs font-bold text-red-500">
-                        {fieldErrors.customerName}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="customer-phone"
-                      className="mb-1.5 block text-xs font-bold text-slate-600"
-                    >
-                      شماره تماس <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      id="customer-phone"
-                      value={phone}
-                      disabled={profileLoading}
-                      onChange={(e) => {
-                        setPhone(e.target.value);
-                        setFieldErrors((prev) => ({ ...prev, phone: "" }));
-                      }}
-                      inputMode="numeric"
-                      dir="ltr"
-                      placeholder="09123456789"
-                      className={`w-full rounded-2xl border bg-white px-4 py-3 text-right text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-4 disabled:opacity-60 ${fieldErrors.phone
-                        ? "border-red-300 focus:border-red-400 focus:ring-red-100"
-                        : "border-slate-200 focus:border-[#001A6E] focus:ring-indigo-100"
-                        }`}
-                    />
-                    {fieldErrors.phone && (
-                      <p className="mt-1.5 text-xs font-bold text-red-500">
-                        {fieldErrors.phone}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <span className="mb-1.5 block text-xs font-bold text-slate-600">
-                      آدرس <span className="text-red-500">*</span>
-                    </span>
-
-                    {addresses.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-center text-xs leading-6 text-slate-500">
-                        هنوز آدرسی ثبت نشده است.{" "}
-                        <Link
-                          href="/my-profile?step=3"
-                          className="font-bold text-[#001A6E] underline"
-                        >
-                          از اینجا آدرس اضافه کنید
-                        </Link>
-                        .
-                      </div>
+                  <div className="mt-5 min-h-36">
+                    {!selectedDate ? (
+                      <div className="rounded-2xl border border-dashed border-slate-300 p-7 text-center text-sm text-slate-500">ابتدا روز را انتخاب کنید.</div>
+                    ) : fulfillment === "courier" ? (
+                      courierLoading ? <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500"><Loader2 className="h-5 w-5 animate-spin" /> در حال دریافت ظرفیت پیک…</div> : courierError ? <div role="alert" className="rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">{courierError}</div> : courierWindows.length === 0 ? <div className="rounded-2xl bg-slate-50 p-7 text-center text-sm text-slate-500">برای این روز بازه پیک فعالی وجود ندارد.</div> : <div className="grid gap-2 sm:grid-cols-2">{courierWindows.map((window) => <button key={`${window.start}-${window.end}`} type="button" disabled={!window.available} onClick={() => setSelectedCourierWindow(window)} aria-pressed={selectedCourierWindow?.start === window.start} className={`rounded-2xl border p-4 text-right disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 ${selectedCourierWindow?.start === window.start ? "border-[#001A6E] bg-blue-50 text-[#001A6E]" : "border-slate-200"}`}><strong className="block">{fa(window.start)} تا {fa(window.end)}</strong><span className="mt-1 block text-xs">{window.available ? `${fa(window.remaining)} ظرفیت باقی‌مانده` : "تکمیل ظرفیت"}</span></button>)}</div>
+                    ) : slotsLoading ? (
+                      <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500"><Loader2 className="h-5 w-5 animate-spin" /> در حال دریافت ظرفیت واقعی…</div>
+                    ) : slotsError ? (
+                      <button type="button" onClick={() => setAvailabilityReload((value) => value + 1)} className="mx-auto flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700"><RefreshCw className="h-4 w-4" /> تلاش دوباره</button>
+                    ) : slots.length === 0 ? (
+                      <div className="rounded-2xl bg-slate-50 p-7 text-center text-sm text-slate-500">برای این روز ساعت آزادی وجود ندارد؛ روز دیگری را انتخاب کنید.</div>
                     ) : (
-                      <div className="space-y-2">
-                        {addresses.map((addr) => {
-                          const isSelected = selectedAddressId === addr._id;
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                        {slots.map((slot) => (
+                          <button key={slot.startsAt} type="button" disabled={!slot.available} onClick={() => setSelectedSlot(slot)} aria-pressed={selectedSlot?.startsAt === slot.startsAt} className={`rounded-2xl border px-3 py-3 text-center outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 ${selectedSlot?.startsAt === slot.startsAt ? "border-[#001A6E] bg-blue-50 text-[#001A6E]" : "border-slate-200"}`}>
+                            <strong className="block text-base">{fa(slot.time)}</strong>
+                            <span className="mt-1 block text-[11px]">{slot.available ? `${fa(slot.remaining)} ظرفیت باقی‌مانده` : "تکمیل ظرفیت"}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {step === 4 && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-xl font-black text-slate-950">خلاصه و ثبت درخواست</h2>
+                    <p className="mt-1 text-sm text-slate-500">اطلاعات تماس را بررسی کنید و سپس درخواست را ثبت کنید.</p>
+                  </div>
+                  {profileLoading ? (
+                    <div className="flex items-center gap-2 py-8 text-sm text-slate-500"><Loader2 className="h-5 w-5 animate-spin" /> در حال دریافت پروفایل…</div>
+                  ) : (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <label className="text-sm font-bold text-slate-700">نام و نام خانوادگی<input value={customerName} onChange={(event) => setCustomerName(event.target.value)} className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 font-normal outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" /></label>
+                      <label className="text-sm font-bold text-slate-700">شماره موبایل<input dir="ltr" inputMode="numeric" value={phone} onChange={(event) => setPhone(event.target.value.replace(/\D/g, "").slice(0, 11))} className="mt-2 h-12 w-full rounded-2xl border border-slate-200 px-4 text-left font-normal outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" /></label>
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="flex items-center gap-2 font-black text-slate-900"><Sparkles className="h-5 w-5 text-amber-500" /> پاداش‌های قابل استفاده</h3>
+                    {usableRewards.length === 0 ? (
+                      <p className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">در حال حاضر پاداش قابل استفاده‌ای برای این خدمت ندارید.</p>
+                    ) : (
+                      <div className="mt-3 space-y-2">
+                        <button type="button" onClick={() => setSelectedRewardId("")} className={`w-full ${choiceClass(!selectedRewardId)}`}>بدون استفاده از پاداش</button>
+                        {usableRewards.map((reward) => {
+                          const shipping = reward.snapshot.reward.type === "free_shipping";
                           return (
-                            <button
-                              type="button"
-                              key={addr._id}
-                              onClick={() => {
-                                setSelectedAddressId(addr._id);
-                                setFieldErrors((prev) => ({
-                                  ...prev,
-                                  address: "",
-                                }));
-                              }}
-                              className={`w-full rounded-2xl border p-3 text-right transition ${isSelected
-                                ? "border-[#001A6E] bg-indigo-50"
-                                : "border-slate-200 bg-white hover:border-indigo-200"
-                                }`}
-                            >
-                              <p className="text-xs font-bold text-slate-700">
-                                {addr.province} - {addr.city}
-                              </p>
-                              <p className="mt-1 text-xs leading-6 text-slate-500">
-                                {addr.address}
-                                {addr.plaque ? ` | پلاک ${addr.plaque}` : ""}
-                                {addr.unit ? ` | واحد ${addr.unit}` : ""}
-                                {addr.postalCode
-                                  ? ` | کدپستی ${addr.postalCode}`
-                                  : ""}
-                              </p>
+                            <button key={reward._id} type="button" onClick={() => setSelectedRewardId(reward._id)} className={`w-full ${choiceClass(selectedRewardId === reward._id)}`}>
+                              <strong>{reward.snapshot.title}</strong>
+                              <span className="mt-1 block text-xs text-slate-500">{rewardLabel(reward)}</span>
+                              {shipping && <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2 py-1 text-[11px] font-bold text-amber-800">مخصوص سفارش پیکی</span>}
                             </button>
                           );
                         })}
                       </div>
                     )}
-
-                    {fieldErrors.address && (
-                      <p className="mt-1.5 text-xs font-bold text-red-500">
-                        {fieldErrors.address}
-                      </p>
-                    )}
                   </div>
-
-                  <div>
-                    <label
-                      htmlFor="customer-message"
-                      className="mb-1.5 block text-xs font-bold text-slate-600"
-                    >
-                      پیام (اختیاری)
-                    </label>
-                    <textarea
-                      id="customer-message"
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      rows={3}
-                      placeholder="توضیحات یا درخواست اضافه..."
-                      className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#001A6E] focus:ring-4 focus:ring-indigo-100"
-                    />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                      <p className="flex items-center gap-2 text-sm font-black text-[#001A6E]"><MapPin className="h-4 w-4" /> مراجعه حضوری</p>
+                      <p className="mt-2 text-xs leading-6 text-slate-600">{storeAddress}</p>
+                    </div>
+                    <div className={`rounded-2xl border p-4 ${fulfillment === "courier" ? "border-emerald-200 bg-emerald-50" : "border-slate-200 bg-slate-50"}`}>
+                      <p className="flex items-center gap-2 text-sm font-black text-slate-700"><Truck className="h-4 w-4" /> ارسال با پیک</p>
+                      <span className={`mt-2 inline-flex rounded-full px-2 py-1 text-[11px] font-bold ${fulfillment === "courier" ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"}`}>{fulfillment === "courier" ? "انتخاب‌شده" : courierSupported ? "در دسترس" : "فعلاً غیرفعال"}</span>
+                    </div>
                   </div>
-
-                  {fieldErrors.products && (
-                    <p className="rounded-2xl bg-red-50 p-3 text-xs font-bold text-red-600">
-                      {fieldErrors.products}
-                    </p>
-                  )}
+                  {error && <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-bold text-rose-700">{error}</div>}
                 </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
 
-                {submitError && (
-                  <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-600">
-                    {submitError}
-                  </div>
-                )}
+          <div className="mt-7 hidden items-center justify-between border-t border-slate-100 pt-5 lg:flex">
+            <button type="button" disabled={step === 1} onClick={() => setStep((value) => Math.max(1, value - 1) as Step)} className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-slate-200 px-5 font-bold text-slate-700 disabled:opacity-40"><ChevronRight className="h-4 w-4" /> قبل</button>
+            {step < 4 ? (
+              <button type="button" disabled={step === 1 ? !stageOneValid || (repairIssue === "other" && !description.trim()) : step === 2 ? !fulfillment : !scheduleValid} onClick={() => setStep((value) => Math.min(4, value + 1) as Step)} className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-[#001A6E] px-7 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300">ادامه <ChevronLeft className="h-4 w-4" /></button>
+            ) : (
+              <button type="button" disabled={!stageThreeValid || !scheduleValid || submitting} onClick={() => void submit()} className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-[#001A6E] px-7 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300">{submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />} ثبت نوبت</button>
+            )}
+          </div>
+        </div>
 
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                  className={`mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-black text-white shadow-lg shadow-indigo-950/20 transition ${submitting
-                    ? "cursor-not-allowed bg-slate-400"
-                    : "bg-[#001A6E] hover:-translate-y-0.5 hover:bg-[#000e3c]"
-                    }`}
-                >
-                  {submitting ? (
-                    <>
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                      در حال ارسال...
-                    </>
-                  ) : (
-                    "ثبت و ارسال درخواست"
-                  )}
-                </button>
-              </aside>
-            </div>
-          </>
-        )}
+        <aside className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-24">
+          <h2 className="flex items-center gap-2 font-black text-slate-900"><PackageOpen className="h-5 w-5 text-[#001A6E]" /> خلاصه نوبت</h2>
+          <dl className="mt-4 space-y-3 text-sm">
+            <div className="flex justify-between gap-3"><dt className="text-slate-500">خدمت</dt><dd className="font-bold">{selectedService?.title || "انتخاب نشده"}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-slate-500">دستگاه</dt><dd className="font-bold">{device ? deviceLabels[device] || device : "انتخاب نشده"}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-slate-500">روش دریافت</dt><dd className="font-bold">{fulfillment === "in_store" ? "مراجعه حضوری" : fulfillment === "courier" ? "ارسال با پیک" : "انتخاب نشده"}</dd></div>
+            {fulfillment === "courier" && <div className="flex justify-between gap-3"><dt className="text-slate-500">آدرس</dt><dd className="max-w-44 text-left text-xs font-bold leading-6">{selectedAddress ? `${selectedAddress.city}، ${selectedAddress.address}` : "انتخاب نشده"}</dd></div>}
+            <div className="flex justify-between gap-3"><dt className="text-slate-500">روز</dt><dd className="text-left font-bold">{selectedDate ? persianDate(`${selectedDate}T12:00:00+03:30`, { weekday: "long", month: "long", day: "numeric" }) : "انتخاب نشده"}</dd></div>
+            <div className="flex justify-between gap-3"><dt className="text-slate-500">ساعت</dt><dd className="font-bold">{fulfillment === "courier" && selectedCourierWindow ? `${fa(selectedCourierWindow.start)} تا ${fa(selectedCourierWindow.end)}` : selectedSlot ? fa(selectedSlot.time) : "انتخاب نشده"}</dd></div>
+            {fulfillment === "courier" && courierPreview?.region && <div className="flex justify-between gap-3"><dt className="text-slate-500">منطقه پیک</dt><dd className="text-left text-xs font-bold">{courierPreview.region.title || courierPreview.region.city}</dd></div>}
+            {fulfillment === "courier" && courierPreview?.pricing && <>
+              <div className="flex justify-between gap-3"><dt className="text-slate-500">هزینه رفت</dt><dd className="text-left text-xs font-bold">{toman(courierPreview.pricing.pickupShippingCost)}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-slate-500">هزینه برگشت</dt><dd className="text-left text-xs font-bold">{toman(courierPreview.pricing.returnShippingCost)}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-slate-500">تخفیف ارسال</dt><dd className="text-left text-xs font-bold text-emerald-700">{discountToman(courierPreview.pricing.shippingDiscountAmount)}</dd></div>
+              <div className="flex justify-between gap-3 border-t border-slate-200 pt-3"><dt className="font-black text-slate-700">هزینه نهایی پیک</dt><dd className="text-left text-xs font-black text-[#001A6E]">{toman(courierPreview.pricing.shippingFinalAmount)}</dd></div>
+            </>}
+            {fulfillment === "courier" && !courierPreview?.pricing && <div className="flex justify-between gap-3"><dt className="text-slate-500">هزینه پیک</dt><dd className="text-left text-xs font-bold">{courierPreviewLoading ? "در حال دریافت از سرور…" : courierPreviewError ? "دریافت نشد" : "پس از انتخاب آدرس"}</dd></div>}
+          </dl>
+          <div className="mt-5 rounded-2xl bg-amber-50 p-4 text-xs leading-6 text-amber-900">
+            <Clock3 className="mb-2 h-5 w-5" />
+            {fulfillment === "courier" ? "پیش‌نمایش هزینه پیک از سرور دریافت می‌شود و هنگام ثبت دوباره اعتبارسنجی خواهد شد؛ هزینه خود خدمت پس از بررسی مشخص می‌شود." : "هزینه خدمت پس از بررسی مشخص می‌شود؛ مبلغ صفر به‌عنوان قیمت قطعی ثبت نمی‌شود."}
+          </div>
+          <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-xs leading-6 text-slate-600">
+            <CalendarDays className="mb-2 h-5 w-5 text-[#001A6E]" />
+            نوبت تعمیرات، زمان تحویل و بررسی اولیه دستگاه است و وعده پایان تعمیر نیست.
+          </div>
+        </aside>
+      </div>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+        <div className="mx-auto flex max-w-screen-md items-center gap-2">
+          <button type="button" disabled={step === 1} onClick={() => setStep((value) => Math.max(1, value - 1) as Step)} aria-label="مرحله قبل" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200 text-slate-700 disabled:opacity-40"><ChevronRight className="h-5 w-5" /></button>
+          {step < 4 ? (
+            <button type="button" disabled={step === 1 ? !stageOneValid || (repairIssue === "other" && !description.trim()) : step === 2 ? !fulfillment : !scheduleValid} onClick={() => setStep((value) => Math.min(4, value + 1) as Step)} className="h-12 flex-1 rounded-2xl bg-[#001A6E] font-black text-white disabled:bg-slate-300">ادامه</button>
+          ) : (
+            <button type="button" disabled={!stageThreeValid || !scheduleValid || submitting} onClick={() => void submit()} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#001A6E] font-black text-white disabled:bg-slate-300">{submitting && <Loader2 className="h-5 w-5 animate-spin" />} ثبت نوبت</button>
+          )}
+        </div>
       </div>
     </section>
   );

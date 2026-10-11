@@ -25,12 +25,16 @@ export const metadata: Metadata = {
 };
 
 interface MyProfilePageProps {
-  searchParams?: { step?: string };
+  searchParams?: { step?: string; fulfillment?: string };
 }
 
 export default async function MyProfile({ searchParams }: MyProfilePageProps) {
   const data = await searchParams;
   const activeStep = Number(data?.step ?? 1);
+  const initialFulfillment =
+    data?.fulfillment === "courier" || data?.fulfillment === "in_store"
+      ? data.fulfillment
+      : null;
 
   // سفارش‌های نصب بازی (مرحله ۷) اکنون در همان صفحه سفارش‌ها (مرحله ۵) نمایش داده می‌شود
   if (activeStep === 7) {
@@ -53,7 +57,7 @@ export default async function MyProfile({ searchParams }: MyProfilePageProps) {
             {activeStep === 3 && <MyAddresses />}
             {activeStep === 4 && <MyComments />}
             {activeStep === 5 && <MyOrdersTabs />}
-            {activeStep === 6 && <GameOrderSelector />}
+            {activeStep === 6 && <GameOrderSelector initialFulfillment={initialFulfillment} />}
             {activeStep === 8 && <MyWallet />}
             {activeStep === 9 && <MyLoyalty />}
             {activeStep === 10 && <SpinWheel />}

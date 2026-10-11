@@ -18,6 +18,8 @@ export interface TrackEventInput {
   value: number;
   /** مبلغ سفارش برای فیلتر minOrderAmount */
   orderAmount?: number;
+  /** کلید ثابت رویداد برای جلوگیری از افزایش مجدد در retry */
+  idempotencyKey?: string;
 }
 
 /** ماموریت‌های فعالِ منطبق با رویداد را پیدا و پیشرفت را به‌روز می‌کند */
@@ -46,11 +48,33 @@ export async function trackEvent(input: TrackEventInput): Promise<void> {
     const inc = mission.metric === "purchase_amount" ? Math.round(input.value) : input.value;
 
     // افزایش اتمیک پیشرفت — فقط اگر هنوز تکمیل نشده
-    const progress = await MissionProgress.findOneAndUpdate(
-      { user: input.userId, mission: mission._id, periodKey: key, completed: false },
-      { $inc: { progress: inc }, $setOnInsert: { rewardClaimed: false } },
-      { upsert: true, returnDocument: "after" },
-    );
+    let progress;
+    try {
+      progress = await MissionProgress.findOneAndUpdate(
+        {
+          user: input.userId,
+          mission: mission._id,
+          periodKey: key,
+          completed: false,
+          ...(input.idempotencyKey
+            ? { processedEventKeys: { $ne: input.idempotencyKey } }
+            : {}),
+        },
+        {
+          $inc: { progress: inc },
+          $setOnInsert: { rewardClaimed: false },
+          ...(input.idempotencyKey
+            ? { $addToSet: { processedEventKeys: input.idempotencyKey } }
+            : {}),
+        },
+        { upsert: true, returnDocument: "after" },
+      );
+    } catch (error) {
+      // upsert یک رویداد تکراری یا ماموریت تکمیل شده با ایندکس یکتا برخورد می کند.
+      if ((error as { code?: number })?.code === 11000) continue;
+      throw error;
+    }
+    if (!progress) continue;
 
     if (progress.progress >= mission.target && !progress.completed) {
       // تکمیل اتمیک — فقط اولین نفر برنده می‌شود

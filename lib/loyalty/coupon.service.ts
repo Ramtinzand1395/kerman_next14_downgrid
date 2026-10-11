@@ -6,6 +6,7 @@
 import mongoose from "mongoose";
 import Coupon, { ICoupon } from "@/model/Loyalty Club/Coupon";
 import CouponUsage from "@/model/Loyalty Club/CouponUsage";
+import { computeCouponDiscount, eligibleCouponAmount } from "./coupon.policy";
 
 export interface ValidateCouponInput {
   code: string;
@@ -13,7 +14,7 @@ export interface ValidateCouponInput {
   /** مبلغ کل سبد قبل از تخفیف (تومان) */
   orderAmount: number;
   /** محصولات سبد برای بررسی محدودیت محصول/دسته */
-  items?: { productId: string; categoryIds?: string[] }[];
+  items?: { productId: string; categoryIds?: string[]; amount: number }[];
 }
 
 export interface CouponValidation {
@@ -27,14 +28,12 @@ export function computeDiscount(
   coupon: Pick<ICoupon, "type" | "value" | "maxDiscountAmount">,
   orderAmount: number,
 ): number {
-  let discount =
-    coupon.type === "percent"
-      ? Math.floor((orderAmount * coupon.value) / 100)
-      : Math.round(coupon.value);
-  if (coupon.type === "percent" && coupon.maxDiscountAmount) {
-    discount = Math.min(discount, coupon.maxDiscountAmount);
-  }
-  return Math.max(0, Math.min(discount, orderAmount));
+  return computeCouponDiscount({
+    type: coupon.type,
+    value: coupon.value,
+    maxDiscountAmount: coupon.maxDiscountAmount,
+    eligibleAmount: orderAmount,
+  });
 }
 
 export async function validateCoupon(
@@ -81,40 +80,44 @@ export async function validateCoupon(
   const userUses = await CouponUsage.countDocuments({
     coupon: coupon._id,
     user: input.userId,
+    releasedAt: null,
   });
   if (userUses >= coupon.perUserLimit) {
     return { ok: false, error: "شما قبلاً از این کد استفاده کرده‌اید" };
   }
 
   // محدودیت محصول/دسته
+  let eligibleAmount = input.orderAmount;
   if (coupon.products.length || coupon.categories.length) {
     const items = input.items ?? [];
     // !تغییر با chat
     // const productSet = new Set(coupon.products.map((p) => p.toString()));
     // const categorySet = new Set(coupon.categories.map((c) => c.toString()));
-    const productSet = new Set(
+    const productSet = new Set<string>(
       coupon.products.map((p: mongoose.Types.ObjectId) => p.toString()),
     );
 
-    const categorySet = new Set(
+    const categorySet = new Set<string>(
       coupon.categories.map((c: mongoose.Types.ObjectId) => c.toString()),
     );
-    const matches = items.some(
-      (it) =>
-        productSet.has(it.productId) ||
-        (it.categoryIds ?? []).some((c) => categorySet.has(c)),
+    const eligibility = eligibleCouponAmount(
+      input.orderAmount,
+      items,
+      [...productSet],
+      [...categorySet],
     );
-    if (!matches)
+    if (!eligibility.matches)
       return {
         ok: false,
         error: "این کد برای محصولات سبد شما قابل استفاده نیست",
       };
+    eligibleAmount = eligibility.amount;
   }
 
   return {
     ok: true,
     coupon,
-    discountAmount: computeDiscount(coupon, input.orderAmount),
+    discountAmount: computeDiscount(coupon, eligibleAmount),
   };
 }
 
@@ -127,12 +130,50 @@ export async function applyCoupon(input: {
   userId: string;
   orderId: string;
   orderAmount: number;
-  items?: { productId: string; categoryIds?: string[] }[];
+  items?: { productId: string; categoryIds?: string[]; amount: number }[];
 }): Promise<CouponValidation> {
   const validation = await validateCoupon(input);
   if (!validation.ok || !validation.coupon) return validation;
 
-  // افزایش اتمیک با شرط ظرفیت — جلوی رقابت هم‌زمان
+  await CouponUsage.init();
+  const existingUsage = await CouponUsage.findOne({ order: input.orderId, releasedAt: null }).lean();
+  if (existingUsage) {
+    return {
+      ok: true,
+      coupon: validation.coupon,
+      discountAmount: existingUsage.discountAmount,
+    };
+  }
+
+  let usage: mongoose.HydratedDocument<{
+    coupon: mongoose.Types.ObjectId;
+    user: mongoose.Types.ObjectId;
+    order: mongoose.Types.ObjectId;
+    discountAmount: number;
+    usageSlot: number;
+    releasedAt?: Date | null;
+  }> | null = null;
+  for (let usageSlot = 1; usageSlot <= validation.coupon.perUserLimit; usageSlot += 1) {
+    try {
+      usage = await CouponUsage.create({
+        coupon: validation.coupon._id,
+        user: input.userId,
+        order: input.orderId,
+        discountAmount: validation.discountAmount!,
+        usageSlot,
+      });
+      break;
+    } catch (err) {
+      if ((err as { code?: number })?.code !== 11000) throw err;
+      const replay = await CouponUsage.findOne({ order: input.orderId, releasedAt: null }).lean();
+      if (replay) {
+        return { ok: true, coupon: validation.coupon, discountAmount: replay.discountAmount };
+      }
+    }
+  }
+  if (!usage) return { ok: false, error: "سقف استفاده شما از این کد تکمیل شده است" };
+
+  // افزایش اتمیک با شرط ظرفیت کلی
   const updated = await Coupon.findOneAndUpdate(
     {
       _id: validation.coupon._id,
@@ -144,23 +185,9 @@ export async function applyCoupon(input: {
     { $inc: { usedCount: 1 } },
     { returnDocument: "after" },
   );
-  if (!updated)
+  if (!updated) {
+    await CouponUsage.updateOne({ _id: usage._id, releasedAt: null }, { $set: { releasedAt: new Date() } });
     return { ok: false, error: "ظرفیت استفاده از این کد تکمیل شده است" };
-
-  try {
-    await CouponUsage.create({
-      coupon: updated._id,
-      user: input.userId,
-      order: input.orderId,
-      discountAmount: validation.discountAmount!,
-    });
-  } catch (err) {
-    // اگر ثبت usage شکست خورد، شمارنده را برگردان
-    await Coupon.updateOne({ _id: updated._id }, { $inc: { usedCount: -1 } });
-    if ((err as { code?: number })?.code === 11000) {
-      return { ok: false, error: "این کد قبلاً برای این سفارش اعمال شده است" };
-    }
-    throw err;
   }
 
   return {
@@ -172,8 +199,11 @@ export async function applyCoupon(input: {
 
 /** آزادسازی کوپن هنگام لغو سفارش */
 export async function releaseCoupon(orderId: string): Promise<void> {
-  const usage = await CouponUsage.findOne({ order: orderId });
+  const usage = await CouponUsage.findOneAndUpdate(
+    { order: orderId, releasedAt: null },
+    { $set: { releasedAt: new Date() } },
+    { returnDocument: "before" },
+  );
   if (!usage) return;
-  await Coupon.updateOne({ _id: usage.coupon }, { $inc: { usedCount: -1 } });
-  await usage.deleteOne();
+  await Coupon.updateOne({ _id: usage.coupon, usedCount: { $gt: 0 } }, { $inc: { usedCount: -1 } });
 }

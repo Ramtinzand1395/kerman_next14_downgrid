@@ -8,6 +8,8 @@ interface ICouponUsage extends Document {
   order: mongoose.Types.ObjectId;
   /** مبلغ تخفیف اعمال‌شده (تومان) */
   discountAmount: number;
+  usageSlot: number;
+  releasedAt?: Date | null;
   createdAt: Date;
 }
 
@@ -17,12 +19,17 @@ const CouponUsageSchema = new Schema<ICouponUsage>(
     user: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     order: { type: Schema.Types.ObjectId, ref: "Order", required: true },
     discountAmount: { type: Number, required: true, min: 0 },
+    usageSlot: { type: Number, required: true, min: 1 },
+    releasedAt: { type: Date, default: null },
   },
   { timestamps: { createdAt: true, updatedAt: false } },
 );
 
-CouponUsageSchema.index({ coupon: 1, user: 1 });
-CouponUsageSchema.index({ order: 1 });
+CouponUsageSchema.index(
+  { coupon: 1, user: 1, usageSlot: 1 },
+  { unique: true, partialFilterExpression: { releasedAt: null, usageSlot: { $type: "number" } } },
+);
+CouponUsageSchema.index({ order: 1 }, { unique: true });
 
 const CouponUsage =
   mongoose.models.CouponUsage ||

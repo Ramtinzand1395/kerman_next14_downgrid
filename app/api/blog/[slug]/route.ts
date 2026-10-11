@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb";
-import Blog from "@/model/Blog";
+import { getBlogBySlug } from "@/services/blog/getBlogBySlug";
 
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    await dbConnect();
     const { slug } = await params;
-
-    const blog = await Blog.findOne({ slug, published: true }).lean();
+    const blog = await getBlogBySlug(slug);
 
     if (!blog) {
       return NextResponse.json({ error: "مقاله پیدا نشد" }, { status: 404 });

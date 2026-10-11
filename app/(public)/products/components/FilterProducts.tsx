@@ -1,40 +1,63 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Filter, X, ChevronDown } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  ChevronDown,
+  Filter,
+  RotateCcw,
+  Tags,
+  X,
+} from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { categories } from "../../constants/categories";
+import type { ProductTagFacet } from "@/types";
 
-export default function FilterProducts() {
+type FilterProductsProps = {
+  tags: ProductTagFacet[];
+};
+
+const flatCategories = categories.flatMap((item) => [
+  { name: item.name, slug: item.slug },
+  ...item.subcategories.map((sub) => ({
+    name: sub.name,
+    slug: sub.slug,
+  })),
+]);
+
+export default function FilterProducts({ tags }: FilterProductsProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [openedGroup, setOpenedGroup] = useState<string | null>(
-    categories[0]?.slug ?? null,
-  );
+  const [openedGroup, setOpenedGroup] = useState<string | null>(null);
   const selectedCategory = searchParams.get("category") || "";
+  const selectedTag = searchParams.get("tag") || "";
 
-  const flatCategories = useMemo(
-    () =>
-      categories.flatMap((item) => [
-        { name: item.name, slug: item.slug },
-        ...item.subcategories.map((sub) => ({
-          name: sub.name,
-          slug: sub.slug,
-        })),
-      ]),
-    [],
-  );
+  useEffect(() => {
+    if (!mobileOpen) return;
 
-  const handleFilter = (value: string) => {
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileOpen(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [mobileOpen]);
+
+  const updateFilter = (key: "category" | "tag", value: string) => {
     const params = new URLSearchParams(Array.from(searchParams.entries()));
 
     if (!value) {
-      params.delete("category");
+      params.delete(key);
     } else {
-      params.set("category", value);
+      params.set(key, value);
     }
 
     params.set("page", "1");
@@ -42,85 +65,180 @@ export default function FilterProducts() {
     setMobileOpen(false);
   };
 
+  const clearFilters = () => {
+    const params = new URLSearchParams(Array.from(searchParams.entries()));
+    ["category", "tag", "q", "page"].forEach((key) => params.delete(key));
+    const queryString = params.toString();
+
+    router.push(queryString ? `${pathname}?${queryString}` : pathname, {
+      scroll: false,
+    });
+    setMobileOpen(false);
+  };
+
   const selectedLabel =
     flatCategories.find((item) => item.slug === selectedCategory)?.name ||
     "همه محصولات";
+  const selectedTagLabel =
+    tags.find((item) => item.slug === selectedTag)?.name || selectedTag;
+  const hasFilters = Boolean(
+    selectedCategory || selectedTag || searchParams.get("q"),
+  );
 
-  const FilterBody = () => (
+  const renderFilterBody = () => (
     <>
-      <button
-        type="button"
-        onClick={() => handleFilter("")}
-        className={`mb-3 w-full rounded-xl px-3 py-2 text-right text-sm font-medium transition-colors ${
-          !selectedCategory
-            ? "bg-blue-600 text-white"
-            : "bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-700"
-        }`}
-      >
-        همه محصولات
-      </button>
+      <section>
+        <h3 className="mb-3 text-xs font-bold text-gray-500">دسته‌بندی</h3>
+        <button
+          type="button"
+          onClick={() => updateFilter("category", "")}
+          className={`mb-3 w-full rounded-xl px-3 py-2.5 text-right text-sm font-medium transition-colors ${
+            !selectedCategory
+              ? "bg-blue-600 text-white shadow-sm shadow-blue-200"
+              : "bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+          }`}
+        >
+          همه دسته‌بندی‌ها
+        </button>
 
-      <nav className="flex flex-col gap-2" aria-label="فیلتر دسته‌بندی محصولات">
-        {categories.map((cat) => {
-          const isActiveParent = selectedCategory === cat.slug;
-          const isExpanded = openedGroup === cat.slug || isActiveParent;
+        <nav
+          className="flex flex-col gap-2"
+          aria-label="فیلتر دسته‌بندی محصولات"
+        >
+          {categories.map((cat) => {
+            const isActiveParent = selectedCategory === cat.slug;
+            const hasActiveChild = cat.subcategories.some(
+              (sub) => sub.slug === selectedCategory,
+            );
+            const isExpanded =
+              openedGroup === cat.slug || isActiveParent || hasActiveChild;
 
-          return (
-            <section
-              key={cat.slug}
-              className="rounded-xl border border-gray-100 p-2"
+            return (
+              <div
+                key={cat.slug}
+                className="rounded-xl border border-gray-100 p-2"
+              >
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => updateFilter("category", cat.slug)}
+                    className={`flex-1 rounded-lg px-3 py-2 text-right text-sm font-semibold transition-colors ${
+                      isActiveParent
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-50 text-gray-800 hover:bg-blue-50 hover:text-blue-700"
+                    }`}
+                  >
+                    {cat.name}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOpenedGroup(isExpanded ? null : cat.slug)
+                    }
+                    className="rounded-lg border border-gray-200 p-2 text-gray-500 transition hover:border-blue-200 hover:text-blue-600"
+                    aria-expanded={isExpanded}
+                    aria-label={`نمایش زیر دسته‌های ${cat.name}`}
+                  >
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                </div>
+
+                {isExpanded && (
+                  <ul className="mt-2 space-y-1 pr-2">
+                    {cat.subcategories.map((sub) => {
+                      const isActive = selectedCategory === sub.slug;
+                      return (
+                        <li key={sub.slug}>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateFilter("category", sub.slug)
+                            }
+                            className={`w-full rounded-lg px-3 py-2 text-right text-sm transition-colors ${
+                              isActive
+                                ? "bg-blue-100 font-semibold text-blue-700"
+                                : "text-gray-600 hover:bg-gray-100"
+                            }`}
+                          >
+                            {sub.name}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+        </nav>
+      </section>
+
+      <section className="mt-5 border-t border-gray-100 pt-5">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-500">
+            <Tags className="h-4 w-4 text-blue-600" /> برچسب‌ها
+          </h3>
+          {selectedTag && (
+            <button
+              type="button"
+              onClick={() => updateFilter("tag", "")}
+              className="text-xs font-medium text-blue-600 hover:text-blue-800"
             >
-              <div className="flex items-center gap-2">
+              حذف برچسب
+            </button>
+          )}
+        </div>
+
+        {tags.length ? (
+          <div
+            className="flex max-h-72 flex-col gap-1.5 overflow-y-auto pl-1"
+            aria-label="فیلتر بر اساس برچسب"
+          >
+            {tags.map((tag) => {
+              const isActive = selectedTag === tag.slug;
+
+              return (
                 <button
+                  key={tag._id || tag.slug}
                   type="button"
-                  onClick={() => handleFilter(cat.slug)}
-                  className={`flex-1 rounded-lg px-3 py-2 text-right text-sm font-semibold transition-colors ${
-                    isActiveParent
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-50 text-gray-800 hover:bg-blue-50 hover:text-blue-700"
+                  onClick={() => updateFilter("tag", isActive ? "" : tag.slug)}
+                  aria-pressed={isActive}
+                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors ${
+                    isActive
+                      ? "bg-indigo-600 font-semibold text-white shadow-sm shadow-indigo-200"
+                      : "bg-indigo-50/60 text-gray-700 hover:bg-indigo-100 hover:text-indigo-800"
                   }`}
                 >
-                  {cat.name}
+                  <span>{tag.name}</span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs ${
+                      isActive ? "bg-white/20 text-white" : "bg-white text-gray-500"
+                    }`}
+                  >
+                    {tag.count.toLocaleString("fa-IR")}
+                  </span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setOpenedGroup(isExpanded ? null : cat.slug)}
-                  className="rounded-lg border border-gray-200 p-2 text-gray-500"
-                  aria-expanded={isExpanded}
-                  aria-label={`نمایش زیر دسته‌های ${cat.name}`}
-                >
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                  />
-                </button>
-              </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="rounded-xl bg-gray-50 px-3 py-4 text-center text-xs leading-6 text-gray-500">
+            برای این دسته‌بندی برچسبی ثبت نشده است.
+          </p>
+        )}
+      </section>
 
-              {isExpanded && (
-                <ul className="mt-2 space-y-1 pr-2">
-                  {cat.subcategories.map((sub) => {
-                    const isActive = selectedCategory === sub.slug;
-                    return (
-                      <li key={sub.slug}>
-                        <button
-                          type="button"
-                          onClick={() => handleFilter(sub.slug)}
-                          className={`w-full rounded-lg px-3 py-2 text-right text-sm transition-colors ${
-                            isActive
-                              ? "bg-blue-100 text-blue-700"
-                              : "text-gray-600 hover:bg-gray-100"
-                          }`}
-                        >
-                          {sub.name}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </section>
-          );
-        })}
-      </nav>
+      {hasFilters && (
+        <button
+          type="button"
+          onClick={clearFilters}
+          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+        >
+          <RotateCcw className="h-4 w-4" /> پاک‌کردن همه فیلترها
+        </button>
+      )}
     </>
   );
 
@@ -128,9 +246,10 @@ export default function FilterProducts() {
     <>
       <div className="mb-3 flex items-center justify-between gap-2 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm md:hidden">
         <div className="min-w-0 flex-1 text-xs text-gray-500">
-          فیلتر فعال:{" "}
-          <span className="font-semibold text-gray-700 truncate inline-block max-w-full align-bottom">
+          <span className="block">فیلتر فعال</span>
+          <span className="mt-0.5 block truncate font-semibold text-gray-800">
             {selectedLabel}
+            {selectedTagLabel ? `، ${selectedTagLabel}` : ""}
           </span>
         </div>
         <button
@@ -143,11 +262,22 @@ export default function FilterProducts() {
       </div>
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 md:hidden">
-          <div className="absolute right-0 top-0 h-full w-[82%] max-w-xs overflow-y-auto bg-white p-4 shadow-xl">
+        <div
+          className="fixed inset-0 z-50 md:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label="فیلتر محصولات"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/40"
+            aria-label="بستن پنل فیلتر"
+            onClick={() => setMobileOpen(false)}
+          />
+          <div className="absolute right-0 top-0 z-10 h-full w-[82%] max-w-xs overflow-y-auto bg-white p-4 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="inline-flex items-center gap-2 text-base font-bold text-gray-800">
-                <Filter size={17} /> دسته‌بندی محصولات
+                <Filter size={17} /> فیلتر محصولات
               </h2>
               <button
                 type="button"
@@ -158,22 +288,16 @@ export default function FilterProducts() {
                 <X size={18} />
               </button>
             </div>
-            <FilterBody />
+            {renderFilterBody()}
           </div>
-          <button
-            type="button"
-            className="h-full w-full"
-            title="بستن"
-            onClick={() => setMobileOpen(false)}
-          />
         </div>
       )}
 
-      <aside className="hidden h-fit w-72 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm md:sticky md:top-24 md:block">
+      <aside className="hidden h-fit w-72 shrink-0 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm md:sticky md:top-24 md:block">
         <h2 className="mb-3 inline-flex items-center gap-2 text-base font-bold text-gray-800">
-          <Filter size={17} /> دسته‌بندی محصولات
+          <Filter size={17} /> فیلتر محصولات
         </h2>
-        <FilterBody />
+        {renderFilterBody()}
       </aside>
     </>
   );

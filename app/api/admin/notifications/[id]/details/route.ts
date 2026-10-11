@@ -9,6 +9,7 @@ import Comment from "@/model/Comment";
 import ContactMessage from "@/model/ContactMessage";
 import User from "@/model/User";
 import CustomerGameOrder from "@/model/CustomerGameOrder";
+import Appointment from "@/model/Appointment";
 import "@/model/Address";
 import "@/model/Product";
 
@@ -28,12 +29,18 @@ async function getEntity(kind: string, entityId: mongoose.Types.ObjectId) {
         .lean();
     case "ContactMessage":
       return ContactMessage.findById(entityId)
-        .select("name email phone subject message createdAt")
+        .select("user name email phone subject message createdAt")
+        .populate("user", "username mobile")
         .lean();
     case "CustomerGameOrder":
       return CustomerGameOrder.findById(entityId)
         .populate("user", "username mobile createdAt")
         .populate("addressRef")
+        .lean();
+    case "Appointment":
+      return Appointment.findById(entityId)
+        .populate("user", "username mobile createdAt")
+        .populate("selectedReward")
         .lean();
     default:
       return null;
@@ -76,6 +83,7 @@ export async function GET(
     "Order",
     "ContactMessage",
     "CustomerGameOrder",
+    "Appointment",
   ]);
 
   if (kind && manageableKinds.has(kind)) {

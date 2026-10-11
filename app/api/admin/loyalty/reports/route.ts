@@ -100,18 +100,37 @@ export async function GET(req: NextRequest) {
         total: number; rewarded: number; totalPaid: number;
       }>([
         {
+          $set: {
+            rewardCompleted: {
+              $and: [
+                { $eq: ["$status", "rewarded"] },
+                { $eq: [{ $type: "$referrerRewardedAt" }, "date"] },
+                { $eq: [{ $type: "$refereeRewardedAt" }, "date"] },
+                { $eq: [{ $type: "$xpRewardedAt" }, "date"] },
+              ],
+            },
+          },
+        },
+        {
           $group: {
             _id: null,
             total: { $sum: 1 },
-            rewarded: { $sum: { $cond: [{ $eq: ["$status", "rewarded"] }, 1, 0] } },
-            totalPaid: { $sum: { $cond: [{ $eq: ["$status", "rewarded"] }, "$referrerReward", 0] } },
+            rewarded: { $sum: { $cond: ["$rewardCompleted", 1, 0] } },
+            totalPaid: { $sum: { $cond: ["$rewardCompleted", "$referrerReward", 0] } },
           },
         },
       ]);
       const topReferrers = await Referral.aggregate<{
         _id: mongoose.Types.ObjectId; count: number; earned: number;
       }>([
-        { $match: { status: "rewarded" } },
+        {
+          $match: {
+            status: "rewarded",
+            referrerRewardedAt: { $type: "date" },
+            refereeRewardedAt: { $type: "date" },
+            xpRewardedAt: { $type: "date" },
+          },
+        },
         { $group: { _id: "$referrer", count: { $sum: 1 }, earned: { $sum: "$referrerReward" } } },
         { $sort: { count: -1 } },
         { $limit: limit },

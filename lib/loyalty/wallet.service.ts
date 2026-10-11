@@ -111,11 +111,19 @@ export async function getOrCreateWallet(
   if (session) q.session(session);
   let wallet = await q;
   if (!wallet) {
-    const created = await Wallet.create(
-      [{ user: userId, balance: 0 }],
-      session ? { session } : undefined,
-    );
-    wallet = created[0];
+    try {
+      const created = await Wallet.create(
+        [{ user: userId, balance: 0 }],
+        session ? { session } : undefined,
+      );
+      wallet = created[0];
+    } catch (error) {
+      if ((error as { code?: number })?.code !== 11000) throw error;
+      const retry = Wallet.findOne({ user: userId });
+      if (session) retry.session(session);
+      wallet = await retry;
+      if (!wallet) throw error;
+    }
   }
   return wallet;
 }
@@ -145,9 +153,158 @@ export async function credit(input: CreditInput): Promise<WalletTxResult> {
     };
   }
 
+  // بازیابی قطع عملیات standalone: ممکن است موجودی اعمال شده باشد ولی ساخت
+  // WalletTransaction پیش از پایان پردازش قطع شده باشد.
+  const appliedWallet = await Wallet.findOne({
+    user: userId,
+    appliedCreditKeys: idempotencyKey,
+  });
+  if (appliedWallet) {
+    let recovered;
+    try {
+      recovered = await WalletTransaction.create({
+        wallet: appliedWallet._id,
+        user: userId,
+        type,
+        status: "completed",
+        amount,
+        balanceAfter: appliedWallet.balance,
+        idempotencyKey,
+        ref: input.ref,
+        gateway: input.gateway,
+        expiresAt: input.expiresAt,
+        description: input.description,
+        performedBy: input.performedBy,
+      });
+    } catch (error) {
+      if ((error as { code?: number })?.code !== 11000) throw error;
+      recovered = await WalletTransaction.findOne({ idempotencyKey });
+    }
+    return {
+      ok: true,
+      duplicate: true,
+      transaction: recovered ?? undefined,
+      balance: appliedWallet.balance,
+    };
+  }
+
   const topologyType = (mongoose.connection.getClient() as unknown as {
     topology?: { description?: { type?: string } };
   }).topology?.description?.type;
+  if (topologyType === "Single") {
+    try {
+      const wallet = await getOrCreateWallet(userId);
+      if (!wallet.isActive) return { ok: false, error: "کیف پول غیرفعال است" };
+
+      const updated = await Wallet.findOneAndUpdate(
+        {
+          _id: wallet._id,
+          isActive: true,
+          appliedCreditKeys: { $ne: idempotencyKey },
+        },
+        {
+          $inc: { balance: amount, version: 1 },
+          $addToSet: { appliedCreditKeys: idempotencyKey },
+          ...(input.expiresAt
+            ? {
+                $push: {
+                  expiringCredits: { amount, expiresAt: input.expiresAt },
+                },
+              }
+            : {}),
+        },
+        { returnDocument: "after" },
+      );
+
+      const appliedWallet =
+        updated ??
+        (await Wallet.findOne({
+          _id: wallet._id,
+          appliedCreditKeys: idempotencyKey,
+        }));
+      if (!appliedWallet) {
+        return { ok: false, error: "کیف پول غیرفعال است" };
+      }
+
+      let transaction = await WalletTransaction.findOne({ idempotencyKey });
+      if (!transaction) {
+        try {
+          transaction = await WalletTransaction.create({
+            wallet: wallet._id,
+            user: userId,
+            type,
+            status: "completed",
+            amount,
+            balanceAfter: appliedWallet.balance,
+            idempotencyKey,
+            ref: input.ref,
+            gateway: input.gateway,
+            expiresAt: input.expiresAt,
+            description: input.description,
+            performedBy: input.performedBy,
+          });
+        } catch (error) {
+          if ((error as { code?: number })?.code !== 11000) throw error;
+          transaction = await WalletTransaction.findOne({ idempotencyKey });
+        }
+      }
+
+      if (updated) {
+        await log({
+          wallet: wallet._id,
+          user: userId,
+          action: `credit_${type}`,
+          success: true,
+          amount,
+          balanceBefore: updated.balance - amount,
+          balanceAfter: updated.balance,
+          transaction: transaction?._id,
+          performedBy: input.performedBy,
+        });
+      }
+
+      if (updated && input.notify) {
+        await notifyUser({
+          userId,
+          title: input.notify.title,
+          message: input.notify.message,
+          type:
+            type === "cashback"
+              ? "cashback"
+              : type === "gift"
+                ? "gift"
+                : type === "refund"
+                  ? "WALLET_REFUNDED"
+                  : type === "charge"
+                    ? "WALLET_CHARGED"
+                    : "wallet_credit",
+          category: "wallet",
+          entityType: transaction ? "WalletTransaction" : undefined,
+          entityId: transaction?._id,
+          link: "/my-profile?step=8",
+          eventKey: transaction
+            ? `WALLET_CREDIT:${transaction._id}`
+            : idempotencyKey,
+        }).catch(() => {});
+      }
+
+      return {
+        ok: true,
+        duplicate: !updated,
+        transaction: transaction ?? undefined,
+        balance: appliedWallet.balance,
+      };
+    } catch (error) {
+      await log({
+        user: userId,
+        action: `credit_${type}`,
+        success: false,
+        amount,
+        errorMessage: (error as Error)?.message,
+      });
+      return { ok: false, error: "خطا در عملیات کیف پول" };
+    }
+  }
   const session = topologyType === "Single" ? undefined : await mongoose.startSession();
   try {
     let result: WalletTxResult = { ok: false, error: "خطای ناشناخته" };

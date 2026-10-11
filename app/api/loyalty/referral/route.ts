@@ -2,6 +2,7 @@
 // GET: کد دعوت و آمار رفرال کاربر
 import { ok, requireUser } from "@/lib/loyalty/api";
 import { attachReferral, getReferralStats } from "@/lib/loyalty/referral.service";
+import { randomUUID } from "node:crypto";
 
 export async function GET() {
   const auth = await requireUser();
@@ -24,7 +25,24 @@ export async function POST(req: Request) {
   const code = typeof (body as { code?: unknown })?.code === "string"
     ? (body as { code: string }).code
     : "";
-  const result = await attachReferral(auth.userId, code);
+  const operationId = randomUUID();
+  let result;
+  try {
+    result = await attachReferral(auth.userId, code);
+  } catch (error) {
+    console.error(
+      `[loyalty] attach referral failed operationId=${operationId} userId=${auth.userId}`,
+      error,
+    );
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        error: "اتصال کد دعوت موقتاً انجام نشد؛ دوباره تلاش کنید",
+        operationId,
+      }),
+      { status: 503 },
+    );
+  }
   if (!result.ok) {
     return new Response(JSON.stringify({ ok: false, error: result.error }), { status: 400 });
   }

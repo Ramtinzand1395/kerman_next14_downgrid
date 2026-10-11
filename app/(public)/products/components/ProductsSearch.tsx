@@ -37,7 +37,7 @@ export default function ProductsSearch({
   return (
     <form
       onSubmit={handleSubmit}
-      className="mt-4 flex items-center gap-2 rounded-2xl border border-white/50 bg-blue-900/45 p-2 shadow-lg shadow-blue-950/30 backdrop-blur"
+      className="mt-5 flex items-center gap-2 rounded-2xl border border-white/25 bg-white/10 p-2.5 shadow-lg shadow-blue-950/20 backdrop-blur"
       role="search"
       aria-label="جستجو در نتایج محصولات"
     >
@@ -47,7 +47,7 @@ export default function ProductsSearch({
         value={query}
         onChange={(event) => setQuery(event.target.value)}
         placeholder="نام محصول، بازی یا کنسول را جستجو کنید"
-        className="w-full bg-transparent text-sm text-white placeholder:text-blue-100 outline-none"
+        className="min-h-8 w-full bg-transparent text-sm text-white placeholder:text-blue-100 outline-none"
       />
       {query && (
         <button
@@ -64,7 +64,7 @@ export default function ProductsSearch({
       )}
       <button
         type="submit"
-        className="rounded-xl bg-white px-3 py-1 text-xs font-bold text-blue-800 transition hover:bg-blue-50"
+        className="min-h-9 shrink-0 rounded-xl bg-white px-4 py-1 text-xs font-bold text-blue-800 transition hover:bg-blue-50"
       >
         جستجو
       </button>

@@ -134,8 +134,19 @@ export async function grantXp(input: GrantXpInput): Promise<{
 
   const applyXp = async (session?: mongoose.ClientSession) => {
       const exp = await Experience.findOneAndUpdate(
-        { user: userId },
-        { $inc: { totalXp: finalAmount, monthlyXp: Math.max(0, finalAmount) }, $setOnInsert: { level: "rookie" } },
+        session
+          ? { user: userId }
+          : { user: userId, appliedXpKeys: { $ne: idempotencyKey } },
+        {
+          $inc: {
+            totalXp: finalAmount,
+            monthlyXp: Math.max(0, finalAmount),
+          },
+          $setOnInsert: { level: "rookie" },
+          ...(!session
+            ? { $addToSet: { appliedXpKeys: idempotencyKey } }
+            : {}),
+        },
         { upsert: true, returnDocument: "after", ...(session ? { session } : {}) },
       );
 
@@ -199,6 +210,33 @@ export async function grantXp(input: GrantXpInput): Promise<{
     }
   } catch (err) {
     if ((err as { code?: number })?.code === 11000) {
+      const applied = await Experience.findOne({
+        user: userId,
+        appliedXpKeys: idempotencyKey,
+      }).lean();
+      if (applied) {
+        const history = await ExperienceHistory.findOne({ idempotencyKey })
+          .select("_id")
+          .lean();
+        if (!history) {
+          try {
+            await ExperienceHistory.create({
+              user: userId,
+              amount: finalAmount,
+              reason,
+              idempotencyKey,
+              ref: input.ref
+                ? { kind: input.ref.kind, item: input.ref.item }
+                : undefined,
+              description: input.description,
+            });
+          } catch (historyError) {
+            if ((historyError as { code?: number })?.code !== 11000) {
+              throw historyError;
+            }
+          }
+        }
+      }
       return { ok: true, duplicate: true };
     }
     throw err;

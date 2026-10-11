@@ -9,13 +9,20 @@ interface IReferral extends Document {
   referee: mongoose.Types.ObjectId;
   /** کد دعوت استفاده‌شده (اسنپ‌شات برای حسابرسی) */
   code: string;
-  status: "registered" | "first_purchase" | "rewarded";
+  status: "registered" | "first_purchase" | "rewarding" | "rewarded";
   /** اولین سفارش دعوت‌شده که پاداش بر اساس آن فعال شد */
   firstOrder?: mongoose.Types.ObjectId;
   /** پاداش معرف (تومان اعتبار کیف پول) */
   referrerReward: number;
   /** هدیه کاربر جدید (تومان اعتبار کیف پول) */
   refereeReward: number;
+  xpReward: number;
+  referrerRewardedAt?: Date;
+  refereeRewardedAt?: Date;
+  xpRewardedAt?: Date;
+  processingToken?: string;
+  processingStartedAt?: Date;
+  processingExpiresAt?: Date;
   rewardedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -33,13 +40,20 @@ const ReferralSchema = new Schema<IReferral>(
     code: { type: String, required: true },
     status: {
       type: String,
-      enum: ["registered", "first_purchase", "rewarded"],
+      enum: ["registered", "first_purchase", "rewarding", "rewarded"],
       default: "registered",
       index: true,
     },
     firstOrder: { type: Schema.Types.ObjectId, ref: "Order" },
     referrerReward: { type: Number, default: 0, min: 0 },
     refereeReward: { type: Number, default: 0, min: 0 },
+    xpReward: { type: Number, default: 0, min: 0 },
+    referrerRewardedAt: Date,
+    refereeRewardedAt: Date,
+    xpRewardedAt: Date,
+    processingToken: String,
+    processingStartedAt: Date,
+    processingExpiresAt: Date,
     rewardedAt: Date,
   },
   { timestamps: true },

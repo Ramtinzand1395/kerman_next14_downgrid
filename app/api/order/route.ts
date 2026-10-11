@@ -9,6 +9,10 @@ import Product from "@/model/Product";
 import mongoose from "mongoose";
 import { createAddressSnapshot } from "@/lib/addressSnapshot";
 import { notifyAdmins, notifyUser } from "@/lib/notifications/service";
+import {
+  calculateShippingCost,
+  InvalidShippingDestinationError,
+} from "@/lib/shipping";
 
 interface OrderItem {
   productId: string;
@@ -25,7 +29,6 @@ export async function POST(req: Request) {
   const payload: {
     addressId?: string;
     items?: OrderItem[];
-    shippingCost?: number;
   } = await req.json();
 
   if (
@@ -150,13 +153,10 @@ export async function POST(req: Request) {
       };
     });
 
-    const shippingCost = Number(payload.shippingCost ?? 0);
-    if (!Number.isFinite(shippingCost) || shippingCost < 0) {
-      return NextResponse.json(
-        { error: "هزینه ارسال نامعتبر است." },
-        { status: 400 },
-      );
-    }
+    const shippingCost = calculateShippingCost({
+      province: address.province,
+      city: address.city,
+    });
 
     const totalPrice = orderItems.reduce((a: number, i) => a + i.total, 0);
     const finalPrice = totalPrice + shippingCost;
@@ -210,6 +210,13 @@ export async function POST(req: Request) {
 
     return NextResponse.json(order);
   } catch (error) {
+    if (error instanceof InvalidShippingDestinationError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 },
+      );
+    }
+
     if (error instanceof Error && error.message === "INSUFFICIENT_STOCK") {
       return NextResponse.json(
         { error: "موجودی برخی محصولات کافی نیست." },

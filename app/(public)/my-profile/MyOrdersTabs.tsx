@@ -9,7 +9,7 @@ type TabKey = "products" | "games";
 
 const tabs: { key: TabKey; title: string; icon: typeof ShoppingBasket }[] = [
   { key: "products", title: "سفارش‌های محصول", icon: ShoppingBasket },
-  { key: "games", title: "سفارش‌های نصب بازی", icon: Gamepad2 },
+  { key: "games", title: "نوبت‌ها و خدمات", icon: Gamepad2 },
 ];
 
 export default function MyOrdersTabs() {

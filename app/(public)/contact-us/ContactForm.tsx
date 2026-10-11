@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Clock3, Mail, MapPin, MessageSquare, Phone } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { toast } from "react-toastify";
 import { CONTACT_LIMITS } from "@/validations/contactValidation";
 
@@ -20,6 +21,8 @@ const initialFormData: FormData = {
   subject: "",
   message: "",
 };
+
+const CONTACT_DRAFT_KEY = "contactSupportDraft";
 
 const contactChannels = [
   {
@@ -53,8 +56,25 @@ const contactChannels = [
 ];
 
 export default function ContactForm() {
+  const { status } = useSession();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [submitting, setSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    const savedDraft = sessionStorage.getItem(CONTACT_DRAFT_KEY);
+    if (!savedDraft) return;
+    try {
+      setFormData(JSON.parse(savedDraft) as FormData);
+    } catch {
+      sessionStorage.removeItem(CONTACT_DRAFT_KEY);
+    }
+  }, []);
+
+  const redirectToRegistration = () => {
+    sessionStorage.setItem(CONTACT_DRAFT_KEY, JSON.stringify(formData));
+    const returnPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    window.location.assign(`/auth/login?callbackUrl=${encodeURIComponent(returnPath)}`);
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -64,6 +84,10 @@ export default function ContactForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (status !== "authenticated") {
+      if (status === "unauthenticated") redirectToRegistration();
+      return;
+    }
     try {
       setSubmitting(true);
 
@@ -75,12 +99,18 @@ export default function ContactForm() {
 
       const data = await res.json();
 
+      if (res.status === 401) {
+        redirectToRegistration();
+        return;
+      }
+
       if (!res.ok) {
         throw new Error(data?.error || "ارسال پیام ناموفق بود.");
       }
 
       toast.success("پیام شما ثبت شد .");
       setFormData(initialFormData);
+      sessionStorage.removeItem(CONTACT_DRAFT_KEY);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "خطا در ارسال پیام";
@@ -215,12 +245,23 @@ export default function ContactForm() {
 
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || status === "loading"}
           className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
         >
           <MessageSquare size={18} />
-          {submitting ? "در حال ثبت پیام..." : "ارسال پیام"}
+          {submitting
+            ? "در حال ثبت پیام..."
+            : status === "loading"
+              ? "در حال بررسی حساب..."
+              : status === "authenticated"
+                ? "ارسال پیام"
+                : "ثبت‌نام و ارسال پیام"}
         </button>
+        {status === "unauthenticated" && (
+          <p className="mt-3 text-center text-xs leading-6 text-slate-500">
+            برای ارسال پیام، ابتدا با شماره موبایل ثبت‌نام کنید؛ پس از تکمیل ثبت‌نام به همین صفحه برمی‌گردید.
+          </p>
+        )}
       </form>
 
       <aside className="space-y-4">

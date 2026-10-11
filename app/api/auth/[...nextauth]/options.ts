@@ -1,6 +1,8 @@
 import dbConnect from "@/lib/mongodb";
+import Otp from "@/model/Otp";
 import User from "@/model/User";
 import { NextAuthOptions } from "next-auth";
+import { createHash } from "node:crypto";
 
 import CredentialsProvider from "next-auth/providers/credentials";
 export const authOptions: NextAuthOptions = {
@@ -9,14 +11,27 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        mobile: { label: "شماره موبایل", type: "text" },
+        verificationToken: { label: "توکن تایید", type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials?.mobile) throw new Error("شماره موبای  وارد نشده است");
+        if (!credentials?.verificationToken) {
+          throw new Error("تایید شماره موبایل انجام نشده است");
+        }
 
         await dbConnect();
 
-        const user = await User.findOne({ mobile: credentials.mobile }).lean();
+        const loginTokenHash = createHash("sha256")
+          .update(credentials.verificationToken)
+          .digest("hex");
+        const ticket = await Otp.findOneAndDelete({
+          loginTokenHash,
+          verifiedAt: { $exists: true },
+          loginTokenExpiresAt: { $gt: new Date() },
+        }).lean();
+
+        if (!ticket) throw new Error("تایید ورود منقضی شده است");
+
+        const user = await User.findOne({ mobile: ticket.mobile }).lean();
 
         if (!user) throw new Error("کاربری با این شماره موبایل یافت نشد");
 

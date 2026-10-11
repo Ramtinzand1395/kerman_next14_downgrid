@@ -2,12 +2,23 @@ import dbConnect from "@/lib/mongodb";
 import ContactMessage from "@/model/ContactMessage";
 import { notifyAdmins } from "@/lib/notifications/service";
 import { contactMessageSchema } from "@/validations/contactValidation";
+import { authOptions } from "@/app/api/auth/[...nextauth]/options";
+import User from "@/model/User";
+import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
 const MAX_REQUEST_SIZE = 16 * 1024;
 
 export async function POST(req: Request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "برای ارسال پیام ابتدا ثبت‌نام کنید.", code: "AUTH_REQUIRED" },
+        { status: 401 },
+      );
+    }
+
     const contentLength = Number(req.headers.get("content-length"));
 
     if (Number.isFinite(contentLength) && contentLength > MAX_REQUEST_SIZE) {
@@ -48,7 +59,19 @@ export async function POST(req: Request) {
 
     await dbConnect();
 
+    const registeredUser = await User.findById(session.user.id)
+      .select("_id mobile")
+      .lean();
+
+    if (!registeredUser) {
+      return NextResponse.json(
+        { error: "برای ارسال پیام ابتدا ثبت‌نام کنید.", code: "AUTH_REQUIRED" },
+        { status: 401 },
+      );
+    }
+
     const contactMessage = await ContactMessage.create({
+      user: registeredUser._id,
       name,
       email,
       phone,
@@ -58,7 +81,7 @@ export async function POST(req: Request) {
 
     await notifyAdmins({
       title: `پیام جدید تماس: ${subject}`,
-      message: `از طرف ${name} | ${phone}`,
+      message: `از طرف ${name} | ${phone} | کاربر ثبت‌شده: ${registeredUser.mobile}`,
       type: "SUPPORT_MESSAGE",
       category: "support",
       entityType: "ContactMessage",

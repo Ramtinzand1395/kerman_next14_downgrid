@@ -1,7 +1,12 @@
 "use client";
 
-import { motion, useAnimation, useInView } from "framer-motion";
-import React, { useEffect, useMemo, useRef } from "react";
+import {
+  motion,
+  useAnimation,
+  useInView,
+  useReducedMotion,
+} from "framer-motion";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 type MotionDirection = "up" | "down" | "left" | "right";
 
@@ -30,13 +35,28 @@ const Motion: React.FC<MotionProps> = ({
   });
 
   const controls = useAnimation();
+  const reduceMotion = useReducedMotion();
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (reduceMotion) {
+      controls.set("visible");
+      return;
+    }
+
+    if (hydrated && !isInView) {
+      controls.set("hidden");
+    }
+
     if (isInView) {
       controls.start("visible");
     }
-  }, [controls, isInView]);
-const hasHorizontalMotion = direction === "left" || direction === "right";
+  }, [controls, hydrated, isInView, reduceMotion]);
+  const hasHorizontalMotion = direction === "left" || direction === "right";
   const hiddenState = useMemo(() => {
     switch (direction) {
       case "left":
@@ -76,7 +96,7 @@ const hasHorizontalMotion = direction === "left" || direction === "right";
   }, [direction, distance]);
 
   return (
-     <div
+    <div
       ref={ref}
       className={className}
       style={hasHorizontalMotion ? { overflowX: "clip" } : undefined}
@@ -92,7 +112,7 @@ const hasHorizontalMotion = direction === "left" || direction === "right";
             filter: "blur(0px)",
           },
         }}
-        initial="hidden"
+        initial={false}
         animate={controls}
         transition={{
           duration,

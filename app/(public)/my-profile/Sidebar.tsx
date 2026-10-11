@@ -123,14 +123,15 @@ export default function Sidebar() {
           </span>
         </Link>
 
-        <button className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-right text-sm text-slate-700 hover:border-indigo-300 transition-colors">
-          <Link href="/my-profile?step=6">
-            <span className="flex items-center gap-2">
-              <FilePlus className="w-4 h-4 text-fuchsia-500" />
-              ثبت نوبت نصب بازی
-            </span>
-          </Link>
-        </button>
+        <Link
+          href="/my-profile?step=6"
+          className="block w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-right text-sm text-slate-700 transition-colors hover:border-indigo-300"
+        >
+          <span className="flex items-center gap-2">
+            <FilePlus className="h-4 w-4 text-fuchsia-500" />
+            دریافت نوبت
+          </span>
+        </Link>
       </div>
       <Link
         href="/my-profile?step=9"

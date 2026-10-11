@@ -20,6 +20,7 @@ interface IMissionProgress extends Document {
   /** پاداش پرداخت شد؟ (جدا از completed برای کنترل اتمیک پرداخت) */
   rewardClaimed: boolean;
   rewardClaimedAt?: Date;
+  processedEventKeys: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,6 +35,7 @@ const MissionProgressSchema = new Schema<IMissionProgress>(
     completedAt: Date,
     rewardClaimed: { type: Boolean, default: false },
     rewardClaimedAt: Date,
+    processedEventKeys: { type: [String], default: [] },
   },
   { timestamps: true },
 );
