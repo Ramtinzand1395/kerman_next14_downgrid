@@ -241,6 +241,7 @@ function DetailsModal({
 
           {kind === "ContactMessage" && (
             <>
+              {Object.keys(record(item.user)).length > 0 && <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"><span className="font-bold">حساب ثبت‌شده: </span>{text(record(item.user).username, "کاربر")} — <span dir="ltr">{text(record(item.user).mobile)}</span></div>}
               <div className="grid gap-3 sm:grid-cols-2"><DetailBox label="نام" value={text(item.name)} /><DetailBox label="تلفن" value={<span className="inline-flex items-center gap-1"><Phone className="h-4 w-4" />{text(item.phone)}</span>} /><DetailBox label="ایمیل" value={<span className="inline-flex items-center gap-1"><Mail className="h-4 w-4" />{text(item.email)}</span>} /><DetailBox label="زمان ارسال" value={date(item.createdAt)} /></div>
               <DetailBox label="موضوع" value={text(item.subject)} />
               <div className="rounded-2xl border border-slate-200 p-4"><p className="text-xs text-slate-500">متن پیام</p><p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-700">{text(item.message)}</p></div>

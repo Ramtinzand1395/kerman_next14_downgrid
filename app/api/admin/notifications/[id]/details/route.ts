@@ -29,7 +29,8 @@ async function getEntity(kind: string, entityId: mongoose.Types.ObjectId) {
         .lean();
     case "ContactMessage":
       return ContactMessage.findById(entityId)
-        .select("name email phone subject message createdAt")
+        .select("user name email phone subject message createdAt")
+        .populate("user", "username mobile")
         .lean();
     case "CustomerGameOrder":
       return CustomerGameOrder.findById(entityId)
