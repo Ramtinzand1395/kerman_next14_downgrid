@@ -16,6 +16,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
+import { ButtonLoading } from "@/app/components/loading/LoadingSystem";
 
 interface PaymentFormProps {
   selectedAddress: Address;
@@ -417,10 +418,7 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-900 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
         >
           {loading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              در حال اتصال به درگاه...
-            </>
+            <ButtonLoading label="در حال اتصال به درگاه…" />
           ) : (
             <>
               <CreditCard className="h-4 w-4" />
@@ -444,10 +442,7 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-700 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
         >
           {walletLoading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              در حال پرداخت از کیف پول...
-            </>
+            <ButtonLoading label="در حال پرداخت از کیف پول…" />
           ) : (
             <>
               <Wallet className="h-4 w-4" />

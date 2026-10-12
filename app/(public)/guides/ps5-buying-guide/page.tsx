@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import {
   GuideContent,
   GuideHero,
   GuideNextSteps,
   QuickChoices,
 } from "../_components/BuyingGuideView";
-import GuideProducts from "../_components/GuideProducts";
+import { GuideProductsLoading, Ps5GuideProductsSection } from "../_components/GuideProductsSection";
 import {
   PRODUCTION_SITE_URL,
   PS5_GUIDE_PATH,
   ps5BuyingGuide,
 } from "@/lib/guides/ps5-buying-guide";
 import { getGuideReadingMinutes } from "@/lib/guides/reading-time";
-import { getPs5GuideProducts } from "@/lib/guides/related-products";
 
 export const dynamic = "force-dynamic";
 
@@ -120,7 +120,6 @@ function getStructuredData() {
 }
 
 export default async function Ps5BuyingGuidePage() {
-  const productsResult = await getPs5GuideProducts();
   const readingMinutes = getGuideReadingMinutes(ps5BuyingGuide);
 
   return (
@@ -133,12 +132,7 @@ export default async function Ps5BuyingGuidePage() {
         <GuideHero guide={ps5BuyingGuide} readingMinutes={readingMinutes} />
         <QuickChoices guide={ps5BuyingGuide} />
         <GuideContent guide={ps5BuyingGuide} />
-        <GuideProducts
-          result={productsResult}
-          productsHref={ps5BuyingGuide.productHref}
-          title={ps5BuyingGuide.productsSectionTitle}
-          emptyMessage={ps5BuyingGuide.productsEmptyMessage}
-        />
+        <Suspense fallback={<GuideProductsLoading />}><Ps5GuideProductsSection /></Suspense>
         <GuideNextSteps guide={ps5BuyingGuide} />
       </div>
     </div>

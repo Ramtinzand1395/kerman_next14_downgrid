@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarClock, Gamepad2, Loader2, MapPin, RefreshCw, Wrench } from "lucide-react";
+import { CalendarClock, Gamepad2, MapPin, RefreshCw, Wrench } from "lucide-react";
 import type { AppointmentItem } from "@/types/appointments";
+import { ButtonLoading, Skeleton } from "@/app/components/loading/LoadingSystem";
 
 type LegacyOrder = {
   _id: string;
@@ -121,7 +122,7 @@ export default function MyGameOrders() {
   };
 
   if (loading) {
-    return <div className="flex min-h-48 items-center justify-center gap-2 text-sm text-slate-500"><Loader2 className="h-5 w-5 animate-spin" /> در حال دریافت نوبت‌ها…</div>;
+    return <div role="status" aria-busy="true" className="grid gap-4 xl:grid-cols-2"><span className="sr-only">در حال دریافت نوبت‌ها…</span>{Array.from({ length: 4 }).map((_, index) => <div key={index} aria-hidden="true" className="rounded-3xl border border-slate-200 bg-white p-4"><Skeleton className="h-12 w-full rounded-xl" /><Skeleton className="mt-4 h-5 w-3/4 rounded" /><Skeleton className="mt-3 h-20 w-full rounded-xl" /></div>)}</div>;
   }
 
   return (
@@ -185,7 +186,7 @@ export default function MyGameOrders() {
                     </span>
                     {cancellable && (
                       <button type="button" disabled={working === item._id} onClick={() => void cancel(item._id)} className="rounded-xl border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700 disabled:opacity-50">
-                        {working === item._id ? "در حال لغو…" : "لغو نوبت"}
+                        {working === item._id ? <ButtonLoading label="در حال لغو…" /> : "لغو نوبت"}
                       </button>
                     )}
                   </div>

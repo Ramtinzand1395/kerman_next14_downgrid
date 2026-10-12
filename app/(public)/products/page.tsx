@@ -9,6 +9,7 @@ import FilterProducts from "./components/FilterProducts";
 import Pagination from "./components/Pagination";
 import SortProducts from "./components/SortProducts";
 import ProductsSearch from "./components/ProductsSearch";
+import { ProductNavigationProvider } from "./components/ProductNavigation";
 import { SITE_URL, toAbsoluteUrl } from "@/lib/site";
 import { categories } from "../constants/categories";
 
@@ -177,6 +178,8 @@ export default async function ProductsPage({
         }}
       />
 
+      <ProductNavigationProvider>
+
       <header className="mb-5 overflow-hidden rounded-3xl bg-gradient-to-l from-blue-600 via-blue-700 to-indigo-800 p-5 text-white shadow-lg shadow-blue-900/15 md:p-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -307,6 +310,7 @@ export default async function ProductsPage({
           ابتدا نمایش داده می‌شود.
         </p>
       </article>
+      </ProductNavigationProvider>
     </section>
   );
 }

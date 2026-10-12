@@ -1,13 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, Check, CheckCheck, ChevronLeft, ChevronRight, Loader2, RefreshCcw, Trash2 } from "lucide-react";
+import { Bell, Check, CheckCheck, ChevronLeft, ChevronRight, RefreshCcw, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
 import type { NotificationItem, NotificationResponse } from "./types";
 import { relativeTime } from "./relativeTime";
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
+import { NotificationListSkeleton } from "@/app/components/loading/LoadingSystem";
 
 const AdminNotificationAction = dynamic(
   () => import("./AdminNotificationAction"),
@@ -28,20 +29,25 @@ export default function NotificationCenter({ title = "مرکز اعلان‌ها
   const { data: session } = useSession();
   const [data, setData] = useState<NotificationResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [filter, setFilter] = useState<ReadFilter>("all");
   const [page, setPage] = useState(1);
+  const latestRequest = useRef(0);
 
   const load = useCallback(async () => {
+    const requestId = ++latestRequest.current;
     setLoading(true);
+    setError("");
     try {
       const read = filter === "all" ? "" : `&read=${filter === "read"}`;
       const response = await fetch(`/api/notifications?page=${page}&limit=12${read}`, { cache: "no-store" });
       if (!response.ok) throw new Error();
-      setData((await response.json()) as NotificationResponse);
+      const nextData = (await response.json()) as NotificationResponse;
+      if (requestId === latestRequest.current) setData(nextData);
     } catch {
-      toast.error("دریافت اعلان‌ها با خطا مواجه شد.");
+      if (requestId === latestRequest.current) setError("دریافت اعلان‌ها با خطا مواجه شد.");
     } finally {
-      setLoading(false);
+      if (requestId === latestRequest.current) setLoading(false);
     }
   }, [filter, page]);
 
@@ -76,7 +82,7 @@ export default function NotificationCenter({ title = "مرکز اعلان‌ها
   };
 
   return (
-    <section className="space-y-5">
+    <section className="space-y-5" aria-busy={loading}>
       <header className="rounded-2xl border border-slate-200 bg-gradient-to-l from-indigo-950 to-indigo-700 p-5 text-white shadow-sm md:p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -94,14 +100,15 @@ export default function NotificationCenter({ title = "مرکز اعلان‌ها
           ))}
         </div>
         <div className="flex gap-2">
-          <button onClick={() => void load()} className="rounded-xl border border-slate-200 p-2 text-slate-600 hover:bg-slate-50" aria-label="به‌روزرسانی"><RefreshCcw className="h-4 w-4" /></button>
+          <button onClick={() => void load()} disabled={loading} className="rounded-xl border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 disabled:opacity-50" aria-label="به‌روزرسانی"><RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin motion-reduce:animate-none" : ""}`} /></button>
           <button onClick={() => void markAll()} disabled={!data?.unreadCount} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"><CheckCheck className="h-4 w-4" /> خواندن همه</button>
         </div>
       </div>
 
       <div className="space-y-3">
-        {loading && <div className="flex min-h-40 items-center justify-center rounded-2xl border border-slate-200 bg-white"><Loader2 className="h-6 w-6 animate-spin text-indigo-600" /></div>}
-        {!loading && data?.notifications.map((item) => (
+        {loading && !data && <NotificationListSkeleton />}
+        {error && <div role="alert" className="flex items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700"><span>{error}</span><button type="button" onClick={() => void load()} className="shrink-0 rounded-xl border border-rose-200 bg-white px-3 py-2 font-bold">تلاش دوباره</button></div>}
+        {data?.notifications.map((item) => (
           <article key={item._id} className={`rounded-2xl border p-4 shadow-sm transition md:p-5 ${item.isRead ? "border-slate-200 bg-white" : "border-indigo-200 bg-indigo-50/50"}`}>
             <div className="flex items-start gap-3">
               <span className={`mt-2 h-2.5 w-2.5 shrink-0 rounded-full ${item.isRead ? "bg-slate-300" : "bg-indigo-500"}`} />
@@ -127,14 +134,14 @@ export default function NotificationCenter({ title = "مرکز اعلان‌ها
             </div>
           </article>
         ))}
-        {!loading && !data?.notifications.length && <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center text-sm text-slate-500">اعلانی مطابق این فیلتر وجود ندارد.</div>}
+        {!loading && !error && !data?.notifications.length && <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center text-sm text-slate-500">اعلانی مطابق این فیلتر وجود ندارد.</div>}
       </div>
 
       {!!data && data.pagination.pages > 1 && (
         <div className="flex items-center justify-center gap-3">
-          <button disabled={page <= 1} onClick={() => setPage((value) => value - 1)} className="rounded-xl border p-2 disabled:opacity-40" aria-label="صفحه قبل"><ChevronRight className="h-4 w-4" /></button>
+          <button disabled={page <= 1 || loading} onClick={() => setPage((value) => value - 1)} className="rounded-xl border p-2 disabled:opacity-40" aria-label="صفحه قبل"><ChevronRight className="h-4 w-4" /></button>
           <span className="text-sm text-slate-600">صفحه {page.toLocaleString("fa-IR")} از {data.pagination.pages.toLocaleString("fa-IR")}</span>
-          <button disabled={page >= data.pagination.pages} onClick={() => setPage((value) => value + 1)} className="rounded-xl border p-2 disabled:opacity-40" aria-label="صفحه بعد"><ChevronLeft className="h-4 w-4" /></button>
+          <button disabled={page >= data.pagination.pages || loading} onClick={() => setPage((value) => value + 1)} className="rounded-xl border p-2 disabled:opacity-40" aria-label="صفحه بعد"><ChevronLeft className="h-4 w-4" /></button>
         </div>
       )}
     </section>

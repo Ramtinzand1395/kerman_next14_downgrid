@@ -55,9 +55,11 @@ export default function ProductImage({
     `https://${CLOUDINARY_HOST}/`,
   );
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     setFailed(false);
+    setLoaded(false);
   }, [normalizedSrc]);
 
   if (!normalizedSrc || failed) {
@@ -79,8 +81,13 @@ export default function ProductImage({
       src={normalizedSrc}
       alt={normalizedAlt}
       loader={isCloudinaryImage ? cloudinaryProductLoader : imageProps.loader}
-      className={className}
+      data-loaded={loaded}
+      className={`product-image-pending ${className}`}
       style={style}
+      onLoad={(event) => {
+        setLoaded(true);
+        imageProps.onLoad?.(event);
+      }}
       onError={() => setFailed(true)}
     />
   );

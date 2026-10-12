@@ -1,6 +1,4 @@
-"use client";
-
-import Skeleton from "react-loading-skeleton";
+import { Skeleton } from "@/app/components/loading/LoadingSystem";
 
 const OrderSkeleton = ({ rows = 5 }: { rows?: number }) => {
    return (
@@ -11,38 +9,20 @@ const OrderSkeleton = ({ rows = 5 }: { rows?: number }) => {
           className="grid grid-cols-4 gap-4 bg-gray-100 rounded-md py-4 px-2"
         >
           {/* نام خانوادگی */}
-          <Skeleton
-            height={16}
-            width={80}
-            baseColor="#e5e7eb"
-            highlightColor="#f3f4f6"
-            borderRadius={6}
-          />
+          <Skeleton className="h-4 w-20 rounded-md" />
 
           {/* وضعیت سفارش */}
           <div className="flex justify-around">
-            <Skeleton circle width={24} height={24} />
-            <Skeleton circle width={24} height={24} />
-            <Skeleton circle width={24} height={24} />
+            <Skeleton className="h-6 w-6 rounded-full" />
+            <Skeleton className="h-6 w-6 rounded-full" />
+            <Skeleton className="h-6 w-6 rounded-full" />
           </div>
 
           {/* کد دریافت */}
-          <Skeleton
-            height={16}
-            width={60}
-            baseColor="#e5e7eb"
-            highlightColor="#f3f4f6"
-            borderRadius={6}
-          />
+          <Skeleton className="h-4 w-16 rounded-md" />
 
           {/* توضیحات */}
-          <Skeleton
-            height={16}
-            width="100%"
-            baseColor="#e5e7eb"
-            highlightColor="#f3f4f6"
-            borderRadius={6}
-          />
+          <Skeleton className="h-4 w-full rounded-md" />
         </div>
       ))}
     </div>

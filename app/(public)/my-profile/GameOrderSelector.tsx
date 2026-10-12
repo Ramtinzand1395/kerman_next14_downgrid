@@ -27,6 +27,7 @@ import type {
   RewardType,
   ServiceType,
 } from "@/types/appointments";
+import { ButtonLoading } from "@/app/components/loading/LoadingSystem";
 
 type Step = 1 | 2 | 3 | 4;
 type Slot = { startsAt: string; endsAt: string; time: string; remaining: number; available: boolean };
@@ -783,7 +784,7 @@ export default function GameOrderSelector({
             {step < 4 ? (
               <button type="button" disabled={step === 1 ? !stageOneValid || (repairIssue === "other" && !description.trim()) : step === 2 ? !fulfillment : !scheduleValid} onClick={() => setStep((value) => Math.min(4, value + 1) as Step)} className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-[#001A6E] px-7 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300">ادامه <ChevronLeft className="h-4 w-4" /></button>
             ) : (
-              <button type="button" disabled={!stageThreeValid || !scheduleValid || submitting} onClick={() => void submit()} className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-[#001A6E] px-7 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300">{submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />} ثبت نوبت</button>
+              <button type="button" disabled={!stageThreeValid || !scheduleValid || submitting} onClick={() => void submit()} className="inline-flex min-h-12 min-w-36 items-center justify-center gap-2 rounded-2xl bg-[#001A6E] px-7 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300">{submitting ? <ButtonLoading label="در حال ثبت…" /> : <><ShieldCheck className="h-5 w-5" /> ثبت نوبت</>}</button>
             )}
           </div>
         </div>
@@ -823,7 +824,7 @@ export default function GameOrderSelector({
           {step < 4 ? (
             <button type="button" disabled={step === 1 ? !stageOneValid || (repairIssue === "other" && !description.trim()) : step === 2 ? !fulfillment : !scheduleValid} onClick={() => setStep((value) => Math.min(4, value + 1) as Step)} className="h-12 flex-1 rounded-2xl bg-[#001A6E] font-black text-white disabled:bg-slate-300">ادامه</button>
           ) : (
-            <button type="button" disabled={!stageThreeValid || !scheduleValid || submitting} onClick={() => void submit()} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#001A6E] font-black text-white disabled:bg-slate-300">{submitting && <Loader2 className="h-5 w-5 animate-spin" />} ثبت نوبت</button>
+            <button type="button" disabled={!stageThreeValid || !scheduleValid || submitting} onClick={() => void submit()} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#001A6E] font-black text-white disabled:bg-slate-300">{submitting ? <ButtonLoading label="در حال ثبت…" /> : "ثبت نوبت"}</button>
           )}
         </div>
       </div>

@@ -1,8 +1,9 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
+import { useProductNavigation } from "./ProductNavigation";
 
 type ProductsSearchProps = {
   initialQuery?: string;
@@ -12,8 +13,8 @@ export default function ProductsSearch({
   initialQuery = "",
 }: ProductsSearchProps) {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const pathname = usePathname();
+  const { isPending, navigate } = useProductNavigation();
   const [query, setQuery] = useState(initialQuery);
 
   const updateRoute = (value: string) => {
@@ -26,7 +27,7 @@ export default function ProductsSearch({
     }
 
     params.set("page", "1");
-    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    navigate(`${pathname}?${params.toString()}`);
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -52,6 +53,7 @@ export default function ProductsSearch({
       {query && (
         <button
           type="button"
+          disabled={isPending}
           onClick={() => {
             setQuery("");
             updateRoute("");
@@ -64,9 +66,10 @@ export default function ProductsSearch({
       )}
       <button
         type="submit"
+        disabled={isPending}
         className="min-h-9 shrink-0 rounded-xl bg-white px-4 py-1 text-xs font-bold text-blue-800 transition hover:bg-blue-50"
       >
-        جستجو
+        {isPending ? "در حال جستجو…" : "جستجو"}
       </button>
     </form>
   );

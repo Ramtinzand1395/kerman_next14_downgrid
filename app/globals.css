@@ -8,6 +8,15 @@ body {
   background-color: #f3f4f9;
 }
 
+.loading-skeleton { position: relative; overflow: hidden; background: #e8edf5; }
+.loading-skeleton::after { position: absolute; inset: 0; content: ""; transform: translateX(100%); background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent); animation: loading-shimmer 1.45s ease-in-out infinite; }
+.loading-progress { animation: loading-progress 1.2s ease-in-out infinite alternate; }
+.product-image-pending:not([data-loaded="true"]) { background-color: #e8edf5; background-image: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.8) 45%, transparent 70%); background-size: 220% 100%; animation: image-loading-shimmer 1.45s ease-in-out infinite; }
+@keyframes loading-shimmer { to { transform: translateX(-100%); } }
+@keyframes loading-progress { from { transform: translateX(85%); } to { transform: translateX(-85%); } }
+@keyframes image-loading-shimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+@media (prefers-reduced-motion: reduce) { .loading-skeleton::after, .loading-progress, .product-image-pending { animation: none; } }
+
 .landing-section {
   margin-block: 1rem;
 }

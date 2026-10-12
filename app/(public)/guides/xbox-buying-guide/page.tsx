@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import {
   GuideContent,
   GuideHero,
   GuideNextSteps,
   QuickChoices,
 } from "../_components/BuyingGuideView";
-import GuideProducts from "../_components/GuideProducts";
+import { GuideProductsLoading, XboxGuideProductsSection } from "../_components/GuideProductsSection";
 import {
   XBOX_GUIDE_PATH,
   XBOX_PRODUCTION_SITE_URL,
   xboxBuyingGuide,
 } from "@/lib/guides/xbox-buying-guide";
 import { getGuideReadingMinutes } from "@/lib/guides/reading-time";
-import { getXboxGuideProducts } from "@/lib/guides/related-products";
 
 export const dynamic = "force-dynamic";
 
@@ -111,7 +111,6 @@ function getStructuredData() {
 }
 
 export default async function XboxBuyingGuidePage() {
-  const productsResult = await getXboxGuideProducts();
   const readingMinutes = getGuideReadingMinutes(xboxBuyingGuide);
 
   return (
@@ -124,12 +123,7 @@ export default async function XboxBuyingGuidePage() {
         <GuideHero guide={xboxBuyingGuide} readingMinutes={readingMinutes} />
         <QuickChoices guide={xboxBuyingGuide} />
         <GuideContent guide={xboxBuyingGuide} />
-        <GuideProducts
-          result={productsResult}
-          productsHref={xboxBuyingGuide.productHref}
-          title={xboxBuyingGuide.productsSectionTitle}
-          emptyMessage={xboxBuyingGuide.productsEmptyMessage}
-        />
+        <Suspense fallback={<GuideProductsLoading />}><XboxGuideProductsSection /></Suspense>
         <GuideNextSteps guide={xboxBuyingGuide} />
       </div>
     </div>

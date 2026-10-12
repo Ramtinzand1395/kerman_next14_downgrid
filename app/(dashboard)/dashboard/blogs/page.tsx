@@ -28,6 +28,7 @@ import { uploadCloudinaryImage } from "@/helpers/uploadCloudinaryImage";
 import { analyzeBlogSeo, normalizeBlogSlug } from "@/lib/blogSeo";
 import RichTextEditor from "../components/RichTextEditor";
 import SeoAuditPanel from "./SeoAuditPanel";
+import { DashboardRouteSkeleton } from "@/app/components/loading/LoadingSystem";
 
 type BlogForm = {
   title: string;
@@ -904,12 +905,7 @@ export default function BlogsAdminPage() {
           </div>
 
           {loading ? (
-            <div className="grid min-h-64 place-items-center text-sm text-slate-500">
-              <span className="flex items-center gap-2">
-                <Loader2 className="h-5 w-5 animate-spin text-indigo-600" />
-                در حال دریافت مقاله‌ها...
-              </span>
-            </div>
+            <DashboardRouteSkeleton variant="table" />
           ) : filteredBlogs.length === 0 ? (
             <div className="grid min-h-64 place-items-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
               <div>

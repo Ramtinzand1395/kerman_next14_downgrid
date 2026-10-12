@@ -1,7 +1,8 @@
 "use client";
 
 import { ArrowDownUp } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useProductNavigation } from "./ProductNavigation";
 
 const sortOptions = [
   { label: "محبوب‌ترین", value: "" },
@@ -16,8 +17,8 @@ interface SortProductsProps {
 
 export default function SortProducts({ totalProducts }: SortProductsProps) {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const pathname = usePathname();
+  const { isPending, navigate } = useProductNavigation();
 
   const selectedSort = searchParams.get("sort") || "";
 
@@ -31,7 +32,7 @@ export default function SortProducts({ totalProducts }: SortProductsProps) {
     }
 
     params.set("page", "1");
-    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    navigate(`${pathname}?${params.toString()}`);
   };
 
   return (
@@ -51,6 +52,7 @@ export default function SortProducts({ totalProducts }: SortProductsProps) {
                 key={option.label}
                 type="button"
                 onClick={() => handleChange(option.value)}
+                disabled={isPending}
                 className={`rounded-xl px-3 py-2 text-sm transition-colors ${
                   isActive
                     ? "bg-blue-600 text-white"
@@ -67,6 +69,7 @@ export default function SortProducts({ totalProducts }: SortProductsProps) {
           title="مرتب سازی"
           value={selectedSort}
           onChange={(e) => handleChange(e.target.value)}
+          disabled={isPending}
           className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 md:hidden"
         >
           {sortOptions.map((opt) => (
