@@ -15,7 +15,7 @@ interface Comment {
   product: {
     title: string;
     mainImage: string;
-  };
+  } | null;
 }
 
 const formatDate = (date: string) =>
@@ -117,7 +117,9 @@ export default function MyComments() {
 
             <div className="flex-1 space-y-2">
               <div className="flex items-start md:items-center justify-between gap-2 flex-col md:flex-row">
-                <p className="font-semibold text-slate-800">{comment.product.title}</p>
+                <p className="font-semibold text-slate-800">
+                  {comment.product?.title || "محصول حذف شده"}
+                </p>
                 <p className="text-xs text-slate-500">{formatDate(comment.createdAt)}</p>
               </div>
 
