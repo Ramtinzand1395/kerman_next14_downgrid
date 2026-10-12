@@ -25,7 +25,7 @@ export default function Pagination({ totalPages, currentPage }: PaginationProps)
 
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", page.toString());
-    navigate(`${pathname}?${params.toString()}`);
+    navigate(`${pathname}?${params.toString()}`, "page");
   };
 
   const visiblePages = Array.from({ length: totalPages }, (_, i) => i + 1).filter(

@@ -6,13 +6,6 @@ import { CalendarClock, Gamepad2, MapPin, RefreshCw, Wrench } from "lucide-react
 import type { AppointmentItem } from "@/types/appointments";
 import { ButtonLoading, Skeleton } from "@/app/components/loading/LoadingSystem";
 
-type LegacyOrder = {
-  _id: string;
-  products: Array<{ name: string; platform?: string }>;
-  status: string;
-  createdAt: string;
-  totalPrice?: number;
-};
 
 const statusLabel: Record<string, string> = {
   pending: "در انتظار تأیید",
@@ -72,7 +65,6 @@ function dateTime(value: string) {
 }
 export default function MyGameOrders() {
   const [appointments, setAppointments] = useState<AppointmentItem[]>([]);
-  const [legacy, setLegacy] = useState<LegacyOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [working, setWorking] = useState("");
@@ -81,17 +73,16 @@ export default function MyGameOrders() {
     setLoading(true);
     setError("");
     try {
-      const [appointmentsResponse, legacyResponse] = await Promise.all([
-        fetch("/api/profile/appointments", { cache: "no-store" }),
-        fetch("/api/profile/customer-game-orders", { cache: "no-store" }),
-      ]);
+      const appointmentsResponse = await fetch("/api/profile/appointments", {
+        cache: "no-store",
+      });
       if (!appointmentsResponse.ok) throw new Error("دریافت نوبت‌ها انجام نشد.");
       const appointmentsData = await appointmentsResponse.json();
-      setAppointments(Array.isArray(appointmentsData.appointments) ? appointmentsData.appointments : []);
-      if (legacyResponse.ok) {
-        const legacyData = await legacyResponse.json();
-        setLegacy(Array.isArray(legacyData) ? legacyData : []);
-      }
+      setAppointments(
+        Array.isArray(appointmentsData.appointments)
+          ? appointmentsData.appointments
+          : [],
+      );
     } catch {
       setError("دریافت نوبت‌ها با مشکل مواجه شد.");
     } finally {
@@ -195,21 +186,6 @@ export default function MyGameOrders() {
             );
           })}
         </div>
-      )}
-
-      {legacy.length > 0 && (
-        <details className="rounded-3xl border border-slate-200 bg-white p-5">
-          <summary className="cursor-pointer font-black text-slate-800">سفارش‌های قدیمی نصب بازی ({legacy.length.toLocaleString("fa-IR")})</summary>
-          <p className="mt-2 text-xs text-slate-500">این سوابق برای سازگاری حفظ شده‌اند و به نوبت جدید تبدیل نشده‌اند.</p>
-          <div className="mt-4 space-y-3">
-            {legacy.map((order) => (
-              <article key={order._id} className="rounded-2xl bg-slate-50 p-4 text-sm">
-                <div className="flex justify-between gap-3"><strong>#{order._id.slice(-6).toUpperCase()}</strong><span>{new Date(order.createdAt).toLocaleDateString("fa-IR")}</span></div>
-                <p className="mt-2 text-slate-600">{order.products.map((product) => product.name).join("، ")}</p>
-              </article>
-            ))}
-          </div>
-        </details>
       )}
     </section>
   );

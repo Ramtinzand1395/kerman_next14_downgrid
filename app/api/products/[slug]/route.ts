@@ -18,11 +18,7 @@ export async function GET(
 
   try {
     await dbConnect(); // اتصال به MongoDB
-   const product = await Product.findOne({ slug, status: "published" })
-      .populate("images") // اگر مدل جدا برای تصاویر داری
-      .populate({
-        path: "specifications.items", // فرض اینکه specifications یک آرایه هست
-      })
+    const product = await Product.findOne({ slug, status: "published" })
       .populate("category")
       .populate("tags")
       .populate({

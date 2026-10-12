@@ -221,7 +221,6 @@ export async function GET(req: Request) {
         path: "comments",
         match: { verified: true },
       })
-      .populate("images")
       .populate("tags")
       .populate("category")
       .sort(sort)

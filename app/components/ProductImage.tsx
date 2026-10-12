@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { ImageOff } from "lucide-react";
 import Image, { type ImageLoaderProps, type ImageProps } from "next/image";
 
@@ -33,9 +33,14 @@ const cloudinaryProductLoader = ({
   }
 };
 
-type ProductImageProps = Omit<ImageProps, "src" | "alt" | "onError"> & {
+type ProductImageProps = Omit<ImageProps, "src" | "alt"> & {
   src?: string | null;
   alt?: string | null;
+};
+
+type ImageState = {
+  src: string;
+  status: "loading" | "loaded" | "failed";
 };
 
 /**
@@ -47,6 +52,8 @@ export default function ProductImage({
   alt,
   className = "",
   style,
+  onLoad,
+  onError,
   ...imageProps
 }: ProductImageProps) {
   const normalizedSrc = typeof src === "string" ? src.trim() : "";
@@ -54,15 +61,42 @@ export default function ProductImage({
   const isCloudinaryImage = normalizedSrc.startsWith(
     `https://${CLOUDINARY_HOST}/`,
   );
-  const [failed, setFailed] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+  const latestSrc = useRef(normalizedSrc);
+  latestSrc.current = normalizedSrc;
+  const [imageState, setImageState] = useState<ImageState>(() => ({
+    src: normalizedSrc,
+    status: normalizedSrc ? "loading" : "failed",
+  }));
+  const status =
+    imageState.src === normalizedSrc ? imageState.status : "loading";
 
-  useEffect(() => {
-    setFailed(false);
-    setLoaded(false);
-  }, [normalizedSrc]);
+  const setCurrentStatus = useCallback(
+    (nextStatus: ImageState["status"]) => {
+      if (latestSrc.current !== normalizedSrc) return;
+      setImageState({ src: normalizedSrc, status: nextStatus });
+    },
+    [normalizedSrc],
+  );
 
-  if (!normalizedSrc || failed) {
+  const captureImage = useCallback(
+    (node: HTMLImageElement | null) => {
+      if (
+        !node ||
+        !node.complete ||
+        latestSrc.current !== normalizedSrc
+      ) {
+        return;
+      }
+
+      setImageState({
+        src: normalizedSrc,
+        status: node.naturalWidth > 0 ? "loaded" : "failed",
+      });
+    },
+    [normalizedSrc],
+  );
+
+  if (!normalizedSrc || status === "failed") {
     return (
       <div
         role="img"
@@ -77,18 +111,27 @@ export default function ProductImage({
 
   return (
     <Image
+      key={normalizedSrc}
       {...imageProps}
+      ref={captureImage}
       src={normalizedSrc}
       alt={normalizedAlt}
       loader={isCloudinaryImage ? cloudinaryProductLoader : imageProps.loader}
-      data-loaded={loaded}
+      data-loaded={status === "loaded"}
       className={`product-image-pending ${className}`}
       style={style}
       onLoad={(event) => {
-        setLoaded(true);
-        imageProps.onLoad?.(event);
+        if (latestSrc.current !== normalizedSrc) return;
+        setCurrentStatus(
+          event.currentTarget.naturalWidth > 0 ? "loaded" : "failed",
+        );
+        onLoad?.(event);
       }}
-      onError={() => setFailed(true)}
+      onError={(event) => {
+        if (latestSrc.current !== normalizedSrc) return;
+        setCurrentStatus("failed");
+        onError?.(event);
+      }}
     />
   );
 }

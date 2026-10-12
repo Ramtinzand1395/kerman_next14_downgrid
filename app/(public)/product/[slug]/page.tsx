@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import { ProductGallery } from "./ProductGallery";
 import { ProductInfo } from "./ProductInfo";
 import TabSection from "./TabSection";
@@ -10,25 +11,78 @@ import ProductImage from "@/app/components/ProductImage";
 
 type ProductResponse = Product & {
   id?: string;
-  error?: string;
 };
 
-async function getProduct(slug: string): Promise<ProductResponse> {
-  const res = await fetch(
-    `${SITE_URL}/api/products/${slug}`,
-    {
-      next: {
-        revalidate: 300,
-      },
-    },
-  );
+class ProductNotFoundError extends Error {}
+class ProductRequestError extends Error {}
 
-  if (!res.ok) {
-    return { error: "محصول موردنظر پیدا نشد" } as ProductResponse;
+function hasStringProperty(value: object, property: string) {
+  return property in value && typeof Reflect.get(value, property) === "string";
+}
+
+function hasNumberProperty(value: object, property: string) {
+  return property in value && typeof Reflect.get(value, property) === "number";
+}
+
+function hasArrayProperty(value: object, property: string) {
+  return property in value && Array.isArray(Reflect.get(value, property));
+}
+
+function isProductResponse(value: unknown): value is ProductResponse {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    hasStringProperty(value, "_id") &&
+    hasStringProperty(value, "slug") &&
+    hasStringProperty(value, "title") &&
+    hasStringProperty(value, "mainImage") &&
+    hasNumberProperty(value, "price") &&
+    hasNumberProperty(value, "stock") &&
+    hasArrayProperty(value, "images") &&
+    hasArrayProperty(value, "specifications") &&
+    hasArrayProperty(value, "comments")
+  );
+}
+
+function isProductArray(value: unknown): value is Product[] {
+  return Array.isArray(value) && value.every(isProductResponse);
+}
+
+const getProduct = cache(async (slug: string): Promise<ProductResponse> => {
+  let res: Response;
+
+  try {
+    res = await fetch(`${SITE_URL}/api/products/${slug}`, {
+      cache: "no-store",
+    });
+  } catch {
+    throw new ProductRequestError("ارتباط با سرویس محصول برقرار نشد.");
   }
 
-  return res.json();
-}
+  if (res.status === 404) {
+    throw new ProductNotFoundError("محصول موردنظر پیدا نشد.");
+  }
+
+  if (!res.ok) {
+    throw new ProductRequestError(
+      `دریافت محصول با وضعیت ${res.status} ناموفق بود.`,
+    );
+  }
+
+  let payload: unknown;
+
+  try {
+    payload = await res.json();
+  } catch {
+    throw new ProductRequestError("پاسخ سرویس محصول معتبر نیست.");
+  }
+
+  if (!isProductResponse(payload)) {
+    throw new ProductRequestError("ساختار اطلاعات محصول معتبر نیست.");
+  }
+
+  return payload;
+});
 
 async function getRelatedProducts(
   id?: string,
@@ -50,7 +104,20 @@ async function getRelatedProducts(
     return { relatedProducts: [] };
   }
 
-  return res.json();
+  try {
+    const payload: unknown = await res.json();
+    if (
+      typeof payload === "object" &&
+      payload !== null
+    ) {
+      const relatedProducts = Reflect.get(payload, "relatedProducts");
+      if (isProductArray(relatedProducts)) return { relatedProducts };
+    }
+  } catch {
+    // Related products are optional and must not break the product page.
+  }
+
+  return { relatedProducts: [] };
 }
 
 const formatPrice = (price?: number | null) => {
@@ -63,16 +130,21 @@ export async function generateMetadata({
 }: {
   params: { slug: string };
 }): Promise<Metadata> {
-  const product = await getProduct(params.slug);
+  let product: ProductResponse;
 
-  if (product.error) {
-    return {
-      title: "محصول یافت نشد | کرمان آتاری",
-      robots: {
-        index: false,
-        follow: false,
-      },
-    };
+  try {
+    product = await getProduct(params.slug);
+  } catch (error) {
+    if (error instanceof ProductNotFoundError) {
+      return {
+        title: "محصول یافت نشد | کرمان آتاری",
+        robots: {
+          index: false,
+          follow: false,
+        },
+      };
+    }
+    throw error;
   }
 
   const finalPrice = product.discountPrice ?? product.price;
@@ -134,10 +206,13 @@ export default async function ProductPage({
 }: {
   params: { slug: string };
 }) {
-  const product = await getProduct(params.slug);
+  let product: ProductResponse;
 
-  if (product.error) {
-    notFound();
+  try {
+    product = await getProduct(params.slug);
+  } catch (error) {
+    if (error instanceof ProductNotFoundError) notFound();
+    throw error;
   }
 
   const { relatedProducts } = await getRelatedProducts(

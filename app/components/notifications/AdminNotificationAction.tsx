@@ -102,9 +102,6 @@ function DetailsModal({
   const [working, setWorking] = useState<string | null>(null);
   const [approved, setApproved] = useState(Boolean(item.verified));
   const [orderStatus, setOrderStatus] = useState(text(item.status, "pending"));
-  const [requestStatus, setRequestStatus] = useState<RequestStatus>(
-    (text(item.status, "pending") as RequestStatus),
-  );
   const [appointmentStatus, setAppointmentStatus] = useState<AppointmentStatus>(
     text(item.status, "pending") as AppointmentStatus,
   );
@@ -144,34 +141,6 @@ function DetailsModal({
     if (!response.ok) throw new Error(result.error || "تغییر وضعیت سفارش انجام نشد.");
     setOrderStatus("processing");
     toast.success("پردازش سفارش آغاز شد.");
-  });
-
-  const updateRequestStatus = (nextStatus: RequestStatus) => run("status", async () => {
-    const response = await fetch(`/api/admin/customer-game-orders/${entityId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: nextStatus }),
-    });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(result.error || "تغییر وضعیت درخواست انجام نشد.");
-    setRequestStatus(nextStatus);
-    toast.success("وضعیت درخواست تغییر کرد.");
-  });
-
-  const updateRequestPrice = () => run("price", async () => {
-    const parsedPrice = Number(totalPrice.replace(/,/g, "").trim());
-    if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
-      throw new Error("مبلغ باید عددی معتبر و غیرمنفی باشد.");
-    }
-    const response = await fetch(`/api/admin/customer-game-orders/${entityId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ totalPrice: parsedPrice }),
-    });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(result.error || "ذخیره مبلغ انجام نشد.");
-    setTotalPrice(String(parsedPrice));
-    toast.success("مبلغ سفارش ذخیره شد.");
   });
 
   const updateAppointmentStatus = (nextStatus: AppointmentStatus) => run("appointment-status", async () => {
@@ -250,13 +219,31 @@ function DetailsModal({
 
           {kind === "CustomerGameOrder" && (
             <>
-              <div className="grid gap-3 sm:grid-cols-2"><DetailBox label="مشتری" value={text(user.username, text(item.customerName))} /><DetailBox label="موبایل" value={text(user.mobile, text(item.phone))} /><DetailBox label="تاریخ ثبت" value={date(item.createdAt)} /><DetailBox label="آدرس" value={[text(address.province, ""), text(address.city, ""), text(address.address, text(item.address, ""))].filter(Boolean).join("، ") || "---"} /></div>
-              {typeof item.message === "string" && item.message && <DetailBox label="پیام مشتری" value={item.message} />}
-              <div className="grid gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4 md:grid-cols-2">
-                <label className="text-sm font-semibold text-slate-700">وضعیت درخواست<select value={requestStatus} onChange={(event) => void updateRequestStatus(event.target.value as RequestStatus)} disabled={working === "status"} className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 font-normal outline-none focus:border-indigo-400">{Object.entries(requestStatusLabel).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-                <label className="text-sm font-semibold text-slate-700">مبلغ کل<div className="mt-2 flex gap-2"><input type="number" min="0" value={totalPrice} onChange={(event) => setTotalPrice(event.target.value)} className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 font-normal outline-none focus:border-indigo-400" /><button type="button" onClick={() => void updateRequestPrice()} disabled={working === "price"} className="inline-flex items-center gap-1 rounded-xl bg-indigo-600 px-3 text-white disabled:opacity-50">{working === "price" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} ذخیره</button></div></label>
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                این اعلان مربوط به سامانه قدیمی سفارش بازی است و صرفاً جهت مشاهده سوابق تاریخی نمایش داده می‌شود (امکان ویرایش مستقیم وجود ندارد).
               </div>
-              {!!products.length && <div className="space-y-2"><h3 className="font-bold text-slate-900">محصولات درخواست</h3>{products.map((entry, index) => <div key={index} className="grid gap-2 rounded-xl border border-slate-200 p-3 text-sm sm:grid-cols-4"><span className="font-semibold">{text(entry.name)}</span><span>{text(entry.platform, "بدون پلتفرم")}</span><span>{number(entry.size) ? `${number(entry.size).toLocaleString("fa-IR")} GB` : "حجم نامشخص"}</span><span>{number(entry.price).toLocaleString("fa-IR")} تومان</span></div>)}</div>}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <DetailBox label="مشتری" value={text(user.username, text(item.customerName))} />
+                <DetailBox label="موبایل" value={text(user.mobile, text(item.phone))} />
+                <DetailBox label="تاریخ ثبت" value={date(item.createdAt)} />
+                <DetailBox label="وضعیت سابقه" value={requestStatusLabel[item.status as RequestStatus] || text(item.status, "نامشخص")} />
+                <DetailBox label="مبلغ کل" value={`${number(item.totalPrice).toLocaleString("fa-IR")} تومان`} />
+                <DetailBox label="آدرس" value={[text(address.province, ""), text(address.city, ""), text(address.address, text(item.address, ""))].filter(Boolean).join("، ") || "---"} />
+              </div>
+              {typeof item.message === "string" && item.message && <DetailBox label="پیام مشتری" value={item.message} />}
+              {!!products.length && (
+                <div className="space-y-2">
+                  <h3 className="font-bold text-slate-900">محصولات درخواست</h3>
+                  {products.map((entry, index) => (
+                    <div key={index} className="grid gap-2 rounded-xl border border-slate-200 p-3 text-sm sm:grid-cols-4">
+                      <span className="font-semibold">{text(entry.name)}</span>
+                      <span>{text(entry.platform, "بدون پلتفرم")}</span>
+                      <span>{number(entry.size) ? `${number(entry.size).toLocaleString("fa-IR")} GB` : "حجم نامشخص"}</span>
+                      <span>{number(entry.price).toLocaleString("fa-IR")} تومان</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </>
           )}
 
@@ -290,6 +277,12 @@ function DetailsModal({
                 </div>
               )}
             </>
+          )}
+
+          {!manageableKinds.has(kind || "") && (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-500">
+              امکان نمایش جزئیات اختصاصی برای این نوع اعلان وجود ندارد.
+            </div>
           )}
         </div>
       </section>

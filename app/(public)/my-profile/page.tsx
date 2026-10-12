@@ -8,7 +8,6 @@ import MyComments from "./MyComments";
 import MyOrders from "./MyOrders";
 import MyOrdersTabs from "./MyOrdersTabs";
 import GameOrderSelector from "./GameOrderSelector";
-import MyGameOrders from "./MyGameOrders";
 import MyWallet from "./MyWallet";
 import MyLoyalty from "./MyLoyalty";
 import SpinWheel from "./SpinWheel";

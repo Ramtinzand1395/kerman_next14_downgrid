@@ -62,7 +62,7 @@ export default function FilterProducts({ tags }: FilterProductsProps) {
     }
 
     params.set("page", "1");
-    navigate(`${pathname}?${params.toString()}`);
+    navigate(`${pathname}?${params.toString()}`, "filter");
     setMobileOpen(false);
   };
 
@@ -71,7 +71,7 @@ export default function FilterProducts({ tags }: FilterProductsProps) {
     ["category", "tag", "q", "page"].forEach((key) => params.delete(key));
     const queryString = params.toString();
 
-    navigate(queryString ? `${pathname}?${queryString}` : pathname);
+    navigate(queryString ? `${pathname}?${queryString}` : pathname, "filter");
     setMobileOpen(false);
   };
 

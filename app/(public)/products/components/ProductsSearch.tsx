@@ -14,7 +14,7 @@ export default function ProductsSearch({
 }: ProductsSearchProps) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const { isPending, navigate } = useProductNavigation();
+  const { isPending, navigate, pendingKind } = useProductNavigation();
   const [query, setQuery] = useState(initialQuery);
 
   const updateRoute = (value: string) => {
@@ -27,7 +27,7 @@ export default function ProductsSearch({
     }
 
     params.set("page", "1");
-    navigate(`${pathname}?${params.toString()}`);
+    navigate(`${pathname}?${params.toString()}`, "search");
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -69,7 +69,7 @@ export default function ProductsSearch({
         disabled={isPending}
         className="min-h-9 shrink-0 rounded-xl bg-white px-4 py-1 text-xs font-bold text-blue-800 transition hover:bg-blue-50"
       >
-        {isPending ? "در حال جستجو…" : "جستجو"}
+        {isPending && pendingKind === "search" ? "در حال جستجو…" : "جستجو"}
       </button>
     </form>
   );

@@ -32,7 +32,7 @@ export default function SortProducts({ totalProducts }: SortProductsProps) {
     }
 
     params.set("page", "1");
-    navigate(`${pathname}?${params.toString()}`);
+    navigate(`${pathname}?${params.toString()}`, "sort");
   };
 
   return (
