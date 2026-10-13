@@ -73,7 +73,11 @@ export default function ProductImage({
   const setCurrentStatus = useCallback(
     (nextStatus: ImageState["status"]) => {
       if (latestSrc.current !== normalizedSrc) return;
-      setImageState({ src: normalizedSrc, status: nextStatus });
+      setImageState((current) =>
+        current.src === normalizedSrc && current.status === nextStatus
+          ? current
+          : { src: normalizedSrc, status: nextStatus },
+      );
     },
     [normalizedSrc],
   );
@@ -88,10 +92,12 @@ export default function ProductImage({
         return;
       }
 
-      setImageState({
-        src: normalizedSrc,
-        status: node.naturalWidth > 0 ? "loaded" : "failed",
-      });
+      const nextStatus = node.naturalWidth > 0 ? "loaded" : "failed";
+      setImageState((current) =>
+        current.src === normalizedSrc && current.status === nextStatus
+          ? current
+          : { src: normalizedSrc, status: nextStatus },
+      );
     },
     [normalizedSrc],
   );

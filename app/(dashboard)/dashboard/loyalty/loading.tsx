@@ -1,2 +1,2 @@
-import { DashboardRouteSkeleton } from "@/app/components/loading/LoadingSystem";
-export default function Loading() { return <DashboardRouteSkeleton variant="form" />; }
+import { PageLoading } from "@/app/components/loading/LoadingSystem";
+export default function Loading() { return <PageLoading label="در حال آماده‌سازی باشگاه مشتریان…" />; }
