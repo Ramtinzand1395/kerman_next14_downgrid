@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Check, Loader2, Search, Send, X } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { toast } from "react-toastify";
+import { ButtonLoading } from "@/app/components/loading/LoadingSystem";
 
 interface UserOption { _id: string; username?: string; mobile: string; email?: string }
 
@@ -191,7 +192,7 @@ export default function AdminNotificationComposer() {
       <label className="block space-y-1 text-sm text-slate-700">لینک داخلی (اختیاری)
         <input dir="ltr" placeholder="/products" value={link} onChange={(event) => setLink(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-slate-200 px-3 text-left outline-none focus:border-indigo-400" />
       </label>
-      <button disabled={sending} className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50"><Send className="h-4 w-4" /> {sending ? "در حال ارسال..." : "ارسال اعلان"}</button>
+      <button disabled={sending} className="inline-flex min-w-32 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50">{sending ? <ButtonLoading label="در حال ارسال…" /> : <><Send className="h-4 w-4" /> ارسال اعلان</>}</button>
     </form>
   );
 }

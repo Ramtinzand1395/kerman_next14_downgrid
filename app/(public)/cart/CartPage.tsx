@@ -19,6 +19,7 @@ import ShippingForm from "../components/ShippingForm";
 import { safeParseJSON } from "@/helpers/safeParseJSON";
 import { toast } from "react-toastify";
 import ProductImage from "@/app/components/ProductImage";
+import { CartSkeleton } from "@/app/components/loading/LoadingSystem";
 
 const checkoutSteps = [
   {
@@ -46,7 +47,7 @@ export default function CartPage() {
   const router = useRouter();
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
 
-  const { cart, removeFromCart, increaseQty, decreaseQty } = useCartStore();
+  const { cart, hasHydrated, removeFromCart, increaseQty, decreaseQty } = useCartStore();
 
   const activeStep = useMemo(() => {
     const step = Number(searchParams.get("step") ?? "1");
@@ -113,6 +114,8 @@ export default function CartPage() {
 
     router.push(`/cart?step=${step}`, { scroll: false });
   };
+
+  if (!hasHydrated) return <CartSkeleton />;
 
   return (
     <main className="mx-auto mt-6 w-full max-w-7xl px-4 pb-16 md:mt-10">

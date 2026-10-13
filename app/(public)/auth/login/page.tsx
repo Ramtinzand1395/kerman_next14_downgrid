@@ -15,6 +15,7 @@ import {
   shouldClearReferralForMobileChange,
 } from "@/lib/loyalty/referral.policy";
 import { mobileSchema, otpSchema } from "@/validations/validation";
+import { ButtonLoading } from "@/app/components/loading/LoadingSystem";
 
 type OtpCredential = {
   code?: string;
@@ -507,7 +508,7 @@ export default function LoginWithOtp() {
                 disabled={isSubmitting || timer > 0}
                 className="w-full rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isSubmitting ? "در حال ارسال..." : "دریافت کد تایید"}
+                {isSubmitting ? <ButtonLoading label="در حال ارسال کد…" /> : "دریافت کد تایید"}
               </button>
 
               {timer > 0 && (
@@ -551,7 +552,7 @@ export default function LoginWithOtp() {
                 type="submit"
                 className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
               >
-                {isVerifying ? "در حال بررسی..." : "تایید و ورود"}
+                {isVerifying ? <ButtonLoading label="در حال بررسی…" /> : "تایید و ورود"}
               </button>
 
               {timer > 0 ? (

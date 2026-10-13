@@ -1,4 +1,5 @@
 import "@/app/globals.css";
+import "react-loading-skeleton/dist/skeleton.css";
 import localFont from "next/font/local";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";

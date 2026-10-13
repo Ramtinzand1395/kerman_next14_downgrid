@@ -1,23 +1,12 @@
-"use client"
-// components/ProductSkeleton.tsx
-import Skeleton from "react-loading-skeleton";
+import { Skeleton } from "@/app/components/loading/LoadingSystem";
 
 export default function SkeletonLoading() {
   return (
-    <div className="border rounded-lg p-3 bg-white">
-      <Skeleton height={160} borderRadius={8} />
-
-      <div className="mt-3">
-        <Skeleton height={16} width="75%" />
-      </div>
-
-      <div className="mt-2">
-        <Skeleton height={16} width="50%" />
-      </div>
-
-      <div className="mt-3">
-        <Skeleton height={32} borderRadius={6} />
-      </div>
+    <div className="rounded-lg border bg-white p-3" aria-hidden="true">
+      <Skeleton className="h-40 rounded-lg" />
+      <Skeleton className="mt-3 h-4 w-3/4 rounded" />
+      <Skeleton className="mt-2 h-4 w-1/2 rounded" />
+      <Skeleton className="mt-3 h-8 rounded-md" />
     </div>
   );
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, Gift, Loader2, Sparkles } from "lucide-react";
+import { CheckCircle2, Gift, Sparkles } from "lucide-react";
+import { Skeleton } from "@/app/components/loading/LoadingSystem";
 
 type Progress = {
   ruleId: string;
@@ -37,9 +38,11 @@ function rewardText(reward: Reward["snapshot"]["reward"]) {
 export default function VisitRewardsPanel() {
   const [data, setData] = useState<{ validVisits: number; progress: Progress[]; rewards: Reward[] } | null>(null);
   const [error, setError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
+    setError("");
     fetch("/api/profile/visit-rewards", { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         const payload = await response.json().catch(() => ({}));
@@ -50,7 +53,7 @@ export default function VisitRewardsPanel() {
         if (reason instanceof Error && reason.name !== "AbortError") setError("اطلاعات پاداش مراجعه دریافت نشد.");
       });
     return () => controller.abort();
-  }, []);
+  }, [reloadKey]);
 
   return (
     <section className="rounded-2xl border border-cyan-100 bg-gradient-to-l from-cyan-50 to-blue-50 p-5 shadow-sm">
@@ -65,9 +68,9 @@ export default function VisitRewardsPanel() {
         {data && <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#001A6E]">{data.validVisits.toLocaleString("fa-IR")} مراجعه معتبر</span>}
       </div>
       {!data && !error ? (
-        <div className="flex items-center justify-center gap-2 py-8 text-sm text-slate-500"><Loader2 className="h-5 w-5 animate-spin" /> در حال محاسبه…</div>
+        <div role="status" aria-busy="true" className="mt-4 grid gap-3 md:grid-cols-2"><span className="sr-only">در حال محاسبه پاداش‌ها…</span><Skeleton className="h-24 rounded-2xl" /><Skeleton className="h-24 rounded-2xl" /></div>
       ) : error ? (
-        <p className="mt-4 rounded-xl bg-white p-3 text-sm text-rose-600">{error}</p>
+        <div role="alert" className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-white p-3 text-sm text-rose-600"><span>{error}</span><button type="button" onClick={() => setReloadKey((value) => value + 1)} className="shrink-0 rounded-lg border border-rose-200 px-3 py-2 font-bold">تلاش دوباره</button></div>
       ) : (
         <>
           {data!.progress.length === 0 ? (

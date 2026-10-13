@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import Link from "next/link";
 import { SlidersHorizontal, Tags, X } from "lucide-react";
 
 import type { Product, ProductTagFacet } from "@/types";
@@ -9,6 +8,10 @@ import FilterProducts from "./components/FilterProducts";
 import Pagination from "./components/Pagination";
 import SortProducts from "./components/SortProducts";
 import ProductsSearch from "./components/ProductsSearch";
+import {
+  ProductNavigationLink,
+  ProductNavigationProvider,
+} from "./components/ProductNavigation";
 import { SITE_URL, toAbsoluteUrl } from "@/lib/site";
 import { categories } from "../constants/categories";
 
@@ -177,6 +180,8 @@ export default async function ProductsPage({
         }}
       />
 
+      <ProductNavigationProvider>
+
       <header className="mb-5 overflow-hidden rounded-3xl bg-gradient-to-l from-blue-600 via-blue-700 to-indigo-800 p-5 text-white shadow-lg shadow-blue-900/15 md:p-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -218,43 +223,43 @@ export default async function ProductsPage({
           </span>
 
           {searchParams.category && (
-            <Link
+            <ProductNavigationLink
               href={productsUrlWithout(searchParams, ["category"])}
               scroll={false}
               className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-800 transition hover:border-blue-300"
             >
               {selectedCategoryName} <X className="h-3.5 w-3.5" />
-            </Link>
+            </ProductNavigationLink>
           )}
 
           {searchParams.tag && (
-            <Link
+            <ProductNavigationLink
               href={productsUrlWithout(searchParams, ["tag"])}
               scroll={false}
               className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-800 transition hover:border-indigo-300"
             >
               <Tags className="h-3.5 w-3.5" /> {selectedTagName}
               <X className="h-3.5 w-3.5" />
-            </Link>
+            </ProductNavigationLink>
           )}
 
           {searchParams.q && (
-            <Link
+            <ProductNavigationLink
               href={productsUrlWithout(searchParams, ["q"])}
               scroll={false}
               className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-800 transition hover:border-blue-300"
             >
               جستجو: «{searchParams.q}» <X className="h-3.5 w-3.5" />
-            </Link>
+            </ProductNavigationLink>
           )}
 
-          <Link
+          <ProductNavigationLink
             href={productsUrlWithout(searchParams, ["category", "tag", "q"])}
             scroll={false}
             className="mr-auto text-xs font-bold text-red-600 transition hover:text-red-700"
           >
             پاک‌کردن همه
-          </Link>
+          </ProductNavigationLink>
         </div>
       )}
 
@@ -281,13 +286,13 @@ export default async function ProductsPage({
                 کنید تا محصولات بیشتری نمایش داده شود.
               </p>
               {hasActiveFilters && (
-                <Link
+                <ProductNavigationLink
                   href={productsUrlWithout(searchParams, ["category", "tag", "q"])}
                   scroll={false}
                   className="mt-5 inline-flex rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
                 >
                   نمایش همه محصولات
-                </Link>
+                </ProductNavigationLink>
               )}
             </div>
           )}
@@ -307,6 +312,7 @@ export default async function ProductsPage({
           ابتدا نمایش داده می‌شود.
         </p>
       </article>
+      </ProductNavigationProvider>
     </section>
   );
 }

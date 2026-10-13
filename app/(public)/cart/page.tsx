@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { Suspense } from "react";
 import CartPage from "./CartPage";
+import { CartSkeleton } from "@/app/components/loading/LoadingSystem";
 
 export const metadata: Metadata = {
   alternates: {
@@ -39,7 +40,7 @@ export default async function page({ searchParams }: CartPageProps) {
   }
 
   return (
-    <Suspense fallback={<div className="p-10">در حال بارگذاری...</div>}>
+    <Suspense fallback={<CartSkeleton />}>
       <CartPage />
     </Suspense>
   );

@@ -8,9 +8,10 @@ import {
   Tags,
   X,
 } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { categories } from "../../constants/categories";
 import type { ProductTagFacet } from "@/types";
+import { useProductNavigation } from "./ProductNavigation";
 
 type FilterProductsProps = {
   tags: ProductTagFacet[];
@@ -26,8 +27,8 @@ const flatCategories = categories.flatMap((item) => [
 
 export default function FilterProducts({ tags }: FilterProductsProps) {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const pathname = usePathname();
+  const { isPending, navigate } = useProductNavigation();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openedGroup, setOpenedGroup] = useState<string | null>(null);
@@ -61,7 +62,7 @@ export default function FilterProducts({ tags }: FilterProductsProps) {
     }
 
     params.set("page", "1");
-    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    navigate(`${pathname}?${params.toString()}`, "filter");
     setMobileOpen(false);
   };
 
@@ -70,9 +71,7 @@ export default function FilterProducts({ tags }: FilterProductsProps) {
     ["category", "tag", "q", "page"].forEach((key) => params.delete(key));
     const queryString = params.toString();
 
-    router.push(queryString ? `${pathname}?${queryString}` : pathname, {
-      scroll: false,
-    });
+    navigate(queryString ? `${pathname}?${queryString}` : pathname, "filter");
     setMobileOpen(false);
   };
 
@@ -86,7 +85,7 @@ export default function FilterProducts({ tags }: FilterProductsProps) {
   );
 
   const renderFilterBody = () => (
-    <>
+    <fieldset disabled={isPending} className="contents">
       <section>
         <h3 className="mb-3 text-xs font-bold text-gray-500">دسته‌بندی</h3>
         <button
@@ -239,7 +238,7 @@ export default function FilterProducts({ tags }: FilterProductsProps) {
           <RotateCcw className="h-4 w-4" /> پاک‌کردن همه فیلترها
         </button>
       )}
-    </>
+    </fieldset>
   );
 
   return (
@@ -255,6 +254,7 @@ export default function FilterProducts({ tags }: FilterProductsProps) {
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
+          disabled={isPending}
           className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-medium text-white"
         >
           <Filter size={16} /> فیلتر

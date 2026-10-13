@@ -5,6 +5,7 @@ import { Clock3, Mail, MapPin, MessageSquare, Phone } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { toast } from "react-toastify";
 import { CONTACT_LIMITS } from "@/validations/contactValidation";
+import { ButtonLoading } from "@/app/components/loading/LoadingSystem";
 
 type FormData = {
   name: string;
@@ -248,9 +249,9 @@ export default function ContactForm() {
           disabled={submitting || status === "loading"}
           className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          <MessageSquare size={18} />
+          {!submitting && <MessageSquare size={18} />}
           {submitting
-            ? "در حال ثبت پیام..."
+            ? <ButtonLoading label="در حال ثبت پیام…" />
             : status === "loading"
               ? "در حال بررسی حساب..."
               : status === "authenticated"

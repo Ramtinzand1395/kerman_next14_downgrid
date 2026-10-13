@@ -8,6 +8,7 @@ import GameFormModal from "./AddGameListModal";
 import GameListTable from "./GameListTable";
 
 import { GameItem, GameList } from "@/types";
+import { DashboardRouteSkeleton } from "@/app/components/loading/LoadingSystem";
 
 const LIMIT = 20;
 
@@ -36,7 +37,7 @@ export default function AllGameList() {
 
   const [search, setSearch] = useState("");
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [openModal, setOpenModal] = useState(false);
 
@@ -233,15 +234,7 @@ focus:ring-blue-500
       </div>
 
       {loading && (
-        <div
-          className="
-mt-6
-text-center
-text-gray-500
-"
-        >
-          در حال دریافت اطلاعات...
-        </div>
+        <div className="mt-6"><DashboardRouteSkeleton variant="table" /></div>
       )}
 
       {!loading && data && (

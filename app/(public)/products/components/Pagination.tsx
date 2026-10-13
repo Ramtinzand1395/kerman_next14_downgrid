@@ -1,7 +1,8 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useProductNavigation } from "./ProductNavigation";
 
 interface PaginationProps {
   totalPages: number;
@@ -10,8 +11,8 @@ interface PaginationProps {
 
 export default function Pagination({ totalPages, currentPage }: PaginationProps) {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const pathname = usePathname();
+  const { isPending, navigate } = useProductNavigation();
 
   if (totalPages <= 1) {
     return null;
@@ -24,7 +25,7 @@ export default function Pagination({ totalPages, currentPage }: PaginationProps)
 
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", page.toString());
-    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    navigate(`${pathname}?${params.toString()}`, "page");
   };
 
   const visiblePages = Array.from({ length: totalPages }, (_, i) => i + 1).filter(
@@ -36,7 +37,7 @@ export default function Pagination({ totalPages, currentPage }: PaginationProps)
       <button
         type="button"
         onClick={() => handlePage(currentPage - 1)}
-        disabled={currentPage === 1}
+        disabled={currentPage === 1 || isPending}
         className="inline-flex items-center gap-1 rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 transition disabled:cursor-not-allowed disabled:opacity-40"
       >
         <ChevronRight size={16} /> قبلی
@@ -52,6 +53,7 @@ export default function Pagination({ totalPages, currentPage }: PaginationProps)
             <button
               type="button"
               onClick={() => handlePage(page)}
+              disabled={isPending}
               className={`min-w-10 rounded-xl border px-3 py-2 text-sm transition ${
                 page === currentPage
                   ? "border-blue-600 bg-blue-600 text-white"
@@ -67,7 +69,7 @@ export default function Pagination({ totalPages, currentPage }: PaginationProps)
       <button
         type="button"
         onClick={() => handlePage(currentPage + 1)}
-        disabled={currentPage === totalPages}
+        disabled={currentPage === totalPages || isPending}
         className="inline-flex items-center gap-1 rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 transition disabled:cursor-not-allowed disabled:opacity-40"
       >
         بعدی <ChevronLeft size={16} />
