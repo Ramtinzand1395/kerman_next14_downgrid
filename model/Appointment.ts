@@ -115,7 +115,6 @@ const AppointmentSchema = new Schema(
 AppointmentSchema.index({ user: 1, clientRequestKey: 1 }, { unique: true });
 AppointmentSchema.index({ serviceType: 1, startsAt: 1, status: 1 });
 AppointmentSchema.index({ fulfillment: 1, status: 1 });
-AppointmentSchema.index({ "courier.status": 1 });
 
 export default mongoose.models.Appointment || mongoose.model("Appointment", AppointmentSchema);
 

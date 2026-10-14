@@ -128,4 +128,6 @@ const productSchema = new Schema(
   { timestamps: true },
 );
 
+productSchema.index({ createdAt: 1 });
+
 export default mongoose.models.Product || model("Product", productSchema);

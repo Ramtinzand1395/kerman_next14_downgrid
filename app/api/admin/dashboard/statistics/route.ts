@@ -1,74 +1,89 @@
-
-import dbConnect from "@/lib/mongodb";
-import User from "@/model/User";
-import Order from "@/model/Order";
-import Product from "@/model/Product";
-import StoreOrder from "@/model/StoreOrder";
-import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { NextResponse } from "next/server";
 import { authOptions } from "../../../auth/[...nextauth]/options";
+import dbConnect from "@/lib/mongodb";
+import {
+  ReportRangeError,
+  resolveReportRange,
+} from "@/lib/dashboard-date-range";
+import {
+  loadAppointmentsSection,
+  loadCommerceSection,
+  loadLoyaltySection,
+  loadManualOrdersSection,
+  loadOperationsSection,
+  loadOverviewSection,
+  serializeReportMeta,
+} from "@/lib/dashboard-report";
+
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const runtime = "nodejs";
+export const fetchCache = "force-no-store";
+
+type SectionResult<T> =
+  | { status: "ok"; data: T }
+  | { status: "error"; error: string };
+
+async function settleSection<T>(name: string, promise: Promise<T>): Promise<SectionResult<T>> {
+  try {
+    return { status: "ok", data: await promise };
+  } catch (error) {
+    console.error(`[dashboard-report] ${name} failed`, error);
+    return { status: "error", error: "دریافت این بخش از گزارش ناموفق بود." };
+  }
+}
 
 export async function GET(req: Request) {
-  await dbConnect();
   const session = await getServerSession(authOptions);
-
   if (!session?.user) {
     return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
   }
-   if (session.user.role !== "superadmin") {
-       return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
-     }
-  
+  if (session.user.role !== "superadmin") {
+    return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
+  }
+
   const { searchParams } = new URL(req.url);
-  const range = searchParams.get("range") || "monthly";
-
-  const now = new Date();
-  let fromDate = new Date();
-
-  if (range === "daily") fromDate.setDate(now.getDate() - 1);
-  if (range === "weekly") fromDate.setDate(now.getDate() - 7);
-  if (range === "monthly") fromDate.setMonth(now.getMonth() - 1);
-  if (range === "yearly") fromDate.setFullYear(now.getFullYear() - 1);
-
-  const dateFilter = { createdAt: { $gte: fromDate } };
+  let range;
+  try {
+    range = resolveReportRange({
+      range: searchParams.get("range"),
+      start: searchParams.get("start"),
+      end: searchParams.get("end"),
+    });
+  } catch (error) {
+    if (error instanceof ReportRangeError) {
+      return NextResponse.json(
+        { error: error.message, code: error.code },
+        { status: 400, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+    throw error;
+  }
 
   try {
-    const usersCount = await User.countDocuments(dateFilter);
-    const productsCount = await Product.countDocuments(dateFilter);
-    const ordersCount = await Order.countDocuments(dateFilter);
-    const listOrdersCount = await StoreOrder.countDocuments(dateFilter);
-
-    const deliveredOrders = await Order.countDocuments({ ...dateFilter, status: "delivered" });
-
-    const totalRevenueAgg = await Order.aggregate([
-      { $match: { paymentStatus: "paid", ...dateFilter } },
-      { $group: { _id: null, total: { $sum: "$finalPrice" } } },
+    await dbConnect();
+    const [overview, commerce, manualOrders, appointments, operations, loyalty] = await Promise.all([
+      settleSection("overview", loadOverviewSection(range)),
+      settleSection("commerce", loadCommerceSection(range)),
+      settleSection("manualOrders", loadManualOrdersSection(range)),
+      settleSection("appointments", loadAppointmentsSection(range)),
+      settleSection("operations", loadOperationsSection()),
+      settleSection("loyalty", loadLoyaltySection(range)),
     ]);
 
-    const totalRevenue = totalRevenueAgg[0]?.total || 0;
-
-    const orderStatus = await Order.aggregate([
-      { $match: dateFilter },
-      { $group: { _id: "$status", count: { $sum: 1 } } },
-    ]);
-
-    const paymentStatus = await Order.aggregate([
-      { $match: dateFilter },
-      { $group: { _id: "$paymentStatus", count: { $sum: 1 } } },
-    ]);
-
-    return NextResponse.json({
-      usersCount,
-      productsCount,
-      ordersCount,
-      deliveredOrders,
-      listOrdersCount,
-      totalRevenue,
-      orderStatus,
-      paymentStatus,
-    });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json(
+      {
+        meta: serializeReportMeta(range),
+        sections: { overview, commerce, manualOrders, appointments, operations, loyalty },
+      },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  } catch (error) {
+    console.error("[dashboard-report] connection failed", error);
+    return NextResponse.json(
+      { error: "اتصال به منبع دادهٔ گزارش ناموفق بود." },
+      { status: 500, headers: { "Cache-Control": "no-store" } },
+    );
   }
 }

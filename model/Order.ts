@@ -190,4 +190,7 @@ const OrderSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+OrderSchema.index({ paymentStatus: 1, paymentVerifiedAt: 1, createdAt: 1 });
+OrderSchema.index({ createdAt: 1, status: 1, paymentStatus: 1 });
+
 export default mongoose.models.Order || mongoose.model("Order", OrderSchema);

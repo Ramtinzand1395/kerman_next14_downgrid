@@ -87,6 +87,8 @@ const UserSchema = new Schema<IUser>(
   }
 );
 
+UserSchema.index({ createdAt: 1 });
+
 // Export مدل
 const User = mongoose.models.User || model<IUser>("User", UserSchema);
 export default User;

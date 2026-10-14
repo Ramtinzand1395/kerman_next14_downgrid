@@ -80,6 +80,7 @@ const WalletTransactionSchema = new Schema<IWalletTransaction>(
 // ایندکس ترکیبی برای گزارش‌گیری تاریخچه کاربر
 WalletTransactionSchema.index({ user: 1, createdAt: -1 });
 WalletTransactionSchema.index({ "gateway.authority": 1 }, { sparse: true });
+WalletTransactionSchema.index({ type: 1, status: 1, createdAt: 1, "ref.kind": 1 });
 
 const WalletTransaction =
   mongoose.models.WalletTransaction ||
