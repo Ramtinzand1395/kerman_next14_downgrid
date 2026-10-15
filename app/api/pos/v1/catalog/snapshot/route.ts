@@ -9,6 +9,7 @@ import {
   handleCatalogSnapshotRequest,
   type CatalogPageFetch,
 } from "@/lib/pos/catalogSnapshot";
+import { configuredPosCredentialVerifier } from "@/lib/pos/serverAuth";
 import "@/model/Category";
 import Product from "@/model/Product";
 
@@ -67,7 +68,11 @@ const fetchCatalogPage: CatalogPageFetch = async ({ afterId, limit }) => {
 export async function GET(request: Request): Promise<Response> {
   return handleCatalogSnapshotRequest(request, {
     authorize: (incomingRequest) =>
-      requirePosDeviceScope(incomingRequest, POS_CATALOG_READ_SCOPE),
+      requirePosDeviceScope(
+        incomingRequest,
+        POS_CATALOG_READ_SCOPE,
+        configuredPosCredentialVerifier,
+      ),
     fetchPage: fetchCatalogPage,
   });
 }

@@ -35,7 +35,7 @@ const posDeviceSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["active", "revoked"],
+      enum: ["active", "disabled", "revoked"],
       required: true,
       default: "active",
       index: true,
@@ -81,10 +81,13 @@ const posDeviceSchema = new Schema(
 
 posDeviceSchema.pre("validate", function validateRevocationState() {
   const device = this as any;
-  if (device.status === "active" && device.revokedAt !== null) {
+  if (
+    (device.status === "active" || device.status === "disabled") &&
+    device.revokedAt !== null
+  ) {
     device.invalidate(
       "revokedAt",
-      "Active POS device cannot have a revocation timestamp",
+      "Non-revoked POS device cannot have a revocation timestamp",
     );
   }
   if (device.status === "revoked" && device.revokedAt === null) {
