@@ -1,5 +1,32 @@
 import mongoose, { Schema, model } from "mongoose";
 
+const nonNegativeSafeIntegerField = (required = false) => ({
+  type: Number,
+  ...(required ? { required: true } : { default: 0 }),
+  validate: {
+    validator: (value: unknown) =>
+      typeof value === "number" &&
+      Number.isSafeInteger(value) &&
+      value >= 0,
+    message:
+      "مقدار باید عدد صحیح، نامنفی و در محدوده امن JavaScript باشد",
+  },
+});
+
+const nullableMoneyField = () => ({
+  type: Number,
+  default: null,
+  validate: {
+    validator: (value: unknown) =>
+      value === null ||
+      (typeof value === "number" &&
+        Number.isSafeInteger(value) &&
+        value >= 0),
+    message:
+      "مبلغ تخفیف باید null یا عدد صحیح نامنفی در محدوده امن JavaScript باشد",
+  },
+});
+
 const SpecificationItemSchema = new Schema(
   {
     key: { type: String, required: true },
@@ -16,6 +43,14 @@ const FaqItemSchema = new Schema(
   { _id: false }, // هر سوال نیاز به _id جدا ندارد
 );
 
+const VariantSchema = new Schema({
+  title: { type: String, required: true },
+  sku: String,
+  price: nonNegativeSafeIntegerField(true),
+  discountPrice: nullableMoneyField(),
+  stock: nonNegativeSafeIntegerField(),
+});
+
 const productSchema = new Schema(
   {
     status: {
@@ -29,19 +64,7 @@ const productSchema = new Schema(
       enum: ["single", "multi"],
       default: "single",
     },
-    variants: [
-      {
-        title: { type: String, required: true },
-        sku: String,
-        price: { type: Number, required: true },
-        discountPrice: Number,
-        stock: {
-          type: Number,
-          default: 0,
-          min: [0, "موجودی تنوع محصول نمی‌تواند منفی باشد"],
-        },
-      },
-    ],
+    variants: [VariantSchema],
 
     sku: {
       type: String,
@@ -66,17 +89,17 @@ const productSchema = new Schema(
 
     shortDesc: String,
 
-    price: {
-      type: Number,
-      required: true,
-    },
+    price: nonNegativeSafeIntegerField(true),
 
-    discountPrice: Number,
+    discountPrice: nullableMoneyField(),
 
-    stock: {
-      type: Number,
-      default: 0,
-      min: [0, "موجودی محصول نمی‌تواند منفی باشد"],
+    stock: nonNegativeSafeIntegerField(),
+
+    catalogRevision: nonNegativeSafeIntegerField(),
+    inventoryVersion: nonNegativeSafeIntegerField(),
+    deletedAt: {
+      type: Date,
+      default: null,
     },
 
     brand: String,
@@ -129,5 +152,50 @@ const productSchema = new Schema(
 );
 
 productSchema.index({ createdAt: 1 });
+productSchema.index({ deletedAt: 1, status: 1 });
+productSchema.index({ catalogRevision: 1, _id: 1 });
+
+productSchema.pre("validate", function validateMoneyAndDerivedStock() {
+  const product = this as any;
+
+  if (
+    product.discountPrice !== null &&
+    product.discountPrice !== undefined &&
+    product.discountPrice > product.price
+  ) {
+    product.invalidate(
+      "discountPrice",
+      "قیمت تخفیف‌خورده نمی‌تواند بیشتر از قیمت باشد",
+    );
+  }
+
+  for (const [index, variant] of (product.variants ?? []).entries()) {
+    if (
+      variant.discountPrice !== null &&
+      variant.discountPrice !== undefined &&
+      variant.discountPrice > variant.price
+    ) {
+      product.invalidate(
+        `variants.${index}.discountPrice`,
+        "قیمت تخفیف‌خورده تنوع نمی‌تواند بیشتر از قیمت آن باشد",
+      );
+    }
+  }
+
+  if (product.productType === "multi") {
+    let totalStock = 0;
+    for (const variant of product.variants ?? []) {
+      totalStock += variant.stock;
+      if (!Number.isSafeInteger(totalStock)) {
+        product.invalidate(
+          "stock",
+          "مجموع موجودی تنوع‌ها از محدوده عدد صحیح امن خارج است",
+        );
+        return;
+      }
+    }
+    product.stock = totalStock;
+  }
+});
 
 export default mongoose.models.Product || model("Product", productSchema);

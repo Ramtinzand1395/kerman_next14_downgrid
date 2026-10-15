@@ -6,6 +6,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/options";
 import { validateCatalogReferences } from "@/lib/catalogReferences";
 import { notifyLowInventory } from "@/lib/notifications/events";
+import {
+  buildProductWriteInput,
+  ProductInputValidationError,
+} from "@/lib/productInput";
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
 
@@ -85,70 +89,14 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
-    const safeVariants = Array.isArray(body.variants)
-      ? body.variants
-          .filter((v: any) => v?.title)
-          .map((v: any) => ({
-            title: String(v.title),
-            sku: v?.sku ? String(v.sku) : undefined,
-            price: Number(v?.price || 0),
-            discountPrice:
-              v?.discountPrice === null || v?.discountPrice === undefined
-                ? null
-                : Number(v.discountPrice),
-            stock: Number(v?.stock || 0),
-          }))
-      : [];
-
-    const safeGalleryImages = Array.isArray(body.galleryImages)
-      ? body.galleryImages
-          .map((img: any) => {
-            if (typeof img === "string") {
-              return { url: img, alt: "" };
-            }
-
-            if (!img?.url) {
-              return null;
-            }
-
-            return {
-              url: String(img.url),
-
-              alt: img.alt ? String(img.alt) : "",
-            };
-          })
-
-          .filter(Boolean)
-      : [];
-
-    const safeFaqs = Array.isArray(body.faqs)
-      ? body.faqs
-          .filter((f: any) => f?.question && f?.answer)
-          .map((f: any) => ({
-            question: String(f.question),
-            answer: String(f.answer),
-          }))
-      : [];
-
-    const productType = body.productType === "multi" ? "multi" : "single";
-    const totalStock =
-      productType === "multi"
-        ? safeVariants.reduce(
-            (sum: number, v: any) => sum + Number(v.stock || 0),
-            0,
-          )
-        : Number(body.stock || 0);
+    const { productData: validatedProductData } = buildProductWriteInput(body, {
+      mode: "create",
+    });
 
     const productData = {
-      ...body,
-      status: body.status === "published" ? "published" : "draft",
-      productType,
+      ...validatedProductData,
       category: catalogReferences.categoryId,
       tags: catalogReferences.tagIds,
-      variants: productType === "multi" ? safeVariants : [],
-      stock: totalStock,
-      images: safeGalleryImages,
-      faqs: safeFaqs,
       sku: generateSKU(),
     };
 
@@ -162,6 +110,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "محصول جدید ساخته شد.", product });
   } catch (err: any) {
     console.log(err);
+
+    if (err instanceof ProductInputValidationError) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
 
     // خطاهای اعتبارسنجی Mongoose را به پیام فارسی تبدیل می‌کنیم
     if (err?.name === "ValidationError" && err?.errors) {

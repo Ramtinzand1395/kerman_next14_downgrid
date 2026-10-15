@@ -169,6 +169,9 @@ export interface Category {
 export interface Product {
   status?: "draft" | "published";
   productType?: "single" | "multi";
+  catalogRevision?: number;
+  inventoryVersion?: number;
+  deletedAt?: string | null;
   variants?: {
     _id?: string;
     title: string;
