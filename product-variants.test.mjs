@@ -472,6 +472,55 @@ test("Checkout Security - Validation rules for Multi and Single items", () => {
   assert.equal(snapshot.total, 8400000);
 });
 
+test("Checkout Security - Allows purchasing multiple distinct variants of the same product", () => {
+  const productId = "607f1f77bcf86cd799439001";
+  const normalizedItems = [
+    {
+      productId,
+      variantId: "507f1f77bcf86cd799439011",
+      quantity: 1,
+    },
+    {
+      productId,
+      variantId: "507f1f77bcf86cd799439022",
+      quantity: 1,
+    },
+  ];
+
+  // Old bug: products.length !== productIds.length (1 !== 2 => REJECTED)
+  const productIds = normalizedItems.map((item) => item.productId);
+  assert.equal(productIds.length, 2);
+
+  // Correct: uniqueProductIds.length must match database documents found
+  const uniqueProductIds = [
+    ...new Set(normalizedItems.map((item) => item.productId)),
+  ];
+  assert.equal(uniqueProductIds.length, 1);
+
+  // Simulated DB result with 1 document for the single product
+  const productsFoundFromDB = [{ _id: productId }];
+  assert.equal(productsFoundFromDB.length, uniqueProductIds.length); // Passes!
+
+  // Cumulative quantity validation
+  const requestedQtyByVariant = new Map();
+  const requestedQtyByProduct = new Map();
+  for (const item of normalizedItems) {
+    const vKey = `${item.productId}:${item.variantId}`;
+    requestedQtyByVariant.set(
+      vKey,
+      (requestedQtyByVariant.get(vKey) || 0) + item.quantity,
+    );
+    requestedQtyByProduct.set(
+      item.productId,
+      (requestedQtyByProduct.get(item.productId) || 0) + item.quantity,
+    );
+  }
+
+  assert.equal(requestedQtyByVariant.get(`${productId}:507f1f77bcf86cd799439011`), 1);
+  assert.equal(requestedQtyByVariant.get(`${productId}:507f1f77bcf86cd799439022`), 1);
+  assert.equal(requestedQtyByProduct.get(productId), 2);
+});
+
 test("POS & Inventory Concurrency - Decrement pattern and version increment", () => {
   const orderItem = {
     product: "607f1f77bcf86cd799439001",

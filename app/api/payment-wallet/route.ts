@@ -196,16 +196,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const productIds = normalizedItems.map((item) => item.productId);
+    const uniqueProductIds = [
+      ...new Set(normalizedItems.map((item) => item.productId)),
+    ];
     const products = await Product.find({
-      _id: { $in: productIds },
+      _id: { $in: uniqueProductIds },
       status: "published",
       deletedAt: null,
     })
       .select("title price discountPrice stock productType variants category status deletedAt")
       .lean();
 
-    if (products.length !== productIds.length) {
+    if (products.length !== uniqueProductIds.length) {
       return NextResponse.json(
         { success: false, error: "برخی از محصولات نامعتبر یا ناموجود هستند." },
         { status: 400 },
@@ -215,6 +217,22 @@ export async function POST(req: NextRequest) {
     const productMap = new Map(
       products.map((product) => [String(product._id), product]),
     );
+
+    const requestedQtyByVariant = new Map<string, number>();
+    const requestedQtyByProduct = new Map<string, number>();
+    for (const item of normalizedItems) {
+      if (item.variantId) {
+        const vKey = `${item.productId}:${item.variantId}`;
+        requestedQtyByVariant.set(
+          vKey,
+          (requestedQtyByVariant.get(vKey) || 0) + item.quantity,
+        );
+      }
+      requestedQtyByProduct.set(
+        item.productId,
+        (requestedQtyByProduct.get(item.productId) || 0) + item.quantity,
+      );
+    }
 
     const checkoutItems = normalizedItems.map((item) => {
       const product = productMap.get(item.productId);
@@ -233,9 +251,20 @@ export async function POST(req: NextRequest) {
             variant.isActive !== false,
         );
         if (!selectedVariant) throw new Error("INVALID_VARIANT");
-        if (Number(selectedVariant.stock || 0) < item.quantity) {
+
+        const totalVariantQty =
+          requestedQtyByVariant.get(`${item.productId}:${item.variantId}`) ||
+          item.quantity;
+        if (Number(selectedVariant.stock || 0) < totalVariantQty) {
           throw new Error("INSUFFICIENT_STOCK");
         }
+
+        const totalProductQty =
+          requestedQtyByProduct.get(item.productId) || item.quantity;
+        if (Number(product.stock || 0) < totalProductQty) {
+          throw new Error("INSUFFICIENT_STOCK");
+        }
+
         const unitPrice =
           selectedVariant.discountPrice ?? selectedVariant.price;
         return {
@@ -259,7 +288,9 @@ export async function POST(req: NextRequest) {
         throw new Error("VARIANT_REQUIRED");
       }
 
-      if ((product.stock ?? 0) < item.quantity) {
+      const totalProductQty =
+        requestedQtyByProduct.get(item.productId) || item.quantity;
+      if (Number(product.stock ?? 0) < totalProductQty) {
         throw new Error("INSUFFICIENT_STOCK");
       }
       const unitPrice = product.discountPrice ?? product.price;
