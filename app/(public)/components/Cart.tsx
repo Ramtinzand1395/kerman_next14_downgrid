@@ -39,26 +39,74 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
     loadFavorites();
   }, [session?.user?.id, loadFavorites, clearFavorites]);
 
-  const finalPrice = game.discountPrice ?? game.price;
-  const hasDiscount =
-    typeof game.discountPrice === "number" && game.discountPrice < game.price;
-  const discountPercentage = hasDiscount
-    ? Math.round(((game.price - finalPrice) / game.price) * 100)
-    : 0;
-
   const hasVariants =
     game.productType === "multi" && (game.variants?.length || 0) > 0;
-  const defaultVariant = hasVariants
-    ? game.variants?.find((variant: any) => Number(variant.stock) > 0) ||
-      game.variants?.[0]
-    : null;
-  const stock = hasVariants ? Number(defaultVariant?.stock || 0) : game.stock;
+
+  const activeVariants = useMemo(
+    () => (hasVariants ? (game.variants || []).filter((v: any) => v.isActive !== false) : []),
+    [hasVariants, game.variants],
+  );
+
+  const totalStock = useMemo(() => {
+    if (!hasVariants) return Number(game.stock || 0);
+    return activeVariants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
+  }, [hasVariants, activeVariants, game.stock]);
+
+  const defaultVariant = useMemo(() => {
+    if (!hasVariants || activeVariants.length === 0) return null;
+    return activeVariants.find((v: any) => Number(v.stock) > 0) || activeVariants[0];
+  }, [hasVariants, activeVariants]);
+
+  const {
+    minEffectivePrice,
+    maxEffectivePrice,
+    minBasePrice,
+    hasVaryingPrices,
+    hasDiscount,
+    discountPercentage,
+  } = useMemo(() => {
+    if (hasVariants && activeVariants.length > 0) {
+      const effectivePrices = activeVariants.map((v: any) =>
+        v.discountPrice !== null && v.discountPrice !== undefined
+          ? Number(v.discountPrice)
+          : Number(v.price),
+      );
+      const basePrices = activeVariants.map((v: any) => Number(v.price));
+      const minEff = Math.min(...effectivePrices);
+      const maxEff = Math.max(...effectivePrices);
+      const minBase = Math.min(...basePrices);
+      const disc = minEff < minBase;
+      const pct = disc && minBase > 0 ? Math.round(((minBase - minEff) / minBase) * 100) : 0;
+      return {
+        minEffectivePrice: minEff,
+        maxEffectivePrice: maxEff,
+        minBasePrice: minBase,
+        hasVaryingPrices: minEff !== maxEff,
+        hasDiscount: disc,
+        discountPercentage: pct,
+      };
+    }
+
+    const finalP = game.discountPrice ?? game.price;
+    const disc =
+      typeof game.discountPrice === "number" && game.discountPrice < game.price;
+    const pct = disc ? Math.round(((game.price - finalP) / game.price) * 100) : 0;
+    return {
+      minEffectivePrice: finalP,
+      maxEffectivePrice: finalP,
+      minBasePrice: game.price,
+      hasVaryingPrices: false,
+      hasDiscount: disc,
+      discountPercentage: pct,
+    };
+  }, [hasVariants, activeVariants, game.price, game.discountPrice]);
+
   const cartItemId = hasVariants
     ? `${game._id}:${defaultVariant?._id}`
     : game._id;
   const currentQuantityInCart =
     cart.find((item) => item.id === cartItemId)?.quantity || 0;
-  const isAtStockLimit = stock > 0 && currentQuantityInCart >= stock;
+  const isAtStockLimit = totalStock > 0 && currentQuantityInCart >= totalStock;
 
   const rating = useMemo(() => {
     if (!game.comments?.length) {
@@ -74,7 +122,7 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
   }, [game.comments]);
 
   const handleAddToCart = () => {
-    if (stock <= 0) {
+    if (totalStock <= 0 || (hasVariants && (!defaultVariant || Number(defaultVariant.stock) <= 0))) {
       toast.error("این محصول ناموجود است.");
       return;
     }
@@ -82,14 +130,18 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
     const addResult = addToCart({
       id: cartItemId,
       productId: game._id,
-      title: hasVariants ? `${defaultVariant?.title || "مدل"}` : game.title,
+      productTitle: game.title,
+      title: hasVariants && defaultVariant?.title
+        ? `${game.title} (${defaultVariant.title})`
+        : game.title,
       price: hasVariants ? Number(defaultVariant?.price || 0) : game.price,
       discountPrice: hasVariants
         ? (defaultVariant?.discountPrice ?? null)
         : (game.discountPrice ?? null),
       image: game.mainImage,
       quantity: 1,
-      stock,
+      stock: hasVariants ? Number(defaultVariant?.stock || 0) : totalStock,
+      sku: hasVariants ? (defaultVariant?.sku || game.sku) : game.sku,
       variantId: hasVariants ? defaultVariant?._id : undefined,
       variantTitle: hasVariants ? defaultVariant?.title : undefined,
     });
@@ -100,7 +152,6 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
 
     if (addResult === "max_reached") {
       toast.error("تعداد انتخابی از موجودی انبار بیشتر است.");
-
       return;
     }
     toast.success("به سبد خرید اضافه شد.");
@@ -228,23 +279,25 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
           className="mt-2"
           itemProp="offers"
           itemScope
-          itemType="https://schema.org/Offer"
+          itemType={hasVariants ? "https://schema.org/AggregateOffer" : "https://schema.org/Offer"}
         >
           <meta itemProp="priceCurrency" content="IRR" />
-          <meta itemProp="price" content={finalPrice.toString()} />
+          <meta itemProp="price" content={(minEffectivePrice * 10).toString()} />
 
           {hasDiscount ? (
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-bold text-[#001A6E] md:text-base">
-                {finalPrice.toLocaleString()} تومان
+                {hasVariants && hasVaryingPrices ? "از " : ""}
+                {minEffectivePrice.toLocaleString()} تومان
               </span>
               <span className="text-xs text-gray-400 line-through">
-                {game.price.toLocaleString()}
+                {minBasePrice.toLocaleString()}
               </span>
             </div>
           ) : (
             <span className="text-sm font-bold text-[#001A6E] md:text-base">
-              {game.price.toLocaleString()} تومان
+              {hasVariants && hasVaryingPrices ? "از " : ""}
+              {minEffectivePrice.toLocaleString()} تومان
             </span>
           )}
         </div>
@@ -271,11 +324,11 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
         whileTap={{ scale: 0.98 }}
         whileHover={{ scale: 1.01 }}
         onClick={handleAddToCart}
-        disabled={stock <= 0 || isAtStockLimit}
+        disabled={totalStock <= 0 || isAtStockLimit}
         className="mt-4 inline-flex text-xs items-center justify-center gap-2 rounded-lg bg-[#377dff] py-2.5 md:text-sm font-medium text-white transition-colors hover:bg-[#2b67d5] focus:outline-none focus:ring-2 focus:ring-[#377dff]/40 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:bg-gray-400"
       >
         <ShoppingCart size={16} />
-        {stock <= 0
+        {totalStock <= 0
           ? "ناموجود"
           : isAtStockLimit
             ? "بیش از موجودی انبار"
@@ -298,16 +351,29 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
                   name: game.brand,
                 }
               : undefined,
-            offers: {
-              "@type": "Offer",
-              url: `https://yourdomain.com/product/${game.slug}`,
-              priceCurrency: "IRR",
-              price: finalPrice,
-              availability:
-                game.stock > 0
-                  ? "https://schema.org/InStock"
-                  : "https://schema.org/OutOfStock",
-            },
+            offers: hasVariants
+              ? {
+                  "@type": "AggregateOffer",
+                  url: `https://kermanatari.com/product/${game.slug}`,
+                  priceCurrency: "IRR",
+                  lowPrice: minEffectivePrice * 10,
+                  highPrice: maxEffectivePrice * 10,
+                  offerCount: activeVariants.length,
+                  availability:
+                    totalStock > 0
+                      ? "https://schema.org/InStock"
+                      : "https://schema.org/OutOfStock",
+                }
+              : {
+                  "@type": "Offer",
+                  url: `https://kermanatari.com/product/${game.slug}`,
+                  priceCurrency: "IRR",
+                  price: minEffectivePrice * 10,
+                  availability:
+                    totalStock > 0
+                      ? "https://schema.org/InStock"
+                      : "https://schema.org/OutOfStock",
+                },
             aggregateRating: game.comments?.length
               ? {
                   "@type": "AggregateRating",

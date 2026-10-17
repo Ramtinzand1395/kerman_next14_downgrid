@@ -64,11 +64,19 @@ const TempPaymentSchema = new mongoose.Schema(
           ref: "Product",
           required: true,
         },
+        productTitle: {
+          type: String,
+          default: null,
+        },
         variantId: {
           type: mongoose.Schema.Types.ObjectId,
           default: null,
         },
         variantTitle: {
+          type: String,
+          default: null,
+        },
+        variantSku: {
           type: String,
           default: null,
         },

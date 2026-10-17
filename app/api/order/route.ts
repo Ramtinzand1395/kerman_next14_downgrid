@@ -83,13 +83,17 @@ export async function POST(req: Request) {
   }
 
   const productIds = normalizedItems.map((item) => item.productId);
-  const products = await Product.find({ _id: { $in: productIds } })
-    .select("price discountPrice stock productType variants")
+  const products = await Product.find({
+    _id: { $in: productIds },
+    status: "published",
+    deletedAt: null,
+  })
+    .select("title price discountPrice stock productType variants status deletedAt")
     .lean();
 
   if (products.length !== productIds.length) {
     return NextResponse.json(
-      { error: "برخی از محصولات نامعتبر هستند." },
+      { error: "برخی از محصولات نامعتبر یا ناموجود هستند." },
       { status: 400 },
     );
   }
@@ -108,8 +112,14 @@ export async function POST(req: Request) {
         product.productType === "multi" && Array.isArray(product.variants);
 
       if (hasVariants) {
+        if (!item.variantId) {
+          throw new Error("VARIANT_REQUIRED");
+        }
+
         const selectedVariant = product.variants?.find(
-          (variant: any) => String(variant._id) === String(item.variantId),
+          (variant: any) =>
+            String(variant._id) === String(item.variantId) &&
+            variant.isActive !== false,
         );
 
         if (!selectedVariant) {
@@ -125,8 +135,10 @@ export async function POST(req: Request) {
 
         return {
           product: item.productId,
+          productTitle: product.title,
           variantId: selectedVariant._id,
           variantTitle: selectedVariant.title,
+          variantSku: selectedVariant.sku,
           price: Number(selectedVariant.price || 0),
           discountPrice:
             selectedVariant.discountPrice === null ||
@@ -138,6 +150,10 @@ export async function POST(req: Request) {
         };
       }
 
+      if (product.productType === "multi") {
+        throw new Error("VARIANT_REQUIRED");
+      }
+
       if ((product.stock ?? 0) < item.quantity) {
         throw new Error("INSUFFICIENT_STOCK");
       }
@@ -146,10 +162,14 @@ export async function POST(req: Request) {
 
       return {
         product: item.productId,
-        price: product.price,
-        discountPrice: product.discountPrice,
+        productTitle: product.title,
+        price: Number(product.price || 0),
+        discountPrice:
+          product.discountPrice === null || product.discountPrice === undefined
+            ? null
+            : Number(product.discountPrice),
         quantity: item.quantity,
-        total: unitPrice * item.quantity,
+        total: Number(unitPrice || 0) * item.quantity,
       };
     });
 
@@ -224,9 +244,16 @@ export async function POST(req: Request) {
       );
     }
 
+    if (error instanceof Error && error.message === "VARIANT_REQUIRED") {
+      return NextResponse.json(
+        { error: "انتخاب مدل برای محصول چندمدلی الزامی است." },
+        { status: 400 },
+      );
+    }
+
     if (error instanceof Error && error.message === "INVALID_VARIANT") {
       return NextResponse.json(
-        { error: "مدل انتخابی برای محصول معتبر نیست." },
+        { error: "مدل انتخابی برای محصول معتبر یا فعال نیست." },
         { status: 400 },
       );
     }

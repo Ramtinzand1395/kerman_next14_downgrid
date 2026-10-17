@@ -5,6 +5,8 @@ import { cache } from "react";
 import { ProductGallery } from "./ProductGallery";
 import { ProductInfo } from "./ProductInfo";
 import TabSection from "./TabSection";
+import { ProductVariantProvider } from "./ProductVariantContext";
+import ProductPurchaseSummary from "./ProductPurchaseSummary";
 import type { Product } from "@/types";
 import { SITE_URL, toAbsoluteUrl } from "@/lib/site";
 import ProductImage from "@/app/components/ProductImage";
@@ -203,8 +205,10 @@ export async function generateMetadata({
 
 export default async function ProductPage({
   params,
+  searchParams,
 }: {
   params: { slug: string };
+  searchParams?: { variant?: string };
 }) {
   let product: ProductResponse;
 
@@ -220,6 +224,21 @@ export default async function ProductPage({
   );
   const finalPrice = product.discountPrice ?? product.price;
   const productUrl = toAbsoluteUrl(`/product/${product.slug}`);
+
+  const activeVariants = (product.variants || []).filter(
+    (v: any) => v.isActive !== false,
+  );
+  const pricesInIRR = activeVariants.map(
+    (v: any) => ((v.discountPrice ?? v.price) || 0) * 10,
+  );
+  const minPriceInIRR =
+    pricesInIRR.length > 0 ? Math.min(...pricesInIRR) : finalPrice * 10;
+  const maxPriceInIRR =
+    pricesInIRR.length > 0 ? Math.max(...pricesInIRR) : finalPrice * 10;
+  const totalStock =
+    product.productType === "multi" && activeVariants.length > 0
+      ? activeVariants.reduce((s: number, v: any) => s + (v.stock || 0), 0)
+      : product.stock;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -238,16 +257,30 @@ export default async function ProductPage({
       name: product.brand || "Kerman Atari",
     },
     category: product.category?.name,
-    offers: {
-      "@type": "Offer",
-      priceCurrency: "IRR",
-      price: finalPrice,
-      availability:
-        product.stock > 0
-          ? "https://schema.org/InStock"
-          : "https://schema.org/OutOfStock",
-      url: productUrl,
-    },
+    offers:
+      product.productType === "multi" && activeVariants.length > 0
+        ? {
+            "@type": "AggregateOffer",
+            priceCurrency: "IRR",
+            lowPrice: minPriceInIRR,
+            highPrice: maxPriceInIRR,
+            offerCount: activeVariants.length,
+            availability:
+              totalStock > 0
+                ? "https://schema.org/InStock"
+                : "https://schema.org/OutOfStock",
+            url: productUrl,
+          }
+        : {
+            "@type": "Offer",
+            priceCurrency: "IRR",
+            price: finalPrice * 10,
+            availability:
+              product.stock > 0
+                ? "https://schema.org/InStock"
+                : "https://schema.org/OutOfStock",
+            url: productUrl,
+          },
     shippingDetails: {
       "@type": "OfferShippingDetails",
       shippingRate: {
@@ -338,117 +371,104 @@ export default async function ProductPage({
         </p>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <article className="lg:col-span-9 space-y-6">
-          <div className="rounded-3xl border border-zinc-200 bg-white p-4 md:p-6 shadow-sm">
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 xl:gap-8">
-              <div className="xl:col-span-5">
-                <ProductGallery
-                  productId={product._id}
-                  mainImage={product.mainImage}
-                  images={product.images}
-                  title={product.title}
-                   mainImageAlt={product.mainImageAlt}
-                />
-              </div>
-              <div className="xl:col-span-7 xl:border-r xl:pr-8 border-zinc-100">
-                <ProductInfo product={product} />
+      <ProductVariantProvider
+        product={product}
+        initialVariantId={searchParams?.variant}
+      >
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <article className="lg:col-span-9 space-y-6">
+            <div className="rounded-3xl border border-zinc-200 bg-white p-4 md:p-6 shadow-sm">
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 xl:gap-8">
+                <div className="xl:col-span-5">
+                  <ProductGallery
+                    productId={product._id}
+                    mainImage={product.mainImage}
+                    images={product.images}
+                    title={product.title}
+                     mainImageAlt={product.mainImageAlt}
+                  />
+                </div>
+                <div className="xl:col-span-7 xl:border-r xl:pr-8 border-zinc-100">
+                  <ProductInfo product={product} />
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="rounded-3xl border border-zinc-200 bg-white p-4 md:p-6">
-            <h2 className="text-lg font-bold text-zinc-900 mb-4">
-              سوالات پرتکرار
-            </h2>
-            {product.faqs && product.faqs.length > 0 ? (
-              <div className="space-y-3">
-                {product.faqs.map((faq, index) => (
-                  <details
-                    key={index}
-                    className="group rounded-xl border border-zinc-200 bg-zinc-50 p-4"
-                  >
-                    <summary className="cursor-pointer list-none text-sm md:text-base font-bold text-zinc-900 transition-colors group-open:text-blue-700">
-                      {faq.question}
-                    </summary>
-                    <p className="mt-2 text-sm leading-7 text-zinc-600">
-                      {faq.answer}
-                    </p>
-                  </details>
-                ))}
-              </div>
-            ) : (
-              <p className="text-zinc-600 leading-8 text-sm md:text-base">
-                این محصول با تضمین اصالت، ارسال سریع و پشتیبانی کامل ارائه
-                می‌شود.
-              </p>
-            )}
-          </div>
-
-          <TabSection product={product} />
-        </article>
-
-        <aside className="lg:col-span-3 space-y-5 lg:sticky lg:top-24 h-fit">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 md:p-5">
-            <h2 className="text-sm font-bold text-zinc-900 mb-4">خلاصه خرید</h2>
-            <ul className="space-y-3 text-sm text-zinc-700">
-              <li className="flex items-center justify-between">
-                <span>قیمت نهایی</span>
-                <strong>{formatPrice(finalPrice)} تومان</strong>
-              </li>
-              <li className="flex items-center justify-between">
-                <span>موجودی</span>
-                <span>
-                  {product.stock > 0 ? `${product.stock} عدد` : "ناموجود"}
-                </span>
-              </li>
-              <li className="flex items-center justify-between">
-                <span>برند</span>
-                <span>{product.brand || "-"}</span>
-              </li>
-            </ul>
-          </div>
-
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 md:p-5">
-            <h2 className="text-sm font-bold text-zinc-900 mb-4">
-              محصولات مرتبط
-            </h2>
-
-            {relatedProducts.length === 0 ? (
-              <p className="text-xs text-zinc-500">محصول مرتبطی پیدا نشد.</p>
-            ) : (
-              <div className="space-y-4">
-                {relatedProducts.map((item: Product) => (
-                  <Link
-                    key={item._id}
-                    href={`/product/${item.slug}`}
-                    className="group flex items-start gap-3"
-                  >
-                    <div className="w-20 h-20 rounded-lg overflow-hidden border border-zinc-100 bg-zinc-50 shrink-0">
-                      <ProductImage
-                        width={160}
-                        height={160}
-                        src={item.mainImage}
-                        alt={item.title}
-                        sizes="80px"
-                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                      />
-                    </div>
-                    <div>
-                      <h3 className="text-xs leading-5 text-zinc-700 group-hover:text-red-500 transition-colors line-clamp-2 font-medium">
-                        {item.title}
-                      </h3>
-                      <p className="mt-1 text-xs font-bold text-zinc-900">
-                        {formatPrice(item.discountPrice ?? item.price)} تومان
+            <div className="rounded-3xl border border-zinc-200 bg-white p-4 md:p-6">
+              <h2 className="text-lg font-bold text-zinc-900 mb-4">
+                سوالات پرتکرار
+              </h2>
+              {product.faqs && product.faqs.length > 0 ? (
+                <div className="space-y-3">
+                  {product.faqs.map((faq, index) => (
+                    <details
+                      key={index}
+                      className="group rounded-xl border border-zinc-200 bg-zinc-50 p-4"
+                    >
+                      <summary className="cursor-pointer list-none text-sm md:text-base font-bold text-zinc-900 transition-colors group-open:text-blue-700">
+                        {faq.question}
+                      </summary>
+                      <p className="mt-2 text-sm leading-7 text-zinc-600">
+                        {faq.answer}
                       </p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        </aside>
-      </section>
+                    </details>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-zinc-600 leading-8 text-sm md:text-base">
+                  این محصول با تضمین اصالت، ارسال سریع و پشتیبانی کامل ارائه
+                  می‌شود.
+                </p>
+              )}
+            </div>
+
+            <TabSection product={product} />
+          </article>
+
+          <aside className="lg:col-span-3 space-y-5 lg:sticky lg:top-24 h-fit">
+            <ProductPurchaseSummary />
+
+            <div className="rounded-2xl border border-zinc-200 bg-white p-4 md:p-5">
+              <h2 className="text-sm font-bold text-zinc-900 mb-4">
+                محصولات مرتبط
+              </h2>
+
+              {relatedProducts.length === 0 ? (
+                <p className="text-xs text-zinc-500">محصول مرتبطی پیدا نشد.</p>
+              ) : (
+                <div className="space-y-4">
+                  {relatedProducts.map((item: Product) => (
+                    <Link
+                      key={item._id}
+                      href={`/product/${item.slug}`}
+                      className="group flex items-start gap-3"
+                    >
+                      <div className="w-20 h-20 rounded-lg overflow-hidden border border-zinc-100 bg-zinc-50 shrink-0">
+                        <ProductImage
+                          width={160}
+                          height={160}
+                          src={item.mainImage}
+                          alt={item.title}
+                          sizes="80px"
+                          className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        />
+                      </div>
+                      <div>
+                        <h3 className="text-xs leading-5 text-zinc-700 group-hover:text-red-500 transition-colors line-clamp-2 font-medium">
+                          {item.title}
+                        </h3>
+                        <p className="mt-1 text-xs font-bold text-zinc-900">
+                          {formatPrice(item.discountPrice ?? item.price)} تومان
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </aside>
+        </section>
+      </ProductVariantProvider>
     </div>
   );
 }

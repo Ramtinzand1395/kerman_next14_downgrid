@@ -30,14 +30,14 @@ export default function AddToCart({
     ? Number(selectedVariant?.stock || 0)
     : Number(product.stock || 0);
 
-  // حل مشکل تایپ با استفاده از مقادیر عددی پیش‌فرض و حذف null
-  const currentPrice = isMulti
-    ? (selectedVariant?.discountPrice ?? selectedVariant?.price ?? 0)
-    : (product.discountPrice ?? product.price ?? 0);
-
-  const currentDiscountPrice = isMulti
+  // قرارداد استاندارد: price = قیمت اصلی، discountPrice = قیمت تخفیف‌خورده (یا null)
+  const originalPrice = isMulti
     ? Number(selectedVariant?.price || 0)
     : Number(product.price || 0);
+
+  const discountPrice = isMulti
+    ? (selectedVariant?.discountPrice ?? null)
+    : (product.discountPrice ?? null);
 
   const useVariant = isMulti;
   const cartItemId = useVariant
@@ -63,11 +63,13 @@ export default function AddToCart({
     const addResult = addToCart({
       id: cartItemId,
       productId: product._id.toString(),
-      title: useVariant
-        ? `${product.title} - ${selectedVariant?.title || "مدل"}`
+      productTitle: product.title,
+      title: useVariant && selectedVariant?.title
+        ? `${product.title} (${selectedVariant.title})`
         : product.title,
-      price: currentPrice,
-      discountPrice: currentDiscountPrice,
+      price: originalPrice,
+      discountPrice,
+      sku: useVariant ? (selectedVariant?.sku || product.sku) : product.sku,
       image: product.mainImage,
       quantity: 1,
       stock: currentStock,

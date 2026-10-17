@@ -197,13 +197,17 @@ export async function POST(req: NextRequest) {
     }
 
     const productIds = normalizedItems.map((item) => item.productId);
-    const products = await Product.find({ _id: { $in: productIds } })
-      .select("price discountPrice stock productType variants category")
+    const products = await Product.find({
+      _id: { $in: productIds },
+      status: "published",
+      deletedAt: null,
+    })
+      .select("title price discountPrice stock productType variants category status deletedAt")
       .lean();
 
     if (products.length !== productIds.length) {
       return NextResponse.json(
-        { success: false, error: "برخی از محصولات نامعتبر هستند." },
+        { success: false, error: "برخی از محصولات نامعتبر یا ناموجود هستند." },
         { status: 400 },
       );
     }
@@ -220,8 +224,13 @@ export async function POST(req: NextRequest) {
         product.productType === "multi" && Array.isArray(product.variants);
 
       if (hasVariants) {
+        if (!item.variantId) {
+          throw new Error("VARIANT_REQUIRED");
+        }
         const selectedVariant = product.variants?.find(
-          (variant: any) => String(variant._id) === String(item.variantId),
+          (variant: any) =>
+            String(variant._id) === String(item.variantId) &&
+            variant.isActive !== false,
         );
         if (!selectedVariant) throw new Error("INVALID_VARIANT");
         if (Number(selectedVariant.stock || 0) < item.quantity) {
@@ -231,8 +240,10 @@ export async function POST(req: NextRequest) {
           selectedVariant.discountPrice ?? selectedVariant.price;
         return {
           product: item.productId,
+          productTitle: product.title,
           variantId: selectedVariant._id,
           variantTitle: selectedVariant.title,
+          variantSku: selectedVariant.sku,
           price: Number(selectedVariant.price || 0),
           discountPrice:
             selectedVariant.discountPrice === null ||
@@ -244,12 +255,17 @@ export async function POST(req: NextRequest) {
         };
       }
 
+      if (product.productType === "multi") {
+        throw new Error("VARIANT_REQUIRED");
+      }
+
       if ((product.stock ?? 0) < item.quantity) {
         throw new Error("INSUFFICIENT_STOCK");
       }
       const unitPrice = product.discountPrice ?? product.price;
       return {
         product: item.productId,
+        productTitle: product.title,
         price: Number(product.price || 0),
         discountPrice:
           product.discountPrice === null || product.discountPrice === undefined
@@ -469,6 +485,7 @@ export async function POST(req: NextRequest) {
                 $elemMatch: {
                   _id: item.variantId,
                   stock: { $gte: item.quantity },
+                  isActive: { $ne: false },
                 },
               },
             },
@@ -476,12 +493,13 @@ export async function POST(req: NextRequest) {
               $inc: {
                 stock: -item.quantity,
                 "variants.$.stock": -item.quantity,
+                inventoryVersion: 1,
               },
             },
           )
         : await Product.findOneAndUpdate(
             { _id: item.product, stock: { $gte: item.quantity } },
-            { $inc: { stock: -item.quantity } },
+            { $inc: { stock: -item.quantity, inventoryVersion: 1 } },
           );
 
       if (!updated) {
@@ -492,8 +510,14 @@ export async function POST(req: NextRequest) {
               ? { _id: previous.product, variants: { $elemMatch: { _id: previous.variantId } } }
               : { _id: previous.product },
             previous.variantId
-              ? { $inc: { stock: previous.quantity, "variants.$.stock": previous.quantity } }
-              : { $inc: { stock: previous.quantity } },
+              ? {
+                  $inc: {
+                    stock: previous.quantity,
+                    "variants.$.stock": previous.quantity,
+                    inventoryVersion: 1,
+                  },
+                }
+              : { $inc: { stock: previous.quantity, inventoryVersion: 1 } },
           );
         }
         // برگشت وجه + لغو سفارش
@@ -628,9 +652,15 @@ export async function POST(req: NextRequest) {
         { status: 409 },
       );
     }
+    if (error instanceof Error && error.message === "VARIANT_REQUIRED") {
+      return NextResponse.json(
+        { success: false, error: "انتخاب مدل برای محصول چندمدلی الزامی است." },
+        { status: 400 },
+      );
+    }
     if (error instanceof Error && error.message === "INVALID_VARIANT") {
       return NextResponse.json(
-        { success: false, error: "مدل انتخابی برای محصول معتبر نیست." },
+        { success: false, error: "مدل انتخابی برای محصول معتبر یا فعال نیست." },
         { status: 400 },
       );
     }

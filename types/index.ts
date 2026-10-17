@@ -1,6 +1,18 @@
+export interface ProductVariant {
+  _id?: string;
+  title: string;
+  sku?: string;
+  barcode?: string;
+  price: number;
+  discountPrice?: number | null;
+  stock: number;
+  isActive?: boolean;
+}
+
 export interface CartItem {
   id: string;
   title: string;
+  productTitle?: string;
   image: string;
   price: number;
   quantity: number;
@@ -70,6 +82,7 @@ export interface ProductForm {
   productType: "single" | "multi";
   title: string;
   slug: string;
+  sku?: string;
   price: number;
   discountPrice?: number | null;
   stock: number;
@@ -85,14 +98,8 @@ export interface ProductForm {
   seoTitle: string;
   metaDescription: string;
   mainImageAlt: string;
-  variants: {
-    _id?: string;
-    title: string;
-    sku?: string;
-    price: number;
-    discountPrice?: number | null;
-    stock: number;
-  }[];
+  variants: ProductVariant[];
+  defaultVariantId?: string | null;
 }
 
 export interface Customer {
@@ -169,14 +176,11 @@ export interface Category {
 export interface Product {
   status?: "draft" | "published";
   productType?: "single" | "multi";
-  variants?: {
-    _id?: string;
-    title: string;
-    sku?: string;
-    price: number;
-    discountPrice?: number | null;
-    stock: number;
-  }[];
+  variants?: ProductVariant[];
+  defaultVariantId?: string | null;
+  catalogRevision?: number;
+  inventoryVersion?: number;
+  deletedAt?: string | Date | null;
   _id: string;
   sku: string;
   title: string;
@@ -221,17 +225,20 @@ interface Favorite {
   user: User;
   product: Product;
 }
-interface OrderItem {
+export interface OrderItem {
   _id: string;
-  orderId: number;
-  productId: number;
+  orderId?: number | string;
+  productId?: number | string;
+  product?: Product;
+  productTitle?: string;
   quantity: number;
   price: number;
+  discountPrice?: number | null;
   total: number;
-  order: Order;
-  product: Product;
+  order?: Order;
   variantId?: string;
   variantTitle?: string;
+  variantSku?: string;
 }
 
 export interface Order {

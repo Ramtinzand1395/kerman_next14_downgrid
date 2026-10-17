@@ -259,7 +259,7 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
                   className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm"
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <p className="font-semibold text-slate-900">{item.title}</p>
+                    <p className="font-semibold text-slate-900">{item.productTitle || item.title}</p>
                     <p className="text-slate-500">× {item.quantity}</p>
                   </div>
 

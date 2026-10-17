@@ -317,9 +317,16 @@ export default function ProductsPage() {
                               <p className="font-semibold text-slate-900">
                                 {product.title}
                               </p>
-                              <p className="text-xs text-slate-500">
-                                {product.brand || "بدون برند"}
-                              </p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-xs text-slate-500">
+                                  {product.brand || "بدون برند"}
+                                </span>
+                                {product.productType === "multi" && (
+                                  <span className="rounded-md bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700 border border-indigo-200">
+                                    {product.variants?.filter((v) => v.isActive !== false).length || 0} مدل
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -342,6 +349,7 @@ export default function ProductsPage() {
                         </td>
 
                         <td className="px-4 py-3 font-semibold text-slate-900">
+                          {product.productType === "multi" ? "از " : ""}
                           {formatPrice(product.discountPrice || product.price)}{" "}
                           تومان
                           {product.discountPrice ? (

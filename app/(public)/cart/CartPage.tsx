@@ -228,8 +228,7 @@ export default function CartPage() {
 
                           <div className="min-w-0">
                             <h3 className="truncate text-sm font-semibold text-slate-900 md:text-base">
-                              {/* {item.title} */}
-                              {item.variantTitle || item.title}
+                              {item.productTitle || item.title}
                             </h3>
                             {item.variantTitle && (
                               <p className="mt-1 text-xs text-slate-500">

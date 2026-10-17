@@ -8,12 +8,14 @@ interface CartStoreActionsType {
       id: string;
       productId: string;
       title: string;
+      productTitle?: string;
       price: number;
       image: string;
       discountPrice: number | null;
       stock?: number;
       variantId?: string;
       variantTitle?: string;
+      sku?: string;
     },
   ) => "added" | "out_of_stock" | "max_reached";
   removeFromCart: (product: Partial<CartItem>) => void;
