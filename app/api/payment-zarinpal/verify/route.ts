@@ -350,6 +350,9 @@ export async function GET(req: NextRequest) {
       items: temp.items,
       totalPrice: temp.totalPrice,
       shippingCost: temp.shippingCost,
+      shippingPaymentType:
+        temp.shippingPaymentType ||
+        (temp.shippingCost > 0 ? "PREPAID" : "COLLECT"),
       finalPrice: temp.finalPrice,
       couponCode: temp.couponCode ?? null,
       couponDiscount: temp.couponDiscount ?? 0,

@@ -241,12 +241,15 @@ export interface OrderItem {
   variantSku?: string;
 }
 
+export type ShippingPaymentType = "PREPAID" | "COLLECT";
+
 export interface Order {
   _id: string;
   userId?: number;
   addressId?: number;
   totalPrice: number;
   shippingCost: number;
+  shippingPaymentType?: ShippingPaymentType;
   finalPrice: number;
   status: string;
   paymentMethod: string;

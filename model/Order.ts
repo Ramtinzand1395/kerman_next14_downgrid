@@ -91,6 +91,12 @@ const OrderSchema = new mongoose.Schema(
       default: 0,
     },
 
+    shippingPaymentType: {
+      type: String,
+      enum: ["PREPAID", "COLLECT"],
+      required: false,
+    },
+
     finalPrice: {
       type: Number,
       required: true,

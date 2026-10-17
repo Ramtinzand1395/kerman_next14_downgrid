@@ -92,6 +92,11 @@ const TempPaymentSchema = new mongoose.Schema(
     ],
     totalPrice: { type: Number, default: 0 },
     shippingCost: { type: Number, default: 0 },
+    shippingPaymentType: {
+      type: String,
+      enum: ["PREPAID", "COLLECT"],
+      required: false,
+    },
     finalPrice: { type: Number, default: 0 },
     // کوپن اعمال‌شده هنگام درخواست پرداخت (باشگاه مشتریان)
     couponCode: { type: String, default: null },

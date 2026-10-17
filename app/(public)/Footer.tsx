@@ -114,7 +114,7 @@ export default function Footer() {
         </div>
 
         {/* Columns */}
-        <div className="mt-10 grid gap-8 border-t border-gray-200 pt-8 md:grid-cols-3">
+        <div className="mt-10 grid gap-8 border-t border-gray-200 pt-8 md:grid-cols-4">
           {/* Brand */}
           <section aria-label="معرفی">
             <Link href="/" className="mb-4 inline-flex items-center gap-2">
@@ -193,6 +193,31 @@ export default function Footer() {
               <Instagram className="h-4 w-4" />
               دنبال‌کردن در اینستاگرام
             </a>
+          </section>
+          {/* Trust / Licenses */}
+          <section aria-label="اعتماد و مجوزها">
+            <h3 className="mb-3 font-extrabold text-gray-900">
+              اعتماد و مجوزها
+            </h3>
+
+            <div className="flex w-fit items-center justify-center rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
+              <a
+                referrerPolicy="origin"
+                target="_blank"
+                href="https://trustseal.enamad.ir/?id=548723&Code=UJmsLirlKx1oaaJJZOS0H4Gcbq9qPU8Q"
+              >
+                <img
+                  referrerPolicy="origin"
+                  src="https://trustseal.enamad.ir/logo.aspx?id=548723&Code=UJmsLirlKx1oaaJJZOS0H4Gcbq9qPU8Q"
+                  alt="نماد اعتماد الکترونیکی کرمان آتاری"
+                  style={{
+                    cursor: "pointer",
+                    width: "90px",
+                    height: "auto",
+                  }}
+                />
+              </a>
+            </div>
           </section>
         </div>
 

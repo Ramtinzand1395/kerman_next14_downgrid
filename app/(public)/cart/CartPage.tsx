@@ -20,6 +20,7 @@ import { safeParseJSON } from "@/helpers/safeParseJSON";
 import { toast } from "react-toastify";
 import ProductImage from "@/app/components/ProductImage";
 import { CartSkeleton } from "@/app/components/loading/LoadingSystem";
+import { calculateShippingInfo } from "@/lib/shipping";
 
 const checkoutSteps = [
   {
@@ -57,6 +58,18 @@ export default function CartPage() {
     return step;
   }, [searchParams]);
 
+  const shippingInfo = useMemo(() => {
+    if (!selectedAddress?.city || !selectedAddress?.province) return null;
+    try {
+      return calculateShippingInfo({
+        province: selectedAddress.province,
+        city: selectedAddress.city,
+      });
+    } catch {
+      return null;
+    }
+  }, [selectedAddress]);
+
   const orderSummary = useMemo(() => {
     const subtotal = cart.reduce(
       (sum, item) => sum + item.price * item.quantity,
@@ -69,13 +82,16 @@ export default function CartPage() {
       0,
     );
 
+    const shippingCost = shippingInfo ? shippingInfo.cost : 0;
+
     return {
       itemsCount: cart.reduce((sum, item) => sum + item.quantity, 0),
       subtotal,
       discount,
-      final: subtotal - discount,
+      shippingCost,
+      final: Math.max(0, subtotal - discount + shippingCost),
     };
-  }, [cart]);
+  }, [cart, shippingInfo]);
 
   useEffect(() => {
     const cached = sessionStorage.getItem("checkout:selected-address");
@@ -370,6 +386,30 @@ export default function CartPage() {
                   {formatPrice(orderSummary.discount)} تومان
                 </span>
               </div>
+
+              <div className="flex items-center justify-between text-slate-600">
+                <span>هزینه ارسال</span>
+                {selectedAddress && shippingInfo ? (
+                  shippingInfo.paymentType === "PREPAID" ? (
+                    <span className="font-semibold text-slate-900">
+                      {formatPrice(shippingInfo.cost)} تومان
+                    </span>
+                  ) : (
+                    <span className="font-semibold text-amber-700">
+                      پس‌کرایه
+                    </span>
+                  )
+                ) : (
+                  <span className="text-xs text-slate-400">
+                    محاسبه بر اساس آدرس
+                  </span>
+                )}
+              </div>
+              {selectedAddress && shippingInfo?.paymentType === "COLLECT" && (
+                <p className="text-[11px] text-slate-500">
+                  هزینه حمل هنگام تحویل توسط شرکت حمل‌ونقل دریافت می‌شود.
+                </p>
+              )}
             </div>
 
             <div className="my-5 border-t border-slate-200 pt-4">

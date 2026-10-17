@@ -10,7 +10,7 @@ import mongoose from "mongoose";
 import { createAddressSnapshot } from "@/lib/addressSnapshot";
 import { notifyAdmins, notifyUser } from "@/lib/notifications/service";
 import {
-  calculateShippingCost,
+  calculateShippingInfo,
   InvalidShippingDestinationError,
 } from "@/lib/shipping";
 
@@ -202,10 +202,12 @@ export async function POST(req: Request) {
       };
     });
 
-    const shippingCost = calculateShippingCost({
+    const shippingInfo = calculateShippingInfo({
       province: address.province,
       city: address.city,
     });
+    const shippingCost = shippingInfo.cost;
+    const shippingPaymentType = shippingInfo.paymentType;
 
     const totalPrice = orderItems.reduce((a: number, i) => a + i.total, 0);
     const finalPrice = totalPrice + shippingCost;
@@ -219,6 +221,7 @@ export async function POST(req: Request) {
         items: orderItems,
         totalPrice,
         shippingCost,
+        shippingPaymentType,
         finalPrice,
       });
     } catch {

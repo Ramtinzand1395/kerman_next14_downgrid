@@ -22,7 +22,7 @@ import { validateCoupon, applyCoupon } from "@/lib/loyalty/coupon.service";
 import { onSuccessfulPurchase } from "@/lib/loyalty/purchase.hooks";
 import { notifyInventoryFailure, notifyLowInventory, notifyOrderPaid, notifyPaymentFailed } from "@/lib/notifications/events";
 import {
-  calculateShippingCost,
+  calculateShippingInfo,
   InvalidShippingDestinationError,
 } from "@/lib/shipping";
 
@@ -307,10 +307,12 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    const shippingCost = calculateShippingCost({
+    const shippingInfo = calculateShippingInfo({
       province: address.province,
       city: address.city,
     });
+    const shippingCost = shippingInfo.cost;
+    const shippingPaymentType = shippingInfo.paymentType;
 
     const totalPrice = checkoutItems.reduce((acc, item) => acc + item.total, 0);
 
@@ -425,6 +427,7 @@ export async function POST(req: NextRequest) {
         items: checkoutItems,
         totalPrice,
         shippingCost,
+        shippingPaymentType,
         finalPrice,
         couponCode,
         couponDiscount,
