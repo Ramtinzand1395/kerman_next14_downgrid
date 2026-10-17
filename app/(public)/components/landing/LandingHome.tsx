@@ -375,6 +375,7 @@ export default function LandingHome({
             description="همه لوازم جانبی مورد نیاز کنسول در یکجا"
             tabs={data.equipmentTabs}
             variant="equipment"
+            defaultTabId="gaming-wall-art"
           />
         </div>
 

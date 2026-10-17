@@ -77,16 +77,25 @@ export default function LandingCatalog({
   description,
   tabs,
   variant,
+  defaultTabId,
 }: {
   title: string;
   description: string;
   tabs: LandingProductTab[];
   variant: CatalogVariant;
+  defaultTabId?: string;
 }) {
+  const preferredTab = defaultTabId
+    ? tabs.find((tab) => tab.id === defaultTabId)
+    : undefined;
   const firstPopulated = tabs.find((tab) => tab.products.length > 0);
-  const [activeId, setActiveId] = useState(firstPopulated?.id || tabs[0]?.id);
+  const initialTab = preferredTab || firstPopulated || tabs[0];
+  const [activeId, setActiveId] = useState(initialTab?.id);
   const activeTab =
-    tabs.find((tab) => tab.id === activeId) || firstPopulated || tabs[0];
+    tabs.find((tab) => tab.id === activeId) ||
+    preferredTab ||
+    firstPopulated ||
+    tabs[0];
   const products = activeTab?.products || [];
   const densityClass =
     products.length <= 1

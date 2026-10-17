@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 
 import Category from "@/model/Category";
 import Comment from "@/model/Comment";
@@ -73,9 +74,36 @@ export async function GET(req: Request) {
     const baseFilter: Record<string, any> = { status: "published" };
 
     if (categorySlug) {
-      const mainCategory = await Category.findOne({
-        slug: categorySlug,
+      const decodedCategory = decodeURIComponent(categorySlug).trim();
+      const normalizedSlug = decodedCategory.toLowerCase().replace(/\s+/g, "-");
+
+      // 1. Exact or normalized slug match
+      let mainCategory = await Category.findOne({
+        $or: [
+          { slug: categorySlug },
+          { slug: decodedCategory },
+          { slug: normalizedSlug },
+        ],
       }).select("_id");
+
+      // 2. Case-insensitive slug match
+      if (!mainCategory) {
+        mainCategory = await Category.findOne({
+          slug: { $regex: new RegExp(`^${escapeRegex(normalizedSlug)}$`, "i") },
+        }).select("_id");
+      }
+
+      // 3. Name or ObjectId match
+      if (!mainCategory) {
+        mainCategory = await Category.findOne({
+          $or: [
+            { name: decodedCategory },
+            ...(mongoose.isValidObjectId(categorySlug)
+              ? [{ _id: categorySlug }]
+              : []),
+          ],
+        }).select("_id");
+      }
 
       if (!mainCategory) {
         return NextResponse.json({
