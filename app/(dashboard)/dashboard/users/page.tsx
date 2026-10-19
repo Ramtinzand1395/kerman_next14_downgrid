@@ -6,16 +6,6 @@ import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import ProductImage from "@/app/components/ProductImage";
 
-interface Address {
-  _id: string;
-  province: string;
-  city: string;
-  address: string;
-  plaque?: string;
-  unit?: string;
-  postalCode?: string;
-}
-
 interface Favorite {
   _id: string;
   createdAt: string;
@@ -26,39 +16,44 @@ interface Favorite {
   };
 }
 
-interface Comment {
-  _id: string;
-  text: string;
-  rating?: number;
-  verified: boolean;
-  createdAt: string;
-  product?: {
-    _id: string;
-    title: string;
-    mainImage: string;
-  };
-}
-
-interface Order {
-  _id: string;
-  createdAt: string;
-  finalPrice: number;
-  status: string;
-}
-
 interface User {
   _id: string;
   username?: string;
   email?: string;
   mobile: string;
   role: "user" | "admin" | "superadmin";
-  addresses?: Address[];
+  addressCount: number;
   favorites?: Favorite[];
-  comments?: Comment[];
-  orders?: Order[];
+  commentCount: number;
+  successfulOrders: number;
+  totalPurchase: number;
   createdAt: string;
   updatedAt?: string;
 }
+
+interface Summary {
+  totalUsers: number;
+  regularUsers: number;
+  admins: number;
+  successfulOrders: number;
+  totalComments: number;
+}
+
+interface UsersResponse {
+  users: User[];
+  summary: Summary;
+  total: number;
+  page: number;
+  pages: number;
+}
+
+const emptySummary: Summary = {
+  totalUsers: 0,
+  regularUsers: 0,
+  admins: 0,
+  successfulOrders: 0,
+  totalComments: 0,
+};
 
 const roleLabel: Record<User["role"], string> = {
   user: "کاربر",
@@ -76,82 +71,83 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | User["role"]>("all");
+  const [summary, setSummary] = useState<Summary>(emptySummary);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
 
   useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedQuery(query.trim()), 300);
+    return () => window.clearTimeout(timeout);
+  }, [query]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        const res = await fetch("/api/admin/user");
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: "12",
+        });
+        if (debouncedQuery) params.set("query", debouncedQuery);
+        if (roleFilter !== "all") params.set("role", roleFilter);
+
+        const res = await fetch(`/api/admin/user?${params.toString()}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
         if (!res.ok) throw new Error("خطای سرور");
-        const data: { users: User[] } = await res.json();
+        const data: UsersResponse = await res.json();
         setUsers(data.users);
+        setSummary(data.summary);
+        setTotal(data.total);
+        setPages(data.pages);
       } catch (error) {
+        if (controller.signal.aborted) return;
         console.error(error);
         toast.error("دریافت اطلاعات کاربران با خطا مواجه شد");
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
 
     fetchUsers();
-  }, []);
-
-  const filteredUsers = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-
-    return users.filter((user) => {
-      const isRoleMatch = roleFilter === "all" || user.role === roleFilter;
-      const searchable = [user.username, user.mobile, user.email]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      const isQueryMatch =
-        normalizedQuery.length === 0 || searchable.includes(normalizedQuery);
-
-      return isRoleMatch && isQueryMatch;
-    });
-  }, [users, query, roleFilter]);
+    return () => controller.abort();
+  }, [debouncedQuery, page, roleFilter]);
 
   const overview = useMemo(() => {
-    const totals = users.reduce(
-      (acc, user) => {
-        acc[user.role] += 1;
-        acc.orders += user.orders?.length || 0;
-        acc.comments += user.comments?.length || 0;
-        return acc;
-      },
-      { user: 0, admin: 0, superadmin: 0, orders: 0, comments: 0 },
-    );
-
     return [
       {
         label: "کل کاربران",
-        value: users.length.toLocaleString(),
+        value: summary.totalUsers.toLocaleString("fa-IR"),
         tone: "from-slate-100 to-slate-50",
       },
       {
         label: "کاربران عادی",
-        value: totals.user.toLocaleString(),
+        value: summary.regularUsers.toLocaleString("fa-IR"),
         tone: "from-emerald-100 to-emerald-50",
       },
       {
         label: "ادمین‌ها",
-        value: (totals.admin + totals.superadmin).toLocaleString(),
+        value: summary.admins.toLocaleString("fa-IR"),
         tone: "from-indigo-100 to-indigo-50",
       },
       {
-        label: "مجموع سفارش‌ها",
-        value: totals.orders.toLocaleString(),
+        label: "سفارش‌های موفق",
+        value: summary.successfulOrders.toLocaleString("fa-IR"),
         tone: "from-amber-100 to-amber-50",
       },
       {
         label: "مجموع کامنت‌ها",
-        value: totals.comments.toLocaleString(),
+        value: summary.totalComments.toLocaleString("fa-IR"),
         tone: "from-violet-100 to-violet-50",
       },
     ];
-  }, [users]);
+  }, [summary]);
 
   return (
     <section className="space-y-6 p-4 md:p-6">
@@ -194,16 +190,20 @@ export default function UsersPage() {
         <div className="grid gap-3 md:grid-cols-3">
           <input
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setPage(1);
+            }}
             placeholder="جستجو با نام، شماره موبایل یا ایمیل"
             className="h-11 rounded-xl border border-slate-200 px-4 text-sm outline-none transition focus:border-indigo-400"
           />
           <select
             title="role"
             value={roleFilter}
-            onChange={(event) =>
-              setRoleFilter(event.target.value as "all" | User["role"])
-            }
+            onChange={(event) => {
+              setRoleFilter(event.target.value as "all" | User["role"]);
+              setPage(1);
+            }}
             className="h-11 rounded-xl border border-slate-200 px-4 text-sm outline-none transition focus:border-indigo-400"
           >
             <option value="all">همه نقش‌ها</option>
@@ -214,7 +214,7 @@ export default function UsersPage() {
           <div className="flex h-11 items-center justify-center rounded-xl bg-slate-100 px-4 text-sm text-slate-600">
             {loading
               ? "در حال بارگذاری..."
-              : `${filteredUsers.length.toLocaleString()} کاربر یافت شد`}
+              : `${total.toLocaleString("fa-IR")} کاربر یافت شد`}
           </div>
         </div>
       </div>
@@ -231,7 +231,7 @@ export default function UsersPage() {
                 <Skeleton count={3} className="mt-3" />
               </div>
             ))
-          : filteredUsers.map((user) => (
+          : users.map((user) => (
               <article
                 key={user._id}
                 className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
@@ -257,33 +257,31 @@ export default function UsersPage() {
                   <div className="rounded-lg bg-slate-50 p-2">
                     <dt className="text-xs text-slate-500">آدرس</dt>
                     <dd className="text-base font-bold text-slate-900">
-                      {user.addresses?.length || 0}
+                      {user.addressCount.toLocaleString("fa-IR")}
                     </dd>
                   </div>
                   <div className="rounded-lg bg-slate-50 p-2">
-                    <dt className="text-xs text-slate-500">سفارش</dt>
+                    <dt className="text-xs text-slate-500">سفارش موفق</dt>
                     <dd className="text-base font-bold text-slate-900">
-                      {user.orders?.length || 0}
+                      {user.successfulOrders.toLocaleString("fa-IR")}
                     </dd>
                   </div>
                   <div className="rounded-lg bg-slate-50 p-2">
                     <dt className="text-xs text-slate-500">کامنت</dt>
                     <dd className="text-base font-bold text-slate-900">
-                      {user.comments?.length || 0}
+                      {user.commentCount.toLocaleString("fa-IR")}
                     </dd>
                   </div>
                 </dl>
 
                 <div className="mt-4 space-y-2 text-sm text-slate-600">
                   <p>
-                    آخرین عضویت:{" "}
+                    تاریخ عضویت:{" "}
                     {new Date(user.createdAt).toLocaleDateString("fa-IR")}
                   </p>
                   <p>
                     مجموع خرید:{" "}
-                    {user.orders
-                      ?.reduce((sum, order) => sum + order.finalPrice, 0)
-                      .toLocaleString() || 0}{" "}
+                    {user.totalPurchase.toLocaleString("fa-IR")}{" "}
                     تومان
                   </p>
                 </div>
@@ -315,10 +313,37 @@ export default function UsersPage() {
             ))}
       </div>
 
-      {!loading && filteredUsers.length === 0 && (
+      {!loading && users.length === 0 && (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
           کاربری با این مشخصات پیدا نشد.
         </div>
+      )}
+
+      {!loading && pages > 1 && (
+        <nav
+          aria-label="صفحه‌بندی کاربران"
+          className="flex items-center justify-center gap-3"
+        >
+          <button
+            type="button"
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+            disabled={page === 1}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 transition hover:border-indigo-300 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            قبلی
+          </button>
+          <span className="text-sm text-slate-600">
+            صفحه {page.toLocaleString("fa-IR")} از {pages.toLocaleString("fa-IR")}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage((current) => Math.min(pages, current + 1))}
+            disabled={page === pages}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 transition hover:border-indigo-300 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            بعدی
+          </button>
+        </nav>
       )}
     </section>
   );
