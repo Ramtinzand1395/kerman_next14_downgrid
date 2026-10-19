@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 import { stripHtmlTags } from "@/helpers/stripHtmlTags";
 import { getPublishedBlogs } from "@/services/blog/getPublishedBlogs";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "وبلاگ | کرمان آتاری",
   description: "جدیدترین مقالات و راهنمای خرید کنسول و بازی در کرمان آتاری.",

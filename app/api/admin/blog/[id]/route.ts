@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { revalidatePath } from "next/cache";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/mongodb";
 import Blog from "@/model/Blog";
@@ -88,6 +89,10 @@ export async function PUT(
       }
     }
 
+    revalidatePath("/blog");
+    revalidatePath(`/blog/${existingBlog.slug}`);
+    revalidatePath(`/blog/${updated.slug}`);
+
     return NextResponse.json(updated);
   } catch (error) {
     console.error(error);
@@ -110,7 +115,7 @@ export async function DELETE(
       return NextResponse.json({ error: "آی‌دی نامعتبر است" }, { status: 400 });
     }
 
-    const blog = await Blog.findById(id).select("_id coverImage").lean();
+    const blog = await Blog.findById(id).select("_id slug coverImage").lean();
     if (!blog) {
       return NextResponse.json({ error: "وبلاگ یافت نشد" }, { status: 404 });
     }
@@ -123,6 +128,9 @@ export async function DELETE(
     } catch (cleanupError) {
       console.error("خطا در پاک‌سازی تصویر مقاله حذف‌شده:", cleanupError);
     }
+
+    revalidatePath("/blog");
+    revalidatePath(`/blog/${blog.slug}`);
 
     return NextResponse.json({ success: true });
   } catch (error) {

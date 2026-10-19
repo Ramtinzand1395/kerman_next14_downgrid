@@ -33,7 +33,12 @@ export default async function dbConnect() {
       bufferCommands: false,
     };
 
-    cached!.promise = mongoose.connect(MONGODB_URI, opts);
+    cached!.promise = mongoose.connect(MONGODB_URI, opts).catch((error) => {
+      // A rejected promise must not poison this server instance forever.
+      cached!.promise = null;
+      cached!.conn = null;
+      throw error;
+    });
   }
 
   cached!.conn = await cached!.promise;

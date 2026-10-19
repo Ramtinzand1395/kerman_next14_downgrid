@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { revalidatePath } from "next/cache";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/mongodb";
 import Blog from "@/model/Blog";
@@ -57,6 +58,9 @@ export async function POST(req: Request) {
     }
 
     const blog = await Blog.create(payload);
+
+    revalidatePath("/blog");
+    revalidatePath(`/blog/${blog.slug}`);
 
     return NextResponse.json(blog, { status: 201 });
   } catch (error) {

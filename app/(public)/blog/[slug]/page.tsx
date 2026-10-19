@@ -51,6 +51,8 @@ import { SITE_URL } from "@/lib/site";
 import { sanitizeBlogContent, stripBlogHtml } from "@/lib/blogSeo";
 import { getBlogBySlug } from "@/services/blog/getBlogBySlug";
 
+export const dynamic = "force-dynamic";
+
 type Params = Promise<{ slug: string }>;
 
 async function getBlog(slug: string): Promise<BlogPost | null> {
