@@ -290,7 +290,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-stretch justify-end bg-black/40">
-      <div className="h-full w-full max-w-2xl overflow-y-auto bg-slate-900 text-slate-100 shadow-2xl">
+      <div className="h-full w-full max-w-5xl overflow-y-auto bg-slate-900 text-slate-100 shadow-2xl">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-800 bg-slate-900/95 px-6 py-4 backdrop-blur">
           <div className="flex items-center gap-2">
             <PackagePlus className="h-5 w-5" />
