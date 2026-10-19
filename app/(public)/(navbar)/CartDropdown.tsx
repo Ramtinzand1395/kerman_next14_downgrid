@@ -32,7 +32,9 @@ const CartPreviewItem = memo(function CartPreviewItem({
   const hasDiscount = unitFinalPrice < item.price;
   const lineTotal = unitFinalPrice * item.quantity;
   const originalLineTotal = item.price * item.quantity;
-const displayTitle = item.variantTitle || item.title;
+  const displayTitle = item.variantTitle
+    ? `${item.productTitle || item.title} (${item.variantTitle})`
+    : item.productTitle || item.title;
   return (
     <li className="flex items-center gap-3 border-b border-slate-100 pb-3 last:border-b-0 last:pb-0">
       <ProductImage

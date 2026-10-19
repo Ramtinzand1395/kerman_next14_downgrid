@@ -58,11 +58,19 @@ const OrderSchema = new mongoose.Schema(
           ref: "Product",
           required: true,
         },
+        productTitle: {
+          type: String,
+          default: null,
+        },
         variantId: {
           type: mongoose.Schema.Types.ObjectId,
           default: null,
         },
         variantTitle: {
+          type: String,
+          default: null,
+        },
+        variantSku: {
           type: String,
           default: null,
         },
@@ -81,6 +89,12 @@ const OrderSchema = new mongoose.Schema(
     shippingCost: {
       type: Number,
       default: 0,
+    },
+
+    shippingPaymentType: {
+      type: String,
+      enum: ["PREPAID", "COLLECT"],
+      required: false,
     },
 
     finalPrice: {
@@ -189,5 +203,8 @@ const OrderSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+OrderSchema.index({ paymentStatus: 1, paymentVerifiedAt: 1, createdAt: 1 });
+OrderSchema.index({ createdAt: 1, status: 1, paymentStatus: 1 });
 
 export default mongoose.models.Order || mongoose.model("Order", OrderSchema);

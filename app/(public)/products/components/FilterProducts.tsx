@@ -75,9 +75,23 @@ export default function FilterProducts({ tags }: FilterProductsProps) {
     setMobileOpen(false);
   };
 
+  const normalizeCat = (val: string) =>
+    decodeURIComponent(val || "").trim().toLowerCase().replace(/\s+/g, "-");
+
+  const isCatActive = (slug: string) => {
+    if (!selectedCategory || !slug) return false;
+    return (
+      selectedCategory === slug ||
+      normalizeCat(selectedCategory) === normalizeCat(slug)
+    );
+  };
+
   const selectedLabel =
-    flatCategories.find((item) => item.slug === selectedCategory)?.name ||
-    "همه محصولات";
+    flatCategories.find((item) => isCatActive(item.slug))?.name ||
+    (normalizeCat(selectedCategory) === "gaming-wall-art" ||
+    normalizeCat(selectedCategory) === "gaming-signs"
+      ? "تابلو گیمینگ"
+      : "همه محصولات");
   const selectedTagLabel =
     tags.find((item) => item.slug === selectedTag)?.name || selectedTag;
   const hasFilters = Boolean(
@@ -105,9 +119,9 @@ export default function FilterProducts({ tags }: FilterProductsProps) {
           aria-label="فیلتر دسته‌بندی محصولات"
         >
           {categories.map((cat) => {
-            const isActiveParent = selectedCategory === cat.slug;
+            const isActiveParent = isCatActive(cat.slug);
             const hasActiveChild = cat.subcategories.some(
-              (sub) => sub.slug === selectedCategory,
+              (sub) => isCatActive(sub.slug),
             );
             const isExpanded =
               openedGroup === cat.slug || isActiveParent || hasActiveChild;
@@ -147,7 +161,7 @@ export default function FilterProducts({ tags }: FilterProductsProps) {
                 {isExpanded && (
                   <ul className="mt-2 space-y-1 pr-2">
                     {cat.subcategories.map((sub) => {
-                      const isActive = selectedCategory === sub.slug;
+                      const isActive = isCatActive(sub.slug);
                       return (
                         <li key={sub.slug}>
                           <button

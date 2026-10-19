@@ -162,6 +162,7 @@ export async function getLandingData(): Promise<LandingData> {
       { id: "latest", label: "جدیدترین", href: "/products?category=games&sort=newest&page=1", products: [] },
     ],
     equipmentTabs: [
+      { id: "gaming-wall-art", label: "تابلو گیمینگ", href: "/products?sort=newest&category=Gaming Wall Art&page=1", products: [] },
       { id: "controllers", label: "دسته بازی", href: "/products?category=controllers&sort=newest&page=1", products: [] },
       { id: "chargers", label: "شارژر", href: "/products?category=accessories&tag=controller-charger&sort=newest&page=1", products: [] },
       { id: "stands", label: "پایه", href: "/products?category=stands-coolers&sort=newest&page=1", products: [] },
@@ -191,6 +192,22 @@ export async function getLandingData(): Promise<LandingData> {
     const categoryIdsFor = (slug: string) => descendantsFor(categories, slug);
     const tagIdsFor = (slugs: string[]) =>
       tags.filter((tag) => slugs.includes(tag.slug)).map((tag) => tag._id);
+
+    const gamingWallArtCategoryIds = Array.from(
+      new Set([
+        ...descendantsFor(categories, "gaming-wall-art"),
+        ...descendantsFor(categories, "gaming-signs"),
+        ...categories
+          .filter(
+            (c) =>
+              c.name === "تابلو گیمینگ" ||
+              c.slug === "gaming-wall-art" ||
+              c.slug.toLowerCase().replace(/\s+/g, "-") === "gaming-wall-art" ||
+              c.slug === "gaming-signs",
+          )
+          .map((c) => c._id),
+      ].map((id) => id.toString())),
+    );
 
     const productQuery = (
       categoryIds: any[],
@@ -232,6 +249,7 @@ export async function getLandingData(): Promise<LandingData> {
       featuredGamesRaw,
       ps4GamesRaw,
       latestGamesRaw,
+      gamingWallArtRaw,
       controllersRaw,
       chargersRaw,
       standsRaw,
@@ -251,6 +269,7 @@ export async function getLandingData(): Promise<LandingData> {
       }),
       taggedQuery(gameCategoryIds, ["ps4", "ps4-game"], 6),
       productQuery(gameCategoryIds, 6),
+      productQuery(gamingWallArtCategoryIds, 4),
       productQuery(categoryIdsFor("controllers"), 4),
       taggedQuery(
         equipmentCategoryIds,
@@ -318,6 +337,7 @@ export async function getLandingData(): Promise<LandingData> {
         latestGamesRaw,
       ]),
       equipmentTabs: withProducts(empty.equipmentTabs, [
+        gamingWallArtRaw,
         controllersRaw,
         chargersRaw,
         standsRaw,

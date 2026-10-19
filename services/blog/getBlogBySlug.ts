@@ -8,15 +8,11 @@ import { BlogPost } from "@/types";
  * Do NOT import this from Client Components.
  */
 export async function getBlogBySlug(slug: string): Promise<BlogPost | null> {
-  try {
-    await dbConnect();
+  await dbConnect();
 
-    const blog = await Blog.findOne({ slug, published: true }).lean();
+  const blog = await Blog.findOne({ slug, published: true }).lean();
 
-    if (!blog) return null;
+  if (!blog) return null;
 
-    return blog as unknown as BlogPost;
-  } catch {
-    return null;
-  }
+  return blog as unknown as BlogPost;
 }

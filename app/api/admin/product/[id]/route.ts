@@ -14,6 +14,10 @@ import Notification from "@/model/Notification";
 import User from "@/model/User";
 import { validateCatalogReferences } from "@/lib/catalogReferences";
 import { notifyLowInventory } from "@/lib/notifications/events";
+import {
+  buildProductWriteInput,
+  ProductInputValidationError,
+} from "@/lib/productInput";
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -43,77 +47,45 @@ export async function PUT(
         { status: 400 },
       );
     }
-    const safeVariants = Array.isArray(body.variants)
-      ? body.variants
-          .filter((v: any) => v?.title)
-          .map((v: any) => ({
-            title: String(v.title),
-            sku: v?.sku ? String(v.sku) : undefined,
-            price: Number(v?.price || 0),
-            discountPrice:
-              v?.discountPrice === null || v?.discountPrice === undefined
-                ? null
-                : Number(v.discountPrice),
-            stock: Number(v?.stock || 0),
-          }))
-      : [];
-    const safeGalleryImages = Array.isArray(body.galleryImages)
-      ? body.galleryImages
-          .map((img: any) => {
-            if (typeof img === "string") {
-              return { url: img, alt: "" };
-            }
+    const product = await Product.findById(id);
+    if (!product) {
+      return NextResponse.json({ error: "محصول پیدا نشد" }, { status: 404 });
+    }
 
-            if (!img?.url) {
-              return null;
-            }
+    const existingVariantIds = (product.variants ?? []).map((variant: any) =>
+      String(variant._id),
+    );
+    const {
+      productData: validatedProductData,
+      removedVariantIds,
+    } = buildProductWriteInput(body, {
+      mode: "update",
+      productId: id,
+      existingVariantIds,
+    });
 
-            return {
-              url: String(img.url),
-              alt: img.alt ? String(img.alt) : "",
-            };
-          })
-          .filter(Boolean)
-      : [];
-    const safeFaqs = Array.isArray(body.faqs)
-      ? body.faqs
-          .filter((f: any) => f?.question && f?.answer)
-          .map((f: any) => ({
-            question: String(f.question),
-            answer: String(f.answer),
-          }))
-      : [];
-
-    const productType = body.productType === "multi" ? "multi" : "single";
-    const totalStock =
-      productType === "multi"
-        ? safeVariants.reduce(
-            (sum: number, v: any) => sum + Number(v.stock || 0),
-            0,
-          )
-        : Number(body.stock || 0);
+    const previousStock = product.stock;
+    const previousStatus = product.status;
+    const isStockChanged = Number(previousStock) !== Number(validatedProductData.stock);
 
     const productData = {
-      ...body,
-      status: body.status === "published" ? "published" : "draft",
+      ...validatedProductData,
       category: catalogReferences.categoryId,
       tags: catalogReferences.tagIds,
-      productType,
-      variants: productType === "multi" ? safeVariants : [],
-      stock: totalStock,
-     images: safeGalleryImages,
-      faqs: safeFaqs,
+      catalogRevision: (product.catalogRevision ?? 0) + 1,
+      ...(isStockChanged
+        ? { inventoryVersion: (product.inventoryVersion ?? 0) + 1 }
+        : {}),
     };
-    const previousProduct = await Product.findById(id).select("stock status").lean();
-    const Update = await Product.findByIdAndUpdate(id, productData, {
-      returnDocument: "after",
-      runValidators: true,
-    });
+
+    product.$locals.removedVariantIds = removedVariantIds;
+    product.set(productData);
+    const Update = await product.save();
+
     if (
       Update?.status === "published" &&
       Number(Update.stock) <= 5 &&
-      (Number(previousProduct?.stock) !== Number(Update.stock) ||
-        previousProduct?.status !== "published")
+      (isStockChanged || previousStatus !== "published")
     ) {
       await notifyLowInventory([Update._id]).catch((error) =>
         console.error("[notifications] product inventory event failed:", error),
@@ -122,6 +94,10 @@ export async function PUT(
     return NextResponse.json(Update);
   } catch (err: any) {
     console.error("❌ Product Update Error:", err);
+
+    if (err instanceof ProductInputValidationError) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
 
     // خطاهای اعتبارسنجی Mongoose را به پیام فارسی تبدیل می‌کنیم
     if (err?.name === "ValidationError" && err?.errors) {

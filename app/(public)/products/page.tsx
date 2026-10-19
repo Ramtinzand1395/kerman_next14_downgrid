@@ -99,10 +99,36 @@ function productsUrlWithout(
 function categoryLabel(slug?: string) {
   if (!slug) return "";
 
+  const decoded = decodeURIComponent(slug).trim();
+  const normalized = decoded.toLowerCase().replace(/\s+/g, "-");
+
   for (const category of categories) {
-    if (category.slug === slug) return category.name;
-    const subcategory = category.subcategories.find((item) => item.slug === slug);
+    if (
+      category.slug === slug ||
+      category.slug === decoded ||
+      category.slug.toLowerCase().replace(/\s+/g, "-") === normalized ||
+      category.name === slug ||
+      category.name === decoded
+    ) {
+      return category.name;
+    }
+    const subcategory = category.subcategories.find(
+      (item) =>
+        item.slug === slug ||
+        item.slug === decoded ||
+        item.slug.toLowerCase().replace(/\s+/g, "-") === normalized ||
+        item.name === slug ||
+        item.name === decoded,
+    );
     if (subcategory) return subcategory.name;
+  }
+
+  if (
+    normalized === "gaming-wall-art" ||
+    normalized === "gaming-signs" ||
+    decoded === "تابلو گیمینگ"
+  ) {
+    return "تابلو گیمینگ";
   }
 
   return slug;

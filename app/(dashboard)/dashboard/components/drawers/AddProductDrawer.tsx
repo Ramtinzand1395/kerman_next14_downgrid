@@ -27,6 +27,7 @@ const initialForm: ProductForm = {
   productType: "single",
   title: "",
   slug: "",
+  sku: "",
   seoTitle: "",
   metaDescription: "",
   price: 0,
@@ -84,6 +85,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
     status: product?.status || initialForm.status,
     title: product?.title || initialForm.title,
     slug: product?.slug || initialForm.slug,
+    sku: product?.sku || initialForm.sku || "",
     seoTitle: product?.seoTitle || initialForm.seoTitle,
     productType: product?.productType || initialForm.productType,
     variants: product?.variants || initialForm.variants,
@@ -137,12 +139,79 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const validateForm = () => {
+    if (!form.title.trim()) {
+      toast.error("عنوان محصول الزامی است");
+      return false;
+    }
+    if (!form.slug.trim()) {
+      toast.error("اسلاگ محصول الزامی است");
+      return false;
+    }
     if (!form.category) {
       toast.error("لطفاً دسته‌بندی محصول را انتخاب کنید");
-      return;
+      return false;
     }
+    if (form.productType === "single") {
+      if (typeof form.price !== "number" || form.price < 0) {
+        toast.error("قیمت محصول نامعتبر است");
+        return false;
+      }
+      if (
+        form.discountPrice !== null &&
+        form.discountPrice !== undefined &&
+        form.discountPrice > form.price
+      ) {
+        toast.error("قیمت تخفیف نمی‌تواند بیشتر از قیمت اصلی باشد");
+        return false;
+      }
+      if (typeof form.stock !== "number" || form.stock < 0) {
+        toast.error("موجودی محصول نامعتبر است");
+        return false;
+      }
+    } else {
+      if (!Array.isArray(form.variants) || form.variants.length === 0) {
+        toast.error("محصول چند مدلی باید حداقل دارای یک مدل باشد");
+        return false;
+      }
+      for (let i = 0; i < form.variants.length; i++) {
+        const v = form.variants[i];
+        if (!v.title || !v.title.trim()) {
+          toast.error(`نام مدل ردیف ${i + 1} الزامی است`);
+          return false;
+        }
+        if (typeof v.price !== "number" || v.price < 0) {
+          toast.error(`قیمت مدل «${v.title}» نامعتبر است`);
+          return false;
+        }
+        if (
+          v.discountPrice !== null &&
+          v.discountPrice !== undefined &&
+          v.discountPrice > v.price
+        ) {
+          toast.error(`قیمت تخفیف مدل «${v.title}» نمی‌تواند بیشتر از قیمت آن باشد`);
+          return false;
+        }
+        if (typeof v.stock !== "number" || v.stock < 0) {
+          toast.error(`موجودی مدل «${v.title}» نامعتبر است`);
+          return false;
+        }
+      }
+      if (
+        form.status === "published" &&
+        !form.variants.some((v) => v.isActive !== false)
+      ) {
+        toast.error("محصول چند مدلی برای انتشار باید حداقل یک مدل فعال داشته باشد");
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
     setLoading(true);
     try {
       const res = await fetch("/api/admin/product", {
@@ -152,7 +221,12 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
           ...form,
           variants:
             form.productType === "multi"
-              ? form.variants.filter((v) => v.title.trim())
+              ? form.variants.map((v) => ({
+                  ...v,
+                  title: v.title.trim(),
+                  sku: v.sku?.trim() || undefined,
+                  barcode: v.barcode?.trim() || undefined,
+                }))
               : [],
         }),
       });
@@ -176,10 +250,8 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.category) {
-      toast.error("لطفاً دسته‌بندی محصول را انتخاب کنید");
-      return;
-    }
+    if (!validateForm()) return;
+
     setLoading(true);
     try {
       const res = await fetch(`/api/admin/product/${product?._id}`, {
@@ -189,7 +261,12 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
           ...form,
           variants:
             form.productType === "multi"
-              ? form.variants.filter((v) => v.title.trim())
+              ? form.variants.map((v) => ({
+                  ...v,
+                  title: v.title.trim(),
+                  sku: v.sku?.trim() || undefined,
+                  barcode: v.barcode?.trim() || undefined,
+                }))
               : [],
         }),
       });

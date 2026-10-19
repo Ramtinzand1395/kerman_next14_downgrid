@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import ProductImage from "@/app/components/ProductImage";
+import { formatOrderShippingDisplay } from "@/lib/shipping";
 
 interface Product {
   title: string;
@@ -26,6 +27,8 @@ interface Order {
   id: string | number;
   items: OrderItem[];
   totalPrice: number;
+  shippingCost?: number;
+  shippingPaymentType?: "PREPAID" | "COLLECT";
   finalPrice: number;
   status: string;
   createdAt: string;
@@ -148,6 +151,7 @@ export default function MyOrders() {
           (sum, item) => sum + item.quantity,
           0,
         );
+        const shippingDisplay = formatOrderShippingDisplay(order);
         const badgeClass =
           statusStyles[order.status] ||
           "bg-slate-100 text-slate-700 border-slate-200";
@@ -218,7 +222,7 @@ export default function MyOrders() {
                 ))}
               </div>
 
-              <div className="grid gap-2 rounded-xl bg-slate-50 p-3 text-sm sm:grid-cols-3">
+              <div className="grid gap-2 rounded-xl bg-slate-50 p-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
                 <p className="text-slate-600">
                   تعداد کالاها:{" "}
                   <span className="font-semibold text-slate-900">
@@ -226,9 +230,21 @@ export default function MyOrders() {
                   </span>
                 </p>
                 <p className="text-slate-600">
-                  جمع کل:{" "}
+                  جمع کالاها:{" "}
                   <span className="font-semibold text-slate-900">
                     {toPrice(order.totalPrice)}
+                  </span>
+                </p>
+                <p className="text-slate-600">
+                  ارسال:{" "}
+                  <span
+                    className={`font-semibold ${
+                      shippingDisplay.isCollect
+                        ? "text-amber-700"
+                        : "text-slate-900"
+                    }`}
+                  >
+                    {shippingDisplay.label}
                   </span>
                 </p>
                 <p className="text-slate-600">
@@ -238,6 +254,11 @@ export default function MyOrders() {
                   </span>
                 </p>
               </div>
+              {shippingDisplay.subtext && (
+                <p className="text-xs text-slate-500">
+                  {shippingDisplay.subtext}
+                </p>
+              )}
             </div>
           </article>
         );

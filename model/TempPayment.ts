@@ -64,11 +64,19 @@ const TempPaymentSchema = new mongoose.Schema(
           ref: "Product",
           required: true,
         },
+        productTitle: {
+          type: String,
+          default: null,
+        },
         variantId: {
           type: mongoose.Schema.Types.ObjectId,
           default: null,
         },
         variantTitle: {
+          type: String,
+          default: null,
+        },
+        variantSku: {
           type: String,
           default: null,
         },
@@ -84,6 +92,11 @@ const TempPaymentSchema = new mongoose.Schema(
     ],
     totalPrice: { type: Number, default: 0 },
     shippingCost: { type: Number, default: 0 },
+    shippingPaymentType: {
+      type: String,
+      enum: ["PREPAID", "COLLECT"],
+      required: false,
+    },
     finalPrice: { type: Number, default: 0 },
     // کوپن اعمال‌شده هنگام درخواست پرداخت (باشگاه مشتریان)
     couponCode: { type: String, default: null },

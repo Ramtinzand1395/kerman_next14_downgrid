@@ -1,4 +1,5 @@
 "use client";
+
 import { Truck, RotateCcw, Box, Store } from "lucide-react";
 import Link from "next/link";
 import { Comment, Product } from "@/types";
@@ -9,69 +10,57 @@ import {
   toPersianDigits,
 } from "@/helpers/Price";
 import AddCommentButton from "./AddCommentButton";
-import { useMemo, useState } from "react";
+import { useProductVariant } from "./ProductVariantContext";
+
 interface ProductInfoProps {
-  product: Product;
+  product?: Product;
 }
 
-export const ProductInfo = ({ product }: ProductInfoProps) => {
-  const [selectedVariantId, setSelectedVariantId] = useState<string>(() => {
-    if (
-      product.productType !== "multi" ||
-      (product.variants?.length || 0) === 0
-    ) {
-      return "";
-    }
+export const ProductInfo = ({ product: propProduct }: ProductInfoProps) => {
+  const {
+    product: contextProduct,
+    activeVariants,
+    selectedVariantId,
+    selectedVariant,
+    isMulti,
+    effectivePrice,
+    effectiveDiscountPrice,
+    finalPrice,
+    effectiveStock,
+    effectiveSku,
+    isOutOfStock,
+    setSelectedVariantId,
+  } = useProductVariant();
 
-    const inStockVariant = product.variants?.find(
-      (variant: any) => Number(variant.stock) > 0,
-    );
-
-    return String(inStockVariant?._id || product.variants?.[0]?._id || "");
-  });
-
-  const selectedVariant = useMemo(
-    () =>
-      product.variants?.find(
-        (variant: any) => String(variant._id) === String(selectedVariantId),
-      ),
-    [product.variants, selectedVariantId],
-  );
-
-  const isMulti =
-    product.productType === "multi" && (product.variants?.length || 0) > 0;
-  const displayStock = isMulti
-    ? Number(selectedVariant?.stock || 0)
-    : Number(product.stock || 0);
-  const displayPrice = isMulti
-    ? Number(selectedVariant?.price || 0)
-    : Number(product.price || 0);
-  const displayDiscountPrice = isMulti
-    ? (selectedVariant?.discountPrice ?? null)
-    : (product.discountPrice ?? null);
+  const product = propProduct || contextProduct;
 
   const rating = product.comments?.length
     ? product.comments.reduce((t: number, c: Comment) => t + c.rating, 0) /
       product.comments.length
     : 0;
+
   return (
     <div className="flex flex-col h-full">
       {/* Brand & Category */}
       <div className="flex items-center gap-2 text-sm text-indigo-600 font-medium mb-2">
         {product.brand ? <span>{product.brand}</span> : null}
         <span className="text-gray-300">/</span>
-        <Link
-          href={`/products?category=${product.category._id}`}
-          className="hover:underline"
-        >
-          {product.category.name}
-        </Link>
+        {product.category?._id && (
+          <Link
+            href={`/products?category=${product.category._id}`}
+            className="hover:underline"
+          >
+            {product.category.name}
+          </Link>
+        )}
       </div>
 
       {/* SKU */}
-      <span className="text-gray-400 text-sm mb-4 block dir-ltr text-right">
-        SKU: {product.sku}
-      </span>
+      {effectiveSku && (
+        <span className="text-gray-400 text-sm mb-4 block dir-ltr text-right">
+          SKU: {effectiveSku}
+        </span>
+      )}
 
       {/* Rating & Reviews */}
       <div className="flex items-center gap-4 mb-6 border-b border-gray-100 pb-6">
@@ -98,102 +87,135 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
       </div>
 
       {/* Features Summary */}
-      <div className="mb-6">
-        <h3 className="font-bold text-gray-800 mb-3">درباره محصول</h3>
-
-        <p>{product.shortDesc}</p>
-      </div>
+      {product.shortDesc && (
+        <div className="mb-6">
+          <h3 className="font-bold text-gray-800 mb-3">درباره محصول</h3>
+          <p className="text-sm text-gray-600 leading-7">{product.shortDesc}</p>
+        </div>
+      )}
 
       {/* Services/Trust Badges */}
-      <div className="grid grid-cols-2 gap-3 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
         <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
-          <Truck className="w-5 h-5 text-rose-500" />
+          <Truck className="w-5 h-5 text-rose-500 shrink-0" />
           <span className="text-xs font-medium text-gray-700">ارسال سریع</span>
         </div>
         <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
-          <RotateCcw className="w-5 h-5 text-blue-500" />
+          <RotateCcw className="w-5 h-5 text-blue-500 shrink-0" />
           <span className="text-xs font-medium text-gray-700">
             ۷ روز ضمانت بازگشت
           </span>
         </div>
         <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
-          <Store className="w-5 h-5 text-orange-500" />
+          <Store className="w-5 h-5 text-orange-500 shrink-0" />
           <span className="text-xs font-medium text-gray-700">
             تضمین اصالت کالا
           </span>
         </div>
       </div>
+
       {/* tags */}
-      <div className="flex items-center gap-3">
-        {product.tags.map((tag) => (
-          <p
-            key={tag._id}
-            className="bg-blue-500 px-3 py-2 text-xs rounded-md text-white "
-          >
-            {tag.name}
-          </p>
-        ))}
-      </div>
-      {/* Price Box */}
-      <div className="mt-auto bg-gray-50 rounded-2xl p-5 border border-gray-100">
-        {isMulti && (
-          <div className="mb-4">
-            <label className="mb-1 block text-xs text-gray-600">
-              انتخاب نوع / مدل محصول
-            </label>
-            <select
-              title="selectedVariant"
-              value={selectedVariantId}
-              onChange={(e) => setSelectedVariantId(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm"
+      {product.tags && product.tags.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 mb-6">
+          {product.tags.map((tag) => (
+            <span
+              key={tag._id}
+              className="bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1.5 text-xs rounded-lg"
             >
-              {product.variants?.map((variant: any) => (
-                <option key={variant._id} value={variant._id}>
-                  {variant.title}
-                </option>
-              ))}
-            </select>
+              {tag.name}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Price & Variant Selection Box */}
+      <div className="mt-auto bg-gray-50 rounded-2xl p-5 border border-gray-100">
+        {/* Multi-variant selector chips */}
+        {isMulti && (
+          <div className="mb-5">
+            <div className="flex items-center justify-between mb-2.5">
+              <label className="text-xs font-bold text-gray-800">
+                انتخاب مدل / ظرفیت:
+              </label>
+              {selectedVariant && (
+                <span className="text-xs font-semibold text-indigo-600">
+                  {selectedVariant.title}
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {activeVariants.map((variant) => {
+                const isSelected =
+                  String(variant._id) === String(selectedVariantId);
+                const variantStock = Number(variant.stock || 0);
+                const isVariantOutOfStock = variantStock <= 0;
+                return (
+                  <button
+                    key={variant._id}
+                    type="button"
+                    disabled={isVariantOutOfStock}
+                    onClick={() => setSelectedVariantId(String(variant._id))}
+                    className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs md:text-sm font-medium transition-all ${
+                      isSelected
+                        ? "border-2 border-indigo-600 bg-indigo-50/80 text-indigo-900 shadow-sm"
+                        : isVariantOutOfStock
+                          ? "cursor-not-allowed border border-dashed border-gray-200 bg-gray-100 text-gray-400 opacity-60"
+                          : "border border-gray-200 bg-white text-gray-800 hover:border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    <span>{variant.title}</span>
+                    {isVariantOutOfStock && (
+                      <span className="text-[10px] text-red-500 font-normal">
+                        (ناموجود)
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
-        <div className="flex justify-between items-center mb-2">
+
+        {/* Stock Status Badge */}
+        <div className="flex justify-between items-center mb-4">
           <div
             className={`flex items-center gap-2 px-3 py-1 rounded-lg ${
-              displayStock > 0
+              !isOutOfStock
                 ? "text-emerald-700 bg-emerald-100"
                 : "text-red-700 bg-red-100"
             }`}
           >
-            {" "}
             <Box className="w-4 h-4" />
             <span className="text-sm font-medium">
-              {displayStock > 0
-                ? `موجود در انبار (${toPersianDigits(displayStock)} عدد)`
+              {!isOutOfStock
+                ? `موجود در انبار (${toPersianDigits(effectiveStock)} عدد)`
                 : "ناموجود در انبار"}
             </span>
           </div>
         </div>
 
-        <div className="flex items-end justify-between gap-4 mt-4">
+        {/* Pricing and AddToCart */}
+        <div className="flex items-end justify-between gap-4">
           <div>
-            {displayDiscountPrice ? (
+            {effectiveDiscountPrice !== null ? (
               <div className="flex flex-col">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-gray-400 line-through text-sm">
-                    {formatPrice(displayPrice)}
+                    {formatPrice(effectivePrice)}
                   </span>
                   <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                     {toPersianDigits(
                       calculateDiscountPercent(
-                        displayPrice,
-                        displayDiscountPrice,
+                        effectivePrice,
+                        effectiveDiscountPrice,
                       ),
                     )}
                     %
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-3xl font-bold text-gray-900">
-                    {formatPrice(displayDiscountPrice)}
+                  <span className="text-2xl md:text-3xl font-bold text-gray-900">
+                    {formatPrice(finalPrice)}
                   </span>
                   <span className="text-sm text-gray-500 font-medium">
                     تومان
@@ -202,8 +224,8 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
               </div>
             ) : (
               <div className="flex items-center gap-1">
-                <span className="text-3xl font-bold text-gray-900">
-                  {formatPrice(displayPrice)}
+                <span className="text-2xl md:text-3xl font-bold text-gray-900">
+                  {formatPrice(finalPrice)}
                 </span>
                 <span className="text-sm text-gray-500 font-medium">تومان</span>
               </div>

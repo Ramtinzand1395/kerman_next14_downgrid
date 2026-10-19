@@ -61,5 +61,7 @@ storeOrderSchema.pre("save", async function () {
   }
 });
 
+storeOrderSchema.index({ createdAt: 1, deliveryStatus: 1 });
+
 export default mongoose.models.StoreOrder ||
   mongoose.model("StoreOrder", storeOrderSchema);

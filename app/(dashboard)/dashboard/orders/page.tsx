@@ -12,6 +12,7 @@ import {
   User,
 } from "lucide-react";
 import ProductImage from "@/app/components/ProductImage";
+import { formatOrderShippingDisplay } from "@/lib/shipping";
 
 type OrderStatus =
   | "pending"
@@ -43,6 +44,9 @@ type OrdersResponse = {
         images: ({ url: string; alt: string } | string)[];
       };
     }>;
+    totalPrice?: number;
+    shippingCost?: number;
+    shippingPaymentType?: "PREPAID" | "COLLECT";
     finalPrice: number;
     paymentStatus: "paid" | "unpaid";
     status: OrderStatus;
@@ -329,9 +333,12 @@ export default function Orders() {
           </thead>
 
           <tbody>
-            {filteredOrders.map((order, index) => (
-              <tr
-                key={order._id}
+            {filteredOrders.map((order, index) => {
+              const shippingDisplay = formatOrderShippingDisplay(order);
+
+              return (
+                <tr
+                  key={order._id}
                 className="border-t hover:bg-slate-50/70 align-top"
               >
                 <td className="py-4 px-4 text-gray-500">{index + 1}</td>
@@ -382,8 +389,19 @@ export default function Orders() {
                   ))}
                 </td>
 
-                <td className="py-4 px-4 font-bold text-gray-900 whitespace-nowrap">
-                  {order.finalPrice.toLocaleString("fa-IR")} تومان
+                <td className="py-4 px-4 whitespace-nowrap">
+                  <p className="font-bold text-gray-900">
+                    {order.finalPrice.toLocaleString("fa-IR")} تومان
+                  </p>
+                  <span
+                    className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                      shippingDisplay.isCollect
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-blue-50 text-blue-700"
+                    }`}
+                  >
+                    ارسال: {shippingDisplay.label}
+                  </span>
                 </td>
 
                 <td className="py-4 px-4">
@@ -421,16 +439,20 @@ export default function Orders() {
                   {toPersianDate(order.createdAt)}
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
 
       {/* Mobile cards */}
       <div className="lg:hidden space-y-3">
-        {filteredOrders.map((order, index) => (
-          <article
-            key={order._id}
+        {filteredOrders.map((order, index) => {
+          const shippingDisplay = formatOrderShippingDisplay(order);
+
+          return (
+            <article
+              key={order._id}
             className="rounded-2xl border bg-white p-4 shadow-sm space-y-3"
           >
             <div className="flex items-start justify-between gap-2">
@@ -499,6 +521,21 @@ export default function Orders() {
               </div>
             </div>
 
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-2 text-xs">
+              <span className="font-bold text-gray-900">
+                مبلغ نهایی: {order.finalPrice.toLocaleString("fa-IR")} تومان
+              </span>
+              <span
+                className={`inline-flex rounded-full px-2.5 py-0.5 font-semibold ${
+                  shippingDisplay.isCollect
+                    ? "bg-amber-100 text-amber-800"
+                    : "bg-blue-50 text-blue-700"
+                }`}
+              >
+                ارسال: {shippingDisplay.label}
+              </span>
+            </div>
+
             <div className="flex items-center justify-between gap-2 pt-1">
               <div className="text-xs text-gray-500 flex items-center gap-1">
                 <Package className="w-4 h-4" />
@@ -521,7 +558,8 @@ export default function Orders() {
               </select>
             </div>
           </article>
-        ))}
+          );
+        })}
       </div>
 
       {filteredOrders.length === 0 && (

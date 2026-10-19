@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { ButtonLoading } from "@/app/components/loading/LoadingSystem";
+import { calculateShippingInfo } from "@/lib/shipping";
 
 interface PaymentFormProps {
   selectedAddress: Address;
@@ -33,7 +34,25 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
   const [loading, setLoading] = useState(false);
   const [walletLoading, setWalletLoading] = useState(false);
   const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
-  const shippingCost = 0;
+
+  const shippingInfo = useMemo(() => {
+    try {
+      return calculateShippingInfo({
+        province: selectedAddress?.province,
+        city: selectedAddress?.city,
+      });
+    } catch {
+      return {
+        cost: 0,
+        paymentType: "COLLECT" as const,
+        isKerman: false,
+        label: "پس‌کرایه",
+        description: "هزینه حمل هنگام تحویل توسط شرکت حمل‌ونقل دریافت می‌شود.",
+      };
+    }
+  }, [selectedAddress]);
+
+  const shippingCost = shippingInfo.cost;
 
   // ── کیف پول ──
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
@@ -74,9 +93,10 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
       subtotal,
       discount,
       couponDiscount,
+      shippingCost,
       final: Math.max(0, subtotal - discount - couponDiscount + shippingCost),
     };
-  }, [cart, appliedCoupon]);
+  }, [cart, appliedCoupon, shippingCost]);
 
   const applyCouponCode = async () => {
     const code = couponInput.trim();
@@ -124,6 +144,7 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
   const buildPayload = () => ({
     addressId: selectedAddress._id,
     shippingCost,
+    shippingPaymentType: shippingInfo.paymentType,
     couponCode: appliedCoupon?.code,
     items: cart.map((item) => ({
       productId: item.productId,
@@ -259,7 +280,7 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
                   className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm"
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <p className="font-semibold text-slate-900">{item.title}</p>
+                    <p className="font-semibold text-slate-900">{item.productTitle || item.title}</p>
                     <p className="text-slate-500">× {item.quantity}</p>
                   </div>
 
@@ -382,8 +403,19 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
 
             <div className="mt-2 flex items-center justify-between text-slate-600">
               <span>هزینه ارسال</span>
-              <span>{formatPrice(shippingCost)} تومان</span>
+              {shippingInfo.paymentType === "PREPAID" ? (
+                <span className="font-semibold text-slate-900">
+                  {formatPrice(shippingCost)} تومان
+                </span>
+              ) : (
+                <span className="font-semibold text-amber-700">پس‌کرایه</span>
+              )}
             </div>
+            {shippingInfo.paymentType === "COLLECT" && (
+              <p className="mt-1 text-xs text-slate-500">
+                هزینه حمل هنگام تحویل توسط شرکت حمل‌ونقل دریافت می‌شود.
+              </p>
+            )}
 
             <div className="mt-3 border-t border-slate-200 pt-3 text-base font-bold text-slate-900">
               <div className="flex items-center justify-between">

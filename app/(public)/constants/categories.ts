@@ -32,6 +32,7 @@ export const categories: CategoryItem[] = [
     slug: "accessories",
     description: "دسته، هدست و تجهیزات کاربردی برای تجربه بهتر بازی",
     subcategories: [
+      { name: "تابلو گیمینگ", slug: "gaming-wall-art" },
       { name: "دسته بازی", slug: "controllers" },
       { name: "هدست و هدفون", slug: "headsets" },
       { name: "پایه و خنک‌کننده", slug: "stands-coolers" },

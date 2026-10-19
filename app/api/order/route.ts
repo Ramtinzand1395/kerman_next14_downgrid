@@ -10,7 +10,7 @@ import mongoose from "mongoose";
 import { createAddressSnapshot } from "@/lib/addressSnapshot";
 import { notifyAdmins, notifyUser } from "@/lib/notifications/service";
 import {
-  calculateShippingCost,
+  calculateShippingInfo,
   InvalidShippingDestinationError,
 } from "@/lib/shipping";
 
@@ -82,14 +82,20 @@ export async function POST(req: Request) {
     );
   }
 
-  const productIds = normalizedItems.map((item) => item.productId);
-  const products = await Product.find({ _id: { $in: productIds } })
-    .select("price discountPrice stock productType variants")
+  const uniqueProductIds = [
+    ...new Set(normalizedItems.map((item) => item.productId)),
+  ];
+  const products = await Product.find({
+    _id: { $in: uniqueProductIds },
+    status: "published",
+    deletedAt: null,
+  })
+    .select("title price discountPrice stock productType variants status deletedAt")
     .lean();
 
-  if (products.length !== productIds.length) {
+  if (products.length !== uniqueProductIds.length) {
     return NextResponse.json(
-      { error: "برخی از محصولات نامعتبر هستند." },
+      { error: "برخی از محصولات نامعتبر یا ناموجود هستند." },
       { status: 400 },
     );
   }
@@ -97,6 +103,22 @@ export async function POST(req: Request) {
   const productMap = new Map(
     products.map((product) => [String(product._id), product]),
   );
+
+  const requestedQtyByVariant = new Map<string, number>();
+  const requestedQtyByProduct = new Map<string, number>();
+  for (const item of normalizedItems) {
+    if (item.variantId) {
+      const vKey = `${item.productId}:${item.variantId}`;
+      requestedQtyByVariant.set(
+        vKey,
+        (requestedQtyByVariant.get(vKey) || 0) + item.quantity,
+      );
+    }
+    requestedQtyByProduct.set(
+      item.productId,
+      (requestedQtyByProduct.get(item.productId) || 0) + item.quantity,
+    );
+  }
 
   try {
     const orderItems = normalizedItems.map((item) => {
@@ -108,15 +130,30 @@ export async function POST(req: Request) {
         product.productType === "multi" && Array.isArray(product.variants);
 
       if (hasVariants) {
+        if (!item.variantId) {
+          throw new Error("VARIANT_REQUIRED");
+        }
+
         const selectedVariant = product.variants?.find(
-          (variant: any) => String(variant._id) === String(item.variantId),
+          (variant: any) =>
+            String(variant._id) === String(item.variantId) &&
+            variant.isActive !== false,
         );
 
         if (!selectedVariant) {
           throw new Error("INVALID_VARIANT");
         }
 
-        if (Number(selectedVariant.stock || 0) < item.quantity) {
+        const totalVariantQty =
+          requestedQtyByVariant.get(`${item.productId}:${item.variantId}`) ||
+          item.quantity;
+        if (Number(selectedVariant.stock || 0) < totalVariantQty) {
+          throw new Error("INSUFFICIENT_STOCK");
+        }
+
+        const totalProductQty =
+          requestedQtyByProduct.get(item.productId) || item.quantity;
+        if (Number(product.stock || 0) < totalProductQty) {
           throw new Error("INSUFFICIENT_STOCK");
         }
 
@@ -125,8 +162,10 @@ export async function POST(req: Request) {
 
         return {
           product: item.productId,
+          productTitle: product.title,
           variantId: selectedVariant._id,
           variantTitle: selectedVariant.title,
+          variantSku: selectedVariant.sku,
           price: Number(selectedVariant.price || 0),
           discountPrice:
             selectedVariant.discountPrice === null ||
@@ -138,7 +177,13 @@ export async function POST(req: Request) {
         };
       }
 
-      if ((product.stock ?? 0) < item.quantity) {
+      if (product.productType === "multi") {
+        throw new Error("VARIANT_REQUIRED");
+      }
+
+      const totalProductQty =
+        requestedQtyByProduct.get(item.productId) || item.quantity;
+      if (Number(product.stock ?? 0) < totalProductQty) {
         throw new Error("INSUFFICIENT_STOCK");
       }
 
@@ -146,17 +191,23 @@ export async function POST(req: Request) {
 
       return {
         product: item.productId,
-        price: product.price,
-        discountPrice: product.discountPrice,
+        productTitle: product.title,
+        price: Number(product.price || 0),
+        discountPrice:
+          product.discountPrice === null || product.discountPrice === undefined
+            ? null
+            : Number(product.discountPrice),
         quantity: item.quantity,
-        total: unitPrice * item.quantity,
+        total: Number(unitPrice || 0) * item.quantity,
       };
     });
 
-    const shippingCost = calculateShippingCost({
+    const shippingInfo = calculateShippingInfo({
       province: address.province,
       city: address.city,
     });
+    const shippingCost = shippingInfo.cost;
+    const shippingPaymentType = shippingInfo.paymentType;
 
     const totalPrice = orderItems.reduce((a: number, i) => a + i.total, 0);
     const finalPrice = totalPrice + shippingCost;
@@ -170,6 +221,7 @@ export async function POST(req: Request) {
         items: orderItems,
         totalPrice,
         shippingCost,
+        shippingPaymentType,
         finalPrice,
       });
     } catch {
@@ -224,9 +276,16 @@ export async function POST(req: Request) {
       );
     }
 
+    if (error instanceof Error && error.message === "VARIANT_REQUIRED") {
+      return NextResponse.json(
+        { error: "انتخاب مدل برای محصول چندمدلی الزامی است." },
+        { status: 400 },
+      );
+    }
+
     if (error instanceof Error && error.message === "INVALID_VARIANT") {
       return NextResponse.json(
-        { error: "مدل انتخابی برای محصول معتبر نیست." },
+        { error: "مدل انتخابی برای محصول معتبر یا فعال نیست." },
         { status: 400 },
       );
     }

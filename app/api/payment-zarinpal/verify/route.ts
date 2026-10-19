@@ -280,6 +280,7 @@ export async function GET(req: NextRequest) {
               $elemMatch: {
                 _id: item.variantId,
                 stock: { $gte: item.quantity },
+                isActive: { $ne: false },
               },
             },
           },
@@ -287,6 +288,7 @@ export async function GET(req: NextRequest) {
             $inc: {
               stock: -item.quantity,
               "variants.$.stock": -item.quantity,
+              inventoryVersion: 1,
             },
           },
         );
@@ -300,8 +302,8 @@ export async function GET(req: NextRequest) {
                 ? { _id: previous.product, variants: { $elemMatch: { _id: previous.variantId } } }
                 : { _id: previous.product },
               previous.variantId
-                ? { $inc: { stock: previous.quantity, "variants.$.stock": previous.quantity } }
-                : { $inc: { stock: previous.quantity } },
+                ? { $inc: { stock: previous.quantity, "variants.$.stock": previous.quantity, inventoryVersion: 1 } }
+                : { $inc: { stock: previous.quantity, inventoryVersion: 1 } },
             );
           }
           await TempPayment.findOneAndUpdate(
@@ -316,7 +318,7 @@ export async function GET(req: NextRequest) {
 
       const updated = await Product.findOneAndUpdate(
         { _id: item.product, stock: { $gte: item.quantity } },
-        { $inc: { stock: -item.quantity } },
+        { $inc: { stock: -item.quantity, inventoryVersion: 1 } },
       );
 
       if (!updated) {
@@ -328,8 +330,8 @@ export async function GET(req: NextRequest) {
               ? { _id: previous.product, variants: { $elemMatch: { _id: previous.variantId } } }
               : { _id: previous.product },
             previous.variantId
-              ? { $inc: { stock: previous.quantity, "variants.$.stock": previous.quantity } }
-              : { $inc: { stock: previous.quantity } },
+              ? { $inc: { stock: previous.quantity, "variants.$.stock": previous.quantity, inventoryVersion: 1 } }
+              : { $inc: { stock: previous.quantity, inventoryVersion: 1 } },
           );
         }
         await TempPayment.findOneAndUpdate(
@@ -348,6 +350,9 @@ export async function GET(req: NextRequest) {
       items: temp.items,
       totalPrice: temp.totalPrice,
       shippingCost: temp.shippingCost,
+      shippingPaymentType:
+        temp.shippingPaymentType ||
+        (temp.shippingCost > 0 ? "PREPAID" : "COLLECT"),
       finalPrice: temp.finalPrice,
       couponCode: temp.couponCode ?? null,
       couponDiscount: temp.couponDiscount ?? 0,
