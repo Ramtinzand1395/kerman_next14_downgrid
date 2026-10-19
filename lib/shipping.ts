@@ -12,7 +12,7 @@ export class InvalidShippingDestinationError extends Error {
 
 export type ShippingPaymentType = "PREPAID" | "COLLECT";
 
-export const KERMAN_SHIPPING_COST = 100_000;
+export const KERMAN_SHIPPING_COST = 50_000;
 export const COLLECT_SHIPPING_COST = 0;
 export const COLLECT_SHIPPING_LABEL = "پس‌کرایه";
 export const COLLECT_SHIPPING_NOTE =

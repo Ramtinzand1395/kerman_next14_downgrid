@@ -379,9 +379,9 @@ const BasicInfoFields = ({ form, updateField }: BasicInfoFieldsProps) => {
                       : "border-slate-800 bg-slate-900/20 opacity-70"
                   }`}
                 >
-                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {/* Title */}
-                    <div className="sm:col-span-3">
+                    <div>
                       <label className="block text-[11px] text-slate-400 mb-1">
                         نام مدل *
                       </label>
@@ -397,7 +397,7 @@ const BasicInfoFields = ({ form, updateField }: BasicInfoFieldsProps) => {
                     </div>
 
                     {/* SKU */}
-                    <div className="sm:col-span-2">
+                    <div>
                       <label className="block text-[11px] text-slate-400 mb-1">
                         کد SKU
                       </label>
@@ -413,7 +413,7 @@ const BasicInfoFields = ({ form, updateField }: BasicInfoFieldsProps) => {
                     </div>
 
                     {/* Barcode */}
-                    <div className="sm:col-span-2">
+                    <div>
                       <label className="block text-[11px] text-slate-400 mb-1">
                         بارکد
                       </label>
@@ -429,7 +429,7 @@ const BasicInfoFields = ({ form, updateField }: BasicInfoFieldsProps) => {
                     </div>
 
                     {/* Price */}
-                    <div className="sm:col-span-2">
+                    <div>
                       <label className="block text-[11px] text-slate-400 mb-1">
                         قیمت (تومان) *
                       </label>
@@ -451,7 +451,7 @@ const BasicInfoFields = ({ form, updateField }: BasicInfoFieldsProps) => {
                     </div>
 
                     {/* Discount Price */}
-                    <div className="sm:col-span-2">
+                    <div>
                       <label className="block text-[11px] text-slate-400 mb-1">
                         قیمت تخفیف
                       </label>
@@ -475,7 +475,7 @@ const BasicInfoFields = ({ form, updateField }: BasicInfoFieldsProps) => {
                     </div>
 
                     {/* Stock */}
-                    <div className="sm:col-span-1">
+                    <div>
                       <label className="block text-[11px] text-slate-400 mb-1">
                         موجودی
                       </label>
