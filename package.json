@@ -11,6 +11,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "node --test *.test.mjs",
+    "gallery:sync": "node --env-file=.env scripts/sync-gallery.mjs",
+    "gallery:worker": "node --env-file=.env scripts/gallery-sync-worker.mjs",
     "audit:referral": "node --env-file=.env scripts/audit-referral-integrity.mjs",
     "seed": "node helpers/seed.mjs"
   },

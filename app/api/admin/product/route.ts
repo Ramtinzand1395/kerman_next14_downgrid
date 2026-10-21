@@ -10,6 +10,7 @@ import {
   buildProductWriteInput,
   ProductInputValidationError,
 } from "@/lib/productInput";
+import { safelyEnqueueGallerySyncTransition } from "@/lib/gallerySyncQueue";
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -147,6 +148,7 @@ export async function POST(req: Request) {
         console.error("[notifications] product inventory event failed:", error),
       );
     }
+    await safelyEnqueueGallerySyncTransition(null, createdProduct);
     return NextResponse.json({ message: "محصول جدید ساخته شد.", product });
   } catch (err: any) {
     console.error("❌ Product Create Error:", err);
