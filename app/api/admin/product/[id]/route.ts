@@ -18,6 +18,7 @@ import {
   buildProductWriteInput,
   ProductInputValidationError,
 } from "@/lib/productInput";
+import { safelyEnqueueGallerySyncTransition } from "@/lib/gallerySyncQueue";
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -51,6 +52,7 @@ export async function PUT(
     if (!product) {
       return NextResponse.json({ error: "محصول پیدا نشد" }, { status: 404 });
     }
+    const productBeforeUpdate = product.toObject({ depopulate: true });
 
     const existingVariantIds = (product.variants ?? []).map((variant: any) =>
       String(variant._id),
@@ -91,6 +93,7 @@ export async function PUT(
         console.error("[notifications] product inventory event failed:", error),
       );
     }
+    await safelyEnqueueGallerySyncTransition(productBeforeUpdate, Update);
     return NextResponse.json(Update);
   } catch (err: any) {
     console.error("❌ Product Update Error:", err);
@@ -166,7 +169,9 @@ export async function DELETE(
       return NextResponse.json({ error: "آی‌دی نامعتبر است" }, { status: 400 });
     }
 
-    const product = await Product.findById(id).select("_id").lean();
+    const product = await Product.findById(id)
+      .select("_id category title mainImage images status deletedAt")
+      .lean();
     if (!product) {
       return NextResponse.json({ error: "محصول پیدا نشد" }, { status: 404 });
     }
@@ -221,6 +226,7 @@ export async function DELETE(
     ]);
 
     await Product.deleteOne({ _id: id });
+    await safelyEnqueueGallerySyncTransition(product, null);
 
     return NextResponse.json({ success: true });
   } catch (err) {
