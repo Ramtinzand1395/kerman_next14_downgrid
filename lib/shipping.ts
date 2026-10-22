@@ -12,7 +12,7 @@ export class InvalidShippingDestinationError extends Error {
 
 export type ShippingPaymentType = "PREPAID" | "COLLECT";
 
-export const KERMAN_SHIPPING_COST = 50_000;
+export const KERMAN_SHIPPING_COST = 150_000;
 export const COLLECT_SHIPPING_COST = 0;
 export const COLLECT_SHIPPING_LABEL = "پس‌کرایه";
 export const COLLECT_SHIPPING_NOTE =
@@ -71,7 +71,7 @@ export interface ShippingCalculation {
 
 /**
  * Calculates shipping details based on destination.
- * - Kerman city: 100,000 Tomans, PREPAID
+ * - Kerman city: the configured fixed fee, PREPAID
  * - All other cities and provinces: 0 Tomans, COLLECT (پس‌کرایه)
  */
 export function calculateShippingInfo(
