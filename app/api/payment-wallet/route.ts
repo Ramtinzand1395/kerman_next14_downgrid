@@ -16,6 +16,11 @@ import { getServerSession } from "next-auth";
 import mongoose from "mongoose";
 import { createHash } from "node:crypto";
 import { createAddressSnapshot } from "@/lib/addressSnapshot";
+import { createStoreIdentitySnapshot } from "@/lib/storeIdentity";
+import {
+  buildOrderIdentifiers,
+  ensurePaidOrderIdentifiers,
+} from "@/lib/orderIdentifiers";
 import { NextRequest, NextResponse } from "next/server";
 import { debit, credit } from "@/lib/loyalty/wallet.service";
 import { validateCoupon, applyCoupon } from "@/lib/loyalty/coupon.service";
@@ -74,6 +79,7 @@ const delay = (milliseconds: number) =>
 
 async function retryLoyaltyForPaidOrder(orderId: string) {
   try {
+    await ensurePaidOrderIdentifiers(orderId);
     await onSuccessfulPurchase({ orderId });
   } catch (error) {
     console.error(
@@ -175,6 +181,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const buyer = await User.findById(userId).select("username mobile").lean();
+    if (!buyer) {
+      return NextResponse.json(
+        { success: false, error: "اطلاعات خریدار یافت نشد." },
+        { status: 400 },
+      );
+    }
+
     const normalizedItems = payload.items
       .map((item) => ({
         productId: item.productId,
@@ -204,7 +218,7 @@ export async function POST(req: NextRequest) {
       status: "published",
       deletedAt: null,
     })
-      .select("title price discountPrice stock productType variants category status deletedAt")
+      .select("title sku mainImage price discountPrice stock productType variants category status deletedAt")
       .lean();
 
     if (products.length !== uniqueProductIds.length) {
@@ -270,6 +284,8 @@ export async function POST(req: NextRequest) {
         return {
           product: item.productId,
           productTitle: product.title,
+          productImage: product.mainImage,
+          productSku: product.sku || null,
           variantId: selectedVariant._id,
           variantTitle: selectedVariant.title,
           variantSku: selectedVariant.sku,
@@ -297,6 +313,8 @@ export async function POST(req: NextRequest) {
       return {
         product: item.productId,
         productTitle: product.title,
+        productImage: product.mainImage,
+        productSku: product.sku || null,
         price: Number(product.price || 0),
         discountPrice:
           product.discountPrice === null || product.discountPrice === undefined
@@ -423,7 +441,15 @@ export async function POST(req: NextRequest) {
       order = await Order.create({
         user: userId,
         address: payload.addressId,
-        addressSnapshot: createAddressSnapshot(address),
+        addressSnapshot: createAddressSnapshot(address, {
+          name: buyer.username,
+          mobile: buyer.mobile,
+        }),
+        buyerSnapshot: {
+          name: String(buyer.username || "کاربر"),
+          mobile: String(buyer.mobile || ""),
+        },
+        sellerSnapshot: createStoreIdentitySnapshot(),
         items: checkoutItems,
         totalPrice,
         shippingCost,
@@ -594,10 +620,17 @@ export async function POST(req: NextRequest) {
     }
 
     // ── نهایی‌سازی پرداخت ──
-    await Order.findByIdAndUpdate(order._id, {
-      paymentStatus: "paid",
-      paymentVerifiedAt: new Date(),
-    });
+    const identifiers = buildOrderIdentifiers(order._id);
+    await Order.findOneAndUpdate(
+      { _id: order._id, paymentStatus: "unpaid" },
+      {
+        $set: {
+          paymentStatus: "paid",
+          paymentVerifiedAt: new Date(),
+          ...identifiers,
+        },
+      },
+    );
 
     if (automaticAttemptId) {
       await WalletPaymentAttempt.updateOne(

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ShoppingBasket, Gamepad2 } from "lucide-react";
-import MyOrders from "./MyOrders";
+import MyStoreOrders from "./MyStoreOrders";
 import MyGameOrders from "./MyGameOrders";
 
 type TabKey = "products" | "games";
@@ -41,7 +41,7 @@ export default function MyOrdersTabs() {
       </div>
 
       <div>
-        {active === "products" && <MyOrders />}
+        {active === "products" && <MyStoreOrders />}
         {active === "games" && <MyGameOrders />}
       </div>
     </div>

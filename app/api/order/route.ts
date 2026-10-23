@@ -13,6 +13,7 @@ import {
   calculateShippingInfo,
   InvalidShippingDestinationError,
 } from "@/lib/shipping";
+import { createStoreIdentitySnapshot } from "@/lib/storeIdentity";
 
 interface OrderItem {
   productId: string;
@@ -61,6 +62,16 @@ export async function POST(req: Request) {
     );
   }
 
+  const buyer = await User.findById(session.user.id)
+    .select("username mobile")
+    .lean();
+  if (!buyer) {
+    return NextResponse.json(
+      { error: "اطلاعات خریدار یافت نشد." },
+      { status: 400 },
+    );
+  }
+
   const normalizedItems = payload.items
     .map((item) => ({
       productId: item.productId,
@@ -90,7 +101,7 @@ export async function POST(req: Request) {
     status: "published",
     deletedAt: null,
   })
-    .select("title price discountPrice stock productType variants status deletedAt")
+    .select("title sku mainImage price discountPrice stock productType variants status deletedAt")
     .lean();
 
   if (products.length !== uniqueProductIds.length) {
@@ -163,6 +174,8 @@ export async function POST(req: Request) {
         return {
           product: item.productId,
           productTitle: product.title,
+          productImage: product.mainImage,
+          productSku: product.sku || null,
           variantId: selectedVariant._id,
           variantTitle: selectedVariant.title,
           variantSku: selectedVariant.sku,
@@ -192,6 +205,8 @@ export async function POST(req: Request) {
       return {
         product: item.productId,
         productTitle: product.title,
+        productImage: product.mainImage,
+        productSku: product.sku || null,
         price: Number(product.price || 0),
         discountPrice:
           product.discountPrice === null || product.discountPrice === undefined
@@ -217,7 +232,15 @@ export async function POST(req: Request) {
       order = await Order.create({
         user: session.user.id,
         address: payload.addressId,
-        addressSnapshot: createAddressSnapshot(address),
+        addressSnapshot: createAddressSnapshot(address, {
+          name: buyer.username,
+          mobile: buyer.mobile,
+        }),
+        buyerSnapshot: {
+          name: String(buyer.username || "کاربر"),
+          mobile: String(buyer.mobile || ""),
+        },
+        sellerSnapshot: createStoreIdentitySnapshot(),
         items: orderItems,
         totalPrice,
         shippingCost,

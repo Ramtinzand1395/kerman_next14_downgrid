@@ -5,6 +5,8 @@ export type AddressSnapshot = {
   plaque?: string;
   unit?: string;
   postalCode?: string;
+  recipientName?: string;
+  recipientMobile?: string;
 };
 
 type AddressLike = {
@@ -14,10 +16,15 @@ type AddressLike = {
   plaque?: unknown;
   unit?: unknown;
   postalCode?: unknown;
+  recipientName?: unknown;
+  recipientMobile?: unknown;
 };
 
 /** Creates an immutable, plain-object copy for historical order records. */
-export function createAddressSnapshot(address: AddressLike): AddressSnapshot {
+export function createAddressSnapshot(
+  address: AddressLike,
+  recipient?: { name?: unknown; mobile?: unknown },
+): AddressSnapshot {
   return {
     province: String(address.province ?? ""),
     city: String(address.city ?? ""),
@@ -25,5 +32,7 @@ export function createAddressSnapshot(address: AddressLike): AddressSnapshot {
     plaque: String(address.plaque ?? ""),
     unit: String(address.unit ?? ""),
     postalCode: String(address.postalCode ?? ""),
+    recipientName: String(address.recipientName ?? recipient?.name ?? ""),
+    recipientMobile: String(address.recipientMobile ?? recipient?.mobile ?? ""),
   };
 }

@@ -3,6 +3,7 @@ import Address from "@/model/Address";
 // import Order from "@/model/Order";
 import Product from "@/model/Product";
 import TempPayment from "@/model/TempPayment";
+import User from "@/model/User";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { getServerSession } from "next-auth";
 import mongoose from "mongoose";
@@ -10,6 +11,7 @@ import { createAddressSnapshot } from "@/lib/addressSnapshot";
 import { NextRequest, NextResponse } from "next/server";
 import { getSiteUrl } from "@/lib/baseUrl";
 import { validateCoupon } from "@/lib/loyalty/coupon.service";
+import { createStoreIdentitySnapshot } from "@/lib/storeIdentity";
 import {
   calculateShippingInfo,
   InvalidShippingDestinationError,
@@ -88,6 +90,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const buyer = await User.findById(session.user.id)
+      .select("username mobile")
+      .lean();
+    if (!buyer) {
+      return NextResponse.json(
+        { success: false, error: "اطلاعات خریدار یافت نشد." },
+        { status: 400 },
+      );
+    }
+
     const normalizedItems = payload.items
       .map((item) => ({
         productId: item.productId,
@@ -117,7 +129,7 @@ export async function POST(req: NextRequest) {
       status: "published",
       deletedAt: null,
     })
-      .select("title sku price discountPrice stock productType variants category")
+      .select("title sku mainImage price discountPrice stock productType variants category")
       .lean();
 
     if (products.length !== uniqueProductIds.length) {
@@ -189,6 +201,8 @@ export async function POST(req: NextRequest) {
         return {
           product: item.productId,
           productTitle: product.title,
+          productImage: product.mainImage,
+          productSku: product.sku || null,
           variantId: selectedVariant._id,
           variantTitle: selectedVariant.title,
           variantSku: selectedVariant.sku || null,
@@ -215,6 +229,8 @@ export async function POST(req: NextRequest) {
       return {
         product: item.productId,
         productTitle: product.title,
+        productImage: product.mainImage,
+        productSku: product.sku || null,
         variantId: null,
         variantTitle: null,
         variantSku: null,
@@ -351,7 +367,15 @@ export async function POST(req: NextRequest) {
         expiresAt: new Date(Date.now() + PENDING_PAYMENT_TTL_MS),
         userId: session.user.id,
         address: payload.addressId,
-        addressSnapshot: createAddressSnapshot(address),
+        addressSnapshot: createAddressSnapshot(address, {
+          name: buyer.username,
+          mobile: buyer.mobile,
+        }),
+        buyerSnapshot: {
+          name: String(buyer.username || "کاربر"),
+          mobile: String(buyer.mobile || ""),
+        },
+        sellerSnapshot: createStoreIdentitySnapshot(),
         items: checkoutItems,
         totalPrice,
         shippingCost,

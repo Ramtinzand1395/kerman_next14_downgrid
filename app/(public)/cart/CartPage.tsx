@@ -10,17 +10,20 @@ import {
   CreditCard,
   MapPin,
   ShoppingBag,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import PaymentForm from "../components/PaymentForm";
+import { useEffect, useMemo, useRef, useState } from "react";
+import PaymentForm, { AppliedCoupon } from "../components/PaymentForm";
 import ShippingForm from "../components/ShippingForm";
 import { safeParseJSON } from "@/helpers/safeParseJSON";
 import { toast } from "react-toastify";
 import ProductImage from "@/app/components/ProductImage";
 import { CartSkeleton } from "@/app/components/loading/LoadingSystem";
 import { calculateShippingInfo } from "@/lib/shipping";
+import { summarizeOrderMoney } from "@/lib/orderSummary";
+import OrderMoneySummaryView from "../components/OrderMoneySummary";
 
 const checkoutSteps = [
   {
@@ -47,8 +50,22 @@ export default function CartPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+  const [addressHydrated, setAddressHydrated] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
 
   const { cart, hasHydrated, removeFromCart, increaseQty, decreaseQty } = useCartStore();
+  const couponCartKey = useMemo(
+    () =>
+      cart
+        .map(
+          (item) =>
+            `${item.id}:${item.quantity}:${item.price}:${item.discountPrice ?? ""}`,
+        )
+        .sort()
+        .join("|"),
+    [cart],
+  );
+  const previousCouponCartKeyRef = useRef(couponCartKey);
 
   const activeStep = useMemo(() => {
     const step = Number(searchParams.get("step") ?? "1");
@@ -71,39 +88,59 @@ export default function CartPage() {
   }, [selectedAddress]);
 
   const orderSummary = useMemo(() => {
-    const subtotal = cart.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0,
-    );
-
-    const discount = cart.reduce(
-      (sum, item) =>
-        sum + (item.price - (item.discountPrice ?? item.price)) * item.quantity,
-      0,
-    );
-
+    const items = cart.map((item) => ({
+      price: item.price,
+      discountPrice: item.discountPrice,
+      quantity: item.quantity,
+      total: (item.discountPrice ?? item.price) * item.quantity,
+    }));
+    const totalPrice = items.reduce((sum, item) => sum + item.total, 0);
     const shippingCost = shippingInfo ? shippingInfo.cost : 0;
+    const couponDiscount = appliedCoupon?.discountAmount ?? 0;
 
-    return {
-      itemsCount: cart.reduce((sum, item) => sum + item.quantity, 0),
-      subtotal,
-      discount,
+    return summarizeOrderMoney({
+      items,
+      totalPrice,
+      couponDiscount,
       shippingCost,
-      final: Math.max(0, subtotal - discount + shippingCost),
-    };
-  }, [cart, shippingInfo]);
+      finalPrice: Math.max(0, totalPrice - couponDiscount + shippingCost),
+    });
+  }, [cart, shippingInfo, appliedCoupon]);
+
+  useEffect(() => {
+    if (previousCouponCartKeyRef.current === couponCartKey) return;
+
+    previousCouponCartKeyRef.current = couponCartKey;
+    setAppliedCoupon(null);
+  }, [couponCartKey]);
 
   useEffect(() => {
     const cached = sessionStorage.getItem("checkout:selected-address");
-    if (!cached) return;
+    if (!cached) {
+      setAddressHydrated(true);
+      return;
+    }
 
     const parsedAddress = safeParseJSON<Address>(cached);
     if (!parsedAddress) {
       sessionStorage.removeItem("checkout:selected-address");
+      setAddressHydrated(true);
       return;
     }
     setSelectedAddress(parsedAddress);
+    setAddressHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (!hasHydrated || !addressHydrated) return;
+    if (activeStep > 1 && cart.length === 0) {
+      router.replace("/cart?step=1", { scroll: false });
+      return;
+    }
+    if (activeStep === 3 && !selectedAddress) {
+      router.replace("/cart?step=2", { scroll: false });
+    }
+  }, [activeStep, addressHydrated, cart.length, hasHydrated, router, selectedAddress]);
 
   useEffect(() => {
     if (!selectedAddress) {
@@ -134,7 +171,7 @@ export default function CartPage() {
   if (!hasHydrated) return <CartSkeleton />;
 
   return (
-    <main className="mx-auto mt-6 w-full max-w-7xl px-4 pb-16 md:mt-10">
+    <main className="mx-auto mt-6 w-full max-w-7xl px-4 pb-36 md:mt-10 xl:pb-16">
       <section className="overflow-hidden rounded-3xl bg-blue-900 p-6 text-white shadow-xl md:p-8">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
@@ -142,9 +179,9 @@ export default function CartPage() {
           </div>
 
           <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm">
-            <p>تعداد کالا: {orderSummary.itemsCount}</p>
+            <p>تعداد کالا: {orderSummary.itemCount}</p>
             <p className="mt-1 font-semibold">
-              پرداخت نهایی: {formatPrice(orderSummary.final)} تومان
+              پرداخت نهایی: {formatPrice(orderSummary.payable)} تومان
             </p>
           </div>
         </div>
@@ -326,7 +363,7 @@ export default function CartPage() {
                             className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 text-red-600 hover:bg-red-200"
                             title="حذف از سبد خرید"
                           >
-                            <span className="text-base">🗑</span>
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                       </div>
@@ -346,7 +383,11 @@ export default function CartPage() {
 
           {activeStep === 3 &&
             (selectedAddress ? (
-              <PaymentForm selectedAddress={selectedAddress} />
+              <PaymentForm
+                selectedAddress={selectedAddress}
+                appliedCoupon={appliedCoupon}
+                setAppliedCoupon={setAppliedCoupon}
+              />
             ) : (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-800">
                 برای ورود به مرحله پرداخت، ابتدا آدرس تحویل را انتخاب کنید.
@@ -365,62 +406,20 @@ export default function CartPage() {
           <div className="sticky top-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
             <h2 className="text-lg font-bold text-slate-900">خلاصه سفارش</h2>
 
-            <div className="mt-5 space-y-3 text-sm">
-              <div className="flex items-center justify-between text-slate-600">
-                <span>تعداد کل اقلام</span>
-                <span className="font-semibold text-slate-900">
-                  {orderSummary.itemsCount}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between text-slate-600">
-                <span>جمع کالاها</span>
-                <span className="font-semibold text-slate-900">
-                  {formatPrice(orderSummary.subtotal)} تومان
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between text-slate-600">
-                <span>تخفیف شما</span>
-                <span className="font-semibold text-emerald-700">
-                  {formatPrice(orderSummary.discount)} تومان
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between text-slate-600">
-                <span>هزینه ارسال</span>
-                {selectedAddress && shippingInfo ? (
-                  shippingInfo.paymentType === "PREPAID" ? (
-                    <span className="font-semibold text-slate-900">
-                      {formatPrice(shippingInfo.cost)} تومان
-                    </span>
-                  ) : (
-                    <span className="font-semibold text-amber-700">
-                      پس‌کرایه
-                    </span>
-                  )
-                ) : (
-                  <span className="text-xs text-slate-400">
-                    محاسبه بر اساس آدرس
-                  </span>
-                )}
-              </div>
-              {selectedAddress && shippingInfo?.paymentType === "COLLECT" && (
-                <p className="text-[11px] text-slate-500">
-                  هزینه حمل هنگام تحویل توسط شرکت حمل‌ونقل دریافت می‌شود.
-                </p>
-              )}
-            </div>
-
-            <div className="my-5 border-t border-slate-200 pt-4">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-slate-900">
-                  مبلغ قابل پرداخت
-                </span>
-                <span className="text-lg font-extrabold text-cyan-700">
-                  {formatPrice(orderSummary.final)} تومان
-                </span>
-              </div>
+            <p className="mt-2 text-xs text-slate-500">
+              {orderSummary.itemCount.toLocaleString("fa-IR")} قلم کالا
+            </p>
+            <div className="my-5">
+              <OrderMoneySummaryView
+                summary={orderSummary}
+                shippingLabel={
+                  selectedAddress && shippingInfo
+                    ? shippingInfo.label
+                    : "محاسبه بر اساس آدرس"
+                }
+                shippingNote={shippingInfo?.description}
+                compact
+              />
             </div>
 
             <div className="space-y-2">
@@ -453,6 +452,45 @@ export default function CartPage() {
           </div>
         </aside>
       </section>
+
+      {cart.length > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-blue-100 bg-white/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_35px_rgba(15,23,42,0.12)] backdrop-blur xl:hidden">
+          <div className="mx-auto flex max-w-2xl items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] text-slate-500">مبلغ قابل پرداخت</p>
+              <p className="truncate text-base font-black text-blue-900">
+                {formatPrice(orderSummary.payable)} تومان
+              </p>
+            </div>
+            {activeStep > 1 && (
+              <button
+                type="button"
+                onClick={() => goToStep(activeStep - 1)}
+                className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-700"
+                aria-label="بازگشت به مرحله قبل"
+              >
+                <ArrowRight className="h-5 w-5" />
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={activeStep === 2 && !selectedAddress}
+              onClick={() => {
+                if (activeStep < 3) {
+                  goToStep(activeStep + 1);
+                  return;
+                }
+                document
+                  .getElementById("payment-actions")
+                  ?.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}
+              className="min-w-40 rounded-xl bg-blue-900 px-5 py-3 text-sm font-black text-white disabled:bg-slate-300"
+            >
+              {activeStep === 3 ? "انتخاب روش پرداخت" : "ادامه فرایند خرید"}
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

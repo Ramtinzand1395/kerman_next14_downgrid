@@ -18,18 +18,26 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { ButtonLoading } from "@/app/components/loading/LoadingSystem";
 import { calculateShippingInfo } from "@/lib/shipping";
+import { summarizeOrderMoney } from "@/lib/orderSummary";
+import OrderMoneySummaryView from "./OrderMoneySummary";
 
 interface PaymentFormProps {
   selectedAddress: Address;
+  appliedCoupon: AppliedCoupon | null;
+  setAppliedCoupon: (coupon: AppliedCoupon | null) => void;
 }
 
-interface AppliedCoupon {
+export interface AppliedCoupon {
   code: string;
   discountAmount: number;
 }
 
-export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
-  const { cart, clearCart } = useCartStore();
+export default function PaymentForm({
+  selectedAddress,
+  appliedCoupon,
+  setAppliedCoupon,
+}: PaymentFormProps) {
+  const { cart, removePurchasedItems } = useCartStore();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [walletLoading, setWalletLoading] = useState(false);
@@ -59,9 +67,6 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
 
   // ── کوپن ──
   const [couponInput, setCouponInput] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(
-    null,
-  );
   const [couponLoading, setCouponLoading] = useState(false);
 
   useEffect(() => {
@@ -76,26 +81,22 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
   }, []);
 
   const orderSummary = useMemo(() => {
-    const subtotal = cart.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0,
-    );
-
-    const discount = cart.reduce(
-      (sum, item) =>
-        sum + (item.price - (item.discountPrice ?? item.price)) * item.quantity,
-      0,
-    );
-
+    const items = cart.map((item) => ({
+      price: item.price,
+      discountPrice: item.discountPrice,
+      quantity: item.quantity,
+      total: (item.discountPrice ?? item.price) * item.quantity,
+    }));
+    const totalPrice = items.reduce((sum, item) => sum + item.total, 0);
     const couponDiscount = appliedCoupon?.discountAmount ?? 0;
 
-    return {
-      subtotal,
-      discount,
+    return summarizeOrderMoney({
+      items,
+      totalPrice,
       couponDiscount,
       shippingCost,
-      final: Math.max(0, subtotal - discount - couponDiscount + shippingCost),
-    };
+      finalPrice: Math.max(0, totalPrice - couponDiscount + shippingCost),
+    });
   }, [cart, appliedCoupon, shippingCost]);
 
   const applyCouponCode = async () => {
@@ -140,6 +141,63 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
     setAppliedCoupon(null);
     setCouponInput("");
   };
+
+  const cartValidationKey = useMemo(
+    () =>
+      cart
+        .map(
+          (item) =>
+            `${item.productId}:${item.variantId || ""}:${item.quantity}`,
+        )
+        .sort()
+        .join("|"),
+    [cart],
+  );
+
+  useEffect(() => {
+    if (!appliedCoupon?.code) return;
+    let cancelled = false;
+
+    fetch("/api/loyalty/coupon/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: appliedCoupon.code,
+        items: cart.map((item) => ({
+          productId: item.productId,
+          variantId: item.variantId,
+          quantity: item.quantity,
+        })),
+      }),
+    })
+      .then(async (response) => ({
+        response,
+        data: await response.json().catch(() => ({})),
+      }))
+      .then(({ response, data }) => {
+        if (cancelled) return;
+        if (!response.ok || !data.ok) {
+          setAppliedCoupon(null);
+          toast.info("با تغییر سبد، کد تخفیف دوباره معتبر نبود و حذف شد.");
+          return;
+        }
+        setAppliedCoupon({
+          code: data.code,
+          discountAmount: data.discountAmount,
+        });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAppliedCoupon(null);
+          toast.info("اعتبار کد تخفیف نیاز به بررسی دوباره دارد.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // cartValidationKey intentionally represents the exact checkout lines.
+  }, [appliedCoupon?.code, cart, cartValidationKey, setAppliedCoupon]);
 
   const buildPayload = () => ({
     addressId: selectedAddress._id,
@@ -233,7 +291,7 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
       }
 
       toast.success("پرداخت با کیف پول با موفقیت انجام شد");
-      clearCart();
+      removePurchasedItems(buildPayload().items);
       router.push(`/payment-success?orderId=${data.orderId}`);
     } catch (error) {
       toast.error(
@@ -245,7 +303,7 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
   };
 
   const canPayWithWallet =
-    walletBalance !== null && walletBalance >= orderSummary.final;
+    walletBalance !== null && walletBalance >= orderSummary.payable;
 
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
@@ -383,48 +441,13 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
             )}
           </div>
 
-          <div className="rounded-2xl border border-slate-200 p-4 text-sm">
-            <div className="flex items-center justify-between text-slate-600">
-              <span>جمع کالاها</span>
-              <span>{formatPrice(orderSummary.subtotal)} تومان</span>
-            </div>
-
-            <div className="mt-2 flex items-center justify-between text-emerald-700">
-              <span>تخفیف</span>
-              <span>{formatPrice(orderSummary.discount)} تومان</span>
-            </div>
-
-            {orderSummary.couponDiscount > 0 && (
-              <div className="mt-2 flex items-center justify-between text-indigo-700">
-                <span>کد تخفیف</span>
-                <span>{formatPrice(orderSummary.couponDiscount)} تومان</span>
-              </div>
-            )}
-
-            <div className="mt-2 flex items-center justify-between text-slate-600">
-              <span>هزینه ارسال</span>
-              {shippingInfo.paymentType === "PREPAID" ? (
-                <span className="font-semibold text-slate-900">
-                  {formatPrice(shippingCost)} تومان
-                </span>
-              ) : (
-                <span className="font-semibold text-amber-700">پس‌کرایه</span>
-              )}
-            </div>
-            {shippingInfo.paymentType === "COLLECT" && (
-              <p className="mt-1 text-xs text-slate-500">
-                هزینه حمل هنگام تحویل توسط شرکت حمل‌ونقل دریافت می‌شود.
-              </p>
-            )}
-
-            <div className="mt-3 border-t border-slate-200 pt-3 text-base font-bold text-slate-900">
-              <div className="flex items-center justify-between">
-                <span>قابل پرداخت</span>
-                <span className="text-cyan-700">
-                  {formatPrice(orderSummary.final)} تومان
-                </span>
-              </div>
-            </div>
+          <div className="rounded-2xl border border-slate-200 p-4">
+            <OrderMoneySummaryView
+              summary={orderSummary}
+              shippingLabel={shippingInfo.label}
+              shippingNote={shippingInfo.description}
+              compact
+            />
           </div>
 
           {/* موجودی کیف پول */}
@@ -442,7 +465,7 @@ export default function PaymentForm({ selectedAddress }: PaymentFormProps) {
         </aside>
       </div>
 
-      <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div id="payment-actions" className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
         <button
           type="button"
           onClick={submitOrder}

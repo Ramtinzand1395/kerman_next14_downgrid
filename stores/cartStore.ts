@@ -2,6 +2,7 @@ import { CartItem, CartStoreStateType } from "@/types";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { safeJSONStorage } from "./safeStorage";
+import { subtractPurchasedItems } from "@/lib/cartReconciliation";
 interface CartStoreActionsType {
   addToCart: (
     product: Partial<CartItem> & {
@@ -20,6 +21,9 @@ interface CartStoreActionsType {
   ) => "added" | "out_of_stock" | "max_reached";
   removeFromCart: (product: Partial<CartItem>) => void;
   clearCart: () => void;
+  removePurchasedItems: (
+    items: Array<{ productId: string; variantId?: string | null; quantity: number }>,
+  ) => void;
 
   increaseQty: (id: string) => void;
   decreaseQty: (id: string) => void;
@@ -101,6 +105,10 @@ const useCartStore = create<CartStoreActionsType & CartStoreStateType>()(
           cart: state.cart.filter((p) => !(p.id === product.id)),
         })),
       clearCart: () => set({ cart: [] }),
+      removePurchasedItems: (purchasedItems) =>
+        set((state) => ({
+          cart: subtractPurchasedItems(state.cart, purchasedItems),
+        })),
     }),
 
     {
@@ -116,5 +124,3 @@ const useCartStore = create<CartStoreActionsType & CartStoreStateType>()(
 );
 
 export default useCartStore;
-
-// 
