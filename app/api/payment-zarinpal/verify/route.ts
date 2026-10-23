@@ -12,6 +12,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSiteUrl } from "@/lib/baseUrl";
 import { notifyInventoryFailure, notifyLowInventory, notifyOrderPaid, notifyPaymentFailed } from "@/lib/notifications/events";
 import { notifyUser } from "@/lib/notifications/service";
+import mongoose from "mongoose";
+import {
+  buildOrderIdentifiers,
+  ensurePaidOrderIdentifiers,
+} from "@/lib/orderIdentifiers";
 
 type ZarinpalVerifyResponse = {
   data?: {
@@ -96,6 +101,7 @@ export async function GET(req: NextRequest) {
 
     if (alreadyPaidOrder) {
       if (alreadyPaidOrder.paymentStatus === "paid") {
+        await ensurePaidOrderIdentifiers(alreadyPaidOrder._id);
         await retryLoyaltyForPaidOrder(alreadyPaidOrder._id.toString());
       }
       const successPath =
@@ -150,6 +156,7 @@ export async function GET(req: NextRequest) {
 
     if (duplicateOrder) {
       if (duplicateOrder.paymentStatus === "paid") {
+        await ensurePaidOrderIdentifiers(duplicateOrder._id);
         await retryLoyaltyForPaidOrder(duplicateOrder._id.toString());
       }
       await TempPayment.deleteOne({ authority });
@@ -193,6 +200,7 @@ export async function GET(req: NextRequest) {
 
       if (completedOrder) {
         if (completedOrder.paymentStatus === "paid") {
+          await ensurePaidOrderIdentifiers(completedOrder._id);
           await retryLoyaltyForPaidOrder(completedOrder._id.toString());
         }
         const completedPath =
@@ -252,10 +260,9 @@ export async function GET(req: NextRequest) {
 
       await TempPayment.deleteOne({ authority });
 
-      const walletSuccessUrl = withPaymentQuery(baseUrl, "/payment-success", {
-        wallet: "1",
-        amount: chargedTx?.amount,
-        refId: result?.data?.ref_id,
+      const walletSuccessUrl = withPaymentQuery(baseUrl, "/my-profile", {
+        step: "8",
+        charge: chargedTx ? "success" : "review",
       });
       return NextResponse.redirect(walletSuccessUrl);
     }
@@ -343,10 +350,15 @@ export async function GET(req: NextRequest) {
       decrementedItems.push(item);
     }
 
+    const newOrderId = new mongoose.Types.ObjectId();
+    const identifiers = buildOrderIdentifiers(newOrderId);
     const order = await Order.create({
+      _id: newOrderId,
       user: temp.userId,
       address: temp.address,
       addressSnapshot: temp.addressSnapshot,
+      buyerSnapshot: temp.buyerSnapshot,
+      sellerSnapshot: temp.sellerSnapshot,
       items: temp.items,
       totalPrice: temp.totalPrice,
       shippingCost: temp.shippingCost,
@@ -364,6 +376,7 @@ export async function GET(req: NextRequest) {
       paymentFeeType: result?.data?.fee_type ?? null,
       paymentFee: result?.data?.fee ?? null,
       paymentVerifiedAt: new Date(),
+      ...identifiers,
     });
 
     await User.findByIdAndUpdate(temp.userId, { $push: { orders: order._id } });

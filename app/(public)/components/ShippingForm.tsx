@@ -403,7 +403,7 @@ export default function ShippingForm({
 
         <p className="flex items-center gap-2">
           <Truck className="h-4 w-4 text-cyan-700" />
-          ارسال سریع و قابل رهگیری
+          روش و هزینه ارسال بر اساس شهر مقصد
         </p>
 
         <button

@@ -8,6 +8,8 @@ const AddressSnapshotSchema = new mongoose.Schema(
     plaque: { type: String, default: "" },
     unit: { type: String, default: "" },
     postalCode: { type: String, default: "" },
+    recipientName: { type: String, default: "" },
+    recipientMobile: { type: String, default: "" },
   },
   { _id: false },
 );
@@ -68,6 +70,8 @@ const TempPaymentSchema = new mongoose.Schema(
           type: String,
           default: null,
         },
+        productImage: { type: String, default: null },
+        productSku: { type: String, default: null },
         variantId: {
           type: mongoose.Schema.Types.ObjectId,
           default: null,
@@ -90,6 +94,16 @@ const TempPaymentSchema = new mongoose.Schema(
         total: { type: Number, required: true },
       },
     ],
+    buyerSnapshot: {
+      name: { type: String, default: "" },
+      mobile: { type: String, default: "" },
+    },
+    sellerSnapshot: {
+      name: { type: String, default: "" },
+      phone: { type: String, default: "" },
+      email: { type: String, default: "" },
+      address: { type: String, default: "" },
+    },
     totalPrice: { type: Number, default: 0 },
     shippingCost: { type: Number, default: 0 },
     shippingPaymentType: {
