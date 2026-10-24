@@ -15,9 +15,10 @@ import CustomVariantSelector from "./CustomVariantSelector";
 
 interface ProductInfoProps {
   product?: Product;
+  shippingNotices?: string[];
 }
 
-export const ProductInfo = ({ product: propProduct }: ProductInfoProps) => {
+export const ProductInfo = ({ product: propProduct, shippingNotices = [] }: ProductInfoProps) => {
   const {
     product: contextProduct,
     activeVariants,
@@ -100,7 +101,7 @@ export const ProductInfo = ({ product: propProduct }: ProductInfoProps) => {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
         <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
           <Truck className="w-5 h-5 text-rose-500 shrink-0" />
-          <span className="text-xs font-medium text-gray-700">ارسال سریع</span>
+          <span className="text-xs font-medium text-gray-700">ارسال براساس مقصد</span>
         </div>
         <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
           <RotateCcw className="w-5 h-5 text-blue-500 shrink-0" />
@@ -115,6 +116,14 @@ export const ProductInfo = ({ product: propProduct }: ProductInfoProps) => {
           </span>
         </div>
       </div>
+
+      {shippingNotices.length > 0 && (
+        <div className="mb-8 space-y-2 rounded-2xl border border-cyan-100 bg-cyan-50/60 p-4">
+          {shippingNotices.map((notice) => (
+            <p key={notice} className="text-xs leading-6 text-slate-700">{notice}</p>
+          ))}
+        </div>
+      )}
 
       {/* tags */}
       {product.tags && product.tags.length > 0 && (

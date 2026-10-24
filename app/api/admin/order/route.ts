@@ -39,10 +39,28 @@ export async function GET(req: Request) {
   ]);
 
   return NextResponse.json({
-    orders: orders.map((order: any) => ({
-      ...order,
-      address: order.addressSnapshot ?? order.address ?? null,
-    })),
+    orders: orders.map((order: any) => {
+      const isCollect =
+        order.shipping?.method === "national_collect" ||
+        order.shippingPaymentType === "COLLECT";
+      const storedShippingFee = Number(order.shipping?.feeToman ?? order.shippingCost);
+      const shippingFeeToman = isCollect
+        ? null
+        : Number.isSafeInteger(storedShippingFee) && storedShippingFee > 0
+          ? storedShippingFee
+          : null;
+      return {
+        ...order,
+        address: order.addressSnapshot ?? order.address ?? null,
+        financials: {
+          itemsSubtotalToman: Number(order.totalPrice || 0),
+          couponDiscountToman: Number(order.couponDiscount || 0),
+          shippingFeeToman,
+          onlinePaymentAmountToman: Number(order.finalPrice || 0),
+          shippingIncludedInOnlinePayment: shippingFeeToman !== null,
+        },
+      };
+    }),
     total,
     pages: Math.ceil(total / limit),
   });

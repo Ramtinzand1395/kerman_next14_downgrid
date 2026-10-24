@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/options";
+import dbConnect from "@/lib/mongodb";
+import TempPayment from "@/model/TempPayment";
+import { formatOrderShippingDisplay } from "@/lib/shipping";
 
 export const metadata: Metadata = {
   alternates: {
@@ -22,6 +27,16 @@ export default async function PaymentFailedPage({
   searchParams,
 }: PaymentFailedPageProps) {
   const params = searchParams;
+  const session = await getServerSession(authOptions);
+  let attempt: any = null;
+  if (session?.user?.id && params.authority) {
+    await dbConnect();
+    attempt = await TempPayment.findOne({
+      authority: params.authority,
+      userId: session.user.id,
+    }).lean();
+  }
+  const shipping = attempt ? formatOrderShippingDisplay(attempt) : null;
 
   return (
     <main className="mx-auto max-w-2xl p-6">
@@ -33,6 +48,14 @@ export default async function PaymentFailedPage({
         </p>
 
         <div className="mt-4 space-y-2 rounded-xl bg-white p-4 text-sm">
+          {attempt && shipping && (
+            <>
+              <p><span className="font-semibold">روش ارسال:</span> {shipping.title}</p>
+              <p><span className="font-semibold">هزینه ارسال:</span> {shipping.label}</p>
+              <p><span className="font-semibold">مبلغ تلاش پرداخت آنلاین:</span> {Number(attempt.finalPrice).toLocaleString("fa-IR")} تومان</p>
+              {shipping.subtext && <p className="text-xs leading-6 text-amber-700">{shipping.subtext}</p>}
+            </>
+          )}
           {params.status && (
             <p>
               <span className="font-semibold">Status:</span> {params.status}

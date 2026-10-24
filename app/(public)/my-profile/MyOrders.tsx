@@ -236,7 +236,7 @@ export default function MyOrders() {
                   </span>
                 </p>
                 <p className="text-slate-600">
-                  ارسال:{" "}
+                  روش ارسال:{" "}
                   <span
                     className={`font-semibold ${
                       shippingDisplay.isCollect
@@ -244,11 +244,11 @@ export default function MyOrders() {
                         : "text-slate-900"
                     }`}
                   >
-                    {shippingDisplay.label}
+                    {shippingDisplay.title} — {shippingDisplay.label}
                   </span>
                 </p>
                 <p className="text-slate-600">
-                  مبلغ نهایی:{" "}
+                  مبلغ کل پرداخت‌شده در سایت:{" "}
                   <span className="font-bold text-emerald-700">
                     {toPrice(order.finalPrice)}
                   </span>

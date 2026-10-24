@@ -21,6 +21,7 @@ import {
   Trophy,
   Bell,
   CalendarClock,
+  Truck,
 } from "lucide-react";
 import AddProductDrawer from "./drawers/AddProductDrawer";
 import AddCategoryDrawer from "./drawers/AddCategoryDrawer";
@@ -51,6 +52,7 @@ export const navItems: NavItem[] = [
   { label: "وبلاگ", href: "/dashboard/blogs", icon: Newspaper },
   { label: "باشگاه مشتریان", href: "/dashboard/loyalty", icon: Trophy },
   { label: "نوبت‌ها", href: "/dashboard/appointments", icon: CalendarClock },
+  { label: "تنظیمات ارسال", href: "/dashboard/shipping", icon: Truck },
   {
     label: "محصولات",
     icon: ShoppingBag,
@@ -82,6 +84,7 @@ export default function DashboardSidebar() {
           { label: "بازگشت به سایت", href: "/", icon: Home },
           { label: "اعلان‌ها", href: "/dashboard/notifications", icon: Bell },
           { label: "نوبت‌ها", href: "/dashboard/appointments", icon: CalendarClock },
+          { label: "تنظیمات ارسال", href: "/dashboard/shipping", icon: Truck },
           {
             label: "سفارشات",
             icon: ClipboardList,

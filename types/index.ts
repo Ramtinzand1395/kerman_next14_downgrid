@@ -291,14 +291,25 @@ export interface OrderItem {
 }
 
 export type ShippingPaymentType = "PREPAID" | "COLLECT";
+export type ShippingMethod = "kerman_local" | "national_collect";
+export interface OrderShipping {
+  method: ShippingMethod;
+  title: string;
+  feeToman: number | null;
+  paymentTiming: "online" | "on_delivery";
+  feeStatus: "fixed" | "pending_carrier";
+  destinationCity: string;
+  addressSnapshot?: Record<string, unknown>;
+}
 
 export interface Order {
   _id: string;
   userId?: number;
   addressId?: number;
   totalPrice: number;
-  shippingCost: number;
+  shippingCost: number | null;
   shippingPaymentType?: ShippingPaymentType;
+  shipping?: OrderShipping | null;
   finalPrice: number;
   status: string;
   paymentMethod: string;

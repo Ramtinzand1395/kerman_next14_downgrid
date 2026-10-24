@@ -199,7 +199,9 @@ export default async function InvoicePage({
               {order.payment.referenceId && <div><dt className="inline font-bold">شماره مرجع پرداخت: </dt><dd dir="ltr" className="inline font-mono">{order.payment.referenceId}</dd></div>}
               <div><dt className="inline font-bold">زمان تأیید: </dt><dd className="inline">{formatDate(order.payment.verifiedAt)}</dd></div>
               <div><dt className="inline font-bold">وضعیت سفارش: </dt><dd className="inline">{statusLabels[order.status] || order.status}</dd></div>
-              <div><dt className="inline font-bold">روش ارسال: </dt><dd className="inline">{order.shipping.label}</dd></div>
+              <div><dt className="inline font-bold">روش ارسال: </dt><dd className="inline">{order.shipping.title}</dd></div>
+              <div><dt className="inline font-bold">هزینه حمل: </dt><dd className="inline">{order.shipping.label}</dd></div>
+              <div><dt className="inline font-bold">مبلغ پرداخت‌شده آنلاین: </dt><dd className="inline">{order.payment.amountPaidOnlineToman.toLocaleString("fa-IR")} تومان</dd></div>
               {order.shipping.note && <p className="text-xs text-amber-700">{order.shipping.note}</p>}
             </dl>
           </section>

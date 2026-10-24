@@ -7,6 +7,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { Suspense } from "react";
 import CartPage from "./CartPage";
 import { CartSkeleton } from "@/app/components/loading/LoadingSystem";
+import { getStoreShippingSettings } from "@/lib/shippingSettings";
 
 export const metadata: Metadata = {
   alternates: {
@@ -38,10 +39,11 @@ export default async function page({ searchParams }: CartPageProps) {
 
     redirect(`/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
   }
+  const shippingSettings = await getStoreShippingSettings();
 
   return (
     <Suspense fallback={<CartSkeleton />}>
-      <CartPage />
+      <CartPage shippingSettings={shippingSettings} />
     </Suspense>
   );
 }

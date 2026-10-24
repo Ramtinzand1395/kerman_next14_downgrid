@@ -89,6 +89,8 @@ export function toOrderDto(record: AnyRecord, source: "order" | "payment_attempt
     payment: {
       status: isOrder ? stringValue(record.paymentStatus) : attemptPaymentStatus,
       gateway: isOrder ? stringValue(record.paymentGateway) || null : null,
+      amountPaidOnlineToman:
+        isOrder && record.paymentStatus === "paid" ? summary.payable : 0,
       referenceId:
         isOrder && record.paymentRefId !== null && record.paymentRefId !== undefined
           ? stringValue(record.paymentRefId)
@@ -126,6 +128,13 @@ export function toOrderDto(record: AnyRecord, source: "order" | "payment_attempt
     items: mappedItems,
     summary,
     shipping: {
+      method: stringValue(record.shipping?.method) || null,
+      title: shipping.title,
+      feeToman: shipping.feeToman,
+      paymentTiming: stringValue(record.shipping?.paymentTiming) ||
+        (shipping.isCollect ? "on_delivery" : null),
+      feeStatus: stringValue(record.shipping?.feeStatus) ||
+        (shipping.isCollect ? "pending_carrier" : null),
       paymentType: stringValue(record.shippingPaymentType) || null,
       label: shipping.label,
       note: shipping.subtext || null,

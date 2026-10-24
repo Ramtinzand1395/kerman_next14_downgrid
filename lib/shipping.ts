@@ -1,11 +1,19 @@
+import { Iran } from "provinces-and-cities";
+
+export type ShippingMethod = "kerman_local" | "national_collect";
+export type ShippingPaymentTiming = "online" | "on_delivery";
+export type ShippingFeeStatus = "fixed" | "pending_carrier";
+
 export interface ShippingDestination {
   province: unknown;
   city: unknown;
+  postalCode?: unknown;
+  address?: unknown;
 }
 
 export class InvalidShippingDestinationError extends Error {
-  constructor() {
-    super("آدرس ارسال معتبر نیست.");
+  constructor(message = "آدرس ارسال معتبر نیست.") {
+    super(message);
     this.name = "InvalidShippingDestinationError";
   }
 }
@@ -13,10 +21,64 @@ export class InvalidShippingDestinationError extends Error {
 export type ShippingPaymentType = "PREPAID" | "COLLECT";
 
 export const KERMAN_SHIPPING_COST = 150_000;
-export const COLLECT_SHIPPING_COST = 0;
 export const COLLECT_SHIPPING_LABEL = "پس‌کرایه";
+export const LOCAL_SHIPPING_DESCRIPTION =
+  "ارسال سفارش در محدوده تحت پوشش شهر کرمان با هزینه ثابت ۱۵۰٬۰۰۰ تومان انجام می‌شود.";
 export const COLLECT_SHIPPING_NOTE =
-  "هزینه حمل هنگام تحویل توسط شرکت حمل‌ونقل دریافت می‌شود.";
+  "ارسال به سراسر ایران به‌صورت پس‌کرایه انجام می‌شود. هزینه حمل هنگام تحویل مرسوله و براساس تعرفه شرکت حمل‌ونقل دریافت خواهد شد.";
+
+export interface StoreShippingSettings {
+  version: 1;
+  localDelivery: {
+    enabled: boolean;
+    feeToman: number;
+    title: string;
+    description: string;
+  };
+  nationalCollect: {
+    enabled: boolean;
+    availableForLocalAddresses: boolean;
+    title: string;
+    description: string;
+  };
+  coverage: {
+    province: string;
+    cities: string[];
+    postalCodePrefixes: string[];
+  };
+}
+
+export const DEFAULT_SHIPPING_SETTINGS: StoreShippingSettings = {
+  version: 1,
+  localDelivery: {
+    enabled: true,
+    feeToman: KERMAN_SHIPPING_COST,
+    title: "ارسال شهری کرمان",
+    description: LOCAL_SHIPPING_DESCRIPTION,
+  },
+  nationalCollect: {
+    enabled: true,
+    availableForLocalAddresses: true,
+    title: "ارسال سراسری پس‌کرایه",
+    description: COLLECT_SHIPPING_NOTE,
+  },
+  coverage: {
+    province: "کرمان",
+    cities: ["کرمان"],
+    postalCodePrefixes: [],
+  },
+};
+
+export function formatLocalShippingPolicyText(feeToman: number): string {
+  return `ارسال سفارش در محدوده تحت پوشش شهر کرمان با هزینه ثابت ${feeToman.toLocaleString("fa-IR")} تومان انجام می‌شود.`;
+}
+
+export class ShippingMethodUnavailableError extends Error {
+  constructor() {
+    super("روش ارسال انتخاب‌شده برای این آدرس در دسترس نیست.");
+    this.name = "ShippingMethodUnavailableError";
+  }
+}
 
 /**
  * Normalizes Persian/Arabic strings:
@@ -62,57 +124,147 @@ export function isKermanCity(city: unknown): boolean {
 }
 
 export interface ShippingCalculation {
-  cost: number;
+  method: ShippingMethod;
+  title: string;
+  feeToman: number | null;
+  /** Legacy alias. New code should use feeToman. */
+  cost: number | null;
+  paymentTiming: ShippingPaymentTiming;
+  feeStatus: ShippingFeeStatus;
   paymentType: ShippingPaymentType;
   isKerman: boolean;
   label: string;
-  description?: string;
+  description: string;
+}
+
+export interface OrderShippingSnapshot {
+  method: ShippingMethod;
+  title: string;
+  feeToman: number | null;
+  paymentTiming: ShippingPaymentTiming;
+  feeStatus: ShippingFeeStatus;
+  destinationCity: string;
+  addressSnapshot: Record<string, unknown>;
+}
+
+function digits(value: unknown) {
+  return String(value ?? "")
+    .replace(/[۰-۹]/g, (character) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(character)))
+    .replace(/[^0-9]/g, "");
+}
+
+export function isValidIranDestination(destination: ShippingDestination): boolean {
+  const province = normalizeCityName(destination?.province);
+  const city = normalizeCityName(destination?.city);
+  if (!province || !city) return false;
+
+  return Iran.main.some(
+    (entry) =>
+      normalizeCityName(entry.name) === province &&
+      entry.cities.some((entryCity) => normalizeCityName(entryCity) === city),
+  );
+}
+
+export function assertValidShippingDestination(destination: ShippingDestination) {
+  if (!isValidIranDestination(destination)) {
+    throw new InvalidShippingDestinationError();
+  }
+}
+
+export function isDestinationInLocalCoverage(
+  destination: ShippingDestination,
+  settings: StoreShippingSettings = DEFAULT_SHIPPING_SETTINGS,
+): boolean {
+  if (!isValidIranDestination(destination)) return false;
+  const provinceMatches =
+    normalizeCityName(destination.province) === normalizeCityName(settings.coverage.province);
+  const cityMatches = settings.coverage.cities.some(
+    (city) => normalizeCityName(city) === normalizeCityName(destination.city),
+  );
+  if (!provinceMatches || !cityMatches) return false;
+
+  const prefixes = settings.coverage.postalCodePrefixes.map(digits).filter(Boolean);
+  if (prefixes.length === 0) return true;
+  const postalCode = digits(destination.postalCode);
+  return postalCode.length === 10 && prefixes.some((prefix) => postalCode.startsWith(prefix));
+}
+
+export function getAvailableShippingMethods(
+  destination: ShippingDestination,
+  settings: StoreShippingSettings = DEFAULT_SHIPPING_SETTINGS,
+): ShippingCalculation[] {
+  assertValidShippingDestination(destination);
+  const isLocal = isDestinationInLocalCoverage(destination, settings);
+  const methods: ShippingCalculation[] = [];
+
+  if (isLocal && settings.localDelivery.enabled) {
+    const fee = settings.localDelivery.feeToman;
+    methods.push({
+      method: "kerman_local",
+      title: settings.localDelivery.title,
+      feeToman: fee,
+      cost: fee,
+      paymentTiming: "online",
+      feeStatus: "fixed",
+      paymentType: "PREPAID",
+      isKerman: true,
+      label: `${fee.toLocaleString("fa-IR")} تومان`,
+      description: settings.localDelivery.description,
+    });
+  }
+
+  if (
+    settings.nationalCollect.enabled &&
+    (!isLocal || settings.nationalCollect.availableForLocalAddresses)
+  ) {
+    methods.push({
+      method: "national_collect",
+      title: settings.nationalCollect.title,
+      feeToman: null,
+      cost: null,
+      paymentTiming: "on_delivery",
+      feeStatus: "pending_carrier",
+      paymentType: "COLLECT",
+      isKerman: isLocal,
+      label: COLLECT_SHIPPING_LABEL,
+      description: settings.nationalCollect.description,
+    });
+  }
+
+  return methods;
 }
 
 /**
  * Calculates shipping details based on destination.
  * - Kerman city: the configured fixed fee, PREPAID
- * - All other cities and provinces: 0 Tomans, COLLECT (پس‌کرایه)
+ * - All other cities and provinces: unknown carrier fee, COLLECT (پس‌کرایه)
  */
 export function calculateShippingInfo(
   destination: ShippingDestination,
+  method?: ShippingMethod | null,
+  settings: StoreShippingSettings = DEFAULT_SHIPPING_SETTINGS,
 ): ShippingCalculation {
-  const province =
-    typeof destination?.province === "string"
-      ? destination.province.trim()
-      : "";
-  const city =
-    typeof destination?.city === "string" ? destination.city.trim() : "";
-
-  if (!province || !city) {
-    throw new InvalidShippingDestinationError();
-  }
-
-  if (isKermanCity(city)) {
-    return {
-      cost: KERMAN_SHIPPING_COST,
-      paymentType: "PREPAID",
-      isKerman: true,
-      label: `${KERMAN_SHIPPING_COST.toLocaleString("fa-IR")} تومان`,
-    };
-  }
-
-  return {
-    cost: COLLECT_SHIPPING_COST,
-    paymentType: "COLLECT",
-    isKerman: false,
-    label: COLLECT_SHIPPING_LABEL,
-    description: COLLECT_SHIPPING_NOTE,
-  };
+  const available = getAvailableShippingMethods(destination, settings);
+  const selected = method
+    ? available.find((option) => option.method === method)
+    : available[0];
+  if (!selected) throw new ShippingMethodUnavailableError();
+  return selected;
 }
 
-/**
- * Returns numeric shipping cost for destination.
- */
-export function calculateShippingCost(
-  destination: ShippingDestination,
-): number {
-  return calculateShippingInfo(destination).cost;
+export function createOrderShippingSnapshot(
+  selection: ShippingCalculation,
+  addressSnapshot: Record<string, unknown>,
+): OrderShippingSnapshot {
+  return {
+    method: selection.method,
+    title: selection.title,
+    feeToman: selection.feeToman,
+    paymentTiming: selection.paymentTiming,
+    feeStatus: selection.feeStatus,
+    destinationCity: String(addressSnapshot.city ?? ""),
+    addressSnapshot,
+  };
 }
 
 /**
@@ -120,33 +272,69 @@ export function calculateShippingCost(
  * Preserves backward compatibility for legacy orders where shippingPaymentType was not recorded.
  */
 export function formatOrderShippingDisplay(order: {
+  shipping?: Partial<OrderShippingSnapshot> | null;
   shippingCost?: number | null;
   shippingPaymentType?: string | null;
 }): {
+  title: string;
   label: string;
   subtext?: string;
   isCollect: boolean;
+  feeToman: number | null;
 } {
-  if (order?.shippingPaymentType === "COLLECT") {
+  if (order.shipping?.method === "national_collect") {
     return {
-      label: COLLECT_SHIPPING_LABEL,
+      title: order.shipping.title || DEFAULT_SHIPPING_SETTINGS.nationalCollect.title,
+      label: "طبق تعرفه شرکت حمل‌ونقل",
       subtext: COLLECT_SHIPPING_NOTE,
       isCollect: true,
+      feeToman: null,
+    };
+  }
+  if (order.shipping?.method === "kerman_local") {
+    const fee = Number(order.shipping.feeToman);
+    if (!Number.isSafeInteger(fee) || fee <= 0) {
+      return {
+        title: order.shipping.title || DEFAULT_SHIPPING_SETTINGS.localDelivery.title,
+        label: "هزینه در داده سفارش ثبت نشده",
+        subtext: "این مقدار نامشخص به معنی ارسال رایگان نیست.",
+        isCollect: false,
+        feeToman: null,
+      };
+    }
+    return {
+      title: order.shipping.title || DEFAULT_SHIPPING_SETTINGS.localDelivery.title,
+      label: `${fee.toLocaleString("fa-IR")} تومان`,
+      isCollect: false,
+      feeToman: fee,
+    };
+  }
+  if (order?.shippingPaymentType === "COLLECT") {
+    return {
+      title: DEFAULT_SHIPPING_SETTINGS.nationalCollect.title,
+      label: "طبق تعرفه شرکت حمل‌ونقل",
+      subtext: COLLECT_SHIPPING_NOTE,
+      isCollect: true,
+      feeToman: null,
     };
   }
 
-  const cost = Number(order?.shippingCost || 0);
+  const cost = Number(order?.shippingCost);
 
   if (order?.shippingPaymentType === "PREPAID" || cost > 0) {
     return {
+      title: "ارسال با هزینه ثبت‌شده",
       label: `${cost.toLocaleString("fa-IR")} تومان`,
       isCollect: false,
+      feeToman: cost,
     };
   }
 
-  // Fallback for legacy orders
   return {
-    label: "رایگان (سفارش قبلی)",
+    title: "روش ارسال سفارش قدیمی",
+    label: "در داده سفارش ثبت نشده",
+    subtext: "هزینه نامشخص این سفارش قدیمی به معنی ارسال رایگان نیست.",
     isCollect: false,
+    feeToman: null,
   };
 }

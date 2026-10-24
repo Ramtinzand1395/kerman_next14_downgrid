@@ -29,9 +29,9 @@ test("shipping rules keep Kerman prepaid and other cities collect", () => {
   const kerman = calculateShippingInfo({ province: "کرمان", city: "کرمان" });
   const tehran = calculateShippingInfo({ province: "تهران", city: "تهران" });
 
-  assert.equal(kerman.cost, KERMAN_SHIPPING_COST);
+  assert.equal(kerman.feeToman, KERMAN_SHIPPING_COST);
   assert.equal(kerman.paymentType, "PREPAID");
-  assert.equal(tehran.cost, 0);
+  assert.equal(tehran.feeToman, null);
   assert.equal(tehran.paymentType, "COLLECT");
   assert.equal(tehran.label, "پس‌کرایه");
 });

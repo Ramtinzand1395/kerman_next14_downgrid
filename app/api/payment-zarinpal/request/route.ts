@@ -14,8 +14,12 @@ import { validateCoupon } from "@/lib/loyalty/coupon.service";
 import { createStoreIdentitySnapshot } from "@/lib/storeIdentity";
 import {
   calculateShippingInfo,
+  createOrderShippingSnapshot,
   InvalidShippingDestinationError,
+  ShippingMethodUnavailableError,
+  type ShippingMethod,
 } from "@/lib/shipping";
+import { getStoreShippingSettings } from "@/lib/shippingSettings";
 import {
   getVariantAttributeSelections,
   isVariantMappedForSale,
@@ -62,6 +66,7 @@ export async function POST(req: NextRequest) {
       addressId?: string;
       items?: CheckoutItem[];
       couponCode?: string;
+      shippingMethod?: ShippingMethod;
     } = await req.json();
     const idempotencyKey = req.headers.get("Idempotency-Key")?.trim() || null;
     if (
@@ -252,12 +257,20 @@ export async function POST(req: NextRequest) {
       };
     });
 
+    const addressSnapshot = createAddressSnapshot(address, {
+      name: buyer.username,
+      mobile: buyer.mobile,
+    });
+    const shippingSettings = await getStoreShippingSettings();
     const shippingInfo = calculateShippingInfo({
       province: address.province,
       city: address.city,
-    });
-    const shippingCost = shippingInfo.cost;
+      postalCode: address.postalCode,
+      address: address.address,
+    }, payload.shippingMethod, shippingSettings);
+    const shippingCost = shippingInfo.feeToman;
     const shippingPaymentType = shippingInfo.paymentType;
+    const shipping = createOrderShippingSnapshot(shippingInfo, addressSnapshot);
 
     const totalPrice = checkoutItems.reduce((acc, item) => acc + item.total, 0);
 
@@ -288,7 +301,7 @@ export async function POST(req: NextRequest) {
       couponDiscount = validation.discountAmount!;
     }
 
-    const finalPrice = totalPrice - couponDiscount + shippingCost;
+    const finalPrice = totalPrice - couponDiscount + (shippingCost ?? 0);
 
     const merchant_id = process.env.ZARINPAL_MERCHANT_ID?.trim();
     if (!merchant_id) {
@@ -380,10 +393,7 @@ export async function POST(req: NextRequest) {
         expiresAt: new Date(Date.now() + PENDING_PAYMENT_TTL_MS),
         userId: session.user.id,
         address: payload.addressId,
-        addressSnapshot: createAddressSnapshot(address, {
-          name: buyer.username,
-          mobile: buyer.mobile,
-        }),
+        addressSnapshot,
         buyerSnapshot: {
           name: String(buyer.username || "کاربر"),
           mobile: String(buyer.mobile || ""),
@@ -393,6 +403,7 @@ export async function POST(req: NextRequest) {
         totalPrice,
         shippingCost,
         shippingPaymentType,
+        shipping,
         finalPrice,
         couponCode,
         couponDiscount,
@@ -415,7 +426,10 @@ export async function POST(req: NextRequest) {
       url: `https://payment.zarinpal.com/pg/StartPay/${authority}`,
     });
   } catch (error) {
-    if (error instanceof InvalidShippingDestinationError) {
+    if (
+      error instanceof InvalidShippingDestinationError ||
+      error instanceof ShippingMethodUnavailableError
+    ) {
       return NextResponse.json(
         { success: false, error: error.message },
         { status: 400 },

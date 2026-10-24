@@ -414,7 +414,7 @@ export default function Orders() {
                         : "bg-blue-50 text-blue-700"
                     }`}
                   >
-                    ارسال: {shippingDisplay.label}
+                    ارسال: {shippingDisplay.title} — {shippingDisplay.label}
                   </span>
                 </td>
 
@@ -546,7 +546,7 @@ export default function Orders() {
 
             <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-2 text-xs">
               <span className="font-bold text-gray-900">
-                مبلغ نهایی: {order.finalPrice.toLocaleString("fa-IR")} تومان
+                مبلغ پرداخت‌شده آنلاین: {order.finalPrice.toLocaleString("fa-IR")} تومان
               </span>
               <span
                 className={`inline-flex rounded-full px-2.5 py-0.5 font-semibold ${
@@ -555,7 +555,7 @@ export default function Orders() {
                     : "bg-blue-50 text-blue-700"
                 }`}
               >
-                ارسال: {shippingDisplay.label}
+                ارسال: {shippingDisplay.title} — {shippingDisplay.label}
               </span>
             </div>
 

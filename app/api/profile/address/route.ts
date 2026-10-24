@@ -10,6 +10,29 @@ import {
   preserveAddressSnapshots,
 } from "@/lib/addressReferences";
 import mongoose from "mongoose";
+import {
+  assertValidShippingDestination,
+  InvalidShippingDestinationError,
+} from "@/lib/shipping";
+
+function validateAddressInput(input: {
+  province: unknown;
+  city: unknown;
+  address: unknown;
+  postalCode: unknown;
+}) {
+  assertValidShippingDestination(input);
+  if (typeof input.address !== "string" || input.address.trim().length < 10) {
+    throw new InvalidShippingDestinationError("نشانی کامل باید حداقل ۱۰ نویسه باشد.");
+  }
+  const postalCode = String(input.postalCode ?? "")
+    .replace(/[۰-۹]/g, (character) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(character)))
+    .replace(/\D/g, "");
+  if (postalCode.length !== 10) {
+    throw new InvalidShippingDestinationError("کد پستی باید دقیقاً ۱۰ رقم باشد.");
+  }
+  return postalCode;
+}
 
 // ===== GET Addresses =====
 export async function GET() {
@@ -47,6 +70,7 @@ export async function POST(req: NextRequest) {
 
     const { province, city, address, plaque, unit, postalCode } =
       await req.json();
+    const normalizedPostalCode = validateAddressInput({ province, city, address, postalCode });
 
     const newAddress = await Address.create({
       userId: session.user.id,
@@ -55,7 +79,7 @@ export async function POST(req: NextRequest) {
       address,
       plaque,
       unit,
-      postalCode,
+      postalCode: normalizedPostalCode,
     });
     // اضافه کردن به آرایه addresses کاربر
     await User.findByIdAndUpdate(session.user.id, {
@@ -63,6 +87,9 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json(newAddress, { status: 201 });
   } catch (err) {
+    if (err instanceof InvalidShippingDestinationError) {
+      return NextResponse.json({ error: err.message }, { status: 422 });
+    }
     console.error(err);
     return NextResponse.json(
       { error: "آدرس ذخیره نشد؛ دوباره تلاش کنید." },
@@ -83,6 +110,7 @@ export async function PUT(req: NextRequest) {
 
     const { id, _id, province, city, address, plaque, unit, postalCode } =
       await req.json();
+    const normalizedPostalCode = validateAddressInput({ province, city, address, postalCode });
 
     const addressId = id ?? _id;
     if (!addressId) {
@@ -108,12 +136,15 @@ export async function PUT(req: NextRequest) {
 
     const updated = await Address.findByIdAndUpdate(
       addressToUpdate._id,
-      { province, city, address, plaque, unit, postalCode },
+      { province, city, address, plaque, unit, postalCode: normalizedPostalCode },
       { returnDocument: "after" },
     );
 
     return NextResponse.json(updated);
   } catch (err) {
+    if (err instanceof InvalidShippingDestinationError) {
+      return NextResponse.json({ error: err.message }, { status: 422 });
+    }
     console.error(err);
     return NextResponse.json(
       { error: "تغییرات آدرس ذخیره نشد؛ دوباره تلاش کنید." },
