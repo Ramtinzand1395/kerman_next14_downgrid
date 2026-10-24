@@ -41,7 +41,7 @@ export type LandingData = {
 };
 
 const PRODUCT_FIELDS =
-  "sku title slug description shortDesc price discountPrice stock brand mainImage mainImageAlt productType variants category tags comments createdAt updatedAt seoTitle metaDescription";
+  "sku title slug description shortDesc price discountPrice stock brand mainImage mainImageAlt productType variants variantSelector category tags comments createdAt updatedAt seoTitle metaDescription";
 
 function serializeProduct(document: any): Product {
   return {
@@ -72,6 +72,9 @@ function serializeProduct(document: any): Product {
           : null,
       stock: Number(variant.stock || 0),
     })),
+    variantSelector: document.variantSelector
+      ? JSON.parse(JSON.stringify(document.variantSelector))
+      : undefined,
     createdAt: document.createdAt
       ? new Date(document.createdAt).toISOString()
       : "",

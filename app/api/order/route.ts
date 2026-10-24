@@ -14,6 +14,10 @@ import {
   InvalidShippingDestinationError,
 } from "@/lib/shipping";
 import { createStoreIdentitySnapshot } from "@/lib/storeIdentity";
+import {
+  getVariantAttributeSelections,
+  isVariantMappedForSale,
+} from "@/lib/variantSelector";
 
 interface OrderItem {
   productId: string;
@@ -101,7 +105,7 @@ export async function POST(req: Request) {
     status: "published",
     deletedAt: null,
   })
-    .select("title sku mainImage price discountPrice stock productType variants status deletedAt")
+    .select("title sku mainImage price discountPrice stock productType variants variantSelector status deletedAt")
     .lean();
 
   if (products.length !== uniqueProductIds.length) {
@@ -154,6 +158,14 @@ export async function POST(req: Request) {
         if (!selectedVariant) {
           throw new Error("INVALID_VARIANT");
         }
+        if (
+          !isVariantMappedForSale(
+            product.variantSelector as any,
+            String(selectedVariant._id),
+          )
+        ) {
+          throw new Error("INVALID_VARIANT");
+        }
 
         const totalVariantQty =
           requestedQtyByVariant.get(`${item.productId}:${item.variantId}`) ||
@@ -179,6 +191,10 @@ export async function POST(req: Request) {
           variantId: selectedVariant._id,
           variantTitle: selectedVariant.title,
           variantSku: selectedVariant.sku,
+          variantAttributes: getVariantAttributeSelections(
+            product.variantSelector as any,
+            String(selectedVariant._id),
+          ),
           price: Number(selectedVariant.price || 0),
           discountPrice:
             selectedVariant.discountPrice === null ||

@@ -22,6 +22,7 @@ interface ProductVariantContextValue {
   effectiveStock: number;
   effectiveSku: string;
   isOutOfStock: boolean;
+  requiresSelection: boolean;
   setSelectedVariantId: (variantId: string) => void;
 }
 
@@ -90,14 +91,17 @@ export function ProductVariantProvider({
 
   const isMulti =
     product.productType === "multi" && activeVariants.length > 0;
+  const hasCustomSelector = isMulti && product.variantSelector?.enabled === true;
 
   const [selectedVariantId, setSelectedVariantIdState] = useState<string>(() => {
     if (!isMulti) return "";
-    return resolveDefaultVariantId(
-      activeVariants,
-      product.defaultVariantId,
-      initialVariantId,
-    );
+    if (hasCustomSelector) {
+      const mappedPreferred = product.variantSelector?.mappings.some(
+        (mapping) => String(mapping.variantId) === String(initialVariantId || ""),
+      );
+      return mappedPreferred ? String(initialVariantId) : "";
+    }
+    return resolveDefaultVariantId(activeVariants, product.defaultVariantId, initialVariantId);
   });
 
   const selectedVariant = useMemo(() => {
@@ -113,16 +117,25 @@ export function ProductVariantProvider({
       const exists = activeVariants.some(
         (v) => String(v._id) === String(selectedVariantId),
       );
-      if (!exists) {
-        const nextId = resolveDefaultVariantId(
-          activeVariants,
-          product.defaultVariantId,
-          initialVariantId,
-        );
+      if (!exists && selectedVariantId) {
+        const nextId = hasCustomSelector
+          ? ""
+          : resolveDefaultVariantId(
+              activeVariants,
+              product.defaultVariantId,
+              initialVariantId,
+            );
         setSelectedVariantIdState(nextId);
       }
     }
-  }, [isMulti, activeVariants, selectedVariantId, product.defaultVariantId, initialVariantId]);
+  }, [
+    isMulti,
+    hasCustomSelector,
+    activeVariants,
+    selectedVariantId,
+    product.defaultVariantId,
+    initialVariantId,
+  ]);
 
   const setSelectedVariantId = useCallback(
     (variantId: string) => {
@@ -141,14 +154,18 @@ export function ProductVariantProvider({
   );
 
   const effectivePrice = isMulti
-    ? Number(selectedVariant?.price ?? 0)
+    ? Number(selectedVariant?.price ?? product.price ?? 0)
     : Number(product.price ?? 0);
 
   const effectiveDiscountPrice = isMulti
-    ? selectedVariant?.discountPrice !== undefined &&
+    ? selectedVariant
+      ? selectedVariant.discountPrice !== undefined &&
       selectedVariant?.discountPrice !== null
       ? Number(selectedVariant.discountPrice)
       : null
+      : product.discountPrice !== undefined && product.discountPrice !== null
+        ? Number(product.discountPrice)
+        : null
     : product.discountPrice !== undefined && product.discountPrice !== null
       ? Number(product.discountPrice)
       : null;
@@ -156,13 +173,14 @@ export function ProductVariantProvider({
   const finalPrice = effectiveDiscountPrice ?? effectivePrice;
 
   const effectiveStock = isMulti
-    ? Number(selectedVariant?.stock ?? 0)
+    ? Number(selectedVariant?.stock ?? product.stock ?? 0)
     : Number(product.stock ?? 0);
 
   const effectiveSku =
     (isMulti ? selectedVariant?.sku : null) || product.sku || "";
 
   const isOutOfStock = effectiveStock <= 0;
+  const requiresSelection = isMulti && !selectedVariant;
 
   const value = useMemo<ProductVariantContextValue>(
     () => ({
@@ -177,6 +195,7 @@ export function ProductVariantProvider({
       effectiveStock,
       effectiveSku,
       isOutOfStock,
+      requiresSelection,
       setSelectedVariantId,
     }),
     [
@@ -191,6 +210,7 @@ export function ProductVariantProvider({
       effectiveStock,
       effectiveSku,
       isOutOfStock,
+      requiresSelection,
       setSelectedVariantId,
     ],
   );

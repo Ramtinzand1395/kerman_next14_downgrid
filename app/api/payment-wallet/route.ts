@@ -30,6 +30,10 @@ import {
   calculateShippingInfo,
   InvalidShippingDestinationError,
 } from "@/lib/shipping";
+import {
+  getVariantAttributeSelections,
+  isVariantMappedForSale,
+} from "@/lib/variantSelector";
 
 interface CheckoutItem {
   productId: string;
@@ -218,7 +222,7 @@ export async function POST(req: NextRequest) {
       status: "published",
       deletedAt: null,
     })
-      .select("title sku mainImage price discountPrice stock productType variants category status deletedAt")
+      .select("title sku mainImage price discountPrice stock productType variants variantSelector category status deletedAt")
       .lean();
 
     if (products.length !== uniqueProductIds.length) {
@@ -265,6 +269,9 @@ export async function POST(req: NextRequest) {
             variant.isActive !== false,
         );
         if (!selectedVariant) throw new Error("INVALID_VARIANT");
+        if (!isVariantMappedForSale(product.variantSelector as any, String(selectedVariant._id))) {
+          throw new Error("INVALID_VARIANT");
+        }
 
         const totalVariantQty =
           requestedQtyByVariant.get(`${item.productId}:${item.variantId}`) ||
@@ -289,6 +296,10 @@ export async function POST(req: NextRequest) {
           variantId: selectedVariant._id,
           variantTitle: selectedVariant.title,
           variantSku: selectedVariant.sku,
+          variantAttributes: getVariantAttributeSelections(
+            product.variantSelector as any,
+            String(selectedVariant._id),
+          ),
           price: Number(selectedVariant.price || 0),
           discountPrice:
             selectedVariant.discountPrice === null ||

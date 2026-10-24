@@ -141,7 +141,7 @@ export default function MyStoreOrders() {
                     {order.address && <section className="rounded-xl bg-slate-50 p-4 text-sm leading-7 text-slate-700"><h3 className="font-black text-slate-900">آدرس تحویل</h3><p className="mt-2">{order.address.province}، {order.address.city}، {order.address.address}{order.address.plaque ? `، پلاک ${order.address.plaque}` : ""}{order.address.unit ? `، واحد ${order.address.unit}` : ""}</p></section>}
                     <section className="space-y-2">
                       <h3 className="font-black text-slate-900">محصولات</h3>
-                      {order.items.map((item) => <div key={item.id} className="rounded-xl border border-slate-200 p-3 text-sm"><p className="font-bold text-slate-900">{item.title}</p><p className="mt-1 text-xs text-slate-500">{item.variantTitle ? `مدل ${item.variantTitle} · ` : ""}تعداد {item.quantity.toLocaleString("fa-IR")} · {item.total.toLocaleString("fa-IR")} تومان</p></div>)}
+                      {order.items.map((item) => <div key={item.id} className="rounded-xl border border-slate-200 p-3 text-sm"><p className="font-bold text-slate-900">{item.title}</p><p className="mt-1 text-xs text-slate-500">{item.variantAttributes?.length ? `${item.variantAttributes.map((attribute) => `${attribute.label}: ${attribute.optionLabel}`).join("، ")} · ` : item.variantTitle ? `مدل ${item.variantTitle} · ` : ""}تعداد {item.quantity.toLocaleString("fa-IR")} · {item.total.toLocaleString("fa-IR")} تومان</p></div>)}
                     </section>
                   </div>
                   <div className="space-y-4">

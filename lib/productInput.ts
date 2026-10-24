@@ -1,4 +1,8 @@
 import mongoose from "mongoose";
+import {
+  normalizeVariantSelector,
+  VariantSelectorValidationError,
+} from "@/lib/variantSelector";
 
 const OBJECT_ID_PATTERN = /^[0-9a-fA-F]{24}$/;
 
@@ -124,7 +128,7 @@ function normalizeVariants(
 
     const variant = rawVariant as Record<string, unknown>;
     const rawId = variant._id;
-    let variantId: string | undefined;
+    let variantId: string;
 
     if (rawId !== null && rawId !== undefined && rawId !== "") {
       if (typeof rawId !== "string" || !OBJECT_ID_PATTERN.test(rawId)) {
@@ -135,12 +139,6 @@ function normalizeVariants(
       }
 
       variantId = rawId.toLowerCase();
-      if (options.mode === "create" || !existingVariantIds.has(variantId)) {
-        throw new ProductInputValidationError(
-          `variants.${index}._id`,
-          "شناسه مدل محصول به این محصول تعلق ندارد یا نامعتبر است.",
-        );
-      }
 
       if (acceptedVariantIds.has(variantId)) {
         throw new ProductInputValidationError(
@@ -149,6 +147,9 @@ function normalizeVariants(
         );
       }
 
+      acceptedVariantIds.add(variantId);
+    } else {
+      variantId = new mongoose.Types.ObjectId().toString();
       acceptedVariantIds.add(variantId);
     }
 
@@ -182,7 +183,7 @@ function normalizeVariants(
     }
 
     return {
-      ...(variantId ? { _id: variantId } : {}),
+      _id: variantId,
       title,
       ...(sku ? { sku } : {}),
       ...(barcode ? { barcode } : {}),
@@ -344,10 +345,24 @@ export function buildProductWriteInput(
 
   const sku = optionalString(body.sku);
 
+  let variantSelector;
+  try {
+    variantSelector =
+      productType === "multi"
+        ? normalizeVariantSelector(body.variantSelector, variants, status)
+        : undefined;
+  } catch (error) {
+    if (error instanceof VariantSelectorValidationError) {
+      throw new ProductInputValidationError(error.field, error.message);
+    }
+    throw error;
+  }
+
   const productData = {
     status,
     productType,
     variants,
+    ...(variantSelector ? { variantSelector } : {}),
     ...(defaultVariantId ? { defaultVariantId } : {}),
     ...(sku ? { sku } : {}),
     title: requiredString(body.title, "title"),

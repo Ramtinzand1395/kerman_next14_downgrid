@@ -9,6 +9,51 @@ export interface ProductVariant {
   isActive?: boolean;
 }
 
+export type VariantSelectorDisplayType =
+  | "dropdown"
+  | "radio"
+  | "chips"
+  | "swatches";
+
+export interface VariantSelectorOption {
+  id: string;
+  label: string;
+  order: number;
+  color?: string;
+}
+
+export interface VariantSelectorGroup {
+  id: string;
+  key: string;
+  label: string;
+  displayType: VariantSelectorDisplayType;
+  required: boolean;
+  order: number;
+  placeholder?: string;
+  description?: string;
+  options: VariantSelectorOption[];
+}
+
+export interface VariantSelectorMapping {
+  variantId: string;
+  optionIds: Record<string, string>;
+}
+
+export interface VariantSelectorConfig {
+  enabled: boolean;
+  version: 1;
+  groups: VariantSelectorGroup[];
+  mappings: VariantSelectorMapping[];
+}
+
+export interface VariantAttributeSelection {
+  groupId: string;
+  key: string;
+  label: string;
+  optionId: string;
+  optionLabel: string;
+}
+
 export interface CartItem {
   id: string;
   title: string;
@@ -22,6 +67,7 @@ export interface CartItem {
   productId: string;
   variantId?: string;
   variantTitle?: string;
+  variantAttributes?: VariantAttributeSelection[];
 }
 
 export interface CartStoreStateType {
@@ -100,6 +146,7 @@ export interface ProductForm {
   mainImageAlt: string;
   variants: ProductVariant[];
   defaultVariantId?: string | null;
+  variantSelector?: VariantSelectorConfig;
 }
 
 export interface Customer {
@@ -178,6 +225,7 @@ export interface Product {
   productType?: "single" | "multi";
   variants?: ProductVariant[];
   defaultVariantId?: string | null;
+  variantSelector?: VariantSelectorConfig;
   catalogRevision?: number;
   inventoryVersion?: number;
   deletedAt?: string | Date | null;
@@ -239,6 +287,7 @@ export interface OrderItem {
   variantId?: string;
   variantTitle?: string;
   variantSku?: string;
+  variantAttributes?: VariantAttributeSelection[];
 }
 
 export type ShippingPaymentType = "PREPAID" | "COLLECT";

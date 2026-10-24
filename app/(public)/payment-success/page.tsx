@@ -156,7 +156,7 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="text-sm font-bold text-slate-900">{item.title}</h3>
-                        {item.variantTitle && <p className="mt-1 text-xs text-slate-500">مدل: {item.variantTitle}</p>}
+                        {item.variantAttributes?.length ? <p className="mt-1 text-xs text-slate-500">{item.variantAttributes.map((attribute) => `${attribute.label}: ${attribute.optionLabel}`).join(" · ")}</p> : item.variantTitle ? <p className="mt-1 text-xs text-slate-500">مدل: {item.variantTitle}</p> : null}
                         <p className="mt-2 text-xs text-slate-600">تعداد {item.quantity.toLocaleString("fa-IR")} · مبلغ ردیف {item.total.toLocaleString("fa-IR")} تومان</p>
                       </div>
                     </article>

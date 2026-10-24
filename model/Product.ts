@@ -48,6 +48,53 @@ const FaqItemSchema = new Schema(
   { _id: false },
 );
 
+const VariantSelectorOptionSchema = new Schema(
+  {
+    id: { type: String, required: true },
+    label: { type: String, required: true },
+    order: { type: Number, required: true, min: 0 },
+    color: { type: String, default: null },
+  },
+  { _id: false },
+);
+
+const VariantSelectorGroupSchema = new Schema(
+  {
+    id: { type: String, required: true },
+    key: { type: String, required: true },
+    label: { type: String, required: true },
+    displayType: {
+      type: String,
+      enum: ["dropdown", "radio", "chips", "swatches"],
+      required: true,
+    },
+    required: { type: Boolean, default: true },
+    order: { type: Number, required: true, min: 0 },
+    placeholder: { type: String, default: null },
+    description: { type: String, default: null },
+    options: { type: [VariantSelectorOptionSchema], default: [] },
+  },
+  { _id: false },
+);
+
+const VariantSelectorMappingSchema = new Schema(
+  {
+    variantId: { type: Schema.Types.ObjectId, required: true },
+    optionIds: { type: Map, of: String, required: true },
+  },
+  { _id: false },
+);
+
+const VariantSelectorSchema = new Schema(
+  {
+    enabled: { type: Boolean, default: false },
+    version: { type: Number, enum: [1], default: 1 },
+    groups: { type: [VariantSelectorGroupSchema], default: [] },
+    mappings: { type: [VariantSelectorMappingSchema], default: [] },
+  },
+  { _id: false },
+);
+
 export const VariantSchema = new Schema({
   title: { type: String, required: true, trim: true },
   sku: { type: String, default: null, trim: true },
@@ -78,6 +125,11 @@ const productSchema = new Schema(
     defaultVariantId: {
       type: Schema.Types.ObjectId,
       default: null,
+    },
+
+    variantSelector: {
+      type: VariantSelectorSchema,
+      default: undefined,
     },
 
     sku: {

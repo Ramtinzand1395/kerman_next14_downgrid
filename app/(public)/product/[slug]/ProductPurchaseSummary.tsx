@@ -15,6 +15,7 @@ export default function ProductPurchaseSummary() {
     effectiveStock,
     effectiveSku,
     isOutOfStock,
+    requiresSelection,
   } = useProductVariant();
 
   return (
@@ -33,6 +34,26 @@ export default function ProductPurchaseSummary() {
           </li>
         )}
 
+        {isMulti && product.variantSelector?.enabled && selectedVariantId
+          ? product.variantSelector.groups
+              .slice()
+              .sort((a, b) => a.order - b.order)
+              .map((group) => {
+                const mapping = product.variantSelector?.mappings.find(
+                  (item) => String(item.variantId) === String(selectedVariantId),
+                );
+                const option = group.options.find(
+                  (item) => item.id === mapping?.optionIds[group.id],
+                );
+                return option ? (
+                  <li key={group.id} className="flex items-center justify-between">
+                    <span className="text-zinc-500">{group.label}</span>
+                    <span className="font-semibold text-zinc-900">{option.label}</span>
+                  </li>
+                ) : null;
+              })
+          : null}
+
         <li className="flex items-center justify-between">
           <span className="text-zinc-500">قیمت نهایی</span>
           <strong className="text-zinc-900 font-bold">
@@ -44,10 +65,16 @@ export default function ProductPurchaseSummary() {
           <span className="text-zinc-500">وضعیت موجودی</span>
           <span
             className={`font-medium ${
-              isOutOfStock ? "text-red-600 font-bold" : "text-emerald-700"
+              requiresSelection
+                ? "text-amber-700"
+                : isOutOfStock
+                  ? "text-red-600 font-bold"
+                  : "text-emerald-700"
             }`}
           >
-            {isOutOfStock
+            {requiresSelection
+              ? "منتظر انتخاب"
+              : isOutOfStock
               ? "ناموجود"
               : `${toPersianDigits(effectiveStock)} عدد`}
           </span>

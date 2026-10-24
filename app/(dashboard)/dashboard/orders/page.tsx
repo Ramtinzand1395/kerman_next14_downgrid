@@ -36,6 +36,11 @@ type OrdersResponse = {
     items: Array<{
       _id: string;
       quantity: number;
+      variantTitle?: string | null;
+      variantAttributes?: Array<{
+        label: string;
+        optionLabel: string;
+      }>;
       product: {
         title: string;
         sku: string;
@@ -384,6 +389,15 @@ export default function Orders() {
                         <p className="text-[11px] text-gray-500">
                           SKU: {item.product.sku} • تعداد: {item.quantity}
                         </p>
+                        {item.variantAttributes?.length ? (
+                          <p className="text-[11px] text-indigo-600">
+                            {item.variantAttributes
+                              .map((attribute) => `${attribute.label}: ${attribute.optionLabel}`)
+                              .join(" · ")}
+                          </p>
+                        ) : item.variantTitle ? (
+                          <p className="text-[11px] text-indigo-600">مدل: {item.variantTitle}</p>
+                        ) : null}
                       </div>
                     </div>
                   ))}
@@ -515,6 +529,15 @@ export default function Orders() {
                       <p className="text-[11px] text-gray-500">
                         SKU: {item.product.sku} • تعداد: {item.quantity}
                       </p>
+                      {item.variantAttributes?.length ? (
+                        <p className="text-[11px] text-indigo-600">
+                          {item.variantAttributes
+                            .map((attribute) => `${attribute.label}: ${attribute.optionLabel}`)
+                            .join(" · ")}
+                        </p>
+                      ) : item.variantTitle ? (
+                        <p className="text-[11px] text-indigo-600">مدل: {item.variantTitle}</p>
+                      ) : null}
                     </div>
                   </div>
                 ))}

@@ -11,6 +11,7 @@ import {
 } from "@/helpers/Price";
 import AddCommentButton from "./AddCommentButton";
 import { useProductVariant } from "./ProductVariantContext";
+import CustomVariantSelector from "./CustomVariantSelector";
 
 interface ProductInfoProps {
   product?: Product;
@@ -29,6 +30,7 @@ export const ProductInfo = ({ product: propProduct }: ProductInfoProps) => {
     effectiveStock,
     effectiveSku,
     isOutOfStock,
+    requiresSelection,
     setSelectedVariantId,
   } = useProductVariant();
 
@@ -131,7 +133,8 @@ export const ProductInfo = ({ product: propProduct }: ProductInfoProps) => {
       {/* Price & Variant Selection Box */}
       <div className="mt-auto bg-gray-50 rounded-2xl p-5 border border-gray-100">
         {/* Multi-variant selector chips */}
-        {isMulti && (
+        {isMulti && product.variantSelector?.enabled ? <CustomVariantSelector /> : null}
+        {isMulti && !product.variantSelector?.enabled && (
           <div className="mb-5">
             <div className="flex items-center justify-between mb-2.5">
               <label className="text-xs font-bold text-gray-800">
@@ -180,14 +183,18 @@ export const ProductInfo = ({ product: propProduct }: ProductInfoProps) => {
         <div className="flex justify-between items-center mb-4">
           <div
             className={`flex items-center gap-2 px-3 py-1 rounded-lg ${
-              !isOutOfStock
+              requiresSelection
+                ? "text-amber-700 bg-amber-100"
+                : !isOutOfStock
                 ? "text-emerald-700 bg-emerald-100"
                 : "text-red-700 bg-red-100"
             }`}
           >
             <Box className="w-4 h-4" />
             <span className="text-sm font-medium">
-              {!isOutOfStock
+              {requiresSelection
+                ? "گزینه‌های محصول را انتخاب کنید"
+                : !isOutOfStock
                 ? `موجود در انبار (${toPersianDigits(effectiveStock)} عدد)`
                 : "ناموجود در انبار"}
             </span>
