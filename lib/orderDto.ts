@@ -39,6 +39,17 @@ export function toOrderDto(record: AnyRecord, source: "order" | "payment_attempt
       image: image || null,
       sku: sku || null,
       variantTitle: stringValue(item.variantTitle) || null,
+      variantAttributes: Array.isArray(item.variantAttributes)
+        ? item.variantAttributes
+            .map((attribute: AnyRecord) => ({
+              groupId: stringValue(attribute.groupId),
+              key: stringValue(attribute.key),
+              label: stringValue(attribute.label),
+              optionId: stringValue(attribute.optionId),
+              optionLabel: stringValue(attribute.optionLabel),
+            }))
+            .filter((attribute: AnyRecord) => attribute.label && attribute.optionLabel)
+        : [],
       quantity: Number(item.quantity || 0),
       price: Number(item.price || 0),
       discountPrice:

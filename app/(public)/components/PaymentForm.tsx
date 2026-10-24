@@ -362,11 +362,17 @@ export default function PaymentForm({
                       تومان
                     </span>
                   </div>
-                  {item.variantTitle && (
+                  {item.variantAttributes?.length ? (
+                    <p className="mt-1 text-xs text-slate-500">
+                      {item.variantAttributes
+                        .map((attribute) => `${attribute.label}: ${attribute.optionLabel}`)
+                        .join(" · ")}
+                    </p>
+                  ) : item.variantTitle ? (
                     <p className="mt-1 text-xs text-slate-500">
                       مدل انتخابی: {item.variantTitle}
                     </p>
-                  )}
+                  ) : null}
                 </article>
               ))}
             </div>

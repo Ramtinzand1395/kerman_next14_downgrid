@@ -74,7 +74,10 @@ const BasicInfoFields = ({ form, updateField }: BasicInfoFieldsProps) => {
   }, [variants]);
 
   const handleAddVariant = () => {
+    const bytes = new Uint8Array(12);
+    crypto.getRandomValues(bytes);
     const newVariant: ProductVariant = {
+      _id: Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(""),
       title: "",
       sku: "",
       barcode: "",
@@ -100,8 +103,24 @@ const BasicInfoFields = ({ form, updateField }: BasicInfoFieldsProps) => {
   };
 
   const handleRemoveVariant = (index: number) => {
+    const variantId = String(variants[index]?._id || "");
+    const isMapped = form.variantSelector?.mappings.some(
+      (mapping) => String(mapping.variantId) === variantId,
+    );
+    if (
+      isMapped &&
+      !window.confirm("این مدل در انتخاب‌گر سفارشی استفاده شده است. مدل و اتصال آن حذف شوند؟")
+    ) return;
     const next = variants.filter((_, i) => i !== index);
     updateField("variants", next);
+    if (isMapped && form.variantSelector) {
+      updateField("variantSelector", {
+        ...form.variantSelector,
+        mappings: form.variantSelector.mappings.filter(
+          (mapping) => String(mapping.variantId) !== variantId,
+        ),
+      });
+    }
   };
 
   return (

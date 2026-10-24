@@ -15,6 +15,17 @@ import SpecificationsEditor from "../modals/SpecificationsEditor";
 import FaqEditor from "../modals/FaqEditor";
 import SeoFields from "../modals/SeoFields";
 import SeoAnalyzer from "../modals/SeoAnalyzer";
+import dynamic from "next/dynamic";
+
+const VariantSelectorBuilder = dynamic(
+  () => import("../modals/VariantSelectorBuilder"),
+  {
+    ssr: false,
+    loading: () => (
+      <p className="text-xs text-slate-400">در حال بارگذاری انتخاب‌گر…</p>
+    ),
+  },
+);
 
 interface Props {
   onClose: () => void;
@@ -44,9 +55,15 @@ const initialForm: ProductForm = {
   specifications: [],
   faqs: [],
   variants: [],
+  variantSelector: {
+    enabled: false,
+    version: 1,
+    groups: [],
+    mappings: [],
+  },
 };
 
-type SectionKey = "publish" | "basic" | "taxonomy" | "media" | "specs" | "faq" | "seo" | "seoCheck";
+type SectionKey = "publish" | "basic" | "variantSelector" | "taxonomy" | "media" | "specs" | "faq" | "seo" | "seoCheck";
 
 interface DrawerSectionProps {
   title: string;
@@ -89,6 +106,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
     seoTitle: product?.seoTitle || initialForm.seoTitle,
     productType: product?.productType || initialForm.productType,
     variants: product?.variants || initialForm.variants,
+    variantSelector: product?.variantSelector || initialForm.variantSelector,
     metaDescription: product?.metaDescription || initialForm.metaDescription,
     price: product?.price || initialForm.price,
     discountPrice: product?.discountPrice ?? initialForm.discountPrice,
@@ -358,6 +376,25 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
             onToggle={toggleSection}
           >
             <BasicInfoFields form={form} updateField={updateField} />
+          </DrawerSection>
+
+          <DrawerSection
+            title="مدیریت گزینه‌های انتخاب محصول"
+            sectionKey="variantSelector"
+            openSection={openSection}
+            onToggle={toggleSection}
+          >
+            {form.productType === "multi" ? (
+              <VariantSelectorBuilder
+                value={form.variantSelector}
+                variants={form.variants}
+                onChange={(value) => updateField("variantSelector", value)}
+              />
+            ) : (
+              <p className="text-xs text-slate-400">
+                این بخش فقط برای محصول چند مدلی فعال است.
+              </p>
+            )}
           </DrawerSection>
 
           <DrawerSection

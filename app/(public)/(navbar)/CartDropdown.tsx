@@ -32,7 +32,12 @@ const CartPreviewItem = memo(function CartPreviewItem({
   const hasDiscount = unitFinalPrice < item.price;
   const lineTotal = unitFinalPrice * item.quantity;
   const originalLineTotal = item.price * item.quantity;
-  const displayTitle = item.variantTitle
+  const attributeSummary = item.variantAttributes
+    ?.map((attribute) => attribute.optionLabel)
+    .join("، ");
+  const displayTitle = attributeSummary
+    ? `${item.productTitle || item.title} (${attributeSummary})`
+    : item.variantTitle
     ? `${item.productTitle || item.title} (${item.variantTitle})`
     : item.productTitle || item.title;
   return (

@@ -151,7 +151,7 @@ export default async function InvoicePage({
               return (
                 <article key={item.id} className="rounded-xl border border-slate-300 p-4 text-sm">
                   <div className="flex items-start justify-between gap-3"><h3 className="font-black text-slate-900">{index + 1}. {item.title}</h3><span className="shrink-0 text-slate-500">× {item.quantity}</span></div>
-                  {item.variantTitle && <p className="mt-1 text-xs text-slate-500">مدل: {item.variantTitle}</p>}
+                  {item.variantAttributes?.length ? <p className="mt-1 text-xs text-slate-500">{item.variantAttributes.map((attribute) => `${attribute.label}: ${attribute.optionLabel}`).join(" · ")}</p> : item.variantTitle ? <p className="mt-1 text-xs text-slate-500">مدل: {item.variantTitle}</p> : null}
                   <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
                     <div><dt className="text-slate-500">کد کالا</dt><dd dir="ltr" className="font-bold">{item.sku || "—"}</dd></div>
                     <div><dt className="text-slate-500">قیمت واحد</dt><dd className="font-bold">{item.price.toLocaleString("fa-IR")}</dd></div>
@@ -177,7 +177,7 @@ export default async function InvoicePage({
                     <tr key={item.id}>
                       <td className="border border-slate-300 p-2 text-center">{index + 1}</td>
                       <td dir="ltr" className="border border-slate-300 p-2 font-mono">{item.sku || "—"}</td>
-                      <td className="border border-slate-300 p-2 font-bold">{item.title}{item.variantTitle ? ` — ${item.variantTitle}` : ""}</td>
+                      <td className="border border-slate-300 p-2 font-bold">{item.title}{item.variantAttributes?.length ? ` — ${item.variantAttributes.map((attribute) => attribute.optionLabel).join("، ")}` : item.variantTitle ? ` — ${item.variantTitle}` : ""}</td>
                       <td className="border border-slate-300 p-2 text-center">{item.quantity.toLocaleString("fa-IR")}</td>
                       <td className="border border-slate-300 p-2">{item.price.toLocaleString("fa-IR")}</td>
                       <td className="border border-slate-300 p-2">{originalTotal.toLocaleString("fa-IR")}</td>

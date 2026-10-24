@@ -283,11 +283,17 @@ export default function CartPage() {
                             <h3 className="truncate text-sm font-semibold text-slate-900 md:text-base">
                               {item.productTitle || item.title}
                             </h3>
-                            {item.variantTitle && (
+                            {item.variantAttributes?.length ? (
+                              <p className="mt-1 text-xs text-slate-500">
+                                {item.variantAttributes
+                                  .map((attribute) => `${attribute.label}: ${attribute.optionLabel}`)
+                                  .join(" · ")}
+                              </p>
+                            ) : item.variantTitle ? (
                               <p className="mt-1 text-xs text-slate-500">
                                 مدل انتخابی: {item.variantTitle}
                               </p>
-                            )}
+                            ) : null}
                             <div className="mt-1 flex items-center gap-2 text-xs">
                               <span className="text-slate-500">قیمت واحد:</span>
                               <span className="font-semibold text-slate-700">

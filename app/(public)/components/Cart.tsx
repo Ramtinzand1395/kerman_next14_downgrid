@@ -10,6 +10,7 @@ import useCartStore from "@/stores/cartStore";
 import { Comment, Product } from "@/types";
 import useFavoriteStore from "@/stores/favoriteStore";
 import ProductImage from "@/app/components/ProductImage";
+import { useRouter } from "next/navigation";
 
 interface CartProps {
   game: Product;
@@ -20,6 +21,7 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
   const { addToCart, cart } = useCartStore();
   const { data: session } = useSession();
   const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const router = useRouter();
 
   const {
     favoriteIds,
@@ -41,6 +43,8 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
 
   const hasVariants =
     game.productType === "multi" && (game.variants?.length || 0) > 0;
+  const requiresConfiguredSelection =
+    hasVariants && game.variantSelector?.enabled === true;
 
   const activeVariants = useMemo(
     () => (hasVariants ? (game.variants || []).filter((v: any) => v.isActive !== false) : []),
@@ -122,6 +126,10 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
   }, [game.comments]);
 
   const handleAddToCart = () => {
+    if (requiresConfiguredSelection) {
+      router.push(`/product/${game.slug}`);
+      return;
+    }
     if (totalStock <= 0 || (hasVariants && (!defaultVariant || Number(defaultVariant.stock) <= 0))) {
       toast.error("این محصول ناموجود است.");
       return;
@@ -328,7 +336,9 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
         className="mt-4 inline-flex text-xs items-center justify-center gap-2 rounded-lg bg-[#377dff] py-2.5 md:text-sm font-medium text-white transition-colors hover:bg-[#2b67d5] focus:outline-none focus:ring-2 focus:ring-[#377dff]/40 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:hover:bg-gray-400"
       >
         <ShoppingCart size={16} />
-        {totalStock <= 0
+        {requiresConfiguredSelection
+          ? "انتخاب گزینه‌ها"
+          : totalStock <= 0
           ? "ناموجود"
           : isAtStockLimit
             ? "بیش از موجودی انبار"

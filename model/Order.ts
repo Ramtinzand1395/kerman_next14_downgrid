@@ -33,6 +33,17 @@ const AddressSnapshotSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const VariantAttributeSchema = new mongoose.Schema(
+  {
+    groupId: { type: String, required: true },
+    key: { type: String, required: true },
+    label: { type: String, required: true },
+    optionId: { type: String, required: true },
+    optionLabel: { type: String, required: true },
+  },
+  { _id: false },
+);
+
 const OrderSchema = new mongoose.Schema(
   {
     user: {
@@ -78,6 +89,7 @@ const OrderSchema = new mongoose.Schema(
           type: String,
           default: null,
         },
+        variantAttributes: { type: [VariantAttributeSchema], default: [] },
         price: { type: Number, required: true },
         discountPrice: Number,
         quantity: { type: Number, required: true },
