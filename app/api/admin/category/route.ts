@@ -72,7 +72,7 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error(err);
     return NextResponse.json(
-      { error: "ایجاد دسته با خطا مواجه شد" },
+      { error: "دسته‌بندی ساخته نشد؛ دوباره تلاش کنید." },
       { status: 500 }
     );
   }

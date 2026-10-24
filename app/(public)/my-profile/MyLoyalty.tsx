@@ -160,11 +160,11 @@ export default function MyLoyalty() {
     );
     setClaiming(null);
     if (res.ok) {
-      toast.success("پاداش ماموریت دریافت شد");
+      toast.success("پاداش مأموریت به حساب شما اضافه شد.");
       loadAll();
       loadXpHistory();
     } else {
-      toast.error(res.error ?? "خطا در دریافت پاداش");
+      toast.error(res.error ?? "پاداش دریافت نشد؛ وضعیت مأموریت را بررسی کنید.");
     }
   };
 
@@ -173,9 +173,9 @@ export default function MyLoyalty() {
 
     try {
       await navigator.clipboard.writeText(dash.referral.code);
-      toast.success("کد دعوت کپی شد");
+      toast.success("کد دعوت کپی شد؛ می‌توانید آن را برای دوستانتان بفرستید.");
     } catch {
-      toast.error("کپی ناموفق بود");
+      toast.error("کد دعوت کپی نشد؛ آن را به‌صورت دستی انتخاب کنید.");
     }
   };
 

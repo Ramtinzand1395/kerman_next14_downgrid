@@ -86,7 +86,7 @@ export default function MyWallet() {
     if (res.ok && res.data?.paymentUrl) {
       window.location.href = res.data.paymentUrl;
     } else {
-      toast.error(res.error ?? "خطا در ایجاد درخواست شارژ");
+      toast.error(res.error ?? "درخواست شارژ ساخته نشد؛ مبلغ را بررسی و دوباره تلاش کنید.");
     }
   };
 

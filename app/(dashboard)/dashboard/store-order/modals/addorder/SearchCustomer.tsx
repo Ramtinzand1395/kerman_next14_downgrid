@@ -45,7 +45,7 @@ const SearchCustomer = ({
           birthday: "",
           description: "",
         }));
-        toast.info("مشتری جدید است. لطفا اطلاعات را ثبت کنید.");
+        toast.info("مشتری پیدا نشد؛ برای ادامه، اطلاعات مشتری جدید را ثبت کنید.");
         onNext();
         return;
       }
@@ -55,7 +55,7 @@ const SearchCustomer = ({
 
       if (data.status === 200 && data.data) {
         setCustomerData(data.data);
-        toast.success("اطلاعات مشتری یافت شد.");
+        toast.success("مشتری پیدا شد و اطلاعات او در فرم قرار گرفت.");
       } else {
         setCustomerData((prev) => ({
           ...prev,
@@ -66,13 +66,13 @@ const SearchCustomer = ({
           birthday: "",
           description: "",
         }));
-        toast.info("مشتری جدید است. لطفا اطلاعات را ثبت کنید.");
+        toast.info("مشتری پیدا نشد؛ برای ادامه، اطلاعات مشتری جدید را ثبت کنید.");
       }
 
       onNext();
     } catch (err) {
       console.error(err);
-      toast.error("در جستجوی مشتری خطایی رخ داد.");
+      toast.error("جستجوی مشتری انجام نشد؛ شماره را بررسی و دوباره تلاش کنید.");
     }
   };
 

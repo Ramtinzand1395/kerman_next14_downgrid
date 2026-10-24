@@ -113,6 +113,9 @@ export async function PUT(
     });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ message: "server error" }, { status: 500 });
+    return NextResponse.json(
+      { message: "وضعیت سفارش تغییر نکرد؛ دوباره تلاش کنید." },
+      { status: 500 },
+    );
   }
 }

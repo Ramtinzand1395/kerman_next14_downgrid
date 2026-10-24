@@ -347,7 +347,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: result?.errors?.message || "خطا در ارتباط با زرین‌پال",
+          error:
+            result?.errors?.message ||
+            "اتصال به زرین‌پال برقرار نشد؛ دوباره تلاش کنید.",
         },
         { status: 502 },
       );
@@ -360,7 +362,7 @@ export async function POST(req: NextRequest) {
           error:
             result?.errors?.message ||
             result?.data?.message ||
-            "خطا در ایجاد پرداخت",
+            "درخواست پرداخت ساخته نشد؛ دوباره تلاش کنید.",
         },
         { status: 500 },
       );
@@ -448,7 +450,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const message = error instanceof Error ? error.message : "خطا در سرور";
+    const message =
+      error instanceof Error
+        ? error.message
+        : "درخواست پرداخت ساخته نشد؛ دوباره تلاش کنید.";
     return NextResponse.json(
       { success: false, error: message },
       { status: 500 },

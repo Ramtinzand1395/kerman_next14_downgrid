@@ -138,7 +138,7 @@ function AppointmentsAdminContent() {
           ApiEnvelope<AppointmentListResponse>
         >;
       if (!response.ok || !payload.data) {
-        throw new Error(payload.error || "دریافت درخواست‌ها انجام نشد.");
+        throw new Error(payload.error || "درخواست‌ها دریافت نشدند؛ دوباره تلاش کنید.");
       }
 
       setItems(Array.isArray(payload.data.items) ? payload.data.items : []);
@@ -151,7 +151,7 @@ function AppointmentsAdminContent() {
       setListError(
         reason instanceof Error
           ? reason.message
-          : "دریافت درخواست‌ها انجام نشد.",
+          : "درخواست‌ها دریافت نشدند؛ دوباره تلاش کنید.",
       );
     } finally {
       setListLoading(false);
@@ -185,7 +185,7 @@ function AppointmentsAdminContent() {
         throw new Error(
           settingsPayload.error ||
             rulesPayload.error ||
-            "دریافت تنظیمات انجام نشد.",
+            "تنظیمات نوبت‌دهی دریافت نشد؛ دوباره تلاش کنید.",
         );
       }
       setSettings(settingsPayload.data);
@@ -194,7 +194,7 @@ function AppointmentsAdminContent() {
       setConfigError(
         reason instanceof Error
           ? reason.message
-          : "دریافت تنظیمات انجام نشد.",
+          : "تنظیمات نوبت‌دهی دریافت نشد؛ دوباره تلاش کنید.",
       );
     } finally {
       setConfigLoading(false);

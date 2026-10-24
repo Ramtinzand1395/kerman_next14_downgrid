@@ -331,8 +331,8 @@ export default function CartPage() {
                                   typeof item.stock === "number" &&
                                   item.quantity >= item.stock
                                 ) {
-                                  toast.error(
-                                    "تعداد انتخابی از موجودی انبار بیشتر است.",
+                                  toast.warning(
+                                    "تعداد انتخابی بیشتر از موجودی فعلی است؛ تعداد را کاهش دهید.",
                                   );
                                   return;
                                 }

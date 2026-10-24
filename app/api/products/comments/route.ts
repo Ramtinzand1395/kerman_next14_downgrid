@@ -19,7 +19,10 @@ export async function POST(req: Request) {
     }
 
     if (!productId || !text) {
-      return NextResponse.json({ error: "اطلاعات ناقص است" }, { status: 400 });
+      return NextResponse.json(
+        { error: "متن دیدگاه و امتیاز را کامل کنید." },
+        { status: 400 },
+      );
     }
     if (!mongoose.isValidObjectId(String(productId))) {
       return NextResponse.json({ error: "شناسه محصول نامعتبر است" }, { status: 400 });
@@ -57,11 +60,14 @@ export async function POST(req: Request) {
     }).catch((error) => console.error("[notifications] comment event failed:", error));
 
     return NextResponse.json(
-      { message: " و بعد از تایید اضافه میشه کامنت با موفقیت ثبت شد", comment },
+      { message: "دیدگاه شما ثبت شد و پس از بررسی نمایش داده می‌شود.", comment },
       { status: 201 }
     );
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "خطا در ثبت کامنت" }, { status: 500 });
+    return NextResponse.json(
+      { error: "دیدگاه ثبت نشد؛ چند لحظه دیگر دوباره تلاش کنید." },
+      { status: 500 },
+    );
   }
 }

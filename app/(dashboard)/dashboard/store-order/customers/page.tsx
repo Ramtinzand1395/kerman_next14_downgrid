@@ -45,7 +45,7 @@ export default function CustomersPage() {
         setTotalPages(data.pagination?.totalPages ?? 1);
       } catch (err) {
         console.error(err);
-        toast.error("در دریافت لیست مشتریان مشکلی پیش آمد.");
+        toast.error("فهرست مشتریان دریافت نشد؛ صفحه را تازه‌سازی کنید.");
       } finally {
         setIsLoading(false);
       }

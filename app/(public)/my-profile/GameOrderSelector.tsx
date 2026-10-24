@@ -272,7 +272,7 @@ export default function GameOrderSelector({
     )
       .then(async (response) => {
         const payload = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(payload.error || "دریافت دستگاه‌ها انجام نشد.");
+        if (!response.ok) throw new Error(payload.error || "فهرست دستگاه‌ها دریافت نشد؛ دوباره تلاش کنید.");
         const ids = Array.isArray(payload?.settings?.supportedDevices)
           ? payload.settings.supportedDevices.filter((item: unknown): item is string => typeof item === "string")
           : [];
@@ -311,7 +311,7 @@ export default function GameOrderSelector({
     )
       .then(async (response) => {
         const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || "دریافت ساعت‌ها انجام نشد.");
+        if (!response.ok) throw new Error(data.error || "زمان‌های آزاد دریافت نشدند؛ روز دیگری را انتخاب یا دوباره تلاش کنید.");
         setSlots(Array.isArray(data.slots) ? data.slots : []);
       })
       .catch((reason) => {
@@ -335,7 +335,7 @@ export default function GameOrderSelector({
     fetch(`/api/profile/appointments/courier-availability?date=${selectedDate}`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         const payload = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(payload.error || "دریافت بازه‌های پیک انجام نشد.");
+        if (!response.ok) throw new Error(payload.error || "بازه‌های دریافت پیک بارگذاری نشدند؛ دوباره تلاش کنید.");
         const enabled = Boolean(payload?.settings?.courierEnabled);
         setCourierSupported(enabled);
         if (!enabled) setFulfillment((current) => current === "courier" ? null : current);
@@ -370,7 +370,7 @@ export default function GameOrderSelector({
     })
       .then(async (response) => {
         const payload = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(payload.error || "محاسبه هزینه پیک انجام نشد.");
+        if (!response.ok) throw new Error(payload.error || "هزینه پیک محاسبه نشد؛ آدرس را دوباره انتخاب کنید.");
         setCourierPreview(payload as CourierPreview);
         const enabled = Boolean(payload.courierEnabled);
         setCourierSupported(enabled);
@@ -465,10 +465,10 @@ export default function GameOrderSelector({
         }),
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || "ثبت نوبت انجام نشد.");
+      if (!response.ok) throw new Error(payload.error || "درخواست ثبت نشد؛ اطلاعات را بررسی و دوباره تلاش کنید.");
       setCreated(payload.appointment as CreatedAppointment);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "ثبت نوبت انجام نشد.");
+      setError(reason instanceof Error ? reason.message : "درخواست ثبت نشد؛ دوباره تلاش کنید.");
     } finally {
       submittingRef.current = false;
       setSubmitting(false);
@@ -496,7 +496,7 @@ export default function GameOrderSelector({
             </p>
           </div>
           {created.fulfillment === "courier" ? (
-            <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs text-slate-500">هزینه پیک</p><p className="mt-2 font-bold text-slate-900">{created.pricing?.shippingFinalAmount !== undefined ? `${created.pricing.shippingFinalAmount.toLocaleString("fa-IR")} تومان` : "در پاسخ Server اعلام نشد"}</p><p className="mt-1 text-xs text-slate-500">مبلغ خدمت پس از بررسی مشخص می‌شود.</p></div>
+            <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs text-slate-500">هزینه پیک</p><p className="mt-2 font-bold text-slate-900">{created.pricing?.shippingFinalAmount !== undefined ? `${created.pricing.shippingFinalAmount.toLocaleString("fa-IR")} تومان` : "هزینه در پاسخ سامانه اعلام نشد"}</p><p className="mt-1 text-xs text-slate-500">مبلغ خدمت پس از بررسی مشخص می‌شود.</p></div>
           ) : (
             <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs text-slate-500">آدرس فروشگاه</p><p className="mt-2 text-sm font-bold leading-7 text-slate-900">{storeAddress}</p></div>
           )}

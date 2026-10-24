@@ -30,7 +30,7 @@ const statusLabel: Record<string, string> = {
 
 function rewardText(reward: Reward["snapshot"]["reward"]) {
   if (reward.type === "free_game") return "یک نصب بازی واجد شرایط رایگان";
-  if (reward.type === "free_shipping") return "ارسال رایگان (پس از فعال‌شدن پیک)";
+  if (reward.type === "free_shipping") return "ارسال رایگان با پیک";
   if (reward.type === "percent") return `${reward.value.toLocaleString("fa-IR")}٪ تخفیف`;
   return `${reward.value.toLocaleString("fa-IR")} تومان تخفیف`;
 }

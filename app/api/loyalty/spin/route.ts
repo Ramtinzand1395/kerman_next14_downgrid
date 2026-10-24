@@ -26,6 +26,6 @@ export async function POST() {
   if (limited) return limited;
 
   const result = await spin(auth.userId);
-  if (!result.ok) return fail(result.error ?? "خطا در چرخش گردونه", result.alreadySpunToday ? 409 : 400);
+  if (!result.ok) return fail(result.error ?? "گردونه اجرا نشد؛ دوباره تلاش کنید.", result.alreadySpunToday ? 409 : 400);
   return ok(result);
 }

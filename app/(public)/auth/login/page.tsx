@@ -163,7 +163,7 @@ export default function LoginWithOtp() {
     setOtpSent(false);
     setEnteredOtp("");
     setOtpId(null);
-    toast.info("زمان وارد کردن کد به پایان رسید؛ لطفاً دوباره کد دریافت کنید.");
+    toast.info("کد تأیید منقضی شد؛ برای ورود، کد جدید دریافت کنید.");
   }, [otpSent, timer]);
 
   useEffect(() => {
@@ -190,7 +190,7 @@ export default function LoginWithOtp() {
         if (!otpCode) return;
 
         setEnteredOtp(otpCode);
-        toast.success("کد پیامک به‌صورت خودکار وارد شد");
+        toast.info("کد پیامک به‌صورت خودکار وارد شد؛ برای ورود آن را تأیید کنید.");
       } catch {
         // در بسیاری از مرورگرها WebOTP پشتیبانی نمی‌شود یا کاربر پیامک را تایید نمی‌کند.
       }
@@ -226,7 +226,7 @@ export default function LoginWithOtp() {
         if (err instanceof yup.ValidationError) {
           err.inner.forEach((e) => toast.error(e.message));
         } else {
-          toast.error("خطای ناشناخته");
+          toast.error("شماره موبایل بررسی نشد؛ آن را دوباره وارد کنید.");
         }
         return;
       }
@@ -254,7 +254,7 @@ export default function LoginWithOtp() {
           localStorage.setItem(OTP_EXPIRE_KEY, expireTime.toString());
           toast.warning(result.error);
         } else {
-          toast.error(result.error || "ارسال کد با خطا مواجه شد");
+          toast.error(result.error || "کد تأیید ارسال نشد؛ دوباره تلاش کنید.");
         }
         return;
       }
@@ -279,10 +279,10 @@ export default function LoginWithOtp() {
         }),
       );
 
-      toast.success("کد تایید ارسال شد");
+      toast.success("کد تأیید ارسال شد؛ پیامک خود را بررسی کنید.");
     } catch (err) {
       console.log(err);
-      toast.error("ارسال کد با خطا مواجه شد");
+      toast.error("کد تأیید ارسال نشد؛ اتصال اینترنت را بررسی و دوباره تلاش کنید.");
     } finally {
       setIsSubmitting(false);
     }
@@ -297,7 +297,7 @@ export default function LoginWithOtp() {
     e.preventDefault();
     if (isVerifying) return;
     if (!otpId) {
-      toast.error("اطلاعات تایید ناقص است، دوباره درخواست کد دهید.");
+      toast.error("اطلاعات تأیید کامل نیست؛ لطفاً کد جدید دریافت کنید.");
       return;
     }
 
@@ -307,7 +307,7 @@ export default function LoginWithOtp() {
       if (err instanceof yup.ValidationError) {
         toast.error(err.message);
       } else {
-        toast.error("کد تایید معتبر نیست");
+        toast.error("کد تأیید معتبر نیست؛ کد پیامک‌شده را دوباره بررسی کنید.");
       }
       return;
     }
@@ -323,13 +323,13 @@ export default function LoginWithOtp() {
       const data = await res.json();
 
       if (!data.success) {
-        toast.error(data.message || "کد اشتباه است");
+        toast.error(data.message || "کد واردشده درست نیست؛ دوباره بررسی کنید.");
         setIsVerifying(false);
         return;
       }
 
       if (!data.verificationToken) {
-        toast.error("اطلاعات امن ورود دریافت نشد؛ دوباره تلاش کنید.");
+        toast.error("ورود تکمیل نشد؛ لطفاً کد جدید دریافت و دوباره تلاش کنید.");
         setIsVerifying(false);
         return;
       }
@@ -343,7 +343,7 @@ export default function LoginWithOtp() {
       });
 
       if (!signInResult?.ok) {
-        toast.error("ورود با خطا مواجه شد. لطفاً دوباره تلاش کنید.");
+        toast.error("ورود انجام نشد؛ لطفاً کد جدید دریافت و دوباره تلاش کنید.");
         clearOtpStorage();
         setOtpSent(false);
         setEnteredOtp("");
@@ -352,9 +352,9 @@ export default function LoginWithOtp() {
         return;
       }
 
-      toast.success("ورود با موفقیت انجام شد");
+      toast.success("با موفقیت وارد حساب شدید.");
       if (data.referral?.ok) {
-        toast.success("کد دعوت با موفقیت ثبت شد.");
+        toast.success("کد دعوت ثبت شد و پاداش آن پس از احراز شرایط اعمال می‌شود.");
       } else if (data.referral?.error) {
         toast.warning(data.referral.error);
       }
@@ -370,7 +370,7 @@ export default function LoginWithOtp() {
       window.location.href = callbackUrl;
     } catch (err) {
       console.log(err);
-      toast.error("مشکلی در تایید کد پیش آمد");
+      toast.error("کد تأیید بررسی نشد؛ اتصال اینترنت را بررسی و دوباره تلاش کنید.");
       setIsVerifying(false);
     }
   };

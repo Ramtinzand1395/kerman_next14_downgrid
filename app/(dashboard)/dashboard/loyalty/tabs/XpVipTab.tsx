@@ -34,9 +34,9 @@ export default function XpVipTab() {
     });
     setSavingXp(false);
     if (res.ok) {
-      toast.success(`انجام شد — مجموع XP کاربر: ${faNum(res.data?.totalXp ?? 0)}`);
+      toast.success(`امتیاز اضافه شد؛ مجموع امتیاز کاربر: ${faNum(res.data?.totalXp ?? 0)}`);
       setXpDesc("");
-    } else toast.error(res.error ?? "خطا در اعطای امتیاز");
+    } else toast.error(res.error ?? "امتیاز اضافه نشد؛ اطلاعات کاربر را بررسی کنید.");
   };
 
   const changeVip = async (e: React.FormEvent) => {
@@ -48,8 +48,8 @@ export default function XpVipTab() {
       body: JSON.stringify({ userId: vipUserId.trim(), tier: tier === "" ? null : tier }),
     });
     setSavingVip(false);
-    if (res.ok) toast.success("سطح VIP تغییر کرد");
-    else toast.error(res.error ?? "خطا در تغییر VIP");
+    if (res.ok) toast.success("سطح VIP کاربر ذخیره شد.");
+    else toast.error(res.error ?? "سطح VIP کاربر تغییر نکرد؛ دوباره تلاش کنید.");
   };
 
   return (

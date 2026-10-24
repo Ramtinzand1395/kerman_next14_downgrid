@@ -55,7 +55,11 @@ export default function MyStoreOrders() {
       }
       setOrders(data);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "دریافت سفارش‌ها انجام نشد.");
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "سفارش‌ها دریافت نشدند؛ صفحه را تازه‌سازی کنید.",
+      );
     } finally {
       setLoading(false);
     }

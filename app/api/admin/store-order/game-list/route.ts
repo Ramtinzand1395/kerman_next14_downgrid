@@ -132,7 +132,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(
       {
-        message: "خطا در دریافت اطلاعات",
+        message: "فهرست بازی‌ها دریافت نشد؛ دوباره تلاش کنید.",
       },
       {
         status: 500,
@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
     if (!platform || !body.name) {
       return NextResponse.json(
         {
-          message: "اطلاعات ناقص است",
+          message: "اطلاعات بازی کامل نیست؛ نام و پلتفرم را بررسی کنید.",
         },
         {
           status: 400,
@@ -215,7 +215,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(
       {
-        message: "server error",
+        message: "بازی ذخیره نشد؛ دوباره تلاش کنید.",
       },
       {
         status: 500,
@@ -290,7 +290,7 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json(
       {
-        message: "server error",
+        message: "تغییرات بازی ذخیره نشد؛ دوباره تلاش کنید.",
       },
       {
         status: 500,
@@ -344,7 +344,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json(
       {
-        message: "server error",
+        message: "بازی حذف نشد؛ دوباره تلاش کنید.",
       },
       {
         status: 500,

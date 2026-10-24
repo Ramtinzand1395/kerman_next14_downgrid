@@ -109,12 +109,14 @@ export default function ContactForm() {
         throw new Error(data?.error || "ارسال پیام ناموفق بود.");
       }
 
-      toast.success("پیام شما ثبت شد .");
+      toast.success("پیام شما ارسال شد؛ برای پاسخ‌گویی با شما تماس می‌گیریم.");
       setFormData(initialFormData);
       sessionStorage.removeItem(CONTACT_DRAFT_KEY);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "خطا در ارسال پیام";
+        error instanceof Error
+          ? error.message
+          : "پیام ارسال نشد؛ اتصال اینترنت را بررسی و دوباره تلاش کنید.";
       toast.error(message);
     } finally {
       setSubmitting(false);

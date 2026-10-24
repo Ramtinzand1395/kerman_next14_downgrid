@@ -77,7 +77,10 @@ export async function GET(req: Request) {
     );
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ message: "خطای سرور" }, { status: 500 });
+    return NextResponse.json(
+      { message: "جستجوی مشتری انجام نشد؛ دوباره تلاش کنید." },
+      { status: 500 },
+    );
   }
 }
 
@@ -136,6 +139,9 @@ export async function POST(req: Request) {
     );
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ message: "خطای سرور" }, { status: 500 });
+    return NextResponse.json(
+      { message: "مشتری ثبت نشد؛ دوباره تلاش کنید." },
+      { status: 500 },
+    );
   }
 }

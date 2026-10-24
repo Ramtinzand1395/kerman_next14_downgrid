@@ -55,7 +55,7 @@ export default function AdminNotificationComposer() {
         .catch((error) => {
           if (error instanceof DOMException && error.name === "AbortError") return;
           setUsers([]);
-          setUsersError("دریافت نتیجه جستجو ناموفق بود.");
+          setUsersError("نتیجه جستجوی کاربران دریافت نشد؛ دوباره تلاش کنید.");
         })
         .finally(() => {
           if (!controller.signal.aborted) setUsersLoading(false);
@@ -87,7 +87,11 @@ export default function AdminNotificationComposer() {
       toast.success(`اعلان برای ${Number(result.sentCount).toLocaleString("fa-IR")} کاربر ارسال شد.`);
       setTitle(""); setMessage(""); setLink("");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "ارسال اعلان انجام نشد.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "اعلان ارسال نشد؛ گیرندگان را بررسی و دوباره تلاش کنید.",
+      );
     } finally {
       setSending(false);
     }

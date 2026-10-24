@@ -32,7 +32,7 @@ const RegisterCustomer = ({
 
   const handleSubmitCustomer = async () => {
     if (!customerData.lastName || !customerData.mobile) {
-      toast.warning("لطفا نام، نام خانوادگی و موبایل را تکمیل کنید.");
+      toast.warning("نام، نام خانوادگی و شماره موبایل مشتری را کامل کنید.");
       return;
     }
 
@@ -54,11 +54,11 @@ const RegisterCustomer = ({
       }
 
       setCustomerData((prev) => ({ ...prev, _id: data.data._id }));
-      toast.success(data.message || "مشتری با موفقیت ثبت شد.");
+      toast.success(data.message || "مشتری ثبت شد و می‌توانید سفارش را ادامه دهید.");
       onNext();
     } catch (err) {
       console.error(err);
-      toast.error("ثبت مشتری انجام نشد.");
+      toast.error("مشتری ثبت نشد؛ اطلاعات را بررسی و دوباره تلاش کنید.");
     }
   };
 

@@ -82,7 +82,7 @@ export default function MyOrders() {
         return res.json();
       })
       .then((data: Order[]) => setOrders(data))
-      .catch(() => setError("دریافت لیست سفارش‌ها با مشکل مواجه شد."))
+      .catch(() => setError("فهرست سفارش‌ها دریافت نشد؛ صفحه را تازه‌سازی کنید."))
       .finally(() => setLoading(false));
   }, []);
 

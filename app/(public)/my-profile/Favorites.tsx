@@ -28,16 +28,16 @@ export default function FavoritesPage() {
       const res = await fetch("/api/profile/favorites", { method: "GET" });
       if (!res.ok) {
         const err = await res.json();
-        toast.error(err?.error || "خطا در دریافت علاقه‌مندی‌ها");
-        setError(err?.error || "خطا در دریافت علاقه‌مندی‌ها");
+        toast.error(err?.error || "علاقه‌مندی‌ها دریافت نشدند؛ دوباره تلاش کنید.");
+        setError(err?.error || "علاقه‌مندی‌ها دریافت نشدند؛ دوباره تلاش کنید.");
         return;
       }
       const data = await res.json();
       setFavorites(data);
     } catch (err) {
       console.error(err);
-      toast.error("خطا در دریافت علاقه‌مندی‌ها");
-      setError("خطا در دریافت علاقه‌مندی‌ها");
+      toast.error("علاقه‌مندی‌ها دریافت نشدند؛ اتصال اینترنت را بررسی کنید.");
+      setError("علاقه‌مندی‌ها دریافت نشدند؛ اتصال اینترنت را بررسی کنید.");
     } finally {
       setLoading(false);
     }
@@ -55,15 +55,15 @@ export default function FavoritesPage() {
 
       if (!res.ok) {
         const err = await res.json();
-        toast.error(err?.error || "خطا در حذف محصول");
+        toast.error(err?.error || "محصول از علاقه‌مندی‌ها حذف نشد؛ دوباره تلاش کنید.");
         return;
       }
 
       setFavorites((prev) => prev.filter((p) => p.productId._id !== productId));
-      toast.info("محصول از علاقه‌مندی‌ها حذف شد");
+      toast.success("محصول از علاقه‌مندی‌ها حذف شد.");
     } catch (err) {
       console.error(err);
-      toast.error("خطا در حذف محصول");
+      toast.error("محصول از علاقه‌مندی‌ها حذف نشد؛ دوباره تلاش کنید.");
     } finally {
       setRemovingId("");
     }

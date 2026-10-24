@@ -9,7 +9,7 @@ export const sendPdfToBackend = async (
   customer: Customer | null,
 ) => {
   if (!userOrder) {
-    toast.error("اطلاعات سفارش ناقص است.");
+    toast.warning("اطلاعات سفارش کامل نیست؛ سفارش را دوباره بررسی کنید.");
     return;
   }
 
@@ -55,12 +55,12 @@ export const sendPdfToBackend = async (
     const data = await res.json();
 
     if (res.ok && data.success) {
-      toast.success("سفارش برای چاپ به صف ویندوز ارسال شد.");
+      toast.success("سفارش به صف چاپ اضافه شد.");
     } else {
       throw new Error(data.error || "خطا در ثبت درخواست چاپ");
     }
   } catch (err: any) {
     console.error(err);
-    toast.error(err.message || "ارسال با خطا مواجه شد.");
+    toast.error(err.message || "سفارش به صف چاپ اضافه نشد؛ اتصال چاپگر را بررسی کنید.");
   }
 };

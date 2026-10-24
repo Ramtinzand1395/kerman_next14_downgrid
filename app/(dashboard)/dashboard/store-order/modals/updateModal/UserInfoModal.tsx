@@ -56,11 +56,11 @@ const UserInfoModal = ({
         ),
       }));
 
-      toast.success(data.message || "سفارش حذف شد.");
+      toast.success(data.message || "سفارش حذف شد و از فهرست کنار رفت.");
       closeModal();
     } catch (err) {
       console.error(err);
-      toast.error("حذف سفارش انجام نشد.");
+      toast.error("سفارش حذف نشد؛ دوباره تلاش کنید.");
     }
   };
 
@@ -92,11 +92,11 @@ const UserInfoModal = ({
         ),
       }));
 
-      toast.success(data.message || "سفارش بدون پیامک نهایی شد.");
+      toast.success(data.message || "سفارش نهایی شد؛ پیامکی برای مشتری ارسال نشد.");
       closeModal();
     } catch (err) {
       console.error(err);
-      toast.error("عملیات انجام نشد.");
+      toast.error("سفارش نهایی نشد؛ دوباره تلاش کنید.");
     }
   };
 

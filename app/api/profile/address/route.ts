@@ -29,7 +29,7 @@ export async function GET() {
   } catch (err) {
     console.error(err);
     return NextResponse.json(
-      { error: "خطا در دریافت آدرس‌ها" },
+      { error: "آدرس‌ها دریافت نشدند؛ دوباره تلاش کنید." },
       { status: 500 },
     );
   }
@@ -64,7 +64,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(newAddress, { status: 201 });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "خطا در افزودن آدرس" }, { status: 500 });
+    return NextResponse.json(
+      { error: "آدرس ذخیره نشد؛ دوباره تلاش کنید." },
+      { status: 500 },
+    );
   }
 }
 
@@ -113,7 +116,7 @@ export async function PUT(req: NextRequest) {
   } catch (err) {
     console.error(err);
     return NextResponse.json(
-      { error: "خطا در بروزرسانی آدرس" },
+      { error: "تغییرات آدرس ذخیره نشد؛ دوباره تلاش کنید." },
       { status: 500 },
     );
   }
@@ -155,9 +158,12 @@ export async function DELETE(req: NextRequest) {
       $pull: { addresses: id },
     });
 
-    return NextResponse.json({ message: "آدرس حذف شد" });
+    return NextResponse.json({ message: "آدرس از فهرست شما حذف شد." });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "خطا در حذف آدرس" }, { status: 500 });
+    return NextResponse.json(
+      { error: "آدرس حذف نشد؛ دوباره تلاش کنید." },
+      { status: 500 },
+    );
   }
 }

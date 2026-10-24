@@ -117,7 +117,7 @@ export default function DashboardSidebar() {
         const data = await res.json();
         setUnreadCount(Number(data.unreadCount) || 0);
       } catch {
-        toast.error("خطا در دریافت اعلان‌ها");
+        toast.error("اعلان‌ها دریافت نشدند؛ دوباره تلاش کنید.");
       }
     };
 

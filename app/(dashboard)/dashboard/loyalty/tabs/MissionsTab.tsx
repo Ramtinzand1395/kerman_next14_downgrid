@@ -117,19 +117,19 @@ export default function MissionsTab() {
         });
     setSaving(false);
     if (res.ok) {
-      toast.success("ذخیره شد");
+      toast.success("مأموریت ذخیره شد.");
       setModal(null);
       load();
-    } else toast.error(res.error ?? "خطا در ذخیره");
+    } else toast.error(res.error ?? "مأموریت ذخیره نشد؛ دوباره تلاش کنید.");
   };
 
   const remove = async (id: string) => {
     if (!confirm("ماموریت حذف شود؟")) return;
     const res = await apiFetch(`/api/admin/loyalty/missions/${id}`, { method: "DELETE" });
     if (res.ok) {
-      toast.success("حذف شد");
+      toast.success("مأموریت حذف شد.");
       load();
-    } else toast.error(res.error ?? "خطا");
+    } else toast.error(res.error ?? "مأموریت حذف نشد؛ دوباره تلاش کنید.");
   };
 
   return (

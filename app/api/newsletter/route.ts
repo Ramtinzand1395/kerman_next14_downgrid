@@ -55,11 +55,14 @@ export async function POST(req: Request) {
     await user.save();
 
     return NextResponse.json(
-      { success: true, message: "عضویت در خبرنامه با موفقیت انجام شد." },
+      { success: true, message: "عضویت شما در خبرنامه ثبت شد." },
       { status: 200 }
     );
   } catch (error) {
     console.error("Newsletter subscribe error:", error);
-    return NextResponse.json({ error: "خطا در ثبت عضویت" }, { status: 500 });
+    return NextResponse.json(
+      { error: "عضویت در خبرنامه ثبت نشد؛ دوباره تلاش کنید." },
+      { status: 500 },
+    );
   }
 }

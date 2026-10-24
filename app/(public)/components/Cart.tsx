@@ -131,7 +131,7 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
       return;
     }
     if (totalStock <= 0 || (hasVariants && (!defaultVariant || Number(defaultVariant.stock) <= 0))) {
-      toast.error("این محصول ناموجود است.");
+      toast.info("این محصول فعلاً موجود نیست.");
       return;
     }
 
@@ -154,20 +154,20 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
       variantTitle: hasVariants ? defaultVariant?.title : undefined,
     });
     if (addResult === "out_of_stock") {
-      toast.error("این محصول ناموجود است.");
+      toast.info("این محصول فعلاً موجود نیست.");
       return;
     }
 
     if (addResult === "max_reached") {
-      toast.error("تعداد انتخابی از موجودی انبار بیشتر است.");
+      toast.warning("تعداد انتخابی بیشتر از موجودی فعلی است؛ تعداد را کاهش دهید.");
       return;
     }
-    toast.success("به سبد خرید اضافه شد.");
+    toast.success("محصول به سبد خرید اضافه شد.");
   };
 
   const handleToggleFavorite = async () => {
     if (!session?.user?.id) {
-      toast.error("برای افزودن به علاقه‌مندی ابتدا وارد شوید.");
+      toast.info("برای ذخیره محصول در علاقه‌مندی‌ها، ابتدا وارد حساب شوید.");
       return;
     }
 
@@ -187,7 +187,7 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
       });
 
       if (res.status === 401) {
-        toast.error("لطفاً وارد شوید.");
+        toast.info("نشست شما پایان یافته است؛ لطفاً دوباره وارد شوید.");
         return;
       }
 
@@ -219,7 +219,7 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
       );
     } catch (error) {
       console.error("favorite toggle error:", error);
-      toast.error("خطایی رخ داد.");
+      toast.error("تغییر علاقه‌مندی ذخیره نشد؛ دوباره تلاش کنید.");
     } finally {
       setFavoriteLoading(false);
     }

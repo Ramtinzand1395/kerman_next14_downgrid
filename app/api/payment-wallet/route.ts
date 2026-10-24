@@ -718,7 +718,7 @@ export async function POST(req: NextRequest) {
         {
           $set: {
             status: "failed",
-            error: "خطا در پردازش پرداخت کیف پول",
+            error: "پرداخت کیف پول تکمیل نشد؛ مبلغی کسر نشده است.",
             httpStatus: 500,
           },
         },
@@ -749,7 +749,10 @@ export async function POST(req: NextRequest) {
       );
     }
     console.error("[payment-wallet] error:", error);
-    const message = error instanceof Error ? error.message : "خطا در سرور";
+    const message =
+      error instanceof Error
+        ? error.message
+        : "پرداخت کیف پول تکمیل نشد؛ دوباره تلاش کنید.";
     return NextResponse.json(
       { success: false, error: message },
       { status: 500 },

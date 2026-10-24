@@ -131,7 +131,11 @@ export default function PaymentForm({
         `کد تخفیف اعمال شد — ${formatPrice(data.discountAmount)} تومان`,
       );
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "خطا در اعمال کد");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "کد تخفیف اعمال نشد؛ کد را بررسی و دوباره تلاش کنید.",
+      );
     } finally {
       setCouponLoading(false);
     }
@@ -178,7 +182,7 @@ export default function PaymentForm({
         if (cancelled) return;
         if (!response.ok || !data.ok) {
           setAppliedCoupon(null);
-          toast.info("با تغییر سبد، کد تخفیف دوباره معتبر نبود و حذف شد.");
+          toast.info("با تغییر سبد، کد تخفیف دیگر معتبر نبود و از سفارش حذف شد.");
           return;
         }
         setAppliedCoupon({
@@ -189,7 +193,7 @@ export default function PaymentForm({
       .catch(() => {
         if (!cancelled) {
           setAppliedCoupon(null);
-          toast.info("اعتبار کد تخفیف نیاز به بررسی دوباره دارد.");
+          toast.info("اعتبار کد تخفیف تأیید نشد؛ لطفاً دوباره آن را وارد کنید.");
         }
       });
 
@@ -248,7 +252,7 @@ export default function PaymentForm({
         throw new Error(paymentData.error || "PAYMENT_REQUEST_FAILED");
       }
 
-      toast.success("در حال انتقال به درگاه پرداخت...");
+      toast.info("در حال انتقال امن به درگاه پرداخت…");
       // clearCart();
       router.push(paymentData.url);
     } catch (error) {
@@ -290,12 +294,14 @@ export default function PaymentForm({
         throw new Error(data.error || "پرداخت با کیف پول ناموفق بود");
       }
 
-      toast.success("پرداخت با کیف پول با موفقیت انجام شد");
+      toast.success("پرداخت از کیف پول انجام شد؛ سفارش شما ثبت شده است.");
       removePurchasedItems(buildPayload().items);
       router.push(`/payment-success?orderId=${data.orderId}`);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "پرداخت با کیف پول ناموفق بود",
+        error instanceof Error
+          ? error.message
+          : "پرداخت از کیف پول انجام نشد؛ موجودی را بررسی و دوباره تلاش کنید.",
       );
     } finally {
       setWalletLoading(false);

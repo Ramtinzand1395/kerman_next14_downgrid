@@ -66,7 +66,7 @@ const UpdateUser = ({ customer, setCustomer, closeModal }: UpdateUserProps) => {
      closeModal?.();
     } catch (err) {
       console.error(err);
-      toast.error("خطا در ویرایش اطلاعات مشتری");
+      toast.error("تغییرات اطلاعات مشتری ذخیره نشد؛ دوباره تلاش کنید.");
     }
   };
 

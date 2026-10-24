@@ -21,12 +21,12 @@ const GalleryUploader = ({ form, updateField }: GalleryUploaderProps) => {
     if (!file) return;
 
     setLoadingImage(true);
-    toast.info("در حال آپلود تصویر...");
+    toast.info("آپلود تصویر اصلی آغاز شد…");
 
     try {
       const url = await uploadCloudinaryImage(file);
       updateField("mainImage", url);
-      toast.success("تصویر اصلی آپلود شد");
+      toast.success("تصویر اصلی آپلود و آماده استفاده شد.");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "خطا در آپلود تصویر اصلی",

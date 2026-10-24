@@ -34,7 +34,7 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
       setCategories(data);
     } catch (err) {
       console.error(err);
-      toast.error("خطا در دریافت دسته‌ها");
+      toast.error("دسته‌بندی‌ها دریافت نشدند؛ دوباره تلاش کنید.");
     } finally {
       setLoading(false);
     }
@@ -59,7 +59,7 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
 
   const handleAdd = async () => {
     if (!name.trim() || !slug.trim()) {
-      toast.warning("نام و اسلاگ الزامی است");
+      toast.warning("برای ذخیره دسته‌بندی، نام و اسلاگ را وارد کنید.");
       return;
     }
 
@@ -77,15 +77,15 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
 
       const data = await res.json();
       if (res.ok) {
-        toast.success("دسته با موفقیت اضافه شد");
+        toast.success("دسته‌بندی جدید اضافه شد.");
         resetForm();
         fetchCategories();
       } else {
-        toast.error(data.error || "خطا در افزودن دسته");
+        toast.error(data.error || "دسته‌بندی اضافه نشد؛ دوباره تلاش کنید.");
       }
     } catch (err) {
       console.error(err);
-      toast.error("خطا در افزودن دسته");
+      toast.error("دسته‌بندی اضافه نشد؛ دوباره تلاش کنید.");
     } finally {
       setSaving(false);
     }
@@ -99,15 +99,15 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
         method: "DELETE",
       });
       if (res.ok) {
-        toast.success("دسته حذف شد");
+        toast.success("دسته‌بندی حذف شد.");
         fetchCategories();
       } else {
         const data = await res.json();
-        toast.error(data.error || "خطا در حذف دسته");
+        toast.error(data.error || "دسته‌بندی حذف نشد؛ دوباره تلاش کنید.");
       }
     } catch (err) {
       console.error(err);
-      toast.error("خطا در حذف دسته");
+      toast.error("دسته‌بندی حذف نشد؛ دوباره تلاش کنید.");
     }
   };
 

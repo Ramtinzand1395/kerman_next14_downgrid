@@ -64,6 +64,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ gameList, totalPages, currentPage: page });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ message: "server error" }, { status: 500 });
+    return NextResponse.json(
+      { message: "فهرست بازی‌ها دریافت نشد؛ دوباره تلاش کنید." },
+      { status: 500 },
+    );
   }
 }

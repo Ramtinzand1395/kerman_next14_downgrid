@@ -73,7 +73,7 @@ export default function StoreOrder() {
         });
       } catch (err) {
         console.error(err);
-        toast.error("در دریافت لیست سفارشات مشکلی پیش آمد.");
+        toast.error("فهرست سفارش‌ها دریافت نشد؛ صفحه را تازه‌سازی کنید.");
       } finally {
         setIsLoading(false);
       }

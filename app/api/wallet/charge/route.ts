@@ -90,7 +90,7 @@ export async function POST(req: Request) {
         { _id: temp._id },
         { $set: { status: "failed" } },
       );
-      return fail("خطا در اتصال به درگاه پرداخت", 502);
+      return fail("اتصال به درگاه پرداخت برقرار نشد؛ دوباره تلاش کنید.", 502);
     }
 
     await WalletTransaction.updateOne(
@@ -115,6 +115,6 @@ export async function POST(req: Request) {
       { _id: temp._id },
       { $set: { status: "failed" } },
     );
-    return fail("خطا در اتصال به درگاه پرداخت", 502);
+    return fail("اتصال به درگاه پرداخت برقرار نشد؛ دوباره تلاش کنید.", 502);
   }
 }

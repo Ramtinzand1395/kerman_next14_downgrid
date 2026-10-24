@@ -53,11 +53,11 @@ const UpdateStoreOrder = ({
       setUserOrder(updatedOrder);
       onOrderUpdated?.(updatedOrder);
 
-      toast.success(data.message || "سفارش ویرایش شد");
+      toast.success(data.message || "تغییرات سفارش ذخیره شد.");
       setIsEditingOrder(false);
     } catch (err) {
       console.error(err);
-      toast.error("خطا در ویرایش سفارش");
+      toast.error("تغییرات سفارش ذخیره نشد؛ دوباره تلاش کنید.");
     }
   };
 

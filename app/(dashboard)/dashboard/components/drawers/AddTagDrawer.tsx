@@ -32,7 +32,7 @@ export default function AddTagDrawer({ onClose }: AddTagDrawerProps) {
       setTags(data);
     } catch (err) {
       console.error(err);
-      toast.error("خطا در دریافت تگ‌ها");
+      toast.error("برچسب‌ها دریافت نشدند؛ دوباره تلاش کنید.");
     } finally {
       setLoading(false);
     }
@@ -56,7 +56,7 @@ export default function AddTagDrawer({ onClose }: AddTagDrawerProps) {
 
   const handleAdd = async () => {
     if (!name.trim() || !slug.trim()) {
-      toast.warning("نام و اسلاگ الزامی است");
+      toast.warning("برای ذخیره برچسب، نام و اسلاگ را وارد کنید.");
       return;
     }
 
@@ -70,15 +70,15 @@ export default function AddTagDrawer({ onClose }: AddTagDrawerProps) {
       const data = await res.json();
 
       if (res.ok) {
-        toast.success("تگ با موفقیت اضافه شد");
+        toast.success("برچسب جدید اضافه شد.");
         resetForm();
         fetchTags();
       } else {
-        toast.error(data.error || "خطا در افزودن تگ");
+        toast.error(data.error || "برچسب اضافه نشد؛ دوباره تلاش کنید.");
       }
     } catch (err) {
       console.error(err);
-      toast.error("خطا در افزودن تگ");
+      toast.error("برچسب اضافه نشد؛ دوباره تلاش کنید.");
     } finally {
       setSaving(false);
     }
@@ -91,15 +91,15 @@ export default function AddTagDrawer({ onClose }: AddTagDrawerProps) {
       const res = await fetch(`/api/admin/tag/${id}`, { method: "DELETE" });
 
       if (res.ok) {
-        toast.success("تگ حذف شد");
+        toast.success("برچسب حذف شد.");
         fetchTags();
       } else {
         const data = await res.json();
-        toast.error(data.error || "خطا در حذف تگ");
+        toast.error(data.error || "برچسب حذف نشد؛ دوباره تلاش کنید.");
       }
     } catch (err) {
       console.error(err);
-      toast.error("خطا در حذف تگ");
+      toast.error("برچسب حذف نشد؛ دوباره تلاش کنید.");
     }
   };
 

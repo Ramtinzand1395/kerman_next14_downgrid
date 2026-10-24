@@ -67,7 +67,7 @@ export default function ProductsPage() {
       setStats(data.stats);
     } catch (err) {
       console.error(err);
-      toast.error("خطا در دریافت محصولات");
+      toast.error("فهرست محصولات دریافت نشد؛ صفحه را تازه‌سازی کنید.");
     } finally {
       setLoading(false);
     }
@@ -112,7 +112,7 @@ export default function ProductsPage() {
         throw new Error(errorData.error ?? "حذف محصول ناموفق بود");
       }
 
-      toast.success("محصول با موفقیت حذف شد.");
+      toast.success("محصول از فروشگاه حذف شد.");
 
       const nextCount = products.length - 1;
       if (nextCount <= 0 && page > 1) {

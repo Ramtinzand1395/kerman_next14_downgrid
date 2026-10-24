@@ -46,6 +46,9 @@ export async function PUT(
     );
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ message: "خطای سرور" }, { status: 500 });
+    return NextResponse.json(
+      { message: "اطلاعات مشتری ذخیره نشد؛ دوباره تلاش کنید." },
+      { status: 500 },
+    );
   }
 }

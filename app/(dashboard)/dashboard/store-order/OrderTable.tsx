@@ -62,7 +62,7 @@ const OrderTable = ({
     );
 
     if (newIndex <= currentIndex) {
-      toast.warning("امکان بازگشت یا تکرار وضعیت وجود ندارد.");
+      toast.warning("این تغییر وضعیت مجاز نیست؛ سفارش فقط می‌تواند به مرحله بعد برود.");
       return;
     }
 
@@ -92,14 +92,14 @@ const OrderTable = ({
         ),
       }));
 
-      toast.success(data.message || "وضعیت سفارش با موفقیت تغییر کرد.");
+      toast.success(data.message || "وضعیت سفارش ذخیره شد.");
 
       if (data.sms?.status === 200) {
-        toast.success("پیامک نیز با موفقیت ارسال شد.");
+        toast.success("پیامک تغییر وضعیت برای مشتری ارسال شد.");
       }
     } catch (err) {
       console.error("Error updating status:", err);
-      toast.error("خطا در تغییر وضعیت سفارش");
+      toast.error("وضعیت سفارش تغییر نکرد؛ دوباره تلاش کنید.");
     } finally {
       setloadingSms(false);
     }
