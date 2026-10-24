@@ -94,6 +94,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, message: "پیام شما ثبت شد." }, { status: 201 });
   } catch (error) {
     console.error("Contact message submit error:", error);
-    return NextResponse.json({ error: "خطا در ثبت پیام" }, { status: 500 });
+    return NextResponse.json(
+      { error: "پیام ارسال نشد؛ چند لحظه دیگر دوباره تلاش کنید." },
+      { status: 500 },
+    );
   }
 }

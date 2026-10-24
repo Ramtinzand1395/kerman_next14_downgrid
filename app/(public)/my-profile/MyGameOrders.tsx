@@ -76,7 +76,7 @@ export default function MyGameOrders() {
       const appointmentsResponse = await fetch("/api/profile/appointments", {
         cache: "no-store",
       });
-      if (!appointmentsResponse.ok) throw new Error("دریافت نوبت‌ها انجام نشد.");
+      if (!appointmentsResponse.ok) throw new Error("نوبت‌ها دریافت نشدند؛ دوباره تلاش کنید.");
       const appointmentsData = await appointmentsResponse.json();
       setAppointments(
         Array.isArray(appointmentsData.appointments)
@@ -84,7 +84,7 @@ export default function MyGameOrders() {
           : [],
       );
     } catch {
-      setError("دریافت نوبت‌ها با مشکل مواجه شد.");
+      setError("نوبت‌ها دریافت نشدند؛ صفحه را تازه‌سازی کنید.");
     } finally {
       setLoading(false);
     }
@@ -103,10 +103,10 @@ export default function MyGameOrders() {
         body: JSON.stringify({ action: "cancel", appointmentId }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "لغو نوبت انجام نشد.");
+      if (!response.ok) throw new Error(data.error || "نوبت لغو نشد؛ دوباره تلاش کنید.");
       await load();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "لغو نوبت انجام نشد.");
+      setError(reason instanceof Error ? reason.message : "نوبت لغو نشد؛ دوباره تلاش کنید.");
     } finally {
       setWorking("");
     }

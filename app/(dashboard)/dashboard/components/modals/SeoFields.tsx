@@ -28,7 +28,7 @@ export default function SeoFields({ form, updateField }: SeoFieldsProps) {
     if (!form.title) return;
     const base =
       form.shortDesc?.trim() ||
-      `خرید ${form.title} با بهترین قیمت، ارسال سریع و ضمانت اصالت کالا از کرمان آتاری.`;
+      `خرید ${form.title} با بهترین قیمت، روش ارسال شفاف و ضمانت اصالت کالا از کرمان آتاری.`;
     updateField("metaDescription", base.slice(0, 160));
   };
 
@@ -96,7 +96,7 @@ export default function SeoFields({ form, updateField }: SeoFieldsProps) {
           value={metaDescription}
           onChange={(e) => updateField("metaDescription", e.target.value)}
           className="w-full rounded-md border border-slate-300 bg-inherit px-3 py-2 text-sm focus:border-blue-700 focus:outline-none"
-          placeholder="خرید PS5 Slim دیسک‌خور با ارسال سریع در کرمان، گارانتی سلامت کالا، پشتیبانی واقعی. بهترین قیمت و موجودی از کرمان آتاری."
+          placeholder="خرید PS5 Slim دیسک‌خور با ارسال براساس مقصد، گارانتی سلامت کالا و پشتیبانی واقعی از کرمان آتاری."
         />
         <button
           type="button"

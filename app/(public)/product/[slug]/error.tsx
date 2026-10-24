@@ -27,7 +27,7 @@ export default function ProductError({
           <AlertTriangle aria-hidden="true" className="h-7 w-7" />
         </span>
         <h1 className="mt-5 text-xl font-extrabold text-slate-900">
-          دریافت اطلاعات محصول انجام نشد
+          اطلاعات محصول بارگذاری نشد
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-slate-600">
           ارتباط با سرویس محصول موقتاً دچار مشکل شده است. چند لحظه بعد دوباره

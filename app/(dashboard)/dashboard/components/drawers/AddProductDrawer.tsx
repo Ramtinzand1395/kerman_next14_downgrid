@@ -136,14 +136,14 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
     fetch("/api/admin/category")
       .then((res) => res.json())
       .then(setCategories)
-      .catch(() => toast.error("خطا در دریافت دسته‌بندی‌ها"));
+      .catch(() => toast.error("دسته‌بندی‌ها دریافت نشدند؛ دوباره تلاش کنید."));
   }, []);
 
   useEffect(() => {
     fetch("/api/admin/tag")
       .then((res) => res.json())
       .then(setTagsList)
-      .catch(() => toast.error("خطا در دریافت تگ‌ها"));
+      .catch(() => toast.error("برچسب‌ها دریافت نشدند؛ دوباره تلاش کنید."));
   }, []);
 
   const toggleSection = (key: SectionKey) => {
@@ -159,20 +159,20 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
 
   const validateForm = () => {
     if (!form.title.trim()) {
-      toast.error("عنوان محصول الزامی است");
+      toast.warning("برای ذخیره محصول، عنوان آن را وارد کنید.");
       return false;
     }
     if (!form.slug.trim()) {
-      toast.error("اسلاگ محصول الزامی است");
+      toast.warning("برای ذخیره محصول، اسلاگ آن را وارد کنید.");
       return false;
     }
     if (!form.category) {
-      toast.error("لطفاً دسته‌بندی محصول را انتخاب کنید");
+      toast.warning("برای ذخیره محصول، دسته‌بندی آن را انتخاب کنید.");
       return false;
     }
     if (form.productType === "single") {
       if (typeof form.price !== "number" || form.price < 0) {
-        toast.error("قیمت محصول نامعتبر است");
+        toast.warning("قیمت محصول معتبر نیست؛ یک عدد صفر یا بیشتر وارد کنید.");
         return false;
       }
       if (
@@ -180,26 +180,26 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
         form.discountPrice !== undefined &&
         form.discountPrice > form.price
       ) {
-        toast.error("قیمت تخفیف نمی‌تواند بیشتر از قیمت اصلی باشد");
+        toast.warning("قیمت پس از تخفیف نباید از قیمت اصلی بیشتر باشد.");
         return false;
       }
       if (typeof form.stock !== "number" || form.stock < 0) {
-        toast.error("موجودی محصول نامعتبر است");
+        toast.warning("موجودی محصول معتبر نیست؛ یک عدد صفر یا بیشتر وارد کنید.");
         return false;
       }
     } else {
       if (!Array.isArray(form.variants) || form.variants.length === 0) {
-        toast.error("محصول چند مدلی باید حداقل دارای یک مدل باشد");
+        toast.warning("برای محصول چندمدلی، حداقل یک مدل اضافه کنید.");
         return false;
       }
       for (let i = 0; i < form.variants.length; i++) {
         const v = form.variants[i];
         if (!v.title || !v.title.trim()) {
-          toast.error(`نام مدل ردیف ${i + 1} الزامی است`);
+          toast.warning(`نام مدل ردیف ${i + 1} را وارد کنید.`);
           return false;
         }
         if (typeof v.price !== "number" || v.price < 0) {
-          toast.error(`قیمت مدل «${v.title}» نامعتبر است`);
+          toast.warning(`قیمت مدل «${v.title}» معتبر نیست.`);
           return false;
         }
         if (
@@ -207,11 +207,11 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
           v.discountPrice !== undefined &&
           v.discountPrice > v.price
         ) {
-          toast.error(`قیمت تخفیف مدل «${v.title}» نمی‌تواند بیشتر از قیمت آن باشد`);
+          toast.warning(`قیمت پس از تخفیف مدل «${v.title}» نباید از قیمت اصلی بیشتر باشد.`);
           return false;
         }
         if (typeof v.stock !== "number" || v.stock < 0) {
-          toast.error(`موجودی مدل «${v.title}» نامعتبر است`);
+          toast.warning(`موجودی مدل «${v.title}» معتبر نیست.`);
           return false;
         }
       }
@@ -219,7 +219,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
         form.status === "published" &&
         !form.variants.some((v) => v.isActive !== false)
       ) {
-        toast.error("محصول چند مدلی برای انتشار باید حداقل یک مدل فعال داشته باشد");
+        toast.warning("برای انتشار محصول چندمدلی، حداقل یک مدل را فعال کنید.");
         return false;
       }
     }
@@ -252,15 +252,15 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data?.error || "خطا در ذخیره محصول");
+        toast.error(data?.error || "محصول ذخیره نشد؛ دوباره تلاش کنید.");
         return;
       }
 
-      toast.success("محصول با موفقیت ذخیره شد");
+      toast.success("محصول جدید ذخیره شد.");
       onSave?.(data);
       onClose();
     } catch (err) {
-      toast.error("خطا در ارتباط با سرور");
+      toast.error("ارتباط با سرور برقرار نشد؛ دوباره تلاش کنید.");
     } finally {
       setLoading(false);
     }
@@ -292,15 +292,15 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data?.error || "خطا در بروزرسانی محصول");
+        toast.error(data?.error || "تغییرات محصول ذخیره نشد؛ دوباره تلاش کنید.");
         return;
       }
 
-      toast.success("محصول با موفقیت بروزرسانی شد");
+      toast.success("تغییرات محصول ذخیره شد.");
       onSave?.(data);
       onClose();
     } catch (err) {
-      toast.error("خطا در ارتباط با سرور");
+      toast.error("ارتباط با سرور برقرار نشد؛ دوباره تلاش کنید.");
     } finally {
       setLoading(false);
     }

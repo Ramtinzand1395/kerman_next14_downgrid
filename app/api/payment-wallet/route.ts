@@ -28,8 +28,12 @@ import { onSuccessfulPurchase } from "@/lib/loyalty/purchase.hooks";
 import { notifyInventoryFailure, notifyLowInventory, notifyOrderPaid, notifyPaymentFailed } from "@/lib/notifications/events";
 import {
   calculateShippingInfo,
+  createOrderShippingSnapshot,
   InvalidShippingDestinationError,
+  ShippingMethodUnavailableError,
+  type ShippingMethod,
 } from "@/lib/shipping";
+import { getStoreShippingSettings } from "@/lib/shippingSettings";
 import {
   getVariantAttributeSelections,
   isVariantMappedForSale,
@@ -49,7 +53,7 @@ function automaticIdempotencyFingerprint(input: {
   userId: string;
   addressId: string;
   items: CheckoutItem[];
-  shippingCost: number;
+  shippingCost: number | null;
   couponCode: string | null;
 }) {
   const canonicalItems = input.items
@@ -154,6 +158,7 @@ export async function POST(req: NextRequest) {
       addressId?: string;
       items?: CheckoutItem[];
       couponCode?: string;
+      shippingMethod?: ShippingMethod;
     } = await req.json();
 
     if (
@@ -336,12 +341,20 @@ export async function POST(req: NextRequest) {
       };
     });
 
+    const addressSnapshot = createAddressSnapshot(address, {
+      name: buyer.username,
+      mobile: buyer.mobile,
+    });
+    const shippingSettings = await getStoreShippingSettings();
     const shippingInfo = calculateShippingInfo({
       province: address.province,
       city: address.city,
-    });
-    const shippingCost = shippingInfo.cost;
+      postalCode: address.postalCode,
+      address: address.address,
+    }, payload.shippingMethod, shippingSettings);
+    const shippingCost = shippingInfo.feeToman;
     const shippingPaymentType = shippingInfo.paymentType;
+    const shipping = createOrderShippingSnapshot(shippingInfo, addressSnapshot);
 
     const totalPrice = checkoutItems.reduce((acc, item) => acc + item.total, 0);
 
@@ -372,7 +385,7 @@ export async function POST(req: NextRequest) {
       couponDiscount = validation.discountAmount!;
     }
 
-    const finalPrice = totalPrice - couponDiscount + shippingCost;
+    const finalPrice = totalPrice - couponDiscount + (shippingCost ?? 0);
 
     // If the caller omitted Idempotency-Key, atomically claim a short-lived
     // fingerprint of the checkout. This closes the double-click race without
@@ -452,10 +465,7 @@ export async function POST(req: NextRequest) {
       order = await Order.create({
         user: userId,
         address: payload.addressId,
-        addressSnapshot: createAddressSnapshot(address, {
-          name: buyer.username,
-          mobile: buyer.mobile,
-        }),
+        addressSnapshot,
         buyerSnapshot: {
           name: String(buyer.username || "کاربر"),
           mobile: String(buyer.mobile || ""),
@@ -465,6 +475,7 @@ export async function POST(req: NextRequest) {
         totalPrice,
         shippingCost,
         shippingPaymentType,
+        shipping,
         finalPrice,
         couponCode,
         couponDiscount,
@@ -718,7 +729,7 @@ export async function POST(req: NextRequest) {
         {
           $set: {
             status: "failed",
-            error: "خطا در پردازش پرداخت کیف پول",
+            error: "پرداخت کیف پول تکمیل نشد؛ مبلغی کسر نشده است.",
             httpStatus: 500,
           },
         },
@@ -742,14 +753,20 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    if (error instanceof InvalidShippingDestinationError) {
+    if (
+      error instanceof InvalidShippingDestinationError ||
+      error instanceof ShippingMethodUnavailableError
+    ) {
       return NextResponse.json(
         { success: false, error: error.message },
         { status: 400 },
       );
     }
     console.error("[payment-wallet] error:", error);
-    const message = error instanceof Error ? error.message : "خطا در سرور";
+    const message =
+      error instanceof Error
+        ? error.message
+        : "پرداخت کیف پول تکمیل نشد؛ دوباره تلاش کنید.";
     return NextResponse.json(
       { success: false, error: message },
       { status: 500 },

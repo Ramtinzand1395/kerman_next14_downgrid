@@ -14,7 +14,7 @@ export default function ProductComments({ productId }: ProductCommentsProps) {
 
   const submitComment = async () => {
     if (!text.trim()) {
-      toast.error("متن دیدگاه را وارد کنید");
+      toast.warning("برای ثبت دیدگاه، متن آن را وارد کنید.");
       return;
     }
 
@@ -29,13 +29,13 @@ export default function ProductComments({ productId }: ProductCommentsProps) {
     setLoading(false);
 
     if (!res.ok) {
-      toast.error(data?.message || "ثبت دیدگاه با خطا روبه‌رو شد");
+      toast.error(data?.message || "دیدگاه ثبت نشد؛ دوباره تلاش کنید.");
       return;
     }
 
     setText("");
     setRating(5);
-    toast.success(data.message || "دیدگاه شما ثبت شد");
+    toast.success(data.message || "دیدگاه شما ثبت شد و پس از بررسی نمایش داده می‌شود.");
   };
 
   return (

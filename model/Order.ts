@@ -44,6 +44,19 @@ const VariantAttributeSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const ShippingSnapshotSchema = new mongoose.Schema(
+  {
+    method: { type: String, enum: ["kerman_local", "national_collect"], required: true },
+    title: { type: String, required: true },
+    feeToman: { type: Number, default: null, min: 1 },
+    paymentTiming: { type: String, enum: ["online", "on_delivery"], required: true },
+    feeStatus: { type: String, enum: ["fixed", "pending_carrier"], required: true },
+    destinationCity: { type: String, required: true },
+    addressSnapshot: { type: AddressSnapshotSchema, required: true },
+  },
+  { _id: false },
+);
+
 const OrderSchema = new mongoose.Schema(
   {
     user: {
@@ -115,13 +128,18 @@ const OrderSchema = new mongoose.Schema(
 
     shippingCost: {
       type: Number,
-      default: 0,
+      default: null,
     },
 
     shippingPaymentType: {
       type: String,
       enum: ["PREPAID", "COLLECT"],
       required: false,
+    },
+
+    shipping: {
+      type: ShippingSnapshotSchema,
+      default: null,
     },
 
     finalPrice: {

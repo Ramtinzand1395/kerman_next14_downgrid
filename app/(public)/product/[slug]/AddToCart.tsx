@@ -52,12 +52,12 @@ export default function AddToCart({
 
   const handleAddToCart = () => {
     if (isMulti && !selectedVariantId) {
-      toast.error("لطفاً مدل محصول را انتخاب کنید.");
+      toast.warning("برای افزودن محصول، ابتدا مدل موردنظر را انتخاب کنید.");
       return;
     }
 
     if (currentStock <= 0) {
-      toast.error("این محصول ناموجود است.");
+      toast.info("این محصول فعلاً موجود نیست.");
       return;
     }
 
@@ -83,15 +83,15 @@ export default function AddToCart({
     });
 
     if (addResult === "out_of_stock") {
-      toast.error("این محصول ناموجود است.");
+      toast.info("این محصول فعلاً موجود نیست.");
       return;
     }
 
     if (addResult === "max_reached") {
-      toast.error("تعداد انتخابی از موجودی انبار بیشتر است.");
+      toast.warning("تعداد انتخابی بیشتر از موجودی فعلی است؛ تعداد را کاهش دهید.");
       return;
     }
-    toast.success("به سبد خرید اضافه شد.");
+    toast.success("محصول به سبد خرید اضافه شد.");
   };
 
   return (

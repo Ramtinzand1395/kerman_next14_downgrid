@@ -16,6 +16,10 @@ import {
   UserRoundCheck,
 } from "lucide-react";
 import { SITE_URL } from "@/lib/site";
+import { getStoreShippingSettings } from "@/lib/shippingSettings";
+import { formatLocalShippingPolicyText } from "@/lib/shipping";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -237,7 +241,8 @@ const rules = [
   },
 ] as const;
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  const shippingSettings = await getStoreShippingSettings();
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -297,6 +302,12 @@ export default function TermsPage() {
           </div>
         </div>
       </header>
+
+      <section className="mt-6 rounded-3xl border border-cyan-100 bg-cyan-50 p-5 text-sm leading-8 text-slate-700">
+        <h2 className="font-black text-slate-900">شرایط فعلی ارسال فروشگاه</h2>
+        {shippingSettings.localDelivery.enabled && <p>{formatLocalShippingPolicyText(shippingSettings.localDelivery.feeToman)}</p>}
+        {shippingSettings.nationalCollect.enabled && <p>{shippingSettings.nationalCollect.description}</p>}
+      </section>
 
       <div className="mt-8 grid items-start gap-7 lg:grid-cols-[18rem_minmax(0,1fr)]">
         <aside className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-24">

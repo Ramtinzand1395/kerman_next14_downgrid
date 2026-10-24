@@ -55,7 +55,8 @@ export default function NotificationCenter({ title = "مرکز اعلان‌ها
       const nextData = (await response.json()) as NotificationResponse;
       if (mounted.current && requestId === latestRequest.current) setData(nextData);
     } catch {
-      if (mounted.current && requestId === latestRequest.current) setError("دریافت اعلان‌ها با خطا مواجه شد.");
+      if (mounted.current && requestId === latestRequest.current)
+        setError("اعلان‌ها دریافت نشدند؛ دوباره تلاش کنید.");
     } finally {
       if (mounted.current && requestId === latestRequest.current) setLoading(false);
     }
@@ -110,7 +111,7 @@ export default function NotificationCenter({ title = "مرکز اعلان‌ها
         notifications: current.notifications.map((entry) => entry._id === item._id ? { ...entry, isRead: true } : entry),
       } : current);
     } catch {
-      toast.error("ثبت وضعیت اعلان انجام نشد.");
+      toast.error("وضعیت اعلان ذخیره نشد؛ دوباره تلاش کنید.");
     } finally {
       finishItemOperation(item._id);
     }
@@ -137,10 +138,10 @@ export default function NotificationCenter({ title = "مرکز اعلان‌ها
             isRead: true,
           })),
         } : current);
-        toast.success("همه اعلان‌ها خوانده شدند.");
+        toast.success("همه اعلان‌ها به‌عنوان خوانده‌شده ثبت شدند.");
       }
     } catch {
-      toast.error("خواندن همه اعلان‌ها انجام نشد.");
+      toast.error("وضعیت اعلان‌ها ذخیره نشد؛ دوباره تلاش کنید.");
     } finally {
       markAllInFlight.current = false;
       if (mounted.current) setMarkAllPending(false);
@@ -175,9 +176,9 @@ export default function NotificationCenter({ title = "مرکز اعلان‌ها
           },
         };
       });
-      toast.success("اعلان حذف شد.");
+      toast.success("اعلان از فهرست شما حذف شد.");
     } catch {
-      toast.error("حذف اعلان انجام نشد.");
+      toast.error("اعلان حذف نشد؛ دوباره تلاش کنید.");
     } finally {
       finishItemOperation(item._id);
     }

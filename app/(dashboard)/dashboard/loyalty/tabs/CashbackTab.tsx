@@ -95,19 +95,19 @@ export default function CashbackTab() {
         });
     setSaving(false);
     if (res.ok) {
-      toast.success("ذخیره شد");
+      toast.success("قانون کش‌بک ذخیره شد.");
       setModal(null);
       load();
-    } else toast.error(res.error ?? "خطا در ذخیره");
+    } else toast.error(res.error ?? "قانون کش‌بک ذخیره نشد؛ دوباره تلاش کنید.");
   };
 
   const remove = async (id: string) => {
     if (!confirm("قاعده حذف شود؟")) return;
     const res = await apiFetch(`/api/admin/loyalty/cashback/${id}`, { method: "DELETE" });
     if (res.ok) {
-      toast.success("حذف شد");
+      toast.success("قانون کش‌بک حذف شد.");
       load();
-    } else toast.error(res.error ?? "خطا");
+    } else toast.error(res.error ?? "قانون کش‌بک حذف نشد؛ دوباره تلاش کنید.");
   };
 
   const toggleTier = (t: VipTier) =>

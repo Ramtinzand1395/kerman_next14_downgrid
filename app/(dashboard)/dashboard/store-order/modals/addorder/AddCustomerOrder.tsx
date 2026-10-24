@@ -89,12 +89,12 @@ const AddCustomerOrder = ({
 
   const handleSubmit = async () => {
     if (!customerData._id) {
-      toast.error("ابتدا اطلاعات مشتری را ثبت کنید.");
+      toast.warning("پیش از ثبت سفارش، اطلاعات مشتری را ذخیره کنید.");
       return;
     }
 
     if (!order?.consoleType || !order.price || order.list.length === 0) {
-      toast.warning("نوع دستگاه، قیمت و لیست بازی الزامی است.");
+      toast.warning("برای ثبت سفارش، نوع دستگاه، قیمت و حداقل یک بازی را مشخص کنید.");
       return;
     }
 
@@ -119,7 +119,7 @@ const AddCustomerOrder = ({
         [consoleType]: [data.order, ...(prev[consoleType] || [])],
       }));
 
-      toast.success(data.message || "سفارش با موفقیت ثبت شد.");
+      toast.success(data.message || "سفارش ثبت شد و به ابتدای فهرست اضافه شد.");
 
       if (data?.sms?.body) toast.info(data.sms.body);
 
@@ -133,7 +133,7 @@ const AddCustomerOrder = ({
       toast.error(
         err instanceof Error && err.message
           ? err.message
-          : "در ثبت سفارش خطایی رخ داد.",
+          : "سفارش ثبت نشد؛ دوباره تلاش کنید.",
       );
       toast.info("اطلاعات فرم ذخیره شد و پس از رفع مشکل می‌توانید دوباره ثبت کنید.");
     } finally {

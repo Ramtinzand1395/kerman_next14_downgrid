@@ -68,7 +68,7 @@ const values = [
 const milestones = [
   "شروع فعالیت با تمرکز بر بازی‌های کنسولی",
   "گسترش سبد محصولات به کنسول، دسته و تجهیزات جانبی",
-  "راه‌اندازی فروش آنلاین برای ارسال سریع‌تر در سراسر کشور",
+  "راه‌اندازی فروش آنلاین برای ارسال شفاف در سراسر کشور",
   "توسعه خدمات مشاوره خرید بر اساس نیاز هر گیمر",
 ];
 
@@ -140,7 +140,7 @@ export default function AboutUsPage() {
             <span className="rounded-full bg-white/10 px-3 py-1">
               مشاوره تخصصی
             </span>
-            <span className="rounded-full bg-white/10 px-3 py-1">ارسال سریع</span>
+            <span className="rounded-full bg-white/10 px-3 py-1">ارسال براساس مقصد</span>
             <span className="rounded-full bg-white/10 px-3 py-1">
               پشتیبانی پاسخ‌گو
             </span>

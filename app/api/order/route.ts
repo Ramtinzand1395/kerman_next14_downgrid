@@ -11,8 +11,12 @@ import { createAddressSnapshot } from "@/lib/addressSnapshot";
 import { notifyAdmins, notifyUser } from "@/lib/notifications/service";
 import {
   calculateShippingInfo,
+  createOrderShippingSnapshot,
   InvalidShippingDestinationError,
+  ShippingMethodUnavailableError,
+  type ShippingMethod,
 } from "@/lib/shipping";
+import { getStoreShippingSettings } from "@/lib/shippingSettings";
 import { createStoreIdentitySnapshot } from "@/lib/storeIdentity";
 import {
   getVariantAttributeSelections,
@@ -34,6 +38,7 @@ export async function POST(req: Request) {
   const payload: {
     addressId?: string;
     items?: OrderItem[];
+    shippingMethod?: ShippingMethod;
   } = await req.json();
 
   if (
@@ -233,25 +238,30 @@ export async function POST(req: Request) {
       };
     });
 
+    const addressSnapshot = createAddressSnapshot(address, {
+      name: buyer.username,
+      mobile: buyer.mobile,
+    });
+    const shippingSettings = await getStoreShippingSettings();
     const shippingInfo = calculateShippingInfo({
       province: address.province,
       city: address.city,
-    });
-    const shippingCost = shippingInfo.cost;
+      postalCode: address.postalCode,
+      address: address.address,
+    }, payload.shippingMethod, shippingSettings);
+    const shippingCost = shippingInfo.feeToman;
     const shippingPaymentType = shippingInfo.paymentType;
+    const shipping = createOrderShippingSnapshot(shippingInfo, addressSnapshot);
 
     const totalPrice = orderItems.reduce((a: number, i) => a + i.total, 0);
-    const finalPrice = totalPrice + shippingCost;
+    const finalPrice = totalPrice + (shippingCost ?? 0);
 
     let order;
     try {
       order = await Order.create({
         user: session.user.id,
         address: payload.addressId,
-        addressSnapshot: createAddressSnapshot(address, {
-          name: buyer.username,
-          mobile: buyer.mobile,
-        }),
+        addressSnapshot,
         buyerSnapshot: {
           name: String(buyer.username || "کاربر"),
           mobile: String(buyer.mobile || ""),
@@ -261,6 +271,7 @@ export async function POST(req: Request) {
         totalPrice,
         shippingCost,
         shippingPaymentType,
+        shipping,
         finalPrice,
       });
     } catch {
@@ -301,7 +312,10 @@ export async function POST(req: Request) {
 
     return NextResponse.json(order);
   } catch (error) {
-    if (error instanceof InvalidShippingDestinationError) {
+    if (
+      error instanceof InvalidShippingDestinationError ||
+      error instanceof ShippingMethodUnavailableError
+    ) {
       return NextResponse.json(
         { error: error.message },
         { status: 400 },

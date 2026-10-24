@@ -55,7 +55,7 @@ export default function AllStoreOrders() {
         setTotalPages(data.pagination?.totalPages ?? 1);
       } catch (err) {
         console.error(err);
-        toast.error("خطای سرور");
+        toast.error("سفارش‌ها دریافت نشدند؛ صفحه را تازه‌سازی کنید.");
       } finally {
         setLoading(false);
       }

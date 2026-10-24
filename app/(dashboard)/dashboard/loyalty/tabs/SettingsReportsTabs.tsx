@@ -65,8 +65,8 @@ export function SettingsTab() {
       body: JSON.stringify(settings),
     });
     setSaving(false);
-    if (res.ok) toast.success("تنظیمات ذخیره شد");
-    else toast.error(res.error ?? "خطا در ذخیره");
+    if (res.ok) toast.success("تنظیمات باشگاه مشتریان ذخیره شد.");
+    else toast.error(res.error ?? "تنظیمات باشگاه مشتریان ذخیره نشد؛ دوباره تلاش کنید.");
   };
 
   return (

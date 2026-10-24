@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.error("GET /api/favorites error:", err);
     return NextResponse.json(
-      { error: "خطا در دریافت علاقه‌مندی‌ها" },
+      { error: "علاقه‌مندی‌ها دریافت نشدند؛ دوباره تلاش کنید." },
       { status: 500 },
     );
   }
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
 
     console.error("POST /api/favorites error:", err);
     return NextResponse.json(
-      { error: "خطا در افزودن به علاقه‌مندی" },
+      { error: "محصول به علاقه‌مندی‌ها اضافه نشد؛ دوباره تلاش کنید." },
       { status: 500 },
     );
   }
@@ -137,11 +137,11 @@ export async function DELETE(req: NextRequest) {
       $pull: { favorites: deletedFavorite._id },
     });
 
-    return NextResponse.json({ message: "با موفقیت حذف شد" });
+    return NextResponse.json({ message: "محصول از علاقه‌مندی‌ها حذف شد." });
   } catch (err) {
     console.error("DELETE /api/favorites error:", err);
     return NextResponse.json(
-      { error: "خطا در حذف علاقه‌مندی" },
+      { error: "محصول از علاقه‌مندی‌ها حذف نشد؛ دوباره تلاش کنید." },
       { status: 500 },
     );
   }

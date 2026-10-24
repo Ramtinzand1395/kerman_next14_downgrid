@@ -82,19 +82,19 @@ export default function SpinTab() {
         });
     setSaving(false);
     if (res.ok) {
-      toast.success("ذخیره شد");
+      toast.success("جایزه گردونه ذخیره شد.");
       setModal(null);
       load();
-    } else toast.error(res.error ?? "خطا در ذخیره");
+    } else toast.error(res.error ?? "جایزه گردونه ذخیره نشد؛ دوباره تلاش کنید.");
   };
 
   const remove = async (id: string) => {
     if (!confirm("جایزه حذف شود؟")) return;
     const res = await apiFetch(`/api/admin/loyalty/spin/${id}`, { method: "DELETE" });
     if (res.ok) {
-      toast.success("حذف شد");
+      toast.success("جایزه از گردونه حذف شد.");
       load();
-    } else toast.error(res.error ?? "خطا");
+    } else toast.error(res.error ?? "جایزه حذف نشد؛ دوباره تلاش کنید.");
   };
 
   return (

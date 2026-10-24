@@ -365,6 +365,7 @@ export async function GET(req: NextRequest) {
       shippingPaymentType:
         temp.shippingPaymentType ||
         (temp.shippingCost > 0 ? "PREPAID" : "COLLECT"),
+      shipping: temp.shipping || null,
       finalPrice: temp.finalPrice,
       couponCode: temp.couponCode ?? null,
       couponDiscount: temp.couponDiscount ?? 0,

@@ -629,7 +629,7 @@ export default function LandingHome({
           </div>
         </section>
 
-        <Faq />
+        <Faq courierEnabled={courierEnabled} />
 
         <section className="landing-section landing-panel p-4 sm:p-5" aria-labelledby="articles-heading">
           <div className="mb-4 text-center">

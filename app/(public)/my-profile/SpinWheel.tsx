@@ -77,7 +77,7 @@ export default function SpinWheel() {
     });
 
     if (!res.ok || !res.data) {
-      toast.error(res.error ?? "خطا در چرخش گردونه");
+      toast.error(res.error ?? "گردونه اجرا نشد؛ چند لحظه دیگر دوباره تلاش کنید.");
       setSpinning(false);
       return;
     }

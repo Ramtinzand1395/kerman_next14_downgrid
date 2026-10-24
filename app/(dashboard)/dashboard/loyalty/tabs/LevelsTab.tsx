@@ -78,10 +78,10 @@ export default function LevelsTab() {
     });
     setSaving(false);
     if (res.ok) {
-      toast.success("سطح به‌روز شد");
+      toast.success("تغییرات سطح وفاداری ذخیره شد.");
       setEditing(null);
       load();
-    } else toast.error(res.error ?? "خطا در ذخیره");
+    } else toast.error(res.error ?? "سطح وفاداری ذخیره نشد؛ دوباره تلاش کنید.");
   };
 
   const seed = async () => {
@@ -90,9 +90,9 @@ export default function LevelsTab() {
     const res = await apiFetch("/api/admin/loyalty/levels", { method: "POST" });
     setSeeding(false);
     if (res.ok) {
-      toast.success("Seed انجام شد");
+      toast.success("سطوح پیش‌فرض ساخته و به‌روزرسانی شدند.");
       load();
-    } else toast.error(res.error ?? "خطا در seed");
+    } else toast.error(res.error ?? "سطوح پیش‌فرض ساخته نشدند؛ دوباره تلاش کنید.");
   };
 
   const levels = (items ?? []).filter((l) => l.kind === "level");

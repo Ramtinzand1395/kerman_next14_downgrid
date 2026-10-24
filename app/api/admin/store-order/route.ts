@@ -178,7 +178,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json(
-      { error: "ثبت سفارش با خطا مواجه شد. سفارشی ثبت نشد." },
+      { error: "سفارش ثبت نشد؛ اطلاعات را بررسی و دوباره تلاش کنید." },
       { status: 500 },
     );
   }

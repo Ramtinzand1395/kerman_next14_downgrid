@@ -96,7 +96,7 @@ export default function WalletTab() {
       `/api/admin/loyalty/wallet?userId=${encodeURIComponent(userId.trim())}`,
     );
     if (res.ok) setWalletInfo(res.data ?? null);
-    else toast.error(res.error ?? "کیف پول یافت نشد");
+    else toast.error(res.error ?? "کیف پول این کاربر پیدا نشد؛ شناسه را بررسی کنید.");
   };
 
   const submitAction = async (e: React.FormEvent) => {
@@ -104,11 +104,11 @@ export default function WalletTab() {
     if (saving || !modal) return;
     const numericAmount = Number(amount);
     if (!Number.isFinite(numericAmount) || numericAmount === 0) {
-      toast.error("مبلغ باید عددی غیرصفر باشد");
+      toast.warning("مبلغ باید یک عدد غیرصفر باشد.");
       return;
     }
     if (modal === "gift" && Math.abs(numericAmount) < 1_000) {
-      toast.error("حداقل مبلغ هدیه ۱٬۰۰۰ تومان است");
+      toast.warning("مبلغ هدیه باید حداقل ۱٬۰۰۰ تومان باشد.");
       return;
     }
     setSaving(true);
@@ -127,12 +127,12 @@ export default function WalletTab() {
     });
     setSaving(false);
     if (res.ok) {
-      toast.success(`انجام شد — موجودی جدید: ${toman(res.data?.balance ?? 0)}`);
+      toast.success(`موجودی کیف پول تغییر کرد؛ موجودی جدید: ${toman(res.data?.balance ?? 0)}`);
       setModal(null);
       setDescription("");
       lookupWallet();
       load();
-    } else toast.error(res.error ?? "خطا در انجام عملیات");
+    } else toast.error(res.error ?? "موجودی کیف پول تغییر نکرد؛ دوباره تلاش کنید.");
   };
 
   return (

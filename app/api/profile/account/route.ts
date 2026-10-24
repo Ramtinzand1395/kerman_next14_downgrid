@@ -44,7 +44,10 @@ export async function GET() {
     });
   } catch (err) {
     console.error("خطا در دریافت کاربر:", err);
-    return NextResponse.json({ error: "خطای سرور" }, { status: 500 });
+    return NextResponse.json(
+      { error: "اطلاعات حساب دریافت نشد؛ دوباره تلاش کنید." },
+      { status: 500 },
+    );
   }
 }
 

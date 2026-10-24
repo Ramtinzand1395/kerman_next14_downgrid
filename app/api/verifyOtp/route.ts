@@ -73,7 +73,10 @@ export async function POST(req: Request) {
   if (!user) {
     console.error(`[auth] signup recovery failed operationId=${operationId}`);
     return new Response(
-      JSON.stringify({ success: false, message: "تکمیل ثبت‌نام با خطا مواجه شد" }),
+      JSON.stringify({
+        success: false,
+        message: "ورود تکمیل نشد؛ لطفاً کد جدید دریافت و دوباره تلاش کنید.",
+      }),
       { status: 500 },
     );
   }

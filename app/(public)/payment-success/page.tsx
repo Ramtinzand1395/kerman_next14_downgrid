@@ -173,7 +173,9 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
                     {order.address.unit ? `، واحد ${order.address.unit}` : ""}
                   </p>
                   {order.address.postalCode && <p className="mt-1 text-xs text-slate-500">کد پستی: {order.address.postalCode}</p>}
-                  <p className="mt-3 text-sm font-bold text-blue-900">ارسال: {order.shipping.label}</p>
+                  <p className="mt-3 text-sm font-bold text-blue-900">
+                    روش ارسال: {order.shipping.title} — {order.shipping.label}
+                  </p>
                   {order.shipping.note && <p className="mt-1 text-xs text-amber-700">{order.shipping.note}</p>}
                 </section>
               )}
@@ -186,7 +188,7 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
                   <div className="flex justify-between gap-4"><dt className="text-slate-500">شماره سفارش</dt><dd dir="ltr" className="font-bold text-slate-900">{order.orderNumber}</dd></div>
                   <div className="flex justify-between gap-4"><dt className="text-slate-500">زمان پرداخت</dt><dd className="text-left font-bold text-slate-900">{dateTime(order.payment.verifiedAt)}</dd></div>
                   <div className="flex justify-between gap-4"><dt className="text-slate-500">روش پرداخت</dt><dd className="font-bold text-slate-900">{paymentLabels[order.payment.gateway || ""] || "ثبت نشده"}</dd></div>
-                  <div className="flex justify-between gap-4"><dt className="text-slate-500">مبلغ پرداخت‌شده</dt><dd className="font-bold text-slate-900">{order.summary.payable.toLocaleString("fa-IR")} تومان</dd></div>
+                  <div className="flex justify-between gap-4"><dt className="text-slate-500">مبلغ پرداخت‌شده آنلاین</dt><dd className="font-bold text-slate-900">{order.payment.amountPaidOnlineToman.toLocaleString("fa-IR")} تومان</dd></div>
                   {order.payment.referenceId && <div className="flex justify-between gap-4"><dt className="text-slate-500">شماره مرجع پرداخت</dt><dd dir="ltr" className="font-mono font-bold text-slate-900">{order.payment.referenceId}</dd></div>}
                 </dl>
               </section>

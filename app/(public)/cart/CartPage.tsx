@@ -24,6 +24,7 @@ import { CartSkeleton } from "@/app/components/loading/LoadingSystem";
 import { calculateShippingInfo } from "@/lib/shipping";
 import { summarizeOrderMoney } from "@/lib/orderSummary";
 import OrderMoneySummaryView from "../components/OrderMoneySummary";
+import { formatLocalShippingPolicyText, type StoreShippingSettings } from "@/lib/shipping";
 
 const checkoutSteps = [
   {
@@ -46,7 +47,7 @@ const checkoutSteps = [
   },
 ] as const;
 
-export default function CartPage() {
+export default function CartPage({ shippingSettings }: { shippingSettings: StoreShippingSettings }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
@@ -81,11 +82,12 @@ export default function CartPage() {
       return calculateShippingInfo({
         province: selectedAddress.province,
         city: selectedAddress.city,
-      });
+        postalCode: selectedAddress.postalCode,
+      }, undefined, shippingSettings);
     } catch {
       return null;
     }
-  }, [selectedAddress]);
+  }, [selectedAddress, shippingSettings]);
 
   const orderSummary = useMemo(() => {
     const items = cart.map((item) => ({
@@ -95,7 +97,7 @@ export default function CartPage() {
       total: (item.discountPrice ?? item.price) * item.quantity,
     }));
     const totalPrice = items.reduce((sum, item) => sum + item.total, 0);
-    const shippingCost = shippingInfo ? shippingInfo.cost : 0;
+    const shippingCost = shippingInfo?.feeToman ?? 0;
     const couponDiscount = appliedCoupon?.discountAmount ?? 0;
 
     return summarizeOrderMoney({
@@ -181,7 +183,9 @@ export default function CartPage() {
           <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm">
             <p>تعداد کالا: {orderSummary.itemCount}</p>
             <p className="mt-1 font-semibold">
-              پرداخت نهایی: {formatPrice(orderSummary.payable)} تومان
+              {activeStep === 3
+                ? "مبلغ نهایی پس از انتخاب روش ارسال"
+                : `پرداخت برآوردی: ${formatPrice(orderSummary.payable)} تومان`}
             </p>
           </div>
         </div>
@@ -239,6 +243,10 @@ export default function CartPage() {
         <div className="xl:col-span-8">
           {activeStep === 1 && (
             <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+              <div className="mb-5 space-y-2 rounded-2xl border border-cyan-100 bg-cyan-50 p-4 text-xs leading-6 text-slate-700">
+                {shippingSettings.localDelivery.enabled && <p>{formatLocalShippingPolicyText(shippingSettings.localDelivery.feeToman)}</p>}
+                {shippingSettings.nationalCollect.enabled && <p>{shippingSettings.nationalCollect.description}</p>}
+              </div>
               <h2 className="mb-5 text-lg font-bold text-slate-900">
                 محصولات انتخاب‌شده
               </h2>
@@ -331,8 +339,8 @@ export default function CartPage() {
                                   typeof item.stock === "number" &&
                                   item.quantity >= item.stock
                                 ) {
-                                  toast.error(
-                                    "تعداد انتخابی از موجودی انبار بیشتر است.",
+                                  toast.warning(
+                                    "تعداد انتخابی بیشتر از موجودی فعلی است؛ تعداد را کاهش دهید.",
                                   );
                                   return;
                                 }
@@ -416,16 +424,22 @@ export default function CartPage() {
               {orderSummary.itemCount.toLocaleString("fa-IR")} قلم کالا
             </p>
             <div className="my-5">
-              <OrderMoneySummaryView
-                summary={orderSummary}
-                shippingLabel={
-                  selectedAddress && shippingInfo
-                    ? shippingInfo.label
-                    : "محاسبه بر اساس آدرس"
-                }
-                shippingNote={shippingInfo?.description}
-                compact
-              />
+              {activeStep === 3 ? (
+                <p className="rounded-xl bg-cyan-50 p-3 text-xs leading-6 text-cyan-900">
+                  مبلغ نهایی پس از انتخاب روش ارسال در فرم پرداخت نمایش داده می‌شود.
+                </p>
+              ) : (
+                <OrderMoneySummaryView
+                  summary={orderSummary}
+                  shippingLabel={
+                    selectedAddress && shippingInfo
+                      ? shippingInfo.label
+                      : "محاسبه بر اساس آدرس"
+                  }
+                  shippingNote={shippingInfo?.description}
+                  compact
+                />
+              )}
             </div>
 
             <div className="space-y-2">
@@ -463,9 +477,9 @@ export default function CartPage() {
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-blue-100 bg-white/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_35px_rgba(15,23,42,0.12)] backdrop-blur xl:hidden">
           <div className="mx-auto flex max-w-2xl items-center gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] text-slate-500">مبلغ قابل پرداخت</p>
+              <p className="text-[11px] text-slate-500">{activeStep === 3 ? "جمع نهایی" : "مبلغ قابل پرداخت"}</p>
               <p className="truncate text-base font-black text-blue-900">
-                {formatPrice(orderSummary.payable)} تومان
+                {activeStep === 3 ? "در فرم پرداخت" : `${formatPrice(orderSummary.payable)} تومان`}
               </p>
             </div>
             {activeStep > 1 && (

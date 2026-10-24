@@ -38,7 +38,10 @@ export async function PUT(
     return NextResponse.json({ message: "سفارش ویرایش شد." }, { status: 200 });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ message: "خطای سرور" }, { status: 500 });
+    return NextResponse.json(
+      { message: "تغییرات سفارش ذخیره نشد؛ دوباره تلاش کنید." },
+      { status: 500 },
+    );
   }
 }
 
@@ -74,7 +77,7 @@ export async function DELETE(
   } catch (err) {
     console.error(err);
     return NextResponse.json(
-      { message: "خطای سرور", status: 500 },
+      { message: "سفارش حذف نشد؛ دوباره تلاش کنید.", status: 500 },
       { status: 500 },
     );
   }

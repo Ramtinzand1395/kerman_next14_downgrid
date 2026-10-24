@@ -24,7 +24,7 @@ const quickLinks = [
 ];
 
 const features = [
-  { title: "ارسال سریع", desc: "ارسال همان‌روز در کرمان", icon: Truck },
+  { title: "ارسال شفاف", desc: "شهری کرمان یا سراسری پس‌کرایه", icon: Truck },
   {
     title: "ضمانت اصالت",
     desc: "محصولات اورجینال و تست‌شده",
@@ -131,7 +131,7 @@ export default function Footer() {
 
             <p className="text-sm leading-7 text-gray-600">
               خرید و فروش بازی‌های پلی‌استیشن، کنسول و اکانت‌های دیجیتالی با
-              قیمت رقابتی و ارسال سریع.
+              قیمت رقابتی و شرایط شفاف ارسال.
             </p>
           </section>
 

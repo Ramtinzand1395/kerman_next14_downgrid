@@ -115,7 +115,7 @@ export default function Profile() {
     const res = await updateProfileInfo(formData as unknown as UserProfileForm);
 
     if (res.success) {
-      toast.success("اطلاعات با موفقیت ذخیره شد");
+      toast.success("تغییرات پروفایل شما ذخیره شد.");
       window.scrollTo({
         top: 0,
         behavior: "smooth",
@@ -123,7 +123,7 @@ export default function Profile() {
       setEditField(null);
       scrollPageToTop();
     } else {
-      toast.error(res.error || "خطا در ذخیره اطلاعات");
+      toast.error(res.error || "تغییرات پروفایل ذخیره نشد؛ دوباره تلاش کنید.");
     }
   };
 

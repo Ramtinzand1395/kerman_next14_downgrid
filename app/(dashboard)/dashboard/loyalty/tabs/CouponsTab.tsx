@@ -123,11 +123,11 @@ export default function CouponsTab() {
         });
     setSaving(false);
     if (res.ok) {
-      toast.success(modal?.id ? "کوپن ویرایش شد" : "کوپن ساخته شد");
+      toast.success(modal?.id ? "تغییرات کوپن ذخیره شد." : "کوپن جدید ساخته شد.");
       setModal(null);
       load();
     } else {
-      toast.error(res.error ?? "خطا در ذخیره");
+      toast.error(res.error ?? "کوپن ذخیره نشد؛ اطلاعات را بررسی کنید.");
     }
   };
 
@@ -135,9 +135,9 @@ export default function CouponsTab() {
     if (!confirm("کوپن غیرفعال شود؟")) return;
     const res = await apiFetch(`/api/admin/loyalty/coupons/${id}`, { method: "DELETE" });
     if (res.ok) {
-      toast.success("کوپن غیرفعال شد");
+      toast.success("کوپن غیرفعال شد و دیگر قابل استفاده نیست.");
       load();
-    } else toast.error(res.error ?? "خطا");
+    } else toast.error(res.error ?? "کوپن غیرفعال نشد؛ دوباره تلاش کنید.");
   };
 
   return (

@@ -22,7 +22,7 @@ const ImageUploader = ({ form, updateField }: ImageUploaderProps) => {
     if (!files.length) return;
 
     setLoadingImage(true);
-    toast.info("در حال آپلود تصاویر...");
+    toast.info("آپلود تصاویر گالری آغاز شد…");
 
     try {
       const uploaded = await Promise.all(files.map(uploadCloudinaryImage));
@@ -32,7 +32,7 @@ const ImageUploader = ({ form, updateField }: ImageUploaderProps) => {
       }));
 
       updateField("galleryImages", [...form.galleryImages, ...newImages]);
-      toast.success("تصاویر گالری آپلود شد");
+      toast.success("تصاویر گالری آپلود و آماده استفاده شدند.");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "خطا در آپلود تصاویر گالری",

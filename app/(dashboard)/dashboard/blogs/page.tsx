@@ -140,7 +140,7 @@ export default function BlogsAdminPage() {
       setBlogs((await response.json()) as BlogPost[]);
     } catch (error) {
       console.error(error);
-      toast.error("دریافت فهرست مقاله‌ها ناموفق بود");
+      toast.error("فهرست مقاله‌ها دریافت نشد؛ صفحه را تازه‌سازی کنید.");
     } finally {
       setLoading(false);
     }
@@ -201,11 +201,11 @@ export default function BlogsAdminPage() {
   const handleCoverUpload = async (file?: File) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      toast.warning("فایل انتخاب‌شده تصویر نیست");
+      toast.warning("فایل انتخاب‌شده تصویر نیست؛ یک فایل JPG، PNG یا WebP انتخاب کنید.");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.warning("حجم تصویر باید کمتر از ۵ مگابایت باشد");
+      toast.warning("حجم تصویر بیشتر از ۵ مگابایت است؛ فایل کوچک‌تری انتخاب کنید.");
       return;
     }
 
@@ -213,10 +213,10 @@ export default function BlogsAdminPage() {
     try {
       const url = await uploadCloudinaryImage(file);
       setForm((previous) => ({ ...previous, coverImage: url }));
-      toast.success("تصویر شاخص آپلود شد");
+      toast.success("تصویر شاخص آپلود و به مقاله اضافه شد.");
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : "آپلود تصویر ناموفق بود");
+      toast.error(error instanceof Error ? error.message : "تصویر آپلود نشد؛ دوباره تلاش کنید.");
     } finally {
       setUploadingImage(false);
     }
@@ -232,17 +232,17 @@ export default function BlogsAdminPage() {
       const data = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(data.error || "حذف مقاله ناموفق بود");
       if (editingBlog?._id === blog._id) resetForm();
-      toast.success("مقاله حذف شد");
+      toast.success("مقاله حذف شد و دیگر نمایش داده نمی‌شود.");
       await fetchBlogs();
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : "حذف مقاله ناموفق بود");
+      toast.error(error instanceof Error ? error.message : "مقاله حذف نشد؛ دوباره تلاش کنید.");
     }
   };
 
   const saveArticle = async (published: boolean) => {
     if (!form.title.trim()) {
-      toast.warning("عنوان مقاله را وارد کنید");
+      toast.warning("برای ذخیره مقاله، عنوان آن را وارد کنید.");
       return;
     }
 
@@ -255,7 +255,7 @@ export default function BlogsAdminPage() {
         behavior: "smooth",
         block: "start",
       });
-      toast.warning("موارد قرمز چک‌لیست سئو را تکمیل کنید");
+      toast.warning("پیش از انتشار، موارد قرمز چک‌لیست سئو را برطرف کنید.");
       return;
     }
 
@@ -309,7 +309,7 @@ export default function BlogsAdminPage() {
       setActiveView("library");
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : "ذخیره مقاله ناموفق بود");
+      toast.error(error instanceof Error ? error.message : "مقاله ذخیره نشد؛ دوباره تلاش کنید.");
     } finally {
       setSubmitting(null);
     }

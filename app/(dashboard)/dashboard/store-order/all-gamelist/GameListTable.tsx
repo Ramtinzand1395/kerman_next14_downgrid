@@ -51,13 +51,13 @@ export default function GameListTable({
 
       if (!res.ok) throw new Error();
 
-      toast.success("بازی حذف شد");
+      toast.success("بازی از فهرست حذف شد.");
 
       await onChanged();
     } catch (error) {
       console.log(error);
 
-      toast.error("حذف بازی انجام نشد");
+      toast.error("بازی حذف نشد؛ دوباره تلاش کنید.");
     }
   };
 

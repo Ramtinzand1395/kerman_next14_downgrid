@@ -113,7 +113,11 @@ function DetailsModal({
       await action();
       await onChanged();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "عملیات انجام نشد.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "تغییر موردنظر ذخیره نشد؛ دوباره تلاش کنید.",
+      );
     } finally {
       setWorking(null);
     }
@@ -128,7 +132,7 @@ function DetailsModal({
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || "تایید دیدگاه انجام نشد.");
     setApproved(true);
-    toast.success("دیدگاه تایید شد.");
+    toast.success("دیدگاه تأیید شد و اکنون برای کاربران نمایش داده می‌شود.");
   });
 
   const startOrderProcessing = () => run("processing", async () => {
@@ -140,7 +144,7 @@ function DetailsModal({
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || "تغییر وضعیت سفارش انجام نشد.");
     setOrderStatus("processing");
-    toast.success("پردازش سفارش آغاز شد.");
+    toast.success("وضعیت سفارش به «در حال پردازش» تغییر کرد.");
   });
 
   const updateAppointmentStatus = (nextStatus: AppointmentStatus) => run("appointment-status", async () => {
@@ -156,7 +160,7 @@ function DetailsModal({
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || "تغییر وضعیت نوبت انجام نشد.");
     setAppointmentStatus(nextStatus);
-    toast.success("وضعیت نوبت تغییر کرد.");
+    toast.success("وضعیت نوبت ذخیره شد.");
   });
 
   const user = record(item.user);
@@ -314,7 +318,11 @@ export default function AdminNotificationAction({
       setSelected(result.notification as NotificationItem);
       await onRead();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "جزئیات دریافت نشد.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "جزئیات اعلان دریافت نشد؛ دوباره تلاش کنید.",
+      );
     } finally {
       setLoading(false);
     }

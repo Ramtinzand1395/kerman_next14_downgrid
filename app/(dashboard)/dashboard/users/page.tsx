@@ -100,7 +100,7 @@ export default function UsersPage() {
           cache: "no-store",
           signal: controller.signal,
         });
-        if (!res.ok) throw new Error("خطای سرور");
+        if (!res.ok) throw new Error("فهرست کاربران دریافت نشد.");
         const data: UsersResponse = await res.json();
         setUsers(data.users);
         setSummary(data.summary);
@@ -109,7 +109,7 @@ export default function UsersPage() {
       } catch (error) {
         if (controller.signal.aborted) return;
         console.error(error);
-        toast.error("دریافت اطلاعات کاربران با خطا مواجه شد");
+        toast.error("فهرست کاربران دریافت نشد؛ صفحه را تازه‌سازی کنید.");
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }

@@ -70,7 +70,7 @@ export const ProductGallery = ({
 
   const handleToggleFavorite = async () => {
     if (!session?.user?.id) {
-      toast.error("برای افزودن به علاقه‌مندی ابتدا وارد شوید.");
+      toast.info("برای ذخیره محصول در علاقه‌مندی‌ها، ابتدا وارد حساب شوید.");
       return;
     }
     try {
@@ -81,14 +81,14 @@ export const ProductGallery = ({
           body: JSON.stringify({ productId }),
         });
 
-        if (res.status === 401) return toast.error("لطفاً دوباره وارد شوید.");
+        if (res.status === 401) return toast.info("نشست شما پایان یافته است؛ لطفاً دوباره وارد شوید.");
         if (!res.ok) {
           const err = await res.json().catch(() => null);
-          return toast.error(err?.error || "خطا در حذف از علاقه‌مندی‌ها");
+          return toast.error(err?.error || "محصول از علاقه‌مندی‌ها حذف نشد؛ دوباره تلاش کنید.");
         }
 
         removeFavorite(productId);
-        toast.info("از علاقه‌مندی‌ها حذف شد ❌");
+        toast.success("محصول از علاقه‌مندی‌ها حذف شد.");
       } else {
         const res = await fetch("/api/profile/favorites", {
           method: "POST",
@@ -96,18 +96,18 @@ export const ProductGallery = ({
           body: JSON.stringify({ productId }),
         });
 
-        if (res.status === 401) return toast.error("لطفاً وارد شوید.");
+        if (res.status === 401) return toast.info("برای ادامه، لطفاً وارد حساب شوید.");
         if (!res.ok) {
           const err = await res.json().catch(() => null);
-          return toast.error(err?.error || "خطا در افزودن به علاقه‌مندی‌ها");
+          return toast.error(err?.error || "محصول به علاقه‌مندی‌ها اضافه نشد؛ دوباره تلاش کنید.");
         }
 
         addFavorite(productId);
-        toast.success("به علاقه‌مندی‌ها اضافه شد ❤️");
+        toast.success("محصول به علاقه‌مندی‌ها اضافه شد.");
       }
     } catch (error) {
       console.error("favorite toggle error:", error);
-      toast.error("خطایی رخ داد");
+      toast.error("تغییر علاقه‌مندی ذخیره نشد؛ دوباره تلاش کنید.");
     }
   };
 
@@ -123,10 +123,10 @@ export const ProductGallery = ({
         return;
       }
       await navigator.clipboard.writeText(shareData.url);
-      toast.success("لینک محصول کپی شد ✅");
+      toast.success("لینک محصول کپی شد؛ اکنون می‌توانید آن را به اشتراک بگذارید.");
     } catch (error) {
       console.error("share product error:", error);
-      toast.error("اشتراک‌گذاری انجام نشد");
+      toast.error("اشتراک‌گذاری انجام نشد؛ لینک صفحه را به‌صورت دستی کپی کنید.");
     }
   };
 

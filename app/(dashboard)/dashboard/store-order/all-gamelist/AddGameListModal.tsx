@@ -84,57 +84,9 @@ export default function GameFormModal({
     }
   }, [editGame, platform]);
 
-  // const submit = async () => {
-  //   if (!form.name.trim()) {
-  //     toast.warning("نام بازی الزامی است");
-
-  //     return;
-  //   }
-
-  //   try {
-  //     setLoading(true);
-
-  //     const method = editGame ? "PUT" : "POST";
-
-  //     const body = editGame
-  //       ? {
-  //           platform,
-
-  //           itemId: editGame._id,
-
-  //           ...form,
-  //         }
-  //       : form;
-
-  //     const res = await fetch("/api/admin/store-order/game-list", {
-  //       method,
-
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-
-  //       body: JSON.stringify(body),
-  //     });
-
-  //     if (!res.ok) throw new Error();
-
-  //     toast.success(editGame ? "ویرایش شد" : "بازی اضافه شد");
-
-  //     await refresh();
-
-  //     close();
-  //   } catch (error) {
-  //     console.log(error);
-
-  //     toast.error("عملیات انجام نشد");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const submit = async () => {
     if (!form.name.trim()) {
-      toast.warning("نام بازی الزامی است");
+      toast.warning("برای ذخیره بازی، نام آن را وارد کنید.");
       return;
     }
 
@@ -171,11 +123,11 @@ export default function GameFormModal({
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || "خطا");
+        throw new Error(data.message || "بازی ذخیره نشد.");
       }
 
       toast.success(
-        editGame ? "بازی با موفقیت ویرایش شد" : "بازی با موفقیت اضافه شد",
+        editGame ? "تغییرات بازی ذخیره شد." : "بازی به فهرست اضافه شد.",
       );
 
       await refresh();
@@ -183,7 +135,7 @@ export default function GameFormModal({
       close();
     } catch (error) {
       console.log(error);
-      toast.error("عملیات انجام نشد");
+      toast.error("بازی ذخیره نشد؛ اطلاعات را بررسی و دوباره تلاش کنید.");
     } finally {
       setLoading(false);
     }
@@ -339,7 +291,7 @@ p-3
 
           <input
             placeholder="
-Storage
+فضای ذخیره‌سازی
 "
             value={form.storage}
             onChange={(e) =>
@@ -372,7 +324,7 @@ disabled:opacity-50
 "
           >
             {loading
-              ? "در حال ثبت..."
+              ? "در حال ثبت…"
               : editGame
                 ? "ذخیره تغییرات"
                 : "افزودن بازی"}

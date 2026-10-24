@@ -10,6 +10,9 @@ import ProductPurchaseSummary from "./ProductPurchaseSummary";
 import type { Product } from "@/types";
 import { SITE_URL, toAbsoluteUrl } from "@/lib/site";
 import ProductImage from "@/app/components/ProductImage";
+import { getStoreShippingSettings } from "@/lib/shippingSettings";
+import { tomanToIrr } from "@/lib/currency";
+import { formatLocalShippingPolicyText } from "@/lib/shipping";
 
 type ProductResponse = Product & {
   id?: string;
@@ -219,9 +222,18 @@ export default async function ProductPage({
     throw error;
   }
 
-  const { relatedProducts } = await getRelatedProducts(
-    product._id || product.id,
-  );
+  const [{ relatedProducts }, shippingSettings] = await Promise.all([
+    getRelatedProducts(product._id || product.id),
+    getStoreShippingSettings(),
+  ]);
+  const shippingNotices = [
+    shippingSettings.localDelivery.enabled
+      ? formatLocalShippingPolicyText(shippingSettings.localDelivery.feeToman)
+      : null,
+    shippingSettings.nationalCollect.enabled
+      ? shippingSettings.nationalCollect.description
+      : null,
+  ].filter((value): value is string => Boolean(value));
   const finalPrice = product.discountPrice ?? product.price;
   const productUrl = toAbsoluteUrl(`/product/${product.slug}`);
 
@@ -229,12 +241,12 @@ export default async function ProductPage({
     (v: any) => v.isActive !== false,
   );
   const pricesInIRR = activeVariants.map(
-    (v: any) => ((v.discountPrice ?? v.price) || 0) * 10,
+    (v: any) => tomanToIrr(Number((v.discountPrice ?? v.price) || 0)),
   );
   const minPriceInIRR =
-    pricesInIRR.length > 0 ? Math.min(...pricesInIRR) : finalPrice * 10;
+    pricesInIRR.length > 0 ? Math.min(...pricesInIRR) : tomanToIrr(finalPrice);
   const maxPriceInIRR =
-    pricesInIRR.length > 0 ? Math.max(...pricesInIRR) : finalPrice * 10;
+    pricesInIRR.length > 0 ? Math.max(...pricesInIRR) : tomanToIrr(finalPrice);
   const totalStock =
     product.productType === "multi" && activeVariants.length > 0
       ? activeVariants.reduce((s: number, v: any) => s + (v.stock || 0), 0)
@@ -274,25 +286,13 @@ export default async function ProductPage({
         : {
             "@type": "Offer",
             priceCurrency: "IRR",
-            price: finalPrice * 10,
+            price: tomanToIrr(finalPrice),
             availability:
               product.stock > 0
                 ? "https://schema.org/InStock"
                 : "https://schema.org/OutOfStock",
             url: productUrl,
           },
-    shippingDetails: {
-      "@type": "OfferShippingDetails",
-      shippingRate: {
-        "@type": "MonetaryAmount",
-        value: 0,
-        currency: "IRR",
-      },
-      shippingDestination: {
-        "@type": "DefinedRegion",
-        addressCountry: "IR",
-      },
-    },
     aggregateRating:
       product.comments?.length > 0
         ? {
@@ -389,7 +389,7 @@ export default async function ProductPage({
                   />
                 </div>
                 <div className="xl:col-span-7 xl:border-r xl:pr-8 border-zinc-100">
-                  <ProductInfo product={product} />
+                  <ProductInfo product={product} shippingNotices={shippingNotices} />
                 </div>
               </div>
             </div>
@@ -416,7 +416,7 @@ export default async function ProductPage({
                 </div>
               ) : (
                 <p className="text-zinc-600 leading-8 text-sm md:text-base">
-                  این محصول با تضمین اصالت، ارسال سریع و پشتیبانی کامل ارائه
+                  این محصول با تضمین اصالت، ارسال براساس مقصد و پشتیبانی کامل ارائه
                   می‌شود.
                 </p>
               )}

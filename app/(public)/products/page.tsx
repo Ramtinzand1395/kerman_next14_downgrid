@@ -228,7 +228,7 @@ export default async function ProductsPage({
           </div>
 
           <div className="grid grid-cols-3 gap-2 text-center text-xs sm:min-w-[390px] sm:text-sm">
-            <div className="rounded-xl border border-white/15 bg-white/10 px-3 py-2.5">ارسال سریع</div>
+            <div className="rounded-xl border border-white/15 bg-white/10 px-3 py-2.5">ارسال براساس مقصد</div>
             <div className="rounded-xl border border-white/15 bg-white/10 px-3 py-2.5">تضمین اصالت</div>
             <div className="rounded-xl border border-white/15 bg-white/10 px-3 py-2.5">پشتیبانی تخصصی</div>
           </div>

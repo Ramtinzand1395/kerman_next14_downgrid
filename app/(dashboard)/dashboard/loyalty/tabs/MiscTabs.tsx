@@ -92,19 +92,19 @@ export function AchievementsTab() {
         });
     setSaving(false);
     if (res.ok) {
-      toast.success("ذخیره شد");
+      toast.success("نشان وفاداری ذخیره شد.");
       setModal(null);
       load();
-    } else toast.error(res.error ?? "خطا در ذخیره");
+    } else toast.error(res.error ?? "نشان وفاداری ذخیره نشد؛ دوباره تلاش کنید.");
   };
 
   const remove = async (id: string) => {
     if (!confirm("نشان حذف شود؟")) return;
     const res = await apiFetch(`/api/admin/loyalty/achievements/${id}`, { method: "DELETE" });
     if (res.ok) {
-      toast.success("حذف شد");
+      toast.success("نشان وفاداری حذف شد.");
       load();
-    } else toast.error(res.error ?? "خطا");
+    } else toast.error(res.error ?? "نشان وفاداری حذف نشد؛ دوباره تلاش کنید.");
   };
 
   return (
@@ -294,7 +294,7 @@ export function CampaignsTab() {
     e.preventDefault();
     if (saving) return;
     if (!form.startsAt || !form.endsAt) {
-      toast.error("بازه زمانی کمپین الزامی است");
+      toast.warning("برای ذخیره کمپین، زمان شروع و پایان را مشخص کنید.");
       return;
     }
     setSaving(true);
@@ -319,19 +319,19 @@ export function CampaignsTab() {
         });
     setSaving(false);
     if (res.ok) {
-      toast.success("ذخیره شد");
+      toast.success("کمپین وفاداری ذخیره شد.");
       setModal(null);
       load();
-    } else toast.error(res.error ?? "خطا در ذخیره");
+    } else toast.error(res.error ?? "کمپین وفاداری ذخیره نشد؛ دوباره تلاش کنید.");
   };
 
   const remove = async (id: string) => {
     if (!confirm("کمپین حذف شود؟")) return;
     const res = await apiFetch(`/api/admin/loyalty/campaigns/${id}`, { method: "DELETE" });
     if (res.ok) {
-      toast.success("حذف شد");
+      toast.success("کمپین وفاداری حذف شد.");
       load();
-    } else toast.error(res.error ?? "خطا");
+    } else toast.error(res.error ?? "کمپین وفاداری حذف نشد؛ دوباره تلاش کنید.");
   };
 
   return (

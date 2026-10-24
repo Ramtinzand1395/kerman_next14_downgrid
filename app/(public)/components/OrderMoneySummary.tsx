@@ -48,7 +48,7 @@ export default function OrderMoneySummaryView({
       )}
 
       <div className="mt-4 flex items-center justify-between gap-4 border-t border-slate-200 pt-4">
-        <span className="font-black text-slate-900">مبلغ قابل پرداخت</span>
+        <span className="font-black text-slate-900">مبلغ کل قابل پرداخت در سایت</span>
         <span className="text-lg font-black text-blue-800">
           {formatPrice(summary.payable)} تومان
         </span>

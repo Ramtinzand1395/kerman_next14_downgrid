@@ -22,7 +22,7 @@ export default function MyAddresses() {
       const data = await res.json();
       setAddresses(data);
     } catch (err) {
-      toast.error("خطا در دریافت آدرس‌ها");
+      toast.error("آدرس‌ها دریافت نشدند؛ صفحه را تازه‌سازی کنید.");
       console.log(err);
     } finally {
       setLoading(false);
@@ -37,7 +37,7 @@ export default function MyAddresses() {
       if (err instanceof yup.ValidationError) {
         err.inner.forEach((e) => toast.error(e.message));
       } else {
-        toast.error("خطای ناشناخته");
+        toast.error("اطلاعات آدرس کامل یا معتبر نیست؛ موارد فرم را بررسی کنید.");
       }
       return;
     }
@@ -52,11 +52,11 @@ export default function MyAddresses() {
 
       if (!res.ok) throw new Error();
 
-      toast.success("آدرس با موفقیت ذخیره شد");
+      toast.success("آدرس شما ذخیره شد.");
       setForm({});
       getAddresses();
     } catch {
-      toast.error("خطا در ذخیره آدرس");
+      toast.error("آدرس ذخیره نشد؛ اطلاعات را بررسی و دوباره تلاش کنید.");
     }
   };
 
@@ -71,9 +71,9 @@ export default function MyAddresses() {
       if (!res.ok) throw new Error();
 
       setAddresses((prev) => prev.filter((a) => a._id !== id));
-      toast.info("آدرس حذف شد");
+      toast.success("آدرس از فهرست شما حذف شد.");
     } catch {
-      toast.error("خطا در حذف آدرس");
+      toast.error("آدرس حذف نشد؛ چند لحظه دیگر دوباره تلاش کنید.");
     }
   };
 

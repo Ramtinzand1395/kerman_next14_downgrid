@@ -44,7 +44,7 @@ export default function ShippingForm({
       const data = await response.json();
       setAddresses(data);
     } catch {
-      toast.error("دریافت آدرس‌ها با مشکل مواجه شد.");
+      toast.error("آدرس‌ها دریافت نشدند؛ صفحه را تازه‌سازی و دوباره تلاش کنید.");
     } finally {
       setLoading(false);
     }
@@ -79,7 +79,7 @@ export default function ShippingForm({
       if (error instanceof yup.ValidationError) {
         error.inner.forEach((item) => toast.error(item.message));
       } else {
-        toast.error("اطلاعات وارد شده نامعتبر است.");
+        toast.error("اطلاعات آدرس کامل یا معتبر نیست؛ موارد فرم را بررسی کنید.");
       }
       return;
     }
@@ -95,12 +95,12 @@ export default function ShippingForm({
       if (!response.ok) throw new Error();
 
       toast.success(
-        form._id ? "آدرس با موفقیت ویرایش شد." : "آدرس جدید ثبت شد.",
+        form._id ? "تغییرات آدرس ذخیره شد." : "آدرس جدید ذخیره شد.",
       );
       resetForm();
       await getAddresses();
     } catch {
-      toast.error("ثبت آدرس انجام نشد.");
+      toast.error("آدرس ذخیره نشد؛ اطلاعات را بررسی و دوباره تلاش کنید.");
     }
   };
 
@@ -124,9 +124,9 @@ export default function ShippingForm({
         setSelectedAddress(nextAddress);
       }
 
-      toast.info("آدرس حذف شد.");
+      toast.success("آدرس از فهرست شما حذف شد.");
     } catch {
-      toast.error("حذف آدرس انجام نشد.");
+      toast.error("آدرس حذف نشد؛ چند لحظه دیگر دوباره تلاش کنید.");
     }
   };
 
