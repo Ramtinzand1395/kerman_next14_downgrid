@@ -117,6 +117,7 @@ function normalizeVariants(
   );
   const acceptedVariantIds = new Set<string>();
   const seenSkus = new Set<string>();
+  const seenBarcodes = new Set<string>();
 
   const normalized = rawVariants.map((rawVariant, index) => {
     if (!rawVariant || typeof rawVariant !== "object") {
@@ -180,6 +181,17 @@ function normalizeVariants(
         );
       }
       seenSkus.add(lowerSku);
+    }
+
+    if (barcode) {
+      const normalizedBarcode = barcode.toLowerCase();
+      if (seenBarcodes.has(normalizedBarcode)) {
+        throw new ProductInputValidationError(
+          `variants.${index}.barcode`,
+          `بارکد مدل (${barcode}) در این محصول تکراری است.`,
+        );
+      }
+      seenBarcodes.add(normalizedBarcode);
     }
 
     return {
@@ -344,6 +356,24 @@ export function buildProductWriteInput(
   }
 
   const sku = optionalString(body.sku);
+  const barcode =
+    productType === "multi"
+      ? null
+      : options.mode === "update" && body.barcode === undefined
+        ? undefined
+        : optionalString(body.barcode) ?? null;
+
+  if (
+    sku &&
+    variants.some(
+      (variant) => variant.sku?.toLowerCase() === sku.toLowerCase(),
+    )
+  ) {
+    throw new ProductInputValidationError(
+      "sku",
+      "SKU محصول نمی‌تواند با SKU یکی از مدل‌های همان محصول تکراری باشد.",
+    );
+  }
 
   let variantSelector;
   try {
@@ -365,6 +395,7 @@ export function buildProductWriteInput(
     ...(variantSelector ? { variantSelector } : {}),
     ...(defaultVariantId ? { defaultVariantId } : {}),
     ...(sku ? { sku } : {}),
+    ...(barcode !== undefined ? { barcode } : {}),
     title: requiredString(body.title, "title"),
     slug: requiredString(body.slug, "slug"),
     description: optionalString(body.description),

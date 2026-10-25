@@ -129,6 +129,7 @@ export interface ProductForm {
   title: string;
   slug: string;
   sku?: string;
+  barcode?: string | null;
   price: number;
   discountPrice?: number | null;
   stock: number;
@@ -231,6 +232,7 @@ export interface Product {
   deletedAt?: string | Date | null;
   _id: string;
   sku: string;
+  barcode?: string | null;
   title: string;
   slug: string;
   description: string;

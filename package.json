@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "node --test *.test.mjs",
+    "audit:pos-catalog": "node --env-file=.env scripts/audit-pos-catalog-identities.mjs",
     "audit:referral": "node --env-file=.env scripts/audit-referral-integrity.mjs",
     "seed": "node helpers/seed.mjs"
   },

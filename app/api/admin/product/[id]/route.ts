@@ -18,6 +18,11 @@ import {
   buildProductWriteInput,
   ProductInputValidationError,
 } from "@/lib/productInput";
+import { findCatalogIdentityConflict } from "@/lib/catalogIdentity";
+import {
+  collectCatalogIdentities,
+  differenceCatalogIdentities,
+} from "@/lib/pos/catalog-identities";
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -77,6 +82,26 @@ export async function PUT(
         ? { inventoryVersion: (product.inventoryVersion ?? 0) + 1 }
         : {}),
     };
+
+    const changedIdentities = differenceCatalogIdentities(
+      collectCatalogIdentities(productData),
+      collectCatalogIdentities(product.toObject()),
+    );
+    const identityConflict = await findCatalogIdentityConflict(
+      changedIdentities,
+      id,
+    );
+    if (identityConflict) {
+      return NextResponse.json(
+        {
+          error:
+            identityConflict.kind === "sku"
+              ? `SKU (${identityConflict.value}) قبلاً برای محصول دیگری استفاده شده است.`
+              : `بارکد (${identityConflict.value}) قبلاً برای محصول دیگری استفاده شده است.`,
+        },
+        { status: 409 },
+      );
+    }
 
     product.$locals.removedVariantIds = removedVariantIds;
     product.set(productData);

@@ -10,6 +10,8 @@ import {
   buildProductWriteInput,
   ProductInputValidationError,
 } from "@/lib/productInput";
+import { findCatalogIdentityConflict } from "@/lib/catalogIdentity";
+import { collectCatalogIdentities } from "@/lib/pos/catalog-identities";
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -139,6 +141,21 @@ export async function POST(req: Request) {
       inventoryVersion: 0,
       deletedAt: null,
     };
+
+    const identityConflict = await findCatalogIdentityConflict(
+      collectCatalogIdentities(productData),
+    );
+    if (identityConflict) {
+      return NextResponse.json(
+        {
+          error:
+            identityConflict.kind === "sku"
+              ? `SKU (${identityConflict.value}) قبلاً برای محصول دیگری استفاده شده است.`
+              : `بارکد (${identityConflict.value}) قبلاً برای محصول دیگری استفاده شده است.`,
+        },
+        { status: 409 },
+      );
+    }
 
     const product = await Product.create(productData);
     const createdProduct = Array.isArray(product) ? product[0] : product;

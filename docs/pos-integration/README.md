@@ -2,6 +2,104 @@
 
 این مرحله فقط زیرساخت امن اتصال POS را اضافه می‌کند. هیچ endpoint فروش، تغییر موجودی، ثبت سفارش یا بازپرداخت در این مرحله وجود ندارد.
 
+## Catalog snapshot
+
+`GET /api/pos/v1/catalog/snapshot` فقط برای دستگاه فعال دارای scope `catalog` در دسترس است. فقط محصولات `published` و حذف‌نشده در snapshot هستند. Variantهای غیرفعال داخل محصول multi با `isActive: false` حفظ می‌شوند تا POS بتواند آن هویت را غیرفعال کند.
+
+پارامتر `limit` عدد صحیح بین 1 و 200 است و مقدار پیش‌فرض 100 دارد. `nextCursor` یک cursor opaque است و نباید در client ساخته یا ویرایش شود. صفحه بعد با همان `limit` و `cursor` پاسخ قبلی درخواست می‌شود.
+
+`productId` و `variantId` شناسه‌های canonical همگام‌سازی هستند. SKU و Barcode برای lookup عملیاتی‌اند، nullable باقی می‌مانند و به‌صورت case-insensitive برای writeهای جدید بررسی می‌شوند. Barcode سطح Product فقط برای محصول single است؛ محصول multi از `variants[].barcode` استفاده می‌کند.
+
+برای multi، قیمت خلاصه محصول از default variant فعال (یا نخستین variant فعال) و موجودی مرکزی از مجموع stock Variantهای فعال محاسبه می‌شود. قیمت و موجودی قابل فروش هر Variant همیشه از خود Variant می‌آید، نه از کمینه Parent.
+
+نمونه پاسخ:
+
+```json
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "productId": "66f123456789abcdef123450",
+      "name": "کنسول پلی‌استیشن 5",
+      "slug": "playstation-5",
+      "sku": "PS5-FAMILY",
+      "barcode": null,
+      "productType": "multi",
+      "category": {
+        "categoryId": "66f123456789abcdef123499",
+        "name": "کنسول بازی",
+        "slug": "game-console"
+      },
+      "imageUrl": "https://cdn.example.com/ps5.jpg",
+      "status": "published",
+      "basePriceToman": 35000000,
+      "discountedPriceToman": 34000000,
+      "centralStock": 7,
+      "variants": [
+        {
+          "variantId": "66f123456789abcdef123451",
+          "name": "استاندارد",
+          "sku": "PS5-STD",
+          "barcode": "626000000001",
+          "basePriceToman": 35000000,
+          "discountedPriceToman": 34000000,
+          "stock": 7,
+          "isActive": true,
+          "attributes": [
+            {
+              "groupId": "edition",
+              "key": "edition",
+              "label": "نسخه",
+              "optionId": "standard",
+              "optionLabel": "استاندارد"
+            }
+          ]
+        }
+      ],
+      "catalogRevision": 12,
+      "inventoryVersion": 8,
+      "siteCreatedAtUtc": "2026-01-01T10:00:00.000Z",
+      "siteUpdatedAtUtc": "2026-10-25T10:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "limit": 100,
+    "hasMore": true,
+    "nextCursor": "opaque-cursor-from-server"
+  }
+}
+```
+
+تست دستی PowerShell:
+
+```powershell
+$headers = @{
+  Authorization = "Bearer $env:POS_TEST_TOKEN"
+  "X-POS-Device-ID" = $env:POS_TEST_DEVICE_ID
+}
+
+$page = Invoke-RestMethod `
+  -Method Get `
+  -Uri "http://localhost:3000/api/pos/v1/catalog/snapshot?limit=200" `
+  -Headers $headers
+
+$page.items | Format-Table productId, name, productType, centralStock
+
+if ($page.pagination.hasMore) {
+  $cursor = [Uri]::EscapeDataString($page.pagination.nextCursor)
+  $nextPage = Invoke-RestMethod `
+    -Method Get `
+    -Uri "http://localhost:3000/api/pos/v1/catalog/snapshot?limit=200&cursor=$cursor" `
+    -Headers $headers
+}
+```
+
+بررسی read-only داده‌های قدیمی (هیچ write یا پاک‌سازی انجام نمی‌دهد):
+
+```powershell
+npm run audit:pos-catalog
+```
+
 ## گزارش سازگاری فعلی
 
 - برنامه از Next.js App Router و Route Handler استفاده می‌کند و اتصال MongoDB با Mongoose انجام می‌شود.
