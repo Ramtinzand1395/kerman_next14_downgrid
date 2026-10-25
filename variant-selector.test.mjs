@@ -208,3 +208,4 @@ test("reference wall-art shape supports four chassis sizes and two frame sizes",
   );
   assert.equal(resolveVariantId(config, { type: "frame", size: "s" }), undefined);
 });
+// 
