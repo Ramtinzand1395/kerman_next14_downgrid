@@ -1,16 +1,17 @@
 import mongoose, { type ClientSession } from "mongoose";
-import dbConnect from "@/lib/mongodb";
-import Product from "@/model/Product";
-import PosCatalogChange from "@/model/PosCatalogChange";
-import PosCatalogCounter from "@/model/PosCatalogCounter";
-import { isCatalogProductVisible, mapCatalogProduct } from "./catalog";
+import dbConnect from "../mongodb.ts";
+import Product from "../../model/Product.ts";
+import "../../model/Category.ts";
+import PosCatalogChange from "../../model/PosCatalogChange.ts";
+import PosCatalogCounter from "../../model/PosCatalogCounter.ts";
+import { isCatalogProductVisible, mapCatalogProduct } from "./catalog.ts";
 import {
   detectCatalogChangeKinds,
   executeAtomicCatalogMutation,
   POS_CATALOG_COUNTER_KEY,
   type CatalogChangeEventType,
   type CatalogChangeKind,
-} from "./catalog-changes";
+} from "./catalog-changes.ts";
 
 const PRODUCT_EVENT_PROJECTION = [
   "_id",
@@ -41,6 +42,7 @@ export type CatalogMutationSource =
   | "admin"
   | "zarinpal"
   | "wallet"
+  | "pos"
   | "system";
 
 export type AppendCatalogChangeInput = {

@@ -1,6 +1,77 @@
 # Kerman POS integration foundation (v1)
 
-این مرحله فقط زیرساخت امن اتصال POS را اضافه می‌کند. هیچ endpoint فروش، تغییر موجودی، ثبت سفارش یا بازپرداخت در این مرحله وجود ندارد.
+این سند قرارداد فعلی زیرساخت امن، کاتالوگ و ثبت تراکنشی فروش حضوری POS را شرح می‌دهد. Refund هنوز در این نسخه پیاده‌سازی نشده است.
+
+## ثبت فروش حضوری
+
+`POST /api/pos/v1/sales` فقط برای دستگاه فعال دارای scope `sales` قابل استفاده است. `deviceId` فقط از احراز هویت ماشین‌به‌ماشین خوانده می‌شود و مقدار ادعایی داخل body اعتباری ندارد. هر فروش با `(deviceId, saleId)` یکتا است:
+
+- بار اول پاسخ `201` و `replayed: false` می‌گیرد.
+- تکرار دقیق همان payload پاسخ `200`، همان `siteSaleId` و `replayed: true` می‌گیرد و موجودی دوباره کم نمی‌شود.
+- استفاده از همان کلید با محتوای متفاوت پاسخ `409 POS_SALE_IDEMPOTENCY_CONFLICT` می‌گیرد.
+- کمبود موجودی یا رقابت روی آخرین موجودی پاسخ `409 POS_SALE_INVENTORY_CONFLICT` همراه موجودی قابل دسترس می‌گیرد.
+
+کسر موجودی Product/Variant، افزایش `inventoryVersion`، ثبت `PosSale`، ثبت یک `PosInventoryMovement` برای هر ردیف و رویداد Outbox کاتالوگ در یک MongoDB transaction با majority write concern انجام می‌شود. فروش چندکالایی یا کامل Commit می‌شود یا کامل Rollback می‌شود. مدل‌های `Order` و `StoreOrder` تغییر نکرده‌اند.
+
+قیمت مرجع از Product یا Variant فعلی سایت خوانده و در `priceSnapshot` نگهداری می‌شود. `unitPriceToman` و `discountToman` ادعایی POS نیز جداگانه ذخیره می‌شوند. اختلاف قیمت باعث تغییر قیمت مرجع سایت نمی‌شود؛ فروش با `syncStatus: "review_required"` و reason برابر `price_mismatch` ثبت می‌شود. فروش دیرهنگام آفلاین نیز reason برابر `offline_delay` می‌گیرد. آستانه پیش‌فرض ۱۵ دقیقه و با `POS_OFFLINE_SALE_REVIEW_AFTER_MINUTES` قابل تنظیم است. اگر Product هنوز وجود داشته باشد ولی draft/soft-deleted یا Variant غیرفعال باشد، فروشِ دارای موجودی با `catalog_state` برای بررسی ثبت می‌شود؛ شناسه گمشده یا موجودی ناکافی رد می‌شود.
+
+نمونه درخواست:
+
+```json
+{
+  "saleId": "counter-1-20261026-000042",
+  "soldAtUtc": "2026-10-26T10:30:00.000Z",
+  "items": [
+    {
+      "productId": "66f123456789abcdef123450",
+      "variantId": "66f123456789abcdef123451",
+      "quantity": 1,
+      "unitPriceToman": 35000000,
+      "discountToman": 1000000
+    }
+  ],
+  "finalAmountToman": 34000000,
+  "paymentMethods": [
+    { "method": "card", "amountToman": 34000000, "reference": "terminal-123" }
+  ],
+  "customer": { "customerId": null, "name": "مشتری حضوری", "mobile": null },
+  "cashier": { "cashierId": "cashier-7", "name": "صندوقدار" }
+}
+```
+
+همه قیمت‌ها integer Toman و همه quantityها integer مثبت هستند. جمع مبلغ روش‌های پرداخت، جمع نهایی ردیف‌ها و `finalAmountToman` باید دقیقاً برابر باشد.
+
+تست دستی PowerShell:
+
+```powershell
+$headers = @{
+  Authorization = "Bearer $env:POS_TEST_TOKEN"
+  "X-POS-Device-ID" = $env:POS_TEST_DEVICE_ID
+  "Content-Type" = "application/json"
+}
+
+$saleId = "manual-$([Guid]::NewGuid().ToString('N'))"
+$body = @{
+  saleId = $saleId
+  soldAtUtc = (Get-Date).ToUniversalTime().ToString("o")
+  items = @(@{
+    productId = $env:POS_TEST_PRODUCT_ID
+    variantId = $null
+    quantity = 1
+    unitPriceToman = 1000000
+    discountToman = 0
+  })
+  finalAmountToman = 1000000
+  paymentMethods = @(@{ method = "card"; amountToman = 1000000; reference = "manual-test" })
+  customer = $null
+  cashier = @{ cashierId = "manual"; name = "Manual Test" }
+} | ConvertTo-Json -Depth 8
+
+$first = Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/pos/v1/sales" -Headers $headers -Body $body
+$replay = Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/pos/v1/sales" -Headers $headers -Body $body
+$first.sale.siteSaleId -eq $replay.sale.siteSaleId
+$replay.replayed
+```
 
 ## Catalog snapshot
 
@@ -204,6 +275,8 @@ POS_RATE_LIMIT_REQUESTS_PER_MINUTE=
 POS_AUTH_FAILURE_LIMIT=
 POS_AUTH_FAILURE_WINDOW_SECONDS=
 POS_CATALOG_CHANGE_RETENTION_DAYS=
+POS_OFFLINE_SALE_REVIEW_AFTER_MINUTES=
+MONGODB_TEST_URI=
 ```
 
 اگر متغیرهای عددی خالی باشند، به‌ترتیب مقادیر پیش‌فرض 120 درخواست در دقیقه، 10 تلاش ناموفق، پنجره 900 ثانیه و retention نودروزه Outbox استفاده می‌شود.
@@ -226,7 +299,7 @@ Content-Type: application/json
 
 {
   "name": "Kerman Counter 1",
-  "scopes": ["catalog"]
+  "scopes": ["catalog", "sales"]
 }
 ```
 
@@ -264,3 +337,13 @@ npm run build
 ```
 
 تست‌های POS شامل نبود توکن، توکن اشتباه، scope اشتباه، توکن معتبر، دستگاه غیرفعال و جلوگیری از افشای توکن در پاسخ و log است.
+
+تست Integration فروش در حالت پیش‌فرض یک MongoDB Replica Set موقت و in-memory ایجاد می‌کند و پس از تست آن را متوقف می‌کند. برای استفاده از MongoDB آزمایشی خودتان، URI باید نام دیتابیسی شامل `test` داشته باشد و سرور باید Replica Set یا Sharded Cluster با پشتیبانی Transaction باشد. هرگز URI Production را در این متغیر قرار ندهید:
+
+```powershell
+$env:MONGODB_TEST_URI = "mongodb://127.0.0.1:27019/kerman_pos_test?replicaSet=rs0"
+npm run test:pos-sales:integration
+Remove-Item Env:MONGODB_TEST_URI
+```
+
+اگر `MONGODB_TEST_URI` تنظیم نشده باشد، تست از Replica Set موقت استفاده می‌کند و هیچ اتصال Production انجام نمی‌دهد.

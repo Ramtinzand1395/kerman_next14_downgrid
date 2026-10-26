@@ -1,5 +1,5 @@
 import mongoose, { Schema, model } from "mongoose";
-import { CATALOG_CHANGE_KINDS } from "@/lib/pos/catalog-changes";
+import { CATALOG_CHANGE_KINDS } from "../lib/pos/catalog-changes.ts";
 
 const PosCatalogChangeSchema = new Schema(
   {
