@@ -69,6 +69,7 @@ export type CatalogProductSource = Record<string, unknown> & {
 
 export type CatalogSnapshotPage = {
   items: CatalogSnapshotItem[];
+  syncCursor?: string;
   pagination: {
     limit: number;
     hasMore: boolean;

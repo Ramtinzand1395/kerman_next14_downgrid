@@ -12,6 +12,7 @@ import {
 } from "@/lib/productInput";
 import { findCatalogIdentityConflict } from "@/lib/catalogIdentity";
 import { collectCatalogIdentities } from "@/lib/pos/catalog-identities";
+import { createProductWithCatalogChange } from "@/lib/pos/catalog-outbox";
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -157,8 +158,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const product = await Product.create(productData);
-    const createdProduct = Array.isArray(product) ? product[0] : product;
+    const product = await createProductWithCatalogChange(productData);
+    const createdProduct = product;
     if (createdProduct?.status === "published") {
       await notifyLowInventory([createdProduct._id]).catch((error) =>
         console.error("[notifications] product inventory event failed:", error),

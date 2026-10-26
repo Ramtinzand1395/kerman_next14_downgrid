@@ -10,6 +10,8 @@
 
 `productId` و `variantId` شناسه‌های canonical همگام‌سازی هستند. SKU و Barcode برای lookup عملیاتی‌اند، nullable باقی می‌مانند و به‌صورت case-insensitive برای writeهای جدید بررسی می‌شوند. Barcode سطح Product فقط برای محصول single است؛ محصول multi از `variants[].barcode` استفاده می‌کند.
 
+فیلد top-level به نام `syncCursor` در پاسخ snapshot، مرز پایدار شروع Incremental Sync است. در snapshot چندصفحه‌ای، Cursor اولین صفحه را نگه دارید؛ تغییراتی که هم‌زمان با دریافت صفحه‌ها Commit شوند sequence بزرگ‌تری دارند و بعداً از endpoint تغییرات دریافت می‌شوند.
+
 برای multi، قیمت خلاصه محصول از default variant فعال (یا نخستین variant فعال) و موجودی مرکزی از مجموع stock Variantهای فعال محاسبه می‌شود. قیمت و موجودی قابل فروش هر Variant همیشه از خود Variant می‌آید، نه از کمینه Parent.
 
 نمونه پاسخ:
@@ -17,6 +19,7 @@
 ```json
 {
   "apiVersion": "v1",
+  "syncCursor": "opaque-outbox-cursor",
   "items": [
     {
       "productId": "66f123456789abcdef123450",
@@ -70,6 +73,69 @@
 }
 ```
 
+## Incremental catalog changes
+
+`GET /api/pos/v1/catalog/changes` فقط برای دستگاه فعال دارای scope `catalog` است. رویدادها در MongoDB ذخیره می‌شوند و با Restart یا scale-to-zero شدن Function از بین نمی‌روند. ترتیب فقط بر اساس sequence افزایشی Outbox است و Timestamp در Cursor نقشی ندارد.
+
+نمونه پاسخ:
+
+```json
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "sequence": 42,
+      "eventId": "66f123456789abcdef123460",
+      "productId": "66f123456789abcdef123450",
+      "eventType": "updated",
+      "changes": ["price", "inventory"],
+      "action": "upsert",
+      "product": {
+        "productId": "66f123456789abcdef123450",
+        "name": "کنسول پلی‌استیشن 5",
+        "slug": "playstation-5",
+        "sku": "PS5-FAMILY",
+        "barcode": null,
+        "productType": "multi",
+        "category": null,
+        "imageUrl": "https://cdn.example.com/ps5.jpg",
+        "status": "published",
+        "basePriceToman": 35000000,
+        "discountedPriceToman": 34000000,
+        "centralStock": 6,
+        "variants": [],
+        "catalogRevision": 13,
+        "inventoryVersion": 9,
+        "siteCreatedAtUtc": "2026-01-01T10:00:00.000Z",
+        "siteUpdatedAtUtc": "2026-10-25T11:00:00.000Z"
+      },
+      "catalogRevision": 13,
+      "inventoryVersion": 9,
+      "occurredAtUtc": "2026-10-25T11:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "limit": 100,
+    "hasMore": false,
+    "nextCursor": "opaque-cursor-from-server",
+    "highWaterCursor": "opaque-high-water-cursor"
+  }
+}
+```
+
+`action: "upsert"` شامل snapshot کامل و whitelist‌شده محصول است. برای draft، غیرفعال‌سازی و soft-delete مقدار `action` برابر `remove` و `product` برابر `null` است. Cursor را opaque نگه دارید و پس از اعمال اتمیک همه آیتم‌های صفحه، فقط `nextCursor` را ذخیره کنید. درخواست دوباره با Cursor قبلی همان رویدادها را برمی‌گرداند و client باید اعمال upsert/remove را idempotent انجام دهد.
+
+Bootstrap قابل اعتماد:
+
+1. اولین صفحه snapshot را دریافت و `syncCursor` آن را ذخیره کنید.
+2. تمام صفحه‌های snapshot را با Cursor مخصوص snapshot کامل کنید، ولی `syncCursor` اولین صفحه را عوض نکنید.
+3. `changes?cursor=<syncCursor>` را تا `hasMore: false` بخوانید.
+4. سپس polling بعدی را با آخرین `nextCursor` ادامه دهید.
+
+اگر رویدادهای لازم به‌علت retention دیگر وجود نداشته باشند، API پاسخ HTTP `410` با کد `POS_CATALOG_FULL_RESYNC_REQUIRED` و `snapshotUrl` می‌دهد. در این حالت snapshot کامل را دوباره اجرا کنید. Cursor جلوتر از high-water پاسخ `400` می‌گیرد.
+
+ثبت Product و Outbox در یک MongoDB transaction با write concern اکثریت انجام می‌شود. شکست ثبت Event باعث rollback تغییر Product می‌شود. مسیرهای خرید Zarinpal و Wallet از همان سرویس مشترک استفاده می‌کنند و کلید idempotency مانع کسر دوباره موجودی/تولید رویداد تکراری در retry می‌شود. خواندن Changes هیچ Event جدیدی تولید نمی‌کند.
+
 تست دستی PowerShell:
 
 ```powershell
@@ -92,6 +158,12 @@ if ($page.pagination.hasMore) {
     -Uri "http://localhost:3000/api/pos/v1/catalog/snapshot?limit=200&cursor=$cursor" `
     -Headers $headers
 }
+
+$syncCursor = [Uri]::EscapeDataString($page.syncCursor)
+$changes = Invoke-RestMethod `
+  -Method Get `
+  -Uri "http://localhost:3000/api/pos/v1/catalog/changes?limit=200&cursor=$syncCursor" `
+  -Headers $headers
 ```
 
 بررسی read-only داده‌های قدیمی (هیچ write یا پاک‌سازی انجام نمی‌دهد):
@@ -103,7 +175,7 @@ npm run audit:pos-catalog
 ## گزارش سازگاری فعلی
 
 - برنامه از Next.js App Router و Route Handler استفاده می‌کند و اتصال MongoDB با Mongoose انجام می‌شود.
-- `Product` محصولات تک‌مدلی و چندمدلی را پشتیبانی می‌کند. مبالغ `price` و `discountPrice` و موجودی‌ها عدد صحیح امن و نامنفی هستند. `catalogRevision` و `inventoryVersion` در مدل وجود دارند؛ مدیریت فعلی محصول `catalogRevision` را در هر ویرایش افزایش می‌دهد، اما افزایش `inventoryVersion` فقط با مقایسه `Product.stock` تجمیعی انجام می‌شود. بنابراین جابه‌جایی موجودی بین variantها با مجموع ثابت ممکن است نسخه موجودی را تغییر ندهد و باید پیش از فعال‌سازی sync موجودی POS اصلاح شود.
+- `Product` محصولات تک‌مدلی و چندمدلی را پشتیبانی می‌کند. مبالغ `price` و `discountPrice` و موجودی‌ها عدد صحیح امن و نامنفی هستند. `catalogRevision` در ویرایش Admin افزایش می‌یابد و `inventoryVersion` اکنون state موجودی هر Variant، شناسه Variant و وضعیت فعال بودن آن را مقایسه می‌کند؛ بنابراین جابه‌جایی موجودی بین Variantها با مجموع ثابت نیز نسخه موجودی را افزایش می‌دهد.
 - `Order` سفارش سایت و snapshot اقلام، قیمت‌ها، هزینه ارسال و وضعیت پرداخت را نگه می‌دارد. `StoreOrder` مدل قدیمی و مستقل سفارش خدمات داخل فروشگاه است. بعضی فیلدهای پولی این دو مدل قدیمی فقط `Number` هستند و در سطح schema الزام safe-integer یکسان ندارند؛ بنابراین فاز تراکنشی POS باید قبل از هر write قرارداد integer Toman را در ورودی سرور enforce کند. هیچ‌یک در این مرحله تغییر نکرده‌اند.
 - `User` نقش‌های `user`، `admin` و `superadmin` دارد. احراز هویت سایت با NextAuth و Session/JWT انجام می‌شود؛ endpointهای POS از این Session استفاده نمی‌کنند.
 - مدیریت فعلی محصولات فقط برای `superadmin` مجاز است. endpointهای مدیریت دستگاه POS نیز همین محدودیت را دارند.
@@ -131,9 +203,10 @@ POS_TOKEN_PEPPER=
 POS_RATE_LIMIT_REQUESTS_PER_MINUTE=
 POS_AUTH_FAILURE_LIMIT=
 POS_AUTH_FAILURE_WINDOW_SECONDS=
+POS_CATALOG_CHANGE_RETENTION_DAYS=
 ```
 
-اگر متغیرهای عددی خالی باشند، به‌ترتیب مقادیر پیش‌فرض 120 درخواست در دقیقه، 10 تلاش ناموفق و پنجره 900 ثانیه استفاده می‌شود.
+اگر متغیرهای عددی خالی باشند، به‌ترتیب مقادیر پیش‌فرض 120 درخواست در دقیقه، 10 تلاش ناموفق، پنجره 900 ثانیه و retention نودروزه Outbox استفاده می‌شود.
 
 ساخت pepper تست در PowerShell:
 

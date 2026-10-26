@@ -15,6 +15,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { getServerSession } from "next-auth";
 import mongoose from "mongoose";
 import { createHash } from "node:crypto";
+import { adjustProductInventoryWithCatalogChange } from "@/lib/pos/catalog-outbox";
 import { createAddressSnapshot } from "@/lib/addressSnapshot";
 import { createStoreIdentitySnapshot } from "@/lib/storeIdentity";
 import {
@@ -558,49 +559,28 @@ export async function POST(req: NextRequest) {
     // ── کسر موجودی انبار — در صورت کمبود، وجه برمی‌گردد ──
     const decrementedItems: typeof checkoutItems = [];
     for (const item of checkoutItems) {
-      const updated = item.variantId
-        ? await Product.findOneAndUpdate(
-            {
-              _id: item.product,
-              stock: { $gte: item.quantity },
-              variants: {
-                $elemMatch: {
-                  _id: item.variantId,
-                  stock: { $gte: item.quantity },
-                  isActive: { $ne: false },
-                },
-              },
-            },
-            {
-              $inc: {
-                stock: -item.quantity,
-                "variants.$.stock": -item.quantity,
-                inventoryVersion: 1,
-              },
-            },
-          )
-        : await Product.findOneAndUpdate(
-            { _id: item.product, stock: { $gte: item.quantity } },
-            { $inc: { stock: -item.quantity, inventoryVersion: 1 } },
-          );
+      const updated = await adjustProductInventoryWithCatalogChange({
+        productId: item.product,
+        variantId: item.variantId,
+        quantityDelta: -item.quantity,
+        requireAvailable: item.quantity,
+        source: "wallet",
+        idempotencyKey: `wallet:${orderId}:decrement:${item.product}:${item.variantId ?? "single"}`,
+      }).catch((error) => {
+        console.error("[pos.catalog.outbox] wallet inventory event failed", error);
+        return null;
+      });
 
       if (!updated) {
         await notifyInventoryFailure({ productId: item.product, eventId: orderId }).catch(() => undefined);
         for (const previous of decrementedItems) {
-          await Product.findOneAndUpdate(
-            previous.variantId
-              ? { _id: previous.product, variants: { $elemMatch: { _id: previous.variantId } } }
-              : { _id: previous.product },
-            previous.variantId
-              ? {
-                  $inc: {
-                    stock: previous.quantity,
-                    "variants.$.stock": previous.quantity,
-                    inventoryVersion: 1,
-                  },
-                }
-              : { $inc: { stock: previous.quantity, inventoryVersion: 1 } },
-          );
+          await adjustProductInventoryWithCatalogChange({
+            productId: previous.product,
+            variantId: previous.variantId,
+            quantityDelta: previous.quantity,
+            source: "wallet",
+            idempotencyKey: `wallet:${orderId}:rollback:${previous.product}:${previous.variantId ?? "single"}`,
+          });
         }
         // برگشت وجه + لغو سفارش
         if (finalPrice > 0) {

@@ -13,6 +13,7 @@ import { getSiteUrl } from "@/lib/baseUrl";
 import { notifyInventoryFailure, notifyLowInventory, notifyOrderPaid, notifyPaymentFailed } from "@/lib/notifications/events";
 import { notifyUser } from "@/lib/notifications/service";
 import mongoose from "mongoose";
+import { adjustProductInventoryWithCatalogChange } from "@/lib/pos/catalog-outbox";
 import {
   buildOrderIdentifiers,
   ensurePaidOrderIdentifiers,
@@ -279,39 +280,29 @@ export async function GET(req: NextRequest) {
       quantity: number;
     }>) {
       if (item.variantId) {
-        const updated = await Product.findOneAndUpdate(
-          {
-            _id: item.product,
-            stock: { $gte: item.quantity },
-            variants: {
-              $elemMatch: {
-                _id: item.variantId,
-                stock: { $gte: item.quantity },
-                isActive: { $ne: false },
-              },
-            },
-          },
-          {
-            $inc: {
-              stock: -item.quantity,
-              "variants.$.stock": -item.quantity,
-              inventoryVersion: 1,
-            },
-          },
-        );
+        const updated = await adjustProductInventoryWithCatalogChange({
+          productId: item.product,
+          variantId: item.variantId,
+          quantityDelta: -item.quantity,
+          requireAvailable: item.quantity,
+          source: "zarinpal",
+          idempotencyKey: `zarinpal:${authority}:decrement:${item.product}:${item.variantId}`,
+        }).catch((error) => {
+          console.error("[pos.catalog.outbox] zarinpal inventory event failed", error);
+          return null;
+        });
 
         if (!updated) {
           await notifyInventoryFailure({ productId: item.product, eventId: authority }).catch(() => undefined);
           await notifyPaymentFailed({ userId: temp.userId, paymentId: authority, message: "پرداخت تایید شد اما موجودی محصول کافی نبود؛ درخواست در حال بررسی است." }).catch(() => undefined);
           for (const previous of decrementedItems) {
-            await Product.findOneAndUpdate(
-              previous.variantId
-                ? { _id: previous.product, variants: { $elemMatch: { _id: previous.variantId } } }
-                : { _id: previous.product },
-              previous.variantId
-                ? { $inc: { stock: previous.quantity, "variants.$.stock": previous.quantity, inventoryVersion: 1 } }
-                : { $inc: { stock: previous.quantity, inventoryVersion: 1 } },
-            );
+            await adjustProductInventoryWithCatalogChange({
+              productId: previous.product,
+              variantId: previous.variantId,
+              quantityDelta: previous.quantity,
+              source: "zarinpal",
+              idempotencyKey: `zarinpal:${authority}:rollback:${previous.product}:${previous.variantId ?? "single"}`,
+            });
           }
           await TempPayment.findOneAndUpdate(
             { authority },
@@ -323,23 +314,28 @@ export async function GET(req: NextRequest) {
         continue;
       }
 
-      const updated = await Product.findOneAndUpdate(
-        { _id: item.product, stock: { $gte: item.quantity } },
-        { $inc: { stock: -item.quantity, inventoryVersion: 1 } },
-      );
+      const updated = await adjustProductInventoryWithCatalogChange({
+        productId: item.product,
+        quantityDelta: -item.quantity,
+        requireAvailable: item.quantity,
+        source: "zarinpal",
+        idempotencyKey: `zarinpal:${authority}:decrement:${item.product}:single`,
+      }).catch((error) => {
+        console.error("[pos.catalog.outbox] zarinpal inventory event failed", error);
+        return null;
+      });
 
       if (!updated) {
         await notifyInventoryFailure({ productId: item.product, eventId: authority }).catch(() => undefined);
         await notifyPaymentFailed({ userId: temp.userId, paymentId: authority, message: "پرداخت تایید شد اما موجودی محصول کافی نبود؛ درخواست در حال بررسی است." }).catch(() => undefined);
         for (const previous of decrementedItems) {
-          await Product.findOneAndUpdate(
-            previous.variantId
-              ? { _id: previous.product, variants: { $elemMatch: { _id: previous.variantId } } }
-              : { _id: previous.product },
-            previous.variantId
-              ? { $inc: { stock: previous.quantity, "variants.$.stock": previous.quantity, inventoryVersion: 1 } }
-              : { $inc: { stock: previous.quantity, inventoryVersion: 1 } },
-          );
+          await adjustProductInventoryWithCatalogChange({
+            productId: previous.product,
+            variantId: previous.variantId,
+            quantityDelta: previous.quantity,
+            source: "zarinpal",
+            idempotencyKey: `zarinpal:${authority}:rollback:${previous.product}:${previous.variantId ?? "single"}`,
+          });
         }
         await TempPayment.findOneAndUpdate(
           { authority },
