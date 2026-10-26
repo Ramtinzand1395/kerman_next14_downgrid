@@ -13,6 +13,10 @@ import ProductImage from "@/app/components/ProductImage";
 import { getStoreShippingSettings } from "@/lib/shippingSettings";
 import { tomanToIrr } from "@/lib/currency";
 import { formatLocalShippingPolicyText } from "@/lib/shipping";
+import {
+  getRelatedProducts,
+  type RelatedProduct,
+} from "@/lib/relatedProducts";
 
 type ProductResponse = Product & {
   id?: string;
@@ -47,10 +51,6 @@ function isProductResponse(value: unknown): value is ProductResponse {
     hasArrayProperty(value, "specifications") &&
     hasArrayProperty(value, "comments")
   );
-}
-
-function isProductArray(value: unknown): value is Product[] {
-  return Array.isArray(value) && value.every(isProductResponse);
 }
 
 const getProduct = cache(async (slug: string): Promise<ProductResponse> => {
@@ -89,40 +89,14 @@ const getProduct = cache(async (slug: string): Promise<ProductResponse> => {
   return payload;
 });
 
-async function getRelatedProducts(
+async function loadRelatedProducts(
   id?: string,
-): Promise<{ relatedProducts: Product[] }> {
+): Promise<{ relatedProducts: RelatedProduct[] }> {
   if (!id) {
     return { relatedProducts: [] };
   }
 
-  const res = await fetch(
-    `${SITE_URL}/api/products/related/${id}`,
-    {
-      next: {
-        revalidate: 300,
-      },
-    },
-  );
-
-  if (!res.ok) {
-    return { relatedProducts: [] };
-  }
-
-  try {
-    const payload: unknown = await res.json();
-    if (
-      typeof payload === "object" &&
-      payload !== null
-    ) {
-      const relatedProducts = Reflect.get(payload, "relatedProducts");
-      if (isProductArray(relatedProducts)) return { relatedProducts };
-    }
-  } catch {
-    // Related products are optional and must not break the product page.
-  }
-
-  return { relatedProducts: [] };
+  return getRelatedProducts(`${SITE_URL}/api/products/related/${id}`);
 }
 
 const formatPrice = (price?: number | null) => {
@@ -223,7 +197,7 @@ export default async function ProductPage({
   }
 
   const [{ relatedProducts }, shippingSettings] = await Promise.all([
-    getRelatedProducts(product._id || product.id),
+    loadRelatedProducts(product._id || product.id),
     getStoreShippingSettings(),
   ]);
   const shippingNotices = [
@@ -437,7 +411,7 @@ export default async function ProductPage({
                 <p className="text-xs text-zinc-500">محصول مرتبطی پیدا نشد.</p>
               ) : (
                 <div className="space-y-4">
-                  {relatedProducts.map((item: Product) => (
+                  {relatedProducts.map((item: RelatedProduct) => (
                     <Link
                       key={item._id}
                       href={`/product/${item.slug}`}
