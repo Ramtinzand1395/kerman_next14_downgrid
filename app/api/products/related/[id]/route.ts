@@ -1,7 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import mongoose from "mongoose";
 import dbConnect from "@/lib/mongodb";
 import Product from "@/model/Product";
+import {
+  buildRelatedProductsPipeline,
+  createRelatedProductSelection,
+  isValidRelatedProductId,
+  type RelatedProductSource,
+} from "@/lib/relatedProductQuery";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const NO_STORE_HEADERS = {
+  "Cache-Control": "no-store, max-age=0",
+};
+
+function json(body: unknown, status = 200) {
+  return NextResponse.json(body, {
+    status,
+    headers: NO_STORE_HEADERS,
+  });
+}
 
 export async function GET(
   req: NextRequest,
@@ -13,36 +32,40 @@ export async function GET(
   if (!id) {
     return NextResponse.json(
       { error: "Product ID is required" },
-      { status: 400 },
+      { status: 400, headers: NO_STORE_HEADERS },
     );
   }
 
   // بررسی معتبر بودن ObjectId
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return NextResponse.json({ error: "Invalid Product ID" }, { status: 400 });
+  if (!isValidRelatedProductId(id)) {
+    return json({ error: "Invalid Product ID" }, 400);
   }
 
   try {
     await dbConnect();
 
-    const product = await Product.findById(id).select("category");
+    const product = await Product.findOne({
+      _id: id,
+      status: "published",
+      deletedAt: null,
+    })
+      .select("category tags")
+      .lean<RelatedProductSource | null>();
 
     if (!product) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+      return json({ error: "Product not found" }, 404);
     }
 
-    const relatedProducts = await Product.find({
-      _id: { $ne: id },
-      category: product.category,
-      status: "published",
-    })
-      .sort({ createdAt: -1 })
-      .limit(4)
-      .select("title slug mainImage price discountPrice");
+    const selection = createRelatedProductSelection(id, product);
+    if (!selection) return json({ relatedProducts: [] });
 
-    return NextResponse.json({ relatedProducts });
+    const relatedProducts = await Product.aggregate(
+      buildRelatedProductsPipeline(selection),
+    );
+
+    return json({ relatedProducts });
   } catch (err) {
     console.error("Error fetching product:", err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return json({ error: "Server error" }, 500);
   }
 }
