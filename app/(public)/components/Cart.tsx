@@ -63,7 +63,6 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
 
   const {
     minEffectivePrice,
-    maxEffectivePrice,
     minBasePrice,
     hasVaryingPrices,
     hasDiscount,
@@ -226,16 +225,11 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
   };
 
   return (
-    <article
-      className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white p-3 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
-      itemScope
-      itemType="https://schema.org/Product"
-    >
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white p-3 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
       <div className="relative">
         <Link
           href={`/product/${game.slug}`}
           aria-label={`مشاهده جزئیات ${game.title}`}
-          itemProp="url"
           className="block"
         >
           <div className="relative flex h-[200px] items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-gray-100 to-gray-50">
@@ -247,7 +241,6 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
               quality={85}
               loading="lazy"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              itemProp="image"
               className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
             />
           </div>
@@ -276,22 +269,11 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
       </div>
 
       <div className="mt-3 flex flex-1 flex-col text-start">
-        <h2
-          className="line-clamp-2 min-h-[44px] text-sm font-semibold text-gray-900"
-          itemProp="name"
-        >
+        <h2 className="line-clamp-2 min-h-[44px] text-sm font-semibold text-gray-900">
           {game.title}
         </h2>
 
-        <div
-          className="mt-2"
-          itemProp="offers"
-          itemScope
-          itemType={hasVariants ? "https://schema.org/AggregateOffer" : "https://schema.org/Offer"}
-        >
-          <meta itemProp="priceCurrency" content="IRR" />
-          <meta itemProp="price" content={(minEffectivePrice * 10).toString()} />
-
+        <div className="mt-2">
           {hasDiscount ? (
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-bold text-[#001A6E] md:text-base">
@@ -345,55 +327,6 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
             : "افزودن به سبد خرید"}
       </motion.button>
 
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org/",
-            "@type": "Product",
-            name: game.title,
-            image: [game.mainImage],
-            description: game.shortDesc,
-            sku: game.sku || undefined,
-            brand: game.brand
-              ? {
-                  "@type": "Brand",
-                  name: game.brand,
-                }
-              : undefined,
-            offers: hasVariants
-              ? {
-                  "@type": "AggregateOffer",
-                  url: `https://kermanatari.com/product/${game.slug}`,
-                  priceCurrency: "IRR",
-                  lowPrice: minEffectivePrice * 10,
-                  highPrice: maxEffectivePrice * 10,
-                  offerCount: activeVariants.length,
-                  availability:
-                    totalStock > 0
-                      ? "https://schema.org/InStock"
-                      : "https://schema.org/OutOfStock",
-                }
-              : {
-                  "@type": "Offer",
-                  url: `https://kermanatari.com/product/${game.slug}`,
-                  priceCurrency: "IRR",
-                  price: minEffectivePrice * 10,
-                  availability:
-                    totalStock > 0
-                      ? "https://schema.org/InStock"
-                      : "https://schema.org/OutOfStock",
-                },
-            aggregateRating: game.comments?.length
-              ? {
-                  "@type": "AggregateRating",
-                  ratingValue: Number(rating.toFixed(1)),
-                  reviewCount: game.comments.length,
-                }
-              : undefined,
-          }),
-        }}
-      />
     </article>
   );
 }
