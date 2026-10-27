@@ -2,10 +2,8 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/options";
 import { NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb";
-import { notifyAllUsers, notifyUser } from "@/lib/notifications/service";
 import { adminSendNotificationSchema } from "@/validations/notification.validation";
-import User from "@/model/User";
+import { createCampaign } from "@/lib/notifications/campaigns";
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -21,27 +19,22 @@ export async function POST(req: Request) {
     );
   }
 
-  await dbConnect();
   const { recipient, recipientId, title, message, priority, link } = parsed.data;
-  const payload = {
-    type: "ADMIN_MESSAGE" as const,
-    category: "system" as const,
+  const idempotencyKey = req.headers.get("idempotency-key")?.trim();
+  if (!idempotencyKey || !/^[a-zA-Z0-9:_-]{16,160}$/.test(idempotencyKey)) {
+    return NextResponse.json({ error: "کلید idempotency معتبر الزامی است." }, { status: 400 });
+  }
+  const campaign = await createCampaign({
+    createdBy: session.user.id,
+    idempotencyKey,
     title,
     message,
     priority,
     link: link || undefined,
-    senderType: "admin" as const,
-    senderId: session.user.id,
-    eventKey: `ADMIN_MESSAGE:${crypto.randomUUID()}`,
-  };
-
-  if (recipient === "user") {
-    const user = await User.exists({ _id: recipientId, role: "user" });
-    if (!user) return NextResponse.json({ error: "کاربر پیدا نشد." }, { status: 404 });
-    await notifyUser({ ...payload, userId: recipientId! });
-    return NextResponse.json({ success: true, sentCount: 1 }, { status: 201 });
-  }
-
-  const sentCount = await notifyAllUsers(payload);
-  return NextResponse.json({ success: true, sentCount }, { status: 201 });
+    audience: recipient === "user"
+      ? { kind: "selected", userIds: [recipientId!] }
+      : { kind: "all_users" },
+    mode: "send",
+  });
+  return NextResponse.json({ success: true, queued: true, campaign }, { status: 202 });
 }

@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/mongodb";
-import Notification from "@/model/Notification";
 import Order from "@/model/Order";
 import Comment from "@/model/Comment";
 import ContactMessage from "@/model/ContactMessage";
@@ -12,6 +11,7 @@ import CustomerGameOrder from "@/model/CustomerGameOrder";
 import Appointment from "@/model/Appointment";
 import "@/model/Address";
 import "@/model/Product";
+import { getOwnedNotification } from "@/lib/notifications/service";
 
 async function getEntity(kind: string, entityId: mongoose.Types.ObjectId) {
   switch (kind) {
@@ -62,14 +62,7 @@ export async function GET(
   }
 
   await dbConnect();
-  const notification = await Notification.findOne({
-    _id: id,
-    $or: [
-      { recipientRole: "ADMIN", recipientId: session.user.id },
-      { recipientRole: "ADMIN", recipientId: null },
-      { for: "admin", recipientRole: { $exists: false } },
-    ],
-  });
+  const notification = await getOwnedNotification(id, session.user.id, "ADMIN");
 
   if (!notification) {
     return NextResponse.json({ error: "اعلان پیدا نشد." }, { status: 404 });

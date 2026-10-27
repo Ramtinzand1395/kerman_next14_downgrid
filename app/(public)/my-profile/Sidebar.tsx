@@ -73,6 +73,7 @@ import {
   User2Icon,
   WalletCards,
   FilePlus,
+  MessageCircle,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -130,6 +131,16 @@ export default function Sidebar() {
           <span className="flex items-center gap-2">
             <FilePlus className="h-4 w-4 text-fuchsia-500" />
             دریافت نوبت
+          </span>
+        </Link>
+
+        <Link
+          href="/my-profile?step=11"
+          className="block w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-right text-sm text-slate-700 transition-colors hover:border-indigo-300"
+        >
+          <span className="flex items-center gap-2">
+            <MessageCircle className="h-4 w-4 text-cyan-600" />
+            گفتگوهای پشتیبانی
           </span>
         </Link>
       </div>

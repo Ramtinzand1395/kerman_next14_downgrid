@@ -12,6 +12,9 @@ export interface NotificationItem {
   entityType?: string | null;
   entityId?: string | null;
   target?: { kind?: string; item?: unknown };
+  handlingStatus?: "pending" | "handled";
+  handledAt?: string | null;
+  handledBy?: { _id?: string; username?: string; mobile?: string } | string | null;
 }
 
 export interface NotificationResponse {

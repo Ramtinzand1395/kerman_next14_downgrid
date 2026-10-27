@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
 import dbConnect from "@/lib/mongodb";
 import Notification from "@/model/Notification";
-import User from "@/model/User";
+import NotificationReceipt from "@/model/NotificationReceipt";
+import { normalizePage, normalizePageSize } from "./policy";
 import type {
   NotificationCategory,
   NotificationPriority,
@@ -32,16 +33,20 @@ export interface NotificationListOptions {
   page?: number;
   limit?: number;
   read?: boolean;
+  category?: string;
+  priority?: string;
+  handled?: boolean;
+  from?: Date;
+  to?: Date;
+  search?: string;
 }
-
-const FAN_OUT_BATCH_SIZE = 50;
 
 function objectId(value?: string | mongoose.Types.ObjectId | null) {
   if (!value) return null;
   return typeof value === "string" ? new mongoose.Types.ObjectId(value) : value;
 }
 
-function recipientQuery(recipientId: string, recipientRole: NotificationRecipientRole) {
+export function recipientQuery(recipientId: string, recipientRole: NotificationRecipientRole) {
   const id = objectId(recipientId);
   const canonical = {
     recipientRole,
@@ -55,6 +60,115 @@ function recipientQuery(recipientId: string, recipientRole: NotificationRecipien
 
 function ownershipQuery(notificationId: string, recipientId: string, recipientRole: NotificationRecipientRole) {
   return { _id: objectId(notificationId), ...recipientQuery(recipientId, recipientRole) };
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function personalStatePipeline(
+  recipientId: string,
+  recipientRole: NotificationRecipientRole,
+  options: NotificationListOptions = {},
+  applyFilters = true,
+) {
+  const actorId = objectId(recipientId);
+  const pipeline: Record<string, unknown>[] = [
+    { $match: recipientQuery(recipientId, recipientRole) },
+    {
+      $lookup: {
+        from: NotificationReceipt.collection.name,
+        let: { notificationId: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$notificationId", "$$notificationId"] },
+                  { $eq: ["$recipientId", actorId] },
+                ],
+              },
+            },
+          },
+          { $limit: 1 },
+        ],
+        as: "_receipts",
+      },
+    },
+    { $set: { _receipt: { $first: "$_receipts" } } },
+    {
+      $set: {
+        isRead: {
+          $cond: [
+            { $ne: [{ $ifNull: ["$_receipt.readAt", null] }, null] },
+            true,
+            {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: [recipientRole, "ADMIN"] },
+                    {
+                      $or: [
+                        { $eq: [{ $ifNull: ["$recipientId", null] }, null] },
+                        { $eq: ["$for", "admin"] },
+                      ],
+                    },
+                  ],
+                },
+                false,
+                { $ifNull: ["$isRead", false] },
+              ],
+            },
+          ],
+        },
+        readAt: { $ifNull: ["$_receipt.readAt", "$readAt"] },
+        archivedAt: { $ifNull: ["$_receipt.archivedAt", null] },
+        handlingStatus: { $ifNull: ["$handlingStatus", "pending"] },
+      },
+    },
+    { $match: { archivedAt: null } },
+  ];
+
+  if (recipientRole === "ADMIN") {
+    pipeline.push(
+      {
+        $lookup: {
+          from: "users",
+          localField: "handledBy",
+          foreignField: "_id",
+          pipeline: [{ $project: { username: 1, mobile: 1 } }],
+          as: "_handledBy",
+        },
+      },
+      { $set: { handledBy: { $ifNull: [{ $first: "$_handledBy" }, "$handledBy"] } } },
+      { $unset: "_handledBy" },
+    );
+  }
+
+  const filters = buildOptionFilters(options);
+  if (applyFilters && Object.keys(filters).length) pipeline.push({ $match: filters });
+  return pipeline;
+}
+
+function buildOptionFilters(options: NotificationListOptions) {
+  const filters: Record<string, unknown> = {};
+  if (typeof options.read === "boolean") filters.isRead = options.read;
+  if (options.category) filters.category = options.category;
+  if (options.priority) filters.priority = options.priority;
+  if (typeof options.handled === "boolean") {
+    filters.handlingStatus = options.handled ? "handled" : "pending";
+  }
+  if (options.from || options.to) {
+    filters.createdAt = {
+      ...(options.from ? { $gte: options.from } : {}),
+      ...(options.to ? { $lte: options.to } : {}),
+    };
+  }
+  if (options.search?.trim()) {
+    const search = new RegExp(escapeRegExp(options.search.trim().slice(0, 100)), "i");
+    filters.$or = [{ title: search }, { message: search }];
+  }
+  return filters;
 }
 
 export async function createNotification(input: CreateNotificationInput) {
@@ -86,6 +200,7 @@ export async function createNotification(input: CreateNotificationInput) {
     deduplicationKey,
     isRead: false,
     readAt: null,
+    handlingStatus: "pending",
   };
 
   if (!deduplicationKey) return Notification.create(data);
@@ -110,81 +225,116 @@ export async function notifyAdmins(input: Omit<CreateNotificationInput, "recipie
   return createNotification({ ...input, recipientRole: "ADMIN", recipientId: null });
 }
 
-export async function notifyAllUsers(input: Omit<CreateNotificationInput, "recipientRole" | "recipientId">) {
-  await dbConnect();
-  const cursor = User.find({ role: "user" }).select("_id").lean().cursor();
-  let sentCount = 0;
-  let batch: Array<Promise<unknown>> = [];
-  for await (const user of cursor) {
-    batch.push(notifyUser({ ...input, userId: user._id }));
-    if (batch.length >= FAN_OUT_BATCH_SIZE) {
-      await Promise.all(batch);
-      sentCount += batch.length;
-      batch = [];
-    }
-  }
-  if (batch.length) {
-    await Promise.all(batch);
-    sentCount += batch.length;
-  }
-  return sentCount;
-}
-
 export const notify = {
   create: createNotification,
   user: notifyUser,
   admin: notifyAdmin,
   allAdmins: notifyAdmins,
-  allUsers: notifyAllUsers,
 };
 
 export async function getNotifications(recipientId: string, recipientRole: NotificationRecipientRole, options: NotificationListOptions = {}) {
   await dbConnect();
-  const requestedPage = Number(options.page);
-  const requestedLimit = Number(options.limit);
-  const page = Number.isFinite(requestedPage) ? Math.max(1, Math.floor(requestedPage)) : 1;
-  const limit = Number.isFinite(requestedLimit) ? Math.min(50, Math.max(1, Math.floor(requestedLimit))) : 10;
-  const filter: Record<string, unknown> = recipientQuery(recipientId, recipientRole);
-  if (typeof options.read === "boolean") filter.isRead = options.read;
-  const [items, total, unreadCount] = await Promise.all([
-    Notification.find(filter).sort({ createdAt: -1, _id: -1 }).skip((page - 1) * limit).limit(limit).lean(),
-    Notification.countDocuments(filter),
-    Notification.countDocuments({ ...filter, isRead: false }),
-  ]);
+  const page = normalizePage(options.page);
+  const limit = normalizePageSize(options.limit);
+  const pipeline = personalStatePipeline(recipientId, recipientRole, {}, false);
+  const filters = buildOptionFilters(options);
+  const filteredStages = Object.keys(filters).length ? [{ $match: filters }] : [];
+  pipeline.push({
+    $facet: {
+      items: [
+        ...filteredStages,
+        { $sort: { createdAt: -1, _id: -1 } },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+        { $unset: ["_receipt", "_receipts"] },
+      ],
+      total: [...filteredStages, { $count: "value" }],
+      unread: [{ $match: { isRead: false } }, { $count: "value" }],
+    },
+  });
+  const [result] = await Notification.aggregate(pipeline as unknown as mongoose.PipelineStage[]);
+  const total = result?.total?.[0]?.value || 0;
   return {
-    notifications: items.map((item) =>
+    notifications: (result?.items || []).map((item: Record<string, unknown>) =>
       item.link === "/dashboard/inbox"
         ? { ...item, link: "/dashboard/notifications" }
         : item,
     ),
     pagination: { page, limit, total, pages: Math.max(1, Math.ceil(total / limit)) },
-    unreadCount,
+    unreadCount: result?.unread?.[0]?.value || 0,
   };
 }
 
 export async function getUnreadCount(recipientId: string, recipientRole: NotificationRecipientRole) {
-  await dbConnect();
-  return Notification.countDocuments({ ...recipientQuery(recipientId, recipientRole), isRead: false });
+  const result = await getNotifications(recipientId, recipientRole, { page: 1, limit: 1, read: false });
+  return result.pagination.total;
 }
 
 export async function markAsRead(notificationId: string, recipientId: string, recipientRole: NotificationRecipientRole) {
-  await dbConnect();
-  return Notification.findOneAndUpdate(
-    ownershipQuery(notificationId, recipientId, recipientRole),
-    { $set: { isRead: true, readAt: new Date() } },
-    { returnDocument: "after" },
+  const notification = await getOwnedNotification(notificationId, recipientId, recipientRole);
+  if (!notification) return null;
+  const receipt = await NotificationReceipt.findOneAndUpdate(
+    { notificationId: notification._id, recipientId: objectId(recipientId) },
+    { $set: { readAt: new Date() }, $setOnInsert: { archivedAt: null } },
+    { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
   );
+  return { ...notification.toObject(), isRead: true, readAt: receipt.readAt };
 }
 
 export async function markAllAsRead(recipientId: string, recipientRole: NotificationRecipientRole) {
   await dbConnect();
-  return Notification.updateMany(
-    { ...recipientQuery(recipientId, recipientRole), isRead: false },
-    { $set: { isRead: true, readAt: new Date() } },
-  );
+  const ids = await Notification.aggregate([
+    ...personalStatePipeline(recipientId, recipientRole, { read: false }),
+    { $project: { _id: 1 } },
+  ] as unknown as mongoose.PipelineStage[]);
+  const now = new Date();
+  let modifiedCount = 0;
+  for (let index = 0; index < ids.length; index += 500) {
+    const chunk = ids.slice(index, index + 500);
+    const result = await NotificationReceipt.bulkWrite(
+      chunk.map(({ _id }) => ({
+        updateOne: {
+          filter: { notificationId: _id, recipientId: objectId(recipientId) },
+          update: { $set: { readAt: now }, $setOnInsert: { archivedAt: null } },
+          upsert: true,
+        },
+      })),
+    );
+    modifiedCount += result.modifiedCount + result.upsertedCount;
+  }
+  return { modifiedCount };
 }
 
-export async function deleteNotification(notificationId: string, recipientId: string, recipientRole: NotificationRecipientRole) {
+export async function getOwnedNotification(notificationId: string, recipientId: string, recipientRole: NotificationRecipientRole) {
   await dbConnect();
-  return Notification.findOneAndDelete(ownershipQuery(notificationId, recipientId, recipientRole));
+  return Notification.findOne(ownershipQuery(notificationId, recipientId, recipientRole));
+}
+
+export async function archiveNotification(notificationId: string, recipientId: string, recipientRole: NotificationRecipientRole) {
+  const notification = await getOwnedNotification(notificationId, recipientId, recipientRole);
+  if (!notification) return null;
+  const receipt = await NotificationReceipt.findOneAndUpdate(
+    { notificationId: notification._id, recipientId: objectId(recipientId) },
+    { $set: { archivedAt: new Date() } },
+    { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
+  );
+  return { ...notification.toObject(), archivedAt: receipt.archivedAt };
+}
+
+export const deleteNotification = archiveNotification;
+
+export async function setNotificationHandled(notificationId: string, recipientId: string, handled: boolean) {
+  const notification = await getOwnedNotification(notificationId, recipientId, "ADMIN");
+  if (!notification) return null;
+  return Notification.findByIdAndUpdate(
+    notification._id,
+    {
+      $set: {
+        handlingStatus: handled ? "handled" : "pending",
+        handledAt: handled ? new Date() : null,
+        handledBy: handled ? objectId(recipientId) : null,
+      },
+    },
+    { returnDocument: "after" },
+  ).populate("handledBy", "username mobile");
 }

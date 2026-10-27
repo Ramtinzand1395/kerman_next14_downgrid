@@ -57,5 +57,6 @@ export const contactMessageSchema = z
     message: plainText("متن پیام")
       .pipe(z.string().min(CONTACT_LIMITS.message.min, "متن پیام بسیار کوتاه است."))
       .pipe(z.string().max(CONTACT_LIMITS.message.max, "متن پیام بیش از حد طولانی است.")),
+    orderId: z.string().regex(/^[0-9a-fA-F]{24}$/, "شناسه سفارش معتبر نیست.").optional(),
   })
   .strict();

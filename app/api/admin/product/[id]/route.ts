@@ -10,7 +10,6 @@ import Coupon from "@/model/Loyalty Club/Coupon";
 import CashbackRule from "@/model/Loyalty Club/CashbackRule";
 import Comment from "@/model/Comment";
 import Favorite from "@/model/Favorite";
-import Notification from "@/model/Notification";
 import User from "@/model/User";
 import { validateCatalogReferences } from "@/lib/catalogReferences";
 import { notifyLowInventory } from "@/lib/notifications/events";
@@ -203,12 +202,6 @@ export async function DELETE(
     await Promise.all([
       Comment.deleteMany({ product: id }),
       Favorite.deleteMany({ productId: id }),
-      Notification.deleteMany({
-        $or: [
-          { "target.kind": "Product", "target.item": id },
-          { "target.kind": "Comment", "target.item": { $in: commentIds } },
-        ],
-      }),
       User.updateMany(
         {},
         {

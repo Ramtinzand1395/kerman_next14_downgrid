@@ -79,12 +79,15 @@ export default function AdminNotificationComposer() {
     try {
       const response = await fetch("/api/admin/notifications", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": crypto.randomUUID(),
+        },
         body: JSON.stringify({ recipient, recipientId: recipient === "user" ? recipientId : undefined, title, message, priority, link }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "ارسال اعلان انجام نشد.");
-      toast.success(`اعلان برای ${Number(result.sentCount).toLocaleString("fa-IR")} کاربر ارسال شد.`);
+      toast.success("پیام در صف پایدار ارسال قرار گرفت.");
       setTitle(""); setMessage(""); setLink("");
     } catch (error) {
       toast.error(
