@@ -63,6 +63,7 @@ test("campaign delivery is idempotent, leased and restart recoverable", async ()
   assert.match(worker, /leaseExpiresAt: \{ \$lte: now \}/);
   assert.match(worker, /deduplicationKey/);
   assert.match(worker, /status: "failed", attempts: \{ \$lt: MAX_ATTEMPTS \}/);
+  assert.match(worker, /updatePipeline: true/);
 });
 
 test("manual retry targets failed recipients and cancellation stops before processing", async () => {

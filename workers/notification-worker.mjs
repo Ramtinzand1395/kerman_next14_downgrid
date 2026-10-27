@@ -141,7 +141,7 @@ async function tick() {
     const startedCampaign = await Campaign.findOneAndUpdate(
       { _id: campaign._id, status: { $in: ["queued", "processing"] } },
       [{ $set: { status: "processing", startedAt: { $ifNull: ["$startedAt", "$$NOW"] } } }],
-      { returnDocument: "after" },
+      { returnDocument: "after", updatePipeline: true },
     );
     if (!startedCampaign) continue;
     const firstDelivery = await claimDelivery(startedCampaign._id);
