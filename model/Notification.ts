@@ -25,6 +25,14 @@ const NotificationSchema = new mongoose.Schema(
     senderId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
     eventKey: { type: String, trim: true, maxlength: 240 },
     deduplicationKey: { type: String, trim: true, maxlength: 360 },
+    handlingStatus: {
+      type: String,
+      enum: ["pending", "handled"],
+      default: "pending",
+      index: true,
+    },
+    handledAt: { type: Date, default: null },
+    handledBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
 
     // فیلدهای قدیمی تا پایان مهاجرت برای سازگاری با اعلان‌های موجود حفظ می‌شوند.
     for: { type: String, enum: ["admin", "user"], required: false },
@@ -40,6 +48,7 @@ const NotificationSchema = new mongoose.Schema(
 NotificationSchema.index({ recipientId: 1, isRead: 1, createdAt: -1 });
 NotificationSchema.index({ recipientRole: 1, isRead: 1, createdAt: -1 });
 NotificationSchema.index({ createdAt: -1 });
+NotificationSchema.index({ recipientRole: 1, handlingStatus: 1, createdAt: -1 });
 NotificationSchema.index(
   { deduplicationKey: 1 },
   {

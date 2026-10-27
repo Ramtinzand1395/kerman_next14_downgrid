@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, Check, CheckCheck, ChevronLeft, ChevronRight, LoaderCircle, RefreshCcw, Trash2 } from "lucide-react";
+import { Archive, Bell, Check, CheckCheck, ChevronLeft, ChevronRight, LoaderCircle, RefreshCcw, Search } from "lucide-react";
 import { toast } from "react-toastify";
 import type { NotificationItem, NotificationResponse } from "./types";
 import { relativeTime } from "./relativeTime";
@@ -12,6 +12,7 @@ import {
   ButtonLoading,
   NotificationListSkeleton,
 } from "@/app/components/loading/LoadingSystem";
+import { announceNotificationUpdate } from "./events";
 
 const AdminNotificationAction = dynamic(
   () => import("./AdminNotificationAction"),
@@ -19,7 +20,7 @@ const AdminNotificationAction = dynamic(
 );
 
 type ReadFilter = "all" | "unread" | "read";
-type ItemOperation = "read" | "delete";
+type ItemOperation = "read" | "delete" | "handled";
 
 const priorityStyle: Record<string, string> = {
   low: "bg-slate-100 text-slate-600",
@@ -36,6 +37,12 @@ export default function NotificationCenter({ title = "مرکز اعلان‌ها
   const [error, setError] = useState("");
   const [filter, setFilter] = useState<ReadFilter>("all");
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("");
+  const [priority, setPriority] = useState("");
+  const [handled, setHandled] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [markAllPending, setMarkAllPending] = useState(false);
   const [itemPending, setItemPending] = useState<Record<string, ItemOperation>>({});
   const latestRequest = useRef(0);
@@ -49,18 +56,28 @@ export default function NotificationCenter({ title = "مرکز اعلان‌ها
     setLoading(true);
     setError("");
     try {
-      const read = filter === "all" ? "" : `&read=${filter === "read"}`;
-      const response = await fetch(`/api/notifications?page=${page}&limit=12${read}`, { cache: "no-store" });
+      const params = new URLSearchParams({ page: String(page), limit: "12" });
+      if (filter !== "all") params.set("read", String(filter === "read"));
+      if (search.trim()) params.set("q", search.trim());
+      if (category) params.set("category", category);
+      if (priority) params.set("priority", priority);
+      if (handled) params.set("handled", String(handled === "handled"));
+      if (fromDate) params.set("from", new Date(`${fromDate}T00:00:00`).toISOString());
+      if (toDate) params.set("to", new Date(`${toDate}T23:59:59.999`).toISOString());
+      const response = await fetch(`/api/notifications?${params}`, { cache: "no-store" });
       if (!response.ok) throw new Error();
       const nextData = (await response.json()) as NotificationResponse;
-      if (mounted.current && requestId === latestRequest.current) setData(nextData);
+      if (mounted.current && requestId === latestRequest.current) {
+        if (page > nextData.pagination.pages) setPage(nextData.pagination.pages);
+        else setData(nextData);
+      }
     } catch {
       if (mounted.current && requestId === latestRequest.current)
         setError("اعلان‌ها دریافت نشدند؛ دوباره تلاش کنید.");
     } finally {
       if (mounted.current && requestId === latestRequest.current) setLoading(false);
     }
-  }, [filter, page]);
+  }, [category, filter, fromDate, handled, page, priority, search, toDate]);
 
   useEffect(() => {
     mounted.current = true;
@@ -110,6 +127,8 @@ export default function NotificationCenter({ title = "مرکز اعلان‌ها
         unreadCount: Math.max(0, current.unreadCount - 1),
         notifications: current.notifications.map((entry) => entry._id === item._id ? { ...entry, isRead: true } : entry),
       } : current);
+      announceNotificationUpdate();
+      if (filter === "unread") await load();
     } catch {
       toast.error("وضعیت اعلان ذخیره نشد؛ دوباره تلاش کنید.");
     } finally {
@@ -139,6 +158,8 @@ export default function NotificationCenter({ title = "مرکز اعلان‌ها
           })),
         } : current);
         toast.success("همه اعلان‌ها به‌عنوان خوانده‌شده ثبت شدند.");
+        announceNotificationUpdate();
+        if (filter === "unread") await load();
       }
     } catch {
       toast.error("وضعیت اعلان‌ها ذخیره نشد؛ دوباره تلاش کنید.");
@@ -177,8 +198,29 @@ export default function NotificationCenter({ title = "مرکز اعلان‌ها
         };
       });
       toast.success("اعلان از فهرست شما حذف شد.");
+      announceNotificationUpdate();
+      await load();
     } catch {
       toast.error("اعلان حذف نشد؛ دوباره تلاش کنید.");
+    } finally {
+      finishItemOperation(item._id);
+    }
+  };
+
+  const toggleHandled = async (item: NotificationItem) => {
+    if (!beginItemOperation(item._id, "handled")) return;
+    try {
+      const response = await fetch(`/api/admin/notifications/${item._id}/handled`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ handled: item.handlingStatus !== "handled" }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || "handled-failed");
+      toast.success(item.handlingStatus === "handled" ? "اعلان دوباره نیازمند رسیدگی شد." : "رسیدگی به اعلان ثبت شد.");
+      await load();
+    } catch (error) {
+      toast.error(error instanceof Error && error.message !== "handled-failed" ? error.message : "وضعیت رسیدگی ذخیره نشد.");
     } finally {
       finishItemOperation(item._id);
     }
@@ -210,6 +252,26 @@ export default function NotificationCenter({ title = "مرکز اعلان‌ها
         </div>
       </div>
 
+      {adminActions && (
+        <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:grid-cols-3 xl:grid-cols-6">
+          <label className="relative md:col-span-1">
+            <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="جستجو در عنوان و متن" className="h-11 w-full rounded-xl border border-slate-200 pr-10 pl-3 text-sm" />
+          </label>
+          <select value={category} onChange={(event) => { setCategory(event.target.value); setPage(1); }} className="h-11 rounded-xl border border-slate-200 px-3 text-sm">
+            <option value="">همه نوع‌ها</option><option value="order">سفارش</option><option value="payment">پرداخت</option><option value="support">پشتیبانی</option><option value="inventory">موجودی</option><option value="system">سایر</option>
+          </select>
+          <select value={priority} onChange={(event) => { setPriority(event.target.value); setPage(1); }} className="h-11 rounded-xl border border-slate-200 px-3 text-sm">
+            <option value="">همه اولویت‌ها</option><option value="urgent">فوری</option><option value="high">مهم</option><option value="normal">عادی</option><option value="low">کم</option>
+          </select>
+          <select value={handled} onChange={(event) => { setHandled(event.target.value); setPage(1); }} className="h-11 rounded-xl border border-slate-200 px-3 text-sm">
+            <option value="">همه وضعیت‌های رسیدگی</option><option value="pending">نیازمند رسیدگی</option><option value="handled">رسیدگی‌شده</option>
+          </select>
+          <label className="text-xs text-slate-500">از تاریخ<input type="date" value={fromDate} onChange={(event) => { setFromDate(event.target.value); setPage(1); }} className="mt-1 h-8 w-full rounded-lg border border-slate-200 px-2" /></label>
+          <label className="text-xs text-slate-500">تا تاریخ<input type="date" value={toDate} onChange={(event) => { setToDate(event.target.value); setPage(1); }} className="mt-1 h-8 w-full rounded-lg border border-slate-200 px-2" /></label>
+        </div>
+      )}
+
       <div className="space-y-3">
         {loading && !data && <NotificationListSkeleton />}
         {error && <div role="alert" className="flex items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700"><span>{error}</span><button type="button" onClick={() => void load()} className="shrink-0 rounded-xl border border-rose-200 bg-white px-3 py-2 font-bold">تلاش دوباره</button></div>}
@@ -222,18 +284,20 @@ export default function NotificationCenter({ title = "مرکز اعلان‌ها
                   <h2 className="font-bold text-slate-900">{item.title}</h2>
                   <span className={`rounded-full px-2 py-0.5 text-xs ${priorityStyle[item.priority || "normal"]}`}>{priorityLabel[item.priority || "normal"]}</span>
                   {!item.isRead && <span className="rounded-full bg-indigo-600 px-2 py-0.5 text-xs text-white">جدید</span>}
+                  {adminActions && <span className={`rounded-full px-2 py-0.5 text-xs ${item.handlingStatus === "handled" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"}`}>{item.handlingStatus === "handled" ? "رسیدگی‌شده" : "نیازمند رسیدگی"}</span>}
                 </div>
                 <p className="mt-2 text-sm leading-7 text-slate-600">{item.message}</p>
                 <p className="mt-2 text-xs text-slate-400" title={new Date(item.createdAt).toLocaleString("fa-IR")}>{relativeTime(item.createdAt)}</p>
+                {adminActions && item.handlingStatus === "handled" && item.handledAt ? <p className="mt-1 text-xs text-emerald-700">رسیدگی توسط {typeof item.handledBy === "object" && item.handledBy?.username ? item.handledBy.username : "مدیر"} در {new Date(item.handledAt).toLocaleString("fa-IR")}</p> : null}
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 {!item.isRead && <button disabled={Boolean(itemPending[item._id])} onClick={() => void markOne(item)} className="rounded-lg p-2 text-emerald-700 hover:bg-emerald-50 disabled:cursor-wait disabled:opacity-50" aria-label={itemPending[item._id] === "read" ? "در حال ثبت وضعیت اعلان" : "خوانده شد"}>{itemPending[item._id] === "read" ? <LoaderCircle className="h-4 w-4 animate-spin motion-reduce:animate-none" /> : <Check className="h-4 w-4" />}</button>}
-                <button disabled={Boolean(itemPending[item._id])} onClick={() => void remove(item)} className="rounded-lg p-2 text-rose-600 hover:bg-rose-50 disabled:cursor-wait disabled:opacity-50" aria-label={itemPending[item._id] === "delete" ? "در حال حذف اعلان" : "حذف اعلان"}>{itemPending[item._id] === "delete" ? <LoaderCircle className="h-4 w-4 animate-spin motion-reduce:animate-none" /> : <Trash2 className="h-4 w-4" />}</button>
+                <button disabled={Boolean(itemPending[item._id])} onClick={() => void remove(item)} className="rounded-lg p-2 text-rose-600 hover:bg-rose-50 disabled:cursor-wait disabled:opacity-50" aria-label={itemPending[item._id] === "delete" ? "در حال بایگانی اعلان" : "بایگانی اعلان"}>{itemPending[item._id] === "delete" ? <LoaderCircle className="h-4 w-4 animate-spin motion-reduce:animate-none" /> : <Archive className="h-4 w-4" />}</button>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {adminActions && session?.user.role === "superadmin" && (
-                <AdminNotificationAction item={item} onRead={() => markOne(item)} onChanged={load} />
+                <><AdminNotificationAction item={item} onRead={() => markOne(item)} onChanged={load} /><button type="button" onClick={() => void toggleHandled(item)} disabled={Boolean(itemPending[item._id])} className="mt-3 inline-flex items-center gap-2 rounded-xl border border-emerald-200 px-3 py-2 text-sm font-semibold text-emerald-700 disabled:opacity-50"><CheckCheck className="h-4 w-4" />{item.handlingStatus === "handled" ? "بازگردانی به صف" : "ثبت رسیدگی"}</button></>
               )}
               {item.link && <Link href={item.link} onClick={() => void markOne(item)} className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-indigo-700 hover:underline">رفتن به صفحه مرتبط <ChevronLeft className="h-4 w-4" /></Link>}
             </div>

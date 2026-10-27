@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb";
-import Notification from "@/model/Notification";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
+import mongoose from "mongoose";
+import { markAsRead } from "@/lib/notifications/service";
 
 export async function PUT(req: Request) {
   try {
@@ -18,19 +18,13 @@ export async function PUT(req: Request) {
     const body = await req.json();
     const { id } = body;
 
-    if (!id)
+    if (!id || !mongoose.isValidObjectId(id))
       return NextResponse.json(
         { error: "Notification ID is required" },
         { status: 400 },
       );
 
-    await dbConnect();
-
-    const notification = await Notification.findByIdAndUpdate(
-      id,
-      { isRead: true },
-     { returnDocument: 'after' },
-    );
+    const notification = await markAsRead(id, session.user.id, "ADMIN");
 
     if (!notification) {
       return NextResponse.json(

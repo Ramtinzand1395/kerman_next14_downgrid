@@ -4,8 +4,11 @@ import { notifyAdmins } from "@/lib/notifications/service";
 import { contactMessageSchema } from "@/validations/contactValidation";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import User from "@/model/User";
+import Order from "@/model/Order";
+import SupportConversation from "@/model/SupportConversation";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
+import { upsertLegacyConversation } from "@/lib/notifications/conversations";
 
 const MAX_REQUEST_SIZE = 16 * 1024;
 
@@ -55,7 +58,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { name, email, phone, subject, message } = validationResult.data;
+    const { name, email, phone, subject, message, orderId } = validationResult.data;
 
     await dbConnect();
 
@@ -70,6 +73,10 @@ export async function POST(req: Request) {
       );
     }
 
+    if (orderId && !await Order.exists({ _id: orderId, user: registeredUser._id })) {
+      return NextResponse.json({ error: "سفارش انتخاب‌شده متعلق به حساب شما نیست." }, { status: 403 });
+    }
+
     const contactMessage = await ContactMessage.create({
       user: registeredUser._id,
       name,
@@ -79,14 +86,23 @@ export async function POST(req: Request) {
       message,
     });
 
+    const conversation = await upsertLegacyConversation(contactMessage._id);
+    if (conversation && orderId) {
+      await SupportConversation.updateOne(
+        { _id: conversation._id, customerId: registeredUser._id },
+        { $set: { orderId } },
+      );
+    }
     await notifyAdmins({
       title: `پیام جدید تماس: ${subject}`,
-      message: `از طرف ${name} | ${phone} | کاربر ثبت‌شده: ${registeredUser.mobile}`,
+      message: `گفتگوی پشتیبانی جدیدی از طرف ${name} ثبت شده است.`,
       type: "SUPPORT_MESSAGE",
       category: "support",
-      entityType: "ContactMessage",
-      entityId: contactMessage._id,
-      link: "/dashboard/notifications",
+      entityType: "SupportConversation",
+      entityId: conversation?._id || contactMessage._id,
+      link: conversation
+        ? `/dashboard/notifications?tab=conversations&conversation=${conversation._id}`
+        : "/dashboard/notifications?tab=conversations",
       priority: "high",
       eventKey: `SUPPORT_MESSAGE:${contactMessage._id}`,
     }).catch((error) => console.error("[notifications] support event failed:", error));

@@ -12,6 +12,7 @@ import MyWallet from "./MyWallet";
 import MyLoyalty from "./MyLoyalty";
 import SpinWheel from "./SpinWheel";
 import { redirect } from "next/navigation";
+import ConversationCenter from "@/app/components/notifications/ConversationCenter";
 
 export const metadata: Metadata = {
   alternates: {
@@ -60,6 +61,7 @@ export default async function MyProfile({ searchParams }: MyProfilePageProps) {
             {activeStep === 8 && <MyWallet />}
             {activeStep === 9 && <MyLoyalty />}
             {activeStep === 10 && <SpinWheel />}
+            {activeStep === 11 && <ConversationCenter />}
           </div>
         </section>
       </div>

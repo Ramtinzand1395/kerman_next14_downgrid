@@ -9,6 +9,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "worker:notifications": "node --env-file=.env workers/notification-worker.mjs",
+    "migrate:notification-center": "node --env-file=.env scripts/migrate-notification-center.mjs",
     "lint": "next lint",
     "test": "node --test *.test.mjs",
     "audit:referral": "node --env-file=.env scripts/audit-referral-integrity.mjs",

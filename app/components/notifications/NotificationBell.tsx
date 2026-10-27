@@ -6,6 +6,7 @@ import { Bell, CheckCheck, Loader2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import type { NotificationItem, NotificationResponse } from "./types";
 import { relativeTime } from "./relativeTime";
+import { NOTIFICATION_UPDATED_EVENT, announceNotificationUpdate } from "./events";
 
 export default function NotificationBell({ admin = false }: { admin?: boolean }) {
   const { status } = useSession();
@@ -32,7 +33,11 @@ export default function NotificationBell({ admin = false }: { admin?: boolean })
   useEffect(() => {
     void load();
     const timer = window.setInterval(load, 45_000);
-    return () => window.clearInterval(timer);
+    window.addEventListener(NOTIFICATION_UPDATED_EVENT, load);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener(NOTIFICATION_UPDATED_EVENT, load);
+    };
   }, [load]);
 
   useEffect(() => {
@@ -48,9 +53,15 @@ export default function NotificationBell({ admin = false }: { admin?: boolean })
 
   const readOne = async (item: NotificationItem) => {
     if (item.isRead) return;
-    setItems((current) => current.map((entry) => entry._id === item._id ? { ...entry, isRead: true } : entry));
-    setUnreadCount((count) => Math.max(0, count - 1));
-    await fetch(`/api/notifications/${item._id}/read`, { method: "PATCH" }).catch(() => undefined);
+    try {
+      const response = await fetch(`/api/notifications/${item._id}/read`, { method: "PATCH" });
+      if (!response.ok) throw new Error("read-failed");
+      setItems((current) => current.map((entry) => entry._id === item._id ? { ...entry, isRead: true } : entry));
+      setUnreadCount((count) => Math.max(0, count - 1));
+      announceNotificationUpdate();
+    } catch {
+      await load();
+    }
   };
 
   return (

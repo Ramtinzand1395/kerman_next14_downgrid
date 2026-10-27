@@ -79,10 +79,21 @@ export async function PUT(req: NextRequest) {
     console.error("[loyalty] review hook failed:", err);
   }
 
-  // نوتیفیکیشن مربوطه رو خوانده شده کن
+  // رسیدگی رویداد بین مدیران مشترک است؛ خوانده‌شدن همچنان شخصی باقی می‌ماند.
   await Notification.updateMany(
-    { type: "comment", product: comment?.product },
-    { isRead: true },
+    {
+      $or: [
+        { entityType: "Comment", entityId: comment._id },
+        { "target.kind": "Comment", "target.item": comment._id },
+      ],
+    },
+    {
+      $set: {
+        handlingStatus: "handled",
+        handledAt: new Date(),
+        handledBy: session.user.id,
+      },
+    },
   );
   if (comment?.product) {
     const product = await Product.findById(comment.product)
