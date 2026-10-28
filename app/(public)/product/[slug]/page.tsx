@@ -138,10 +138,11 @@ export async function generateMetadata({
     .trim()
     .slice(0, 160);
 
+  const rawSeoTitle = (product.seoTitle || product.title).trim();
+  const normalizedSeoTitle = rawSeoTitle.replace(/(?:\s*\|\s*کرمان آتاری)+\s*$/g, "").trim();
+
   return {
-    title:
-      product.seoTitle ||
-      `${product.title} | ${product.brand || "کرمان آتاری"} | خرید با بهترین قیمت`,
+    title: normalizedSeoTitle || product.title,
     description: metaDescription,
     alternates: {
       canonical: canonicalPath,
@@ -151,7 +152,7 @@ export async function generateMetadata({
       follow: product.status !== "draft",
     },
     openGraph: {
-      title: product.seoTitle || `${product.title} | کرمان آتاری`,
+      title: normalizedSeoTitle || product.title,
       description: metaDescription,
       type: "website",
       url: canonicalPath,
@@ -164,7 +165,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: product.seoTitle || `${product.title} | کرمان آتاری`,
+      title: normalizedSeoTitle || product.title,
       description: metaDescription,
       images: [product.mainImage],
     },
