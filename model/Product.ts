@@ -139,6 +139,14 @@ const productSchema = new Schema(
       set: normalizeOptionalUniqueString,
     },
 
+    // Optional scanner identity for single products. Multi-product barcodes
+    // live on their variants so each sellable SKU keeps its own identity.
+    barcode: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+
     title: {
       type: String,
       required: true,
@@ -222,6 +230,7 @@ const productSchema = new Schema(
 
 productSchema.index({ createdAt: 1 });
 productSchema.index({ deletedAt: 1, status: 1 });
+productSchema.index({ status: 1, deletedAt: 1, _id: 1 });
 productSchema.index({ catalogRevision: 1, _id: 1 });
 
 productSchema.pre("validate", function validateMoneyAndDerivedStock() {

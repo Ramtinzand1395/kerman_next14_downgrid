@@ -5,6 +5,9 @@ import { requireUser, ok, fail } from "@/lib/loyalty/api";
 import { getAvailableShippingMethods, InvalidShippingDestinationError } from "@/lib/shipping";
 import { getStoreShippingSettings } from "@/lib/shippingSettings";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   const auth = await requireUser();
   if ("error" in auth) return auth.error;

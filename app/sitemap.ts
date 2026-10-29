@@ -71,7 +71,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // const products = (await Product.find({}, { slug: 1, updatedAt: 1, _id: 0 })
     const products = (await Product.find(
-      { status: "published" },
+      { status: "published", deletedAt: null },
       { slug: 1, updatedAt: 1, _id: 0 },
     )
       .lean()

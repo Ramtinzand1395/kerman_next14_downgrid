@@ -9,6 +9,9 @@ import WalletTransaction from "@/model/Loyalty Club/WalletTransaction";
 import Referral from "@/model/Loyalty Club/Referral";
 import Experience from "@/model/Loyalty Club/Experience";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin();
   if ("error" in auth) return auth.error;

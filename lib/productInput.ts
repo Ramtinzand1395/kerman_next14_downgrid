@@ -12,6 +12,7 @@ export type BuildProductInputOptions = {
   mode: ProductInputMode;
   productId?: string;
   existingVariantIds?: readonly string[];
+  existingDefaultVariantId?: string | null;
 };
 
 export type ProductVariantWriteInput = {
@@ -117,6 +118,7 @@ function normalizeVariants(
   );
   const acceptedVariantIds = new Set<string>();
   const seenSkus = new Set<string>();
+  const seenBarcodes = new Set<string>();
 
   const normalized = rawVariants.map((rawVariant, index) => {
     if (!rawVariant || typeof rawVariant !== "object") {
@@ -139,6 +141,13 @@ function normalizeVariants(
       }
 
       variantId = rawId.toLowerCase();
+
+      if (options.mode === "update" && !existingVariantIds.has(variantId)) {
+        throw new ProductInputValidationError(
+          `variants.${index}._id`,
+          "شناسه مدل جدید نباید توسط کاربر تعیین شود.",
+        );
+      }
 
       if (acceptedVariantIds.has(variantId)) {
         throw new ProductInputValidationError(
@@ -180,6 +189,17 @@ function normalizeVariants(
         );
       }
       seenSkus.add(lowerSku);
+    }
+
+    if (barcode) {
+      const normalizedBarcode = barcode.toLowerCase();
+      if (seenBarcodes.has(normalizedBarcode)) {
+        throw new ProductInputValidationError(
+          `variants.${index}.barcode`,
+          `بارکد مدل (${barcode}) در این محصول تکراری است.`,
+        );
+      }
+      seenBarcodes.add(normalizedBarcode);
     }
 
     return {
@@ -335,15 +355,67 @@ export function buildProductWriteInput(
   }
 
   let defaultVariantId: string | null = null;
-  if (
-    body.defaultVariantId &&
-    typeof body.defaultVariantId === "string" &&
-    OBJECT_ID_PATTERN.test(body.defaultVariantId)
-  ) {
-    defaultVariantId = body.defaultVariantId;
+  if (productType === "multi") {
+    const rawDefaultVariantId = body.defaultVariantId;
+    let requestedDefaultVariantId: string | null = null;
+
+    if (rawDefaultVariantId === undefined && options.mode === "update") {
+      requestedDefaultVariantId = options.existingDefaultVariantId ?? null;
+    } else if (
+      rawDefaultVariantId !== undefined &&
+      rawDefaultVariantId !== null &&
+      rawDefaultVariantId !== ""
+    ) {
+      if (
+        typeof rawDefaultVariantId !== "string" ||
+        !OBJECT_ID_PATTERN.test(rawDefaultVariantId)
+      ) {
+        throw new ProductInputValidationError(
+          "defaultVariantId",
+          "شناسه مدل پیش‌فرض نامعتبر است.",
+        );
+      }
+      requestedDefaultVariantId = rawDefaultVariantId.toLowerCase();
+    }
+
+    const activeVariantIds = new Set(
+      variants
+        .filter((variant) => variant.isActive !== false)
+        .map((variant) => String(variant._id).toLowerCase()),
+    );
+    if (
+      requestedDefaultVariantId &&
+      !activeVariantIds.has(requestedDefaultVariantId.toLowerCase())
+    ) {
+      throw new ProductInputValidationError(
+        "defaultVariantId",
+        "مدل پیش‌فرض باید یکی از مدل‌های فعال محصول باشد.",
+      );
+    }
+
+    defaultVariantId =
+      requestedDefaultVariantId ?? activeVariantIds.values().next().value ?? null;
   }
 
   const sku = optionalString(body.sku);
+  const barcode =
+    productType === "multi"
+      ? null
+      : options.mode === "update" && body.barcode === undefined
+        ? undefined
+        : optionalString(body.barcode) ?? null;
+
+  if (
+    sku &&
+    variants.some(
+      (variant) => variant.sku?.toLowerCase() === sku.toLowerCase(),
+    )
+  ) {
+    throw new ProductInputValidationError(
+      "sku",
+      "SKU محصول نمی‌تواند با SKU یکی از مدل‌های همان محصول تکراری باشد.",
+    );
+  }
 
   let variantSelector;
   try {
@@ -362,9 +434,10 @@ export function buildProductWriteInput(
     status,
     productType,
     variants,
-    ...(variantSelector ? { variantSelector } : {}),
-    ...(defaultVariantId ? { defaultVariantId } : {}),
-    ...(sku ? { sku } : {}),
+    variantSelector,
+    defaultVariantId,
+    sku,
+    ...(barcode !== undefined ? { barcode } : {}),
     title: requiredString(body.title, "title"),
     slug: requiredString(body.slug, "slug"),
     description: optionalString(body.description),

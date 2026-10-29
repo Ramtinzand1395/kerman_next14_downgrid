@@ -40,6 +40,9 @@ const schema = z.object({
   courierRoundTripMultiplier: z.number().int().min(1).max(2).optional(),
 });
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET() {
   const auth = await requireAdmin();
   if ("error" in auth) return auth.error;

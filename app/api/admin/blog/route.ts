@@ -6,6 +6,9 @@ import dbConnect from "@/lib/mongodb";
 import Blog from "@/model/Blog";
 import { buildBlogPayload } from "@/lib/blogPayload";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET() {
   try {
     await dbConnect();

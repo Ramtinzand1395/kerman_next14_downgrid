@@ -6,6 +6,9 @@ import { getTransactions } from "@/lib/loyalty/wallet.service";
 import { walletTxQuerySchema } from "@/validations/loyalty.validation";
 import { WalletTxType } from "@/types/loyalty";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   const auth = await requireUser();
   if ("error" in auth) return auth.error;

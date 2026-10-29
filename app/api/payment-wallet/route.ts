@@ -15,6 +15,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { getServerSession } from "next-auth";
 import mongoose from "mongoose";
 import { createHash } from "node:crypto";
+import { adjustProductInventoriesWithCatalogChange } from "@/lib/pos/catalog-outbox";
 import { createAddressSnapshot } from "@/lib/addressSnapshot";
 import { createStoreIdentitySnapshot } from "@/lib/storeIdentity";
 import {
@@ -38,6 +39,10 @@ import {
   getVariantAttributeSelections,
   isVariantMappedForSale,
 } from "@/lib/variantSelector";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 interface CheckoutItem {
   productId: string;
@@ -111,6 +116,27 @@ async function replayAutomaticAttempt(fingerprint: string) {
         orderId: existing.order.toString(),
         reused: true,
       });
+    }
+
+    if (existing.status === "processing" && existing.order) {
+      const paidOrder = await Order.findOne({
+        _id: existing.order,
+        paymentStatus: "paid",
+      })
+        .select("_id")
+        .lean();
+      if (paidOrder) {
+        await WalletPaymentAttempt.updateOne(
+          { _id: existing._id, status: "processing" },
+          { $set: { status: "completed" } },
+        );
+        await retryLoyaltyForPaidOrder(paidOrder._id.toString());
+        return NextResponse.json({
+          success: true,
+          orderId: paidOrder._id.toString(),
+          reused: true,
+        });
+      }
     }
 
     if (existing.status === "failed") {
@@ -555,113 +581,130 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ── کسر موجودی انبار — در صورت کمبود، وجه برمی‌گردد ──
-    const decrementedItems: typeof checkoutItems = [];
+    // Duplicate cart lines are aggregated before inventory mutation so every
+    // sellable identity receives one idempotency key and one atomic decrement.
+    const inventoryByIdentity = new Map<
+      string,
+      { product: string; variantId?: string; quantity: number }
+    >();
     for (const item of checkoutItems) {
-      const updated = item.variantId
-        ? await Product.findOneAndUpdate(
-            {
-              _id: item.product,
-              stock: { $gte: item.quantity },
-              variants: {
-                $elemMatch: {
-                  _id: item.variantId,
-                  stock: { $gte: item.quantity },
-                  isActive: { $ne: false },
-                },
-              },
-            },
-            {
-              $inc: {
-                stock: -item.quantity,
-                "variants.$.stock": -item.quantity,
-                inventoryVersion: 1,
-              },
-            },
-          )
-        : await Product.findOneAndUpdate(
-            { _id: item.product, stock: { $gte: item.quantity } },
-            { $inc: { stock: -item.quantity, inventoryVersion: 1 } },
-          );
+      const variantId = item.variantId ? String(item.variantId) : undefined;
+      const key = `${item.product}:${variantId ?? "single"}`;
+      const previous = inventoryByIdentity.get(key);
+      inventoryByIdentity.set(key, {
+        product: String(item.product),
+        variantId,
+        quantity: (previous?.quantity ?? 0) + item.quantity,
+      });
+    }
+    const inventoryItems = [...inventoryByIdentity.values()];
 
-      if (!updated) {
-        await notifyInventoryFailure({ productId: item.product, eventId: orderId }).catch(() => undefined);
-        for (const previous of decrementedItems) {
-          await Product.findOneAndUpdate(
-            previous.variantId
-              ? { _id: previous.product, variants: { $elemMatch: { _id: previous.variantId } } }
-              : { _id: previous.product },
-            previous.variantId
-              ? {
-                  $inc: {
-                    stock: previous.quantity,
-                    "variants.$.stock": previous.quantity,
-                    inventoryVersion: 1,
-                  },
-                }
-              : { $inc: { stock: previous.quantity, inventoryVersion: 1 } },
-          );
-        }
-        // برگشت وجه + لغو سفارش
-        if (finalPrice > 0) {
-          await credit({
-            userId,
-            amount: finalPrice,
-            type: "refund",
-            idempotencyKey: `refund:${orderId}`,
-            ref: { kind: "Order", item: order._id },
-            description: "بازگشت وجه — موجودی کافی نبود",
-            notify: {
-              title: "بازگشت وجه به کیف پول",
-              message: `مبلغ ${finalPrice.toLocaleString("fa-IR")} تومان به‌دلیل کمبود موجودی به کیف پول شما بازگردانده شد.`,
-            },
-          });
-        }
-        await Order.findByIdAndUpdate(order._id, {
-          status: "cancelled",
-          paymentStatus: "failed",
-        });
-        if (automaticAttemptId) {
-          await WalletPaymentAttempt.updateOne(
-            { _id: automaticAttemptId, status: "processing" },
+    // Inventory, catalog outbox events, and the paid transition commit in one
+    // MongoDB transaction. A partial multi-product decrement cannot escape.
+    const identifiers = buildOrderIdentifiers(order._id);
+    const inventoryResult = await adjustProductInventoriesWithCatalogChange(
+      inventoryItems.map((item) => ({
+        productId: item.product,
+        variantId: item.variantId,
+        quantityDelta: -item.quantity,
+        requireAvailable: item.quantity,
+        source: "wallet" as const,
+        idempotencyKey: `wallet:${orderId}:decrement:${item.product}:${item.variantId ?? "single"}`,
+      })),
+      {
+        afterAdjustments: async (transactionSession) => {
+          const paidOrder = await Order.findOneAndUpdate(
+            { _id: order._id, paymentStatus: "unpaid" },
             {
               $set: {
-                status: "failed",
-                error: "موجودی برخی محصولات کافی نیست.",
-                httpStatus: 409,
+                paymentStatus: "paid",
+                paymentVerifiedAt: new Date(),
+                ...identifiers,
               },
             },
+            { new: true, session: transactionSession },
           );
-        }
-        return NextResponse.json(
-          { success: false, error: "موجودی برخی محصولات کافی نیست." },
-          { status: 409 },
-        );
-      }
-      decrementedItems.push(item);
-    }
-
-    // ── نهایی‌سازی پرداخت ──
-    const identifiers = buildOrderIdentifiers(order._id);
-    await Order.findOneAndUpdate(
-      { _id: order._id, paymentStatus: "unpaid" },
-      {
-        $set: {
-          paymentStatus: "paid",
-          paymentVerifiedAt: new Date(),
-          ...identifiers,
+          if (!paidOrder) {
+            const current = await Order.findById(order._id)
+              .select("paymentStatus")
+              .session(transactionSession)
+              .lean();
+            if (current?.paymentStatus !== "paid") {
+              throw new Error("WALLET_ORDER_PAYMENT_STATE_CONFLICT");
+            }
+          }
         },
       },
-    );
+    ).catch((error) => {
+      console.error("[pos.catalog.outbox] wallet inventory transaction failed", error);
+      return null;
+    });
+
+    if (!inventoryResult) {
+      await notifyInventoryFailure({
+        productId: inventoryItems[0]?.product ?? orderId,
+        eventId: orderId,
+      }).catch(() => undefined);
+
+      let refundCompleted = finalPrice <= 0;
+      if (finalPrice > 0) {
+        const refund = await credit({
+          userId,
+          amount: finalPrice,
+          type: "refund",
+          idempotencyKey: `refund:${orderId}`,
+          ref: { kind: "Order", item: order._id },
+          description: "بازگشت وجه — موجودی کافی نبود",
+          notify: {
+            title: "بازگشت وجه به کیف پول",
+            message: `مبلغ ${finalPrice.toLocaleString("fa-IR")} تومان به‌دلیل کمبود موجودی به کیف پول شما بازگردانده شد.`,
+          },
+        });
+        refundCompleted = refund.ok;
+      }
+
+      await Order.findByIdAndUpdate(order._id, {
+        status: "cancelled",
+        paymentStatus: refundCompleted ? "failed" : "pending_refund",
+      });
+      if (automaticAttemptId) {
+        await WalletPaymentAttempt.updateOne(
+          { _id: automaticAttemptId, status: "processing" },
+          {
+            $set: {
+              status: "failed",
+              error: refundCompleted
+                ? "موجودی برخی محصولات کافی نیست."
+                : "موجودی کافی نبود و بازگشت وجه نیازمند بررسی است.",
+              httpStatus: refundCompleted ? 409 : 202,
+            },
+          },
+        );
+      }
+      return NextResponse.json(
+        {
+          success: false,
+          error: refundCompleted
+            ? "موجودی برخی محصولات کافی نیست."
+            : "پرداخت انجام شد اما بازگشت وجه نیازمند بررسی است.",
+          refundPending: !refundCompleted,
+        },
+        { status: refundCompleted ? 409 : 202 },
+      );
+    }
 
     if (automaticAttemptId) {
       await WalletPaymentAttempt.updateOne(
         { _id: automaticAttemptId, status: "processing" },
         { $set: { status: "completed", order: order._id } },
+      ).catch((error) =>
+        console.error("[payment-wallet] attempt completion failed", error),
       );
     }
 
-    await User.findByIdAndUpdate(userId, { $push: { orders: order._id } });
+    await User.findByIdAndUpdate(userId, { $addToSet: { orders: order._id } }).catch(
+      (error) => console.error("[payment-wallet] user order link failed", error),
+    );
 
     await Promise.all([
       notifyOrderPaid({
@@ -670,7 +713,7 @@ export async function POST(req: NextRequest) {
         amount: Number(order.finalPrice),
         gateway: "wallet",
       }),
-      notifyLowInventory(decrementedItems.map((item) => item.product)),
+      notifyLowInventory(inventoryItems.map((item) => item.product)),
     ]).catch((error) => console.error("[notifications] wallet order event failed:", error));
 
     // ── باشگاه مشتریان: اعمال قطعی کوپن + XP/کش‌بک/VIP/ماموریت/نشان/رفرال ──
@@ -729,7 +772,7 @@ export async function POST(req: NextRequest) {
         {
           $set: {
             status: "failed",
-            error: "پرداخت کیف پول تکمیل نشد؛ مبلغی کسر نشده است.",
+            error: "پرداخت کیف پول تکمیل نشد؛ وضعیت سفارش را بررسی کنید.",
             httpStatus: 500,
           },
         },
@@ -766,7 +809,7 @@ export async function POST(req: NextRequest) {
     const message =
       error instanceof Error
         ? error.message
-        : "پرداخت کیف پول تکمیل نشد؛ دوباره تلاش کنید.";
+        : "پرداخت کیف پول تکمیل نشد؛ وضعیت سفارش را بررسی کنید.";
     return NextResponse.json(
       { success: false, error: message },
       { status: 500 },

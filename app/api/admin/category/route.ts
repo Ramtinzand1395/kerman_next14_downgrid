@@ -6,6 +6,9 @@ import Category from "@/model/Category";
 import mongoose from "mongoose";
 
 // GET
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET() {
   await dbConnect();
   const session = await getServerSession(authOptions);

@@ -138,6 +138,7 @@ async function getGuideProducts({
 
     const filter: Record<string, unknown> = {
       status: "published",
+      deletedAt: null,
       category: { $in: consoleCategoryIds },
       $or: signals,
     };
