@@ -1,6 +1,43 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@font-face {
+  font-family: "Estedad";
+  src: url("/fonts/estedad-arabic.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 600 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lalezar";
+  src: url("/fonts/lalezar-arabic.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Vazirmatn";
+  src: url("/fonts/vazirmatn-800-arabic.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+}
+
+.font-estedad {
+  font-family: "Estedad", sans-serif;
+}
+
+.font-lalezar {
+  font-family: "Lalezar", sans-serif;
+}
+
+.font-vazirmatn {
+  font-family: "Vazirmatn", sans-serif;
+}
+
 html {
   scrollbar-gutter: stable;
 }
@@ -77,19 +114,7 @@ body {
 }
 
 .home-hero-image {
-  object-position: var(--hero-mobile-position, center);
-  transform: scale(1.015);
-  transition: transform 6.5s ease-out;
-}
-
-.home-hero-slide[data-active="true"] .home-hero-image {
-  transform: scale(1.045);
-}
-
-.home-hero-shade {
-  background:
-    linear-gradient(0deg, rgba(2, 16, 42, 0.97) 0%, rgba(3, 24, 60, 0.82) 46%, rgba(3, 20, 49, 0.12) 80%),
-    linear-gradient(90deg, rgba(2, 15, 39, 0.05) 0%, rgba(5, 35, 82, 0.42) 100%);
+  object-position: center;
 }
 
 .home-hero-content {
@@ -106,14 +131,6 @@ body {
 }
 
 @media (min-width: 640px) {
-  .home-hero-image {
-    object-position: var(--hero-position, center);
-  }
-
-  .home-hero-shade {
-    background: linear-gradient(90deg, rgba(2, 15, 39, 0.05) 0%, rgba(3, 25, 61, 0.68) 40%, rgba(3, 22, 54, 0.98) 100%);
-  }
-
   .home-hero-content {
     transform: translateX(20px);
   }
@@ -121,14 +138,56 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .home-hero-slide,
-  .home-hero-image,
   .home-hero-content {
     transition: none !important;
   }
+}
 
-  .home-hero-image,
-  .home-hero-slide[data-active="true"] .home-hero-image {
-    transform: none;
+.product-art-slide {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 500ms ease,
+    visibility 500ms step-end;
+}
+
+.product-art-slide[data-active="true"] {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transition:
+    opacity 500ms ease,
+    visibility 0ms step-start;
+}
+
+.product-art-copy {
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity 420ms ease 80ms,
+    transform 500ms cubic-bezier(0.2, 0.7, 0.2, 1) 80ms;
+}
+
+.product-art-slide[data-active="true"] .product-art-copy {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (min-width: 640px) {
+  .product-art-copy {
+    transform: translateX(18px);
+  }
+
+  .product-art-slide[data-active="true"] .product-art-copy {
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-art-slide,
+  .product-art-copy {
+    transition: none !important;
   }
 }
 

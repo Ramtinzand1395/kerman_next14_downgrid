@@ -1,118 +1,107 @@
 export type HeroSlide = {
   id: string;
   image: string;
-  mobileImage?: string;
-  fallbackImage: string;
   imageAlt: string;
-  imagePosition?: string;
-  mobileImagePosition?: string;
   title: string;
   description: string;
   primaryCta: {
     label: string;
     href: string;
   };
-  secondaryCta?: {
-    label: string;
-    href: string;
-  };
+  accent: string;
+  panel: string;
+  text: string;
+  mutedText: string;
+  buttonText: string;
+  headingFont?: "estedad";
+  headingWeight?: 800;
+  courierOnly?: boolean;
   priority?: boolean;
 };
 
 export const HOME_HERO_SLIDES: HeroSlide[] = [
   {
-    id: "gaming-wall-art",
-    image: "/images/hero/hero-gaming-art.webp",
-    fallbackImage: "/PS5 Hero Banner with Game Cases-1.png",
-    imageAlt: "تابلوها و دکور گیمینگ برای اتاق بازی",
-    imagePosition: "32% center",
-    mobileImagePosition: "32% center",
-    title: "دیوارت هم گیمر باشه!",
-    description: "تابلوهای گیمینگ و دکوراتیو برای ساختن فضای خاص خودت",
+    id: "game-installation",
+    image: "/hero/photo_2026-10-28_16-36-59.webp",
+    imageAlt: "کنسول پلی استیشن ۵ و دنیاهای مختلف بازی",
+    title: "بازی بعدی‌ات رو انتخاب کن",
+    description: "بازی‌های دلخواهت رو انتخاب کن و درخواست نصب بده",
     primaryCta: {
-      label: "مشاهده تابلوها",
-      href: "/products?category=gaming-wall-art&sort=newest&page=1",
+      label: "انتخاب بازی و ثبت درخواست",
+      href: "/my-profile?step=6",
     },
-    secondaryCta: {
-      label: "همه محصولات",
-      href: "/products?sort=newest&page=1",
-    },
+    accent: "#36d7ff",
+    panel: "#051a3f",
+    text: "#ffffff",
+    mutedText: "#dbeafe",
+    buttonText: "#032251",
     priority: true,
   },
   {
+    id: "gaming-wall-art",
+    image: "/hero/inosuke-banner.webp",
+    imageAlt: "تابلوی اینوسکه زیر ماه آبی برای دکور اتاق گیمینگ",
+    title: "قهرمانت، روی دیوار تو",
+    description: "از دنیای بازی و انیمه، برای اتاق تو",
+    primaryCta: {
+      label: "دیدن تابلوها",
+      href: "/products?category=gaming-wall-art&sort=newest&page=1",
+    },
+    accent: "#4ad8ff",
+    panel: "#071827",
+    text: "#ffffff",
+    mutedText: "#d9f3ff",
+    buttonText: "#03243a",
+    headingFont: "estedad",
+    headingWeight: 800,
+  },
+  {
+    id: "courier",
+    image: "/hero/photo_2026-10-28_16-36-00.webp",
+    imageAlt: "پیک موتوری همراه کنسول پلی استیشن برای دریافت و تحویل دستگاه",
+    title: "تو خونه بمون، کنسولت رو بسپار به ما",
+    description: "درخواست دریافت و تحویل دستگاه در کرمان",
+    primaryCta: {
+      label: "ثبت درخواست پیک",
+      href: "/my-profile?step=6&fulfillment=courier",
+    },
+    accent: "#5ee8ff",
+    panel: "#06224c",
+    text: "#ffffff",
+    mutedText: "#dbeafe",
+    buttonText: "#032251",
+    courierOnly: true,
+  },
+  {
     id: "repair",
-    image: "/images/hero/hero-repair.webp",
-    fallbackImage: "/White controller on blue repair bench-3.png",
-    imageAlt: "تعمیر تخصصی دسته و کنسول پلی استیشن",
-    imagePosition: "28% center",
-    mobileImagePosition: "35% center",
-    title: "دسته‌ات خراب شده؟ بسپرش به ما!",
-    description:
-      "تعمیر تخصصی دسته و کنسول PS4 و PS5 با بررسی دقیق و خدمات حضوری در کرمان",
+    image: "/hero/photo_2026-10-28_16-35-57.webp",
+    imageAlt: "تعمیر دسته پلی استیشن روی میز کار تخصصی",
+    title: "برگرد به جریان بازی",
+    description: "درخواست بررسی و تعمیر کنسول و دسته",
     primaryCta: {
       label: "ثبت درخواست تعمیر",
       href: "/my-profile?step=6",
     },
-    secondaryCta: {
-      label: "مشاهده خدمات",
-      href: "/services",
-    },
-  },
-  {
-    id: "delivery-and-services",
-    image: "/images/hero/hero-delivery.webp",
-    fallbackImage: "/service-order/Blue courier with gamepad box-2.png",
-    imageAlt: "هماهنگی خدمات کنسول و پشتیبانی کرمان آتاری",
-    imagePosition: "25% center",
-    mobileImagePosition: "34% center",
-    title: "خدمات گیمینگ، راحت‌تر از همیشه!",
-    description:
-      "ثبت درخواست خدمات کنسول، هماهنگی و پیگیری با پشتیبانی کرمان آتاری",
-    primaryCta: {
-      label: "ثبت درخواست خدمات",
-      href: "/my-profile?step=6",
-    },
-    secondaryCta: {
-      label: "ارتباط با پشتیبانی",
-      href: "/contact-us",
-    },
+    accent: "#65d8ff",
+    panel: "#071d42",
+    text: "#ffffff",
+    mutedText: "#dbeafe",
+    buttonText: "#032251",
   },
   {
     id: "gaming-accessories",
-    image: "/images/hero/hero-accessories.webp",
-    fallbackImage: "/White PS5 console with controller on blue-2.png",
-    imageAlt: "دسته، هدست و لوازم جانبی گیمینگ",
-    imagePosition: "28% center",
-    mobileImagePosition: "36% center",
-    title: "گیمینگ حرفه‌ای، تجهیزات حرفه‌ای!",
-    description:
-      "دسته بازی، هدست و لوازم جانبی کاربردی برای تجربه بهتر بازی",
+    image: "/hero/photo_2026-10-28_16-36-02.webp",
+    imageAlt: "هدست، دسته و کابل پلی استیشن برای تکمیل ستاپ گیمینگ",
+    title: "ستاپت رو کامل کن",
+    description: "لوازم موردنیازت رو برای تجربه بهتر پیدا کن",
     primaryCta: {
-      label: "مشاهده لوازم جانبی",
+      label: "دیدن لوازم جانبی",
       href: "/products?category=gaming-accessories&sort=newest&page=1",
     },
-    secondaryCta: {
-      label: "مشاهده محصولات",
-      href: "/products?sort=newest&page=1",
-    },
-  },
-  {
-    id: "playstation-games",
-    image: "/images/hero/hero-games.webp",
-    fallbackImage: "/PS5 Hero Banner with Game Cases-1.png",
-    imageAlt: "بازی‌های پلی استیشن 4 و پلی استیشن 5",
-    imagePosition: "30% center",
-    mobileImagePosition: "38% center",
-    title: "بازی بعدیت رو انتخاب کن!",
-    description:
-      "بازی‌های جذاب PS4 و PS5، راهنمای انتخاب و خدمات نصب بازی",
-    primaryCta: {
-      label: "مشاهده بازی‌ها",
-      href: "/products?category=games&sort=newest&page=1",
-    },
-    secondaryCta: {
-      label: "درخواست نصب بازی",
-      href: "/my-profile?step=6",
-    },
+    accent: "#62e4ff",
+    panel: "#061b44",
+    text: "#ffffff",
+    mutedText: "#dbeafe",
+    buttonText: "#032251",
   },
 ];

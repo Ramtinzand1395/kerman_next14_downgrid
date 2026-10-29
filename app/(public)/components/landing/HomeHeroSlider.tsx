@@ -17,33 +17,17 @@ const AUTOPLAY_DELAY = 6000;
 const SWIPE_THRESHOLD = 48;
 
 function HeroImage({ slide }: { slide: HeroSlide }) {
-  const [source, setSource] = useState(slide.image);
-  const desktopPosition = slide.imagePosition ?? "center";
-  const mobilePosition = slide.mobileImagePosition ?? desktopPosition;
-
   return (
-    <picture className="absolute inset-0 block">
-      {slide.mobileImage ? (
-        <source media="(max-width: 639px)" srcSet={slide.mobileImage} />
-      ) : null}
+    <div className="relative aspect-[3/1] w-full shrink-0 overflow-hidden sm:absolute sm:inset-0 sm:aspect-auto">
       <Image
-        src={source}
+        src={slide.image}
         alt={slide.imageAlt}
         fill
         priority={slide.priority}
         sizes="(max-width: 639px) 100vw, (max-width: 1399px) calc(100vw - 3rem), 1320px"
-        className="home-hero-image object-cover"
-        style={
-          {
-            "--hero-position": desktopPosition,
-            "--hero-mobile-position": mobilePosition,
-          } as CSSProperties
-        }
-        onError={() => {
-          if (source !== slide.fallbackImage) setSource(slide.fallbackImage);
-        }}
+        className="home-hero-image object-contain sm:object-cover"
       />
-    </picture>
+    </div>
   );
 }
 
@@ -142,7 +126,7 @@ export default function HomeHeroSlider({ slides }: { slides: HeroSlide[] }) {
 
   return (
     <section
-      className="home-hero relative isolate min-h-[500px] overflow-hidden rounded-2xl bg-[#031633] text-white shadow-[0_22px_60px_rgba(3,31,79,0.24)] sm:min-h-0 sm:aspect-[3/1] sm:rounded-[24px]"
+      className="home-hero relative isolate min-h-[430px] overflow-hidden rounded-2xl bg-[#031633] shadow-[0_22px_60px_rgba(3,31,79,0.24)] sm:min-h-0 sm:aspect-[3/1] sm:rounded-[24px]"
       aria-label="پیشنهادهای ویژه کرمان آتاری"
       aria-roledescription="اسلایدر"
       dir="rtl"
@@ -168,44 +152,52 @@ export default function HomeHeroSlider({ slides }: { slides: HeroSlide[] }) {
           return (
             <div
               key={slide.id}
-              className="home-hero-slide absolute inset-0"
+              className="home-hero-slide absolute inset-0 flex flex-col sm:block"
               data-active={isActive}
               aria-hidden={!isActive}
               aria-label={`${index + 1} از ${slideCount}`}
               aria-roledescription="اسلاید"
               role="group"
+              style={
+                {
+                  "--hero-accent": slide.accent,
+                  "--hero-panel": slide.panel,
+                  "--hero-text": slide.text,
+                  "--hero-muted": slide.mutedText,
+                  "--hero-button-text": slide.buttonText,
+                } as CSSProperties
+              }
             >
               <HeroImage slide={slide} />
-              <div className="home-hero-shade absolute inset-0" />
-              <div className="relative z-10 flex h-full items-end px-5 pb-20 pt-24 sm:items-center sm:px-7 sm:pb-10 sm:pt-8 lg:px-12 lg:pb-12 lg:pt-10 xl:px-16">
-                <div className="home-hero-content w-full max-w-[660px] sm:w-[58%] lg:w-[56%]">
-                  <span className="mb-2 inline-flex rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-[11px] font-black text-cyan-100 backdrop-blur-sm sm:mb-2.5">
+              <div className="relative z-10 flex flex-1 items-start bg-[var(--hero-panel)] px-5 pb-20 pt-5 text-[var(--hero-text)] sm:h-full sm:items-center sm:bg-transparent sm:px-7 sm:pb-10 sm:pt-8 lg:px-12 lg:pb-12 lg:pt-10 xl:px-16">
+                <div className="home-hero-content w-full max-w-[660px] sm:w-[52%] lg:w-[50%]">
+                  <span className="mb-2 inline-flex rounded-full border border-current/20 px-3 py-1 text-[11px] font-black text-[var(--hero-accent)] sm:mb-2.5">
                     پیشنهاد کرمان آتاری
                   </span>
-                  <Heading className="max-w-[18ch] text-[clamp(1.7rem,8vw,2.35rem)] font-black leading-[1.3] sm:text-[clamp(1.35rem,3vw,2.65rem)] sm:leading-[1.2] lg:text-[clamp(2rem,3.2vw,3rem)]">
+                  <Heading
+                    className={`max-w-[20ch] text-[clamp(1.55rem,7vw,2.15rem)] leading-[1.35] sm:text-[clamp(1.35rem,3vw,2.65rem)] sm:leading-[1.25] lg:text-[clamp(2rem,3.2vw,3rem)] ${
+                      slide.headingFont === "estedad"
+                        ? "font-estedad"
+                        : "font-black"
+                    }`}
+                    style={{
+                      fontWeight: slide.headingWeight ?? 900,
+                    }}
+                  >
                     {slide.title}
                   </Heading>
-                  <p className="mt-2 max-w-xl text-sm font-medium leading-7 text-blue-50 sm:mt-2.5 sm:text-[clamp(0.75rem,1.25vw,1rem)] sm:leading-6 lg:leading-7">
+                  <p className="mt-2 max-w-xl text-sm font-medium leading-7 text-[var(--hero-muted)] sm:mt-2.5 sm:text-[clamp(0.75rem,1.25vw,1rem)] sm:leading-6 lg:leading-7">
                     {slide.description}
                   </p>
-                  <div className="mt-4 flex flex-col gap-2 min-[380px]:flex-row sm:mt-4 sm:flex-wrap lg:mt-5">
+                  <div className="mt-4 flex min-[380px]:flex-row sm:mt-4 lg:mt-5">
                     <Link
                       href={slide.primaryCta.href}
                       tabIndex={isActive ? 0 : -1}
-                      className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#28d7ed] px-5 text-sm font-black text-[#032251] shadow-[0_10px_26px_rgba(40,215,237,0.22)] transition hover:-translate-y-0.5 hover:bg-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#082e6c] sm:min-h-11"
+                      className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[var(--hero-accent)] px-5 text-sm font-black text-[var(--hero-button-text)] shadow-lg transition hover:-translate-y-0.5 hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#082e6c] sm:min-h-11"
                     >
                       {slide.primaryCta.label}
                       <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                     </Link>
-                    {slide.secondaryCta ? (
-                      <Link
-                        href={slide.secondaryCta.href}
-                        tabIndex={isActive ? 0 : -1}
-                        className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/30 bg-white/10 px-5 text-sm font-black text-white backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-white/60 hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#082e6c] sm:min-h-11"
-                      >
-                        {slide.secondaryCta.label}
-                      </Link>
-                    ) : null}
                   </div>
                 </div>
               </div>
@@ -227,9 +219,14 @@ export default function HomeHeroSlider({ slides }: { slides: HeroSlide[] }) {
               onClick={() => goToSlide(index)}
               className={`h-2.5 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#082e6c] ${
                 activeIndex === index
-                  ? "w-8 bg-[#28d7ed]"
+                  ? "w-8"
                   : "w-2.5 bg-white/55 hover:bg-white"
               }`}
+              style={
+                activeIndex === index
+                  ? { backgroundColor: slides[activeIndex].accent }
+                  : undefined
+              }
               aria-label={`نمایش اسلاید ${index + 1}: ${slide.title}`}
               aria-current={activeIndex === index ? "true" : undefined}
             />

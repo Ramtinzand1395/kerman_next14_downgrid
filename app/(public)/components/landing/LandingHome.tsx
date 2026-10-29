@@ -1,5 +1,3 @@
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -181,12 +179,9 @@ export default function LandingHome({
   data: LandingData;
   courierEnabled: boolean;
 }) {
-  const heroSlides = HOME_HERO_SLIDES.map((slide) => ({
-    ...slide,
-    image: existsSync(join(process.cwd(), "public", slide.image.slice(1)))
-      ? slide.image
-      : slide.fallbackImage,
-  }));
+  const heroSlides = HOME_HERO_SLIDES.filter(
+    (slide) => !slide.courierOnly || courierEnabled,
+  );
 
   return (
     <div className="overflow-x-clip bg-[#f3f8ff] pb-24 text-[#0b1d48] sm:pb-0">
