@@ -3,6 +3,9 @@
 import { ok, requireUser } from "@/lib/loyalty/api";
 import { getUserAchievements } from "@/lib/loyalty/achievement.service";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET() {
   const auth = await requireUser();
   if ("error" in auth) return auth.error;

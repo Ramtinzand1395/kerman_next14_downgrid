@@ -9,6 +9,9 @@ import "@/model/User";
 import "@/model/Product";
 import { notifyUser } from "@/lib/notifications/service";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: Request) {
   await dbConnect();
   const session = await getServerSession(authOptions);

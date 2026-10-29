@@ -4,6 +4,9 @@ import { NextRequest } from "next/server";
 import WalletLog from "@/model/Loyalty Club/WalletLog";
 import { ok, requireAdmin } from "@/lib/loyalty/api";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin();
   if ("error" in auth) return auth.error;

@@ -4,6 +4,9 @@ import { NextRequest } from "next/server";
 import { ok, requireUser } from "@/lib/loyalty/api";
 import { getXpHistory } from "@/lib/loyalty/experience.service";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   const auth = await requireUser();
   if ("error" in auth) return auth.error;

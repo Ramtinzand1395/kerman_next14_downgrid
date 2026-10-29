@@ -5,6 +5,9 @@ import WalletTransaction from "@/model/Loyalty Club/WalletTransaction";
 import { ok, requireAdmin } from "@/lib/loyalty/api";
 import { WALLET_TX_TYPES, WalletTxType } from "@/types/loyalty";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin();
   if ("error" in auth) return auth.error;

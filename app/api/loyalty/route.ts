@@ -12,6 +12,9 @@ import { getReferralStats } from "@/lib/loyalty/referral.service";
 import User from "@/model/User";
 import { VIP_TIER_FA, VipTier } from "@/types/loyalty";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET() {
   const auth = await requireUser();
   if ("error" in auth) return auth.error;

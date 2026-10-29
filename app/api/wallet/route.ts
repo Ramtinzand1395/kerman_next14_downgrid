@@ -13,6 +13,9 @@ export interface IWallet {
   expiringCredits: IExpiringCredit[];
 }
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET() {
   const auth = await requireUser();
   if ("error" in auth) return auth.error;

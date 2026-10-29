@@ -16,6 +16,9 @@ function faToEnNumbers(str: string): string {
   const enNumbers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
   return str.replace(/[۰-۹]/g, (w) => enNumbers[faNumbers.indexOf(w)]);
 }
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET() {
   try {
     await dbConnect();
