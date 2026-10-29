@@ -14,7 +14,7 @@ export async function GET(req: Request) {
     const categorySlug = searchParams.get("category");
     const hasDiscount = searchParams.get("discount");
 
-    const filter: any = { status: "published" };
+    const filter: any = { status: "published", deletedAt: null };
 
     /* ================== DISCOUNT FILTER ================== */
     if (hasDiscount === "true") {

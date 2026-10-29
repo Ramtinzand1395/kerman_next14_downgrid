@@ -18,7 +18,11 @@ export async function GET(
 
   try {
     await dbConnect(); // اتصال به MongoDB
-    const product = await Product.findOne({ slug, status: "published" })
+    const product = await Product.findOne({
+      slug,
+      status: "published",
+      deletedAt: null,
+    })
       .populate("category")
       .populate("tags")
       .populate({

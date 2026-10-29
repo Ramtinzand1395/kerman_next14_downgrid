@@ -13,10 +13,15 @@ import { getSiteUrl } from "@/lib/baseUrl";
 import { notifyInventoryFailure, notifyLowInventory, notifyOrderPaid, notifyPaymentFailed } from "@/lib/notifications/events";
 import { notifyUser } from "@/lib/notifications/service";
 import mongoose from "mongoose";
+import { adjustProductInventoriesWithCatalogChange } from "@/lib/pos/catalog-outbox";
 import {
   buildOrderIdentifiers,
   ensurePaidOrderIdentifiers,
 } from "@/lib/orderIdentifiers";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type ZarinpalVerifyResponse = {
   data?: {
@@ -221,166 +226,167 @@ export async function GET(req: NextRequest) {
     // ── شارژ کیف پول ──
     // بدون این شاخه، کال‌بک شارژ کیف پول یک Order نامعتبر می‌ساخت.
     if (temp.purpose === "wallet_charge") {
-      const chargedTx = temp.walletTransaction
-        ? await WalletTransaction.findOneAndUpdate(
-            { _id: temp.walletTransaction, status: "pending" },
-            {
-              $set: {
-                status: "completed",
-                "gateway.refId": result?.data?.ref_id ?? null,
+      let chargedTx: any = null;
+      await mongoose.connection
+        .transaction(
+          async (transactionSession) => {
+            if (!temp.walletTransaction) {
+              throw new Error("WALLET_CHARGE_TRANSACTION_MISSING");
+            }
+            const transaction = await WalletTransaction.findOneAndUpdate(
+              { _id: temp.walletTransaction, status: "pending" },
+              {
+                $set: {
+                  status: "completed",
+                  "gateway.refId": result?.data?.ref_id ?? null,
+                },
               },
-            },
-            { returnDocument: "after" },
-          )
-        : null;
+              { new: true, session: transactionSession },
+            );
+            if (!transaction) {
+              throw new Error("WALLET_CHARGE_STATE_CONFLICT");
+            }
 
-      if (chargedTx) {
-        const updatedWallet = await Wallet.findOneAndUpdate(
-          { user: temp.userId },
-          { $inc: { balance: chargedTx.amount, version: 1 } },
-          { returnDocument: "after" },
+            const updatedWallet = await Wallet.findOneAndUpdate(
+              { user: temp.userId, isActive: { $ne: false } },
+              { $inc: { balance: transaction.amount, version: 1 } },
+              { new: true, session: transactionSession },
+            );
+            if (!updatedWallet) {
+              throw new Error("WALLET_CHARGE_WALLET_UNAVAILABLE");
+            }
+
+            await WalletTransaction.updateOne(
+              { _id: transaction._id },
+              { $set: { balanceAfter: updatedWallet.balance } },
+              { session: transactionSession },
+            );
+            await TempPayment.deleteOne(
+              { authority, status: "paid_pending" },
+              { session: transactionSession },
+            );
+            chargedTx = transaction;
+          },
+          {
+            readConcern: { level: "snapshot" },
+            writeConcern: { w: "majority" },
+          },
+        )
+        .catch((error) =>
+          console.error("[payment-zarinpal] wallet charge transaction failed", error),
         );
-        await WalletTransaction.updateOne(
-          { _id: chargedTx._id },
-          { $set: { balanceAfter: updatedWallet?.balance ?? null } },
-        );
 
-        await notifyUser({
-          userId: temp.userId,
-          title: "شارژ کیف پول",
-          message: `کیف پول شما مبلغ ${Number(chargedTx.amount).toLocaleString("fa-IR")} تومان شارژ شد.`,
-          type: "WALLET_CHARGED",
-          category: "wallet",
-          entityType: "WalletTransaction",
-          entityId: chargedTx._id,
-          link: "/my-profile?step=8",
-          eventKey: `WALLET_CHARGED:${chargedTx._id}`,
-        }).catch(() => {});
-      }
+      if (!chargedTx) return NextResponse.redirect(pendingUrl);
 
-      await TempPayment.deleteOne({ authority });
+      await notifyUser({
+        userId: temp.userId,
+        title: "شارژ کیف پول",
+        message: `کیف پول شما مبلغ ${Number(chargedTx.amount).toLocaleString("fa-IR")} تومان شارژ شد.`,
+        type: "WALLET_CHARGED",
+        category: "wallet",
+        entityType: "WalletTransaction",
+        entityId: chargedTx._id,
+        link: "/my-profile?step=8",
+        eventKey: `WALLET_CHARGED:${chargedTx._id}`,
+      }).catch(() => {});
 
       const walletSuccessUrl = withPaymentQuery(baseUrl, "/my-profile", {
         step: "8",
-        charge: chargedTx ? "success" : "review",
+        charge: "success",
       });
       return NextResponse.redirect(walletSuccessUrl);
     }
 
-    const decrementedItems: Array<{
-      product: string;
-      variantId?: string;
-      quantity: number;
-    }> = [];
-
+    const inventoryByIdentity = new Map<
+      string,
+      { product: string; variantId?: string; quantity: number }
+    >();
     for (const item of temp.items as Array<{
       product: string;
       variantId?: string;
       quantity: number;
     }>) {
-      if (item.variantId) {
-        const updated = await Product.findOneAndUpdate(
-          {
-            _id: item.product,
-            stock: { $gte: item.quantity },
-            variants: {
-              $elemMatch: {
-                _id: item.variantId,
-                stock: { $gte: item.quantity },
-                isActive: { $ne: false },
-              },
-            },
-          },
-          {
-            $inc: {
-              stock: -item.quantity,
-              "variants.$.stock": -item.quantity,
-              inventoryVersion: 1,
-            },
-          },
-        );
-
-        if (!updated) {
-          await notifyInventoryFailure({ productId: item.product, eventId: authority }).catch(() => undefined);
-          await notifyPaymentFailed({ userId: temp.userId, paymentId: authority, message: "پرداخت تایید شد اما موجودی محصول کافی نبود؛ درخواست در حال بررسی است." }).catch(() => undefined);
-          for (const previous of decrementedItems) {
-            await Product.findOneAndUpdate(
-              previous.variantId
-                ? { _id: previous.product, variants: { $elemMatch: { _id: previous.variantId } } }
-                : { _id: previous.product },
-              previous.variantId
-                ? { $inc: { stock: previous.quantity, "variants.$.stock": previous.quantity, inventoryVersion: 1 } }
-                : { $inc: { stock: previous.quantity, inventoryVersion: 1 } },
-            );
-          }
-          await TempPayment.findOneAndUpdate(
-            { authority },
-            { $set: { status: "failed", failedAt: new Date() } },
-          );
-          return NextResponse.redirect(failedUrl);
-        }
-        decrementedItems.push(item);
-        continue;
-      }
-
-      const updated = await Product.findOneAndUpdate(
-        { _id: item.product, stock: { $gte: item.quantity } },
-        { $inc: { stock: -item.quantity, inventoryVersion: 1 } },
-      );
-
-      if (!updated) {
-        await notifyInventoryFailure({ productId: item.product, eventId: authority }).catch(() => undefined);
-        await notifyPaymentFailed({ userId: temp.userId, paymentId: authority, message: "پرداخت تایید شد اما موجودی محصول کافی نبود؛ درخواست در حال بررسی است." }).catch(() => undefined);
-        for (const previous of decrementedItems) {
-          await Product.findOneAndUpdate(
-            previous.variantId
-              ? { _id: previous.product, variants: { $elemMatch: { _id: previous.variantId } } }
-              : { _id: previous.product },
-            previous.variantId
-              ? { $inc: { stock: previous.quantity, "variants.$.stock": previous.quantity, inventoryVersion: 1 } }
-              : { $inc: { stock: previous.quantity, inventoryVersion: 1 } },
-          );
-        }
-        await TempPayment.findOneAndUpdate(
-          { authority },
-          { $set: { status: "failed", failedAt: new Date() } },
-        );
-        return NextResponse.redirect(failedUrl);
-      }
-      decrementedItems.push(item);
+      const product = String(item.product);
+      const variantId = item.variantId ? String(item.variantId) : undefined;
+      const key = `${product}:${variantId ?? "single"}`;
+      const previous = inventoryByIdentity.get(key);
+      inventoryByIdentity.set(key, {
+        product,
+        variantId,
+        quantity: (previous?.quantity ?? 0) + Number(item.quantity),
+      });
     }
+    const inventoryItems = [...inventoryByIdentity.values()];
 
     const newOrderId = new mongoose.Types.ObjectId();
     const identifiers = buildOrderIdentifiers(newOrderId);
-    const order = await Order.create({
-      _id: newOrderId,
-      user: temp.userId,
-      address: temp.address,
-      addressSnapshot: temp.addressSnapshot,
-      buyerSnapshot: temp.buyerSnapshot,
-      sellerSnapshot: temp.sellerSnapshot,
-      items: temp.items,
-      totalPrice: temp.totalPrice,
-      shippingCost: temp.shippingCost,
-      shippingPaymentType:
-        temp.shippingPaymentType ||
-        (temp.shippingCost > 0 ? "PREPAID" : "COLLECT"),
-      shipping: temp.shipping || null,
-      finalPrice: temp.finalPrice,
-      couponCode: temp.couponCode ?? null,
-      couponDiscount: temp.couponDiscount ?? 0,
-      paymentStatus: "paid",
-      paymentGateway: "zarinpal",
-      paymentAuthority: authority,
-      paymentRefId: result?.data?.ref_id ?? null,
-      paymentCardPan: result?.data?.card_pan ?? null,
-      paymentFeeType: result?.data?.fee_type ?? null,
-      paymentFee: result?.data?.fee ?? null,
-      paymentVerifiedAt: new Date(),
-      ...identifiers,
+    let order: any = null;
+    const inventoryResult = await adjustProductInventoriesWithCatalogChange(
+      inventoryItems.map((item) => ({
+        productId: item.product,
+        variantId: item.variantId,
+        quantityDelta: -item.quantity,
+        requireAvailable: item.quantity,
+        source: "zarinpal" as const,
+        idempotencyKey: `zarinpal:${authority}:decrement:${item.product}:${item.variantId ?? "single"}`,
+      })),
+      {
+        afterAdjustments: async (transactionSession) => {
+          const [createdOrder] = await Order.create(
+            [
+              {
+                _id: newOrderId,
+                user: temp.userId,
+                address: temp.address,
+                addressSnapshot: temp.addressSnapshot,
+                buyerSnapshot: temp.buyerSnapshot,
+                sellerSnapshot: temp.sellerSnapshot,
+                items: temp.items,
+                totalPrice: temp.totalPrice,
+                shippingCost: temp.shippingCost,
+                shippingPaymentType:
+                  temp.shippingPaymentType ||
+                  (temp.shippingCost > 0 ? "PREPAID" : "COLLECT"),
+                shipping: temp.shipping || null,
+                finalPrice: temp.finalPrice,
+                couponCode: temp.couponCode ?? null,
+                couponDiscount: temp.couponDiscount ?? 0,
+                paymentStatus: "paid",
+                paymentGateway: "zarinpal",
+                paymentAuthority: authority,
+                paymentRefId: result?.data?.ref_id ?? null,
+                paymentCardPan: result?.data?.card_pan ?? null,
+                paymentFeeType: result?.data?.fee_type ?? null,
+                paymentFee: result?.data?.fee ?? null,
+                paymentVerifiedAt: new Date(),
+                ...identifiers,
+              },
+            ],
+            { session: transactionSession, ordered: true },
+          );
+          order = createdOrder;
+        },
+      },
+    ).catch((error) => {
+      console.error("[pos.catalog.outbox] zarinpal inventory transaction failed", error);
+      return null;
     });
 
-    await User.findByIdAndUpdate(temp.userId, { $push: { orders: order._id } });
+    if (!inventoryResult || !order) {
+      await notifyInventoryFailure({
+        productId: inventoryItems[0]?.product ?? authority,
+        eventId: authority,
+      }).catch(() => undefined);
+      // Zarinpal has already confirmed the money. Keep paid_pending and route
+      // the customer to review; never label a confirmed payment as failed.
+      return NextResponse.redirect(pendingUrl);
+    }
+
+    await User.findByIdAndUpdate(temp.userId, {
+      $addToSet: { orders: order._id },
+    }).catch((error) =>
+      console.error("[payment-zarinpal] user order link failed", error),
+    );
 
     await Promise.all([
       notifyOrderPaid({
@@ -389,7 +395,7 @@ export async function GET(req: NextRequest) {
         amount: Number(order.finalPrice),
         gateway: "zarinpal",
       }),
-      notifyLowInventory(decrementedItems.map((item) => item.product)),
+      notifyLowInventory(inventoryItems.map((item) => item.product)),
     ]).catch((error) => console.error("[notifications] zarinpal order event failed:", error));
 
     await TempPayment.deleteOne({ authority });

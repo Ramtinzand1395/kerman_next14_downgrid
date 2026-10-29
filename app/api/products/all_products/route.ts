@@ -71,7 +71,10 @@ export async function GET(req: Request) {
 
     // Excluding `tag` here lets the UI offer other tags without losing the
     // current category and text-search context.
-    const baseFilter: Record<string, any> = { status: "published" };
+    const baseFilter: Record<string, any> = {
+      status: "published",
+      deletedAt: null,
+    };
 
     if (categorySlug) {
       const decodedCategory = decodeURIComponent(categorySlug).trim();

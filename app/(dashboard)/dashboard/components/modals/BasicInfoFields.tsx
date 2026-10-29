@@ -19,6 +19,7 @@ const fieldLabels: Record<string, string> = {
   title: "عنوان محصول",
   slug: "اسلاگ (شناسه یکتا در URL)",
   sku: "کد SKU محصول",
+  barcode: "بارکد محصول",
   price: "قیمت (تومان)",
   discountPrice: "قیمت تخفیف (تومان)",
   stock: "موجودی انبار",
@@ -242,6 +243,25 @@ const BasicInfoFields = ({ form, updateField }: BasicInfoFieldsProps) => {
               value={form.sku || ""}
               onChange={(e) => updateField("sku", e.target.value)}
               placeholder="کد یکتای انبارداری (اختیاری)"
+              className="w-full border-b border-slate-600 bg-inherit py-1 text-sm text-slate-100 transition-colors focus:border-b-2 focus:border-indigo-500 focus:outline-none dir-ltr text-right"
+            />
+          </div>
+
+          {/* Barcode */}
+          <div className="col-span-2 sm:col-span-1 relative my-2 w-full">
+            <label
+              htmlFor="product-barcode"
+              className="pointer-events-none absolute -top-4 left-0 text-xs text-slate-400"
+            >
+              {fieldLabels.barcode}
+            </label>
+            <input
+              id="product-barcode"
+              type="text"
+              inputMode="numeric"
+              value={form.barcode || ""}
+              onChange={(e) => updateField("barcode", e.target.value)}
+              placeholder="بارکد یکتای محصول تکی (اختیاری)"
               className="w-full border-b border-slate-600 bg-inherit py-1 text-sm text-slate-100 transition-colors focus:border-b-2 focus:border-indigo-500 focus:outline-none dir-ltr text-right"
             />
           </div>
