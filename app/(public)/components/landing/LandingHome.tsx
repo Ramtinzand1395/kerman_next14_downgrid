@@ -31,6 +31,8 @@ import { stripHtmlTags } from "@/helpers/stripHtmlTags";
 import ProductImage from "@/app/components/ProductImage";
 import Motion from "../Motion";
 import Faq from "./Faq";
+import HomeHeroSlider from "./HomeHeroSlider";
+import { HOME_HERO_SLIDES } from "./home-hero-slides";
 import LandingCatalog from "./LandingCatalog";
 import ServiceOrderSection from "./ServiceOrderSection";
 
@@ -177,55 +179,14 @@ export default function LandingHome({
   data: LandingData;
   courierEnabled: boolean;
 }) {
+  const heroSlides = HOME_HERO_SLIDES.filter(
+    (slide) => !slide.courierOnly || courierEnabled,
+  );
+
   return (
     <div className="overflow-x-clip bg-[#f3f8ff] pb-24 text-[#0b1d48] sm:pb-0">
       <div className="mx-auto w-full max-w-[1320px] px-4 py-4 sm:px-6 lg:px-8">
-        <Motion direction="down" distance={12} duration={0.4}>
-          <section className="relative overflow-hidden rounded-2xl bg-[#063b93] text-white sm:aspect-[3/1] sm:rounded-[24px]">
-            <div className="relative aspect-[3/1] w-full sm:absolute sm:inset-0 sm:h-full sm:aspect-auto">
-              <Image
-                src="/PS5 Hero Banner with Game Cases-1.png"
-                alt="کنسول PS5، دسته و بازی‌های پلی استیشن"
-                fill
-                priority
-                sizes="(max-width: 639px) 100vw, 1320px"
-                className="object-cover object-left"
-              />
-            </div>
-            <div className="bg-[#063b93] p-5 sm:absolute sm:inset-y-0 sm:right-0 sm:flex sm:w-[60%] sm:flex-col sm:justify-center sm:bg-transparent sm:p-4 lg:w-[58%] lg:p-10">
-              <h1 className="text-3xl font-black leading-[1.35] sm:max-w-[560px] sm:text-[32px] sm:leading-[1.15] lg:text-5xl">
-                دنیای بازی،
-                <br />
-                همین‌جا در کرمان
-              </h1>
-              <p className="mt-1.5 max-w-xl text-sm font-medium leading-6 text-blue-50 sm:text-xs sm:leading-5 lg:mt-2 lg:text-base lg:leading-6">
-                خرید کنسول، نصب بازی PS4 و PS5 و خدمات تخصصی کنسول با خیال
-                راحت و پشتیبانی واقعی.
-              </p>
-              <div className="mt-2 flex flex-wrap gap-1.5 text-xs font-bold text-blue-50 sm:flex-nowrap sm:text-[10px] lg:mt-3 lg:gap-2 lg:text-sm">
-                <span className="landing-hero-badge">
-                  <ShieldCheck className="h-3.5 w-3.5" /> راهنمای انتخاب بازی
-                </span>
-                <span className="landing-hero-badge">
-                  <Gamepad2 className="h-3.5 w-3.5" /> PS4 · PS5
-                </span>
-                <span className="landing-hero-badge">
-                  <MapPin className="h-3.5 w-3.5" /> خدمات حضوری در کرمان
-                </span>
-              </div>
-              <div className="mt-2 flex flex-col gap-2 min-[420px]:flex-row lg:mt-3">
-                <Link href="/products?sort=newest&page=1" className="landing-primary landing-hero-cta whitespace-nowrap text-sm sm:min-h-10 sm:text-xs lg:min-h-11 lg:text-sm">
-                  مشاهده محصولات
-                  <ArrowLeft className="h-3.5 w-3.5" />
-                </Link>
-                <Link href={REQUEST_URL} className="landing-secondary landing-hero-cta whitespace-nowrap text-sm sm:min-h-10 sm:text-xs lg:min-h-11 lg:text-sm">
-                  ثبت درخواست خدمات
-                  <CalendarDays className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-            </div>
-          </section>
-        </Motion>
+        <HomeHeroSlider slides={heroSlides} />
 
         <section className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4" aria-label="دسترسی سریع">
           {quickAccess.map((item) => {

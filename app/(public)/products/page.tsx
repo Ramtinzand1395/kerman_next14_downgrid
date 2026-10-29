@@ -8,6 +8,7 @@ import FilterProducts from "./components/FilterProducts";
 import Pagination from "./components/Pagination";
 import SortProducts from "./components/SortProducts";
 import ProductsSearch from "./components/ProductsSearch";
+import ProductArtSlider from "./components/ProductArtSlider";
 import {
   ProductNavigationLink,
   ProductNavigationProvider,
@@ -208,32 +209,16 @@ export default async function ProductsPage({
 
       <ProductNavigationProvider>
 
-      <header className="mb-5 overflow-hidden rounded-3xl bg-gradient-to-l from-blue-600 via-blue-700 to-indigo-800 p-5 text-white shadow-lg shadow-blue-900/15 md:p-8">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-blue-50">
-              <SlidersHorizontal className="h-4 w-4" /> انتخاب سریع‌تر، خرید مطمئن‌تر
-            </div>
-            <h1 className="text-2xl font-extrabold md:text-4xl">
-              {selectedTagName
-                ? `محصولات با برچسب ${selectedTagName}`
-                : selectedCategoryName
-                  ? `خرید ${selectedCategoryName}`
-                  : "همه محصولات فروشگاه"}
-            </h1>
-            <p className="mt-2 max-w-3xl text-sm leading-7 text-blue-50 md:text-base">
-              با جستجو و فیلتر دسته‌بندی و برچسب‌ها، سریع‌تر به محصول مناسب
-              برسید. همه فیلترها در آدرس صفحه ذخیره می‌شوند و قابل اشتراک‌اند.
-            </p>
-          </div>
+      <ProductArtSlider />
 
-          <div className="grid grid-cols-3 gap-2 text-center text-xs sm:min-w-[390px] sm:text-sm">
-            <div className="rounded-xl border border-white/15 bg-white/10 px-3 py-2.5">ارسال براساس مقصد</div>
-            <div className="rounded-xl border border-white/15 bg-white/10 px-3 py-2.5">تضمین اصالت</div>
-            <div className="rounded-xl border border-white/15 bg-white/10 px-3 py-2.5">پشتیبانی تخصصی</div>
-          </div>
-        </div>
-
+      <header className="mb-5 rounded-2xl border border-blue-100 bg-white p-4 shadow-sm md:p-5">
+        <h1 className="mb-3 text-xl font-extrabold text-slate-900 md:text-2xl">
+          {selectedTagName
+            ? `محصولات با برچسب ${selectedTagName}`
+            : selectedCategoryName
+              ? `خرید ${selectedCategoryName}`
+              : "همه محصولات فروشگاه"}
+        </h1>
         <ProductsSearch
           key={searchParams.q || "all-products"}
           initialQuery={searchParams.q || ""}
