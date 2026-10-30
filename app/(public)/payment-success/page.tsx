@@ -177,6 +177,7 @@ export default async function PaymentSuccessPage({ searchParams }: PaymentSucces
                     روش ارسال: {order.shipping.title} — {order.shipping.label}
                   </p>
                   {order.shipping.note && <p className="mt-1 text-xs text-amber-700">{order.shipping.note}</p>}
+                  {order.shipping.trackingCode && <p className="mt-1 text-xs font-bold text-blue-900" dir="ltr">کد رهگیری مرسوله: {order.shipping.trackingCode}</p>}
                 </section>
               )}
             </div>

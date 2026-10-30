@@ -129,8 +129,32 @@ export default function CartPage({ shippingSettings }: { shippingSettings: Store
       setAddressHydrated(true);
       return;
     }
-    setSelectedAddress(parsedAddress);
-    setAddressHydrated(true);
+    let cancelled = false;
+    fetch("/api/profile/address", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("ADDRESS_REFRESH_FAILED");
+        return response.json();
+      })
+      .then((addresses: Address[]) => {
+        if (cancelled) return;
+        const authoritative = Array.isArray(addresses)
+          ? addresses.find((address) => address._id === parsedAddress._id) ?? null
+          : null;
+        setSelectedAddress(authoritative);
+        if (!authoritative) sessionStorage.removeItem("checkout:selected-address");
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSelectedAddress(null);
+          sessionStorage.removeItem("checkout:selected-address");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setAddressHydrated(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -173,7 +197,7 @@ export default function CartPage({ shippingSettings }: { shippingSettings: Store
   if (!hasHydrated) return <CartSkeleton />;
 
   return (
-    <main className="mx-auto mt-6 w-full max-w-7xl px-4 pb-36 md:mt-10 xl:pb-16">
+    <div className="mx-auto mt-6 w-full max-w-7xl px-4 pb-36 md:mt-10 xl:pb-16">
       <section className="overflow-hidden rounded-3xl bg-blue-900 p-6 text-white shadow-xl md:p-8">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
@@ -246,6 +270,8 @@ export default function CartPage({ shippingSettings }: { shippingSettings: Store
               <div className="mb-5 space-y-2 rounded-2xl border border-cyan-100 bg-cyan-50 p-4 text-xs leading-6 text-slate-700">
                 {shippingSettings.localDelivery.enabled && <p>{formatLocalShippingPolicyText(shippingSettings.localDelivery.feeToman)}</p>}
                 {shippingSettings.nationalCollect.enabled && <p>{shippingSettings.nationalCollect.description}</p>}
+                {shippingSettings.tipax.enabled && <p>{shippingSettings.tipax.title}: {shippingSettings.tipax.description}</p>}
+                {shippingSettings.postPishtaz.enabled && <p>{shippingSettings.postPishtaz.title}: {shippingSettings.postPishtaz.description}</p>}
               </div>
               <h2 className="mb-5 text-lg font-bold text-slate-900">
                 محصولات انتخاب‌شده
@@ -464,7 +490,7 @@ export default function CartPage({ shippingSettings }: { shippingSettings: Store
                   }
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-900 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
-                  ادامه
+                  {activeStep === 1 ? "ادامه خرید و پرداخت" : "ادامه"}
                   <ArrowLeft className="h-4 w-4" />
                 </button>
               )}
@@ -506,11 +532,15 @@ export default function CartPage({ shippingSettings }: { shippingSettings: Store
               }}
               className="min-w-40 rounded-xl bg-blue-900 px-5 py-3 text-sm font-black text-white disabled:bg-slate-300"
             >
-              {activeStep === 3 ? "انتخاب روش پرداخت" : "ادامه فرایند خرید"}
+              {activeStep === 1
+                ? "ادامه خرید و پرداخت"
+                : activeStep === 3
+                  ? "انتخاب روش پرداخت"
+                  : "ادامه فرایند خرید"}
             </button>
           </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }

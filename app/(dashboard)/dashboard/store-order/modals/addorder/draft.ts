@@ -6,6 +6,7 @@ export type StoreOrderDraft = {
   activeStep?: number;
   customerData?: Partial<Customer>;
   order?: Partial<storeOrder>;
+  requestKey?: string;
 };
 
 // خواندن پیش‌نویس ذخیره‌شده (در صورت خطا، مرورگر قفل شده و یا JSON خراب → null)

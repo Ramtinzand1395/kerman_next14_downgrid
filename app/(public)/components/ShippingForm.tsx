@@ -2,7 +2,7 @@
 
 import { addressSchema } from "@/validations/UserInfoValidation";
 import { Address } from "@/types";
-import { MapPin, PencilLine, ShieldCheck, Trash2, Truck } from "lucide-react";
+import { MapPin, PencilLine, Plus, ShieldCheck, Trash2, Truck } from "lucide-react";
 import { Iran } from "provinces-and-cities";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -22,6 +22,8 @@ export default function ShippingForm({
   const [form, setForm] = useState<Partial<Address>>({});
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [showForm, setShowForm] = useState(false);
 
   const router = useRouter();
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -37,14 +39,20 @@ export default function ShippingForm({
 
   const getAddresses = async () => {
     setLoading(true);
+    setLoadError("");
     try {
       const response = await fetch("/api/profile/address");
       if (!response.ok) throw new Error();
 
       const data = await response.json();
-      setAddresses(data);
+      const next = Array.isArray(data) ? data : [];
+      setAddresses(next);
+      if (next.length === 0) setShowForm(true);
+      return next as Address[];
     } catch {
+      setLoadError("آدرس‌ها دریافت نشدند؛ اتصال را بررسی و دوباره تلاش کنید.");
       toast.error("آدرس‌ها دریافت نشدند؛ صفحه را تازه‌سازی و دوباره تلاش کنید.");
+      return null;
     } finally {
       setLoading(false);
     }
@@ -57,7 +65,9 @@ export default function ShippingForm({
   const resetForm = () => setForm({});
 
   useEffect(() => {
+    if (loading) return;
     if (addresses.length === 0) {
+      if (selectedAddress) setSelectedAddress(null);
       return;
     }
 
@@ -68,7 +78,7 @@ export default function ShippingForm({
     if (!hasValidSelection) {
       setSelectedAddress(addresses[0]);
     }
-  }, [addresses, selectedAddress, setSelectedAddress]);
+  }, [addresses, loading, selectedAddress, setSelectedAddress]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -92,12 +102,15 @@ export default function ShippingForm({
         body: JSON.stringify(form),
       });
 
-      if (!response.ok) throw new Error();
+      const savedAddress = await response.json().catch(() => null);
+      if (!response.ok || !savedAddress?._id) throw new Error();
 
       toast.success(
         form._id ? "تغییرات آدرس ذخیره شد." : "آدرس جدید ذخیره شد.",
       );
+      setSelectedAddress(savedAddress as Address);
       resetForm();
+      if (method === "POST") setShowForm(false);
       await getAddresses();
     } catch {
       toast.error("آدرس ذخیره نشد؛ اطلاعات را بررسی و دوباره تلاش کنید.");
@@ -131,7 +144,7 @@ export default function ShippingForm({
   };
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+    <div className="flex flex-col rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-lg font-bold text-slate-900">مرحله آدرس تحویل</h2>
@@ -148,7 +161,7 @@ export default function ShippingForm({
       <form
         ref={formRef}
         onSubmit={handleSubmit}
-        className="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:p-5"
+        className={`${showForm ? "block" : "hidden"} order-3 mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:p-5`}
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
@@ -283,7 +296,10 @@ export default function ShippingForm({
           {form._id && (
             <button
               type="button"
-              onClick={resetForm}
+              onClick={() => {
+                resetForm();
+                if (addresses.length > 0) setShowForm(false);
+              }}
               className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700"
             >
               لغو ویرایش
@@ -299,10 +315,25 @@ export default function ShippingForm({
         </div>
       </form>
 
-      <div className="mt-6">
-        <h3 className="mb-3 text-sm font-bold text-slate-800">
-          آدرس‌های ذخیره‌شده
-        </h3>
+      <div className="order-2 mt-1">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-bold text-slate-800">آدرس‌های ذخیره‌شده</h3>
+            <p className="mt-1 text-xs text-slate-500">یکی از آدرس‌های معتبر حساب خود را انتخاب کنید.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              resetForm();
+              setShowForm(true);
+              requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+            }}
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-bold text-blue-900"
+          >
+            <Plus className="h-4 w-4" />
+            افزودن آدرس جدید
+          </button>
+        </div>
 
         {loading ? (
           <div className="space-y-3">
@@ -316,6 +347,11 @@ export default function ShippingForm({
                 <Skeleton height={14} width="60%" className="mt-2" />
               </div>
             ))}
+          </div>
+        ) : loadError ? (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+            <p>{loadError}</p>
+            <button type="button" onClick={() => void getAddresses()} className="mt-2 rounded-lg bg-white px-3 py-1.5 font-bold">تلاش دوباره</button>
           </div>
         ) : addresses.length === 0 ? (
           <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
@@ -365,6 +401,7 @@ export default function ShippingForm({
                       onClick={(event) => {
                         event.stopPropagation();
                         setForm(address);
+                        setShowForm(true);
                         formRef.current?.scrollIntoView({
                           behavior: "smooth",
                           block: "start",
@@ -395,7 +432,7 @@ export default function ShippingForm({
         )}
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 md:grid-cols-3">
+      <div className="order-4 mt-6 grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 md:grid-cols-3">
         <p className="flex items-center gap-2">
           <ShieldCheck className="h-4 w-4 text-cyan-700" />
           تضمین امنیت اطلاعات ارسال

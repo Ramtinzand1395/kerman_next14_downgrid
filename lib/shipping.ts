@@ -1,6 +1,10 @@
 import { Iran } from "provinces-and-cities";
 
-export type ShippingMethod = "kerman_local" | "national_collect";
+export type ShippingMethod =
+  | "kerman_local"
+  | "national_collect"
+  | "tipax"
+  | "post_pishtaz";
 export type ShippingPaymentTiming = "online" | "on_delivery";
 export type ShippingFeeStatus = "fixed" | "pending_carrier";
 
@@ -26,6 +30,14 @@ export const LOCAL_SHIPPING_DESCRIPTION =
   "ارسال سفارش در محدوده تحت پوشش شهر کرمان با هزینه ثابت ۱۵۰٬۰۰۰ تومان انجام می‌شود.";
 export const COLLECT_SHIPPING_NOTE =
   "ارسال به سراسر ایران به‌صورت پس‌کرایه انجام می‌شود. هزینه حمل هنگام تحویل مرسوله و براساس تعرفه شرکت حمل‌ونقل دریافت خواهد شد.";
+export const CARRIER_CALCULATED_SHIPPING_NOTE =
+  "هزینه حمل توسط شرکت حمل‌ونقل محاسبه و هنگام تحویل دریافت می‌شود؛ نامشخص بودن مبلغ به معنی ارسال رایگان نیست.";
+
+type CarrierCollectSetting = {
+  enabled: boolean;
+  title: string;
+  description: string;
+};
 
 export interface StoreShippingSettings {
   version: 1;
@@ -41,6 +53,8 @@ export interface StoreShippingSettings {
     title: string;
     description: string;
   };
+  tipax: CarrierCollectSetting;
+  postPishtaz: CarrierCollectSetting;
   coverage: {
     province: string;
     cities: string[];
@@ -61,6 +75,16 @@ export const DEFAULT_SHIPPING_SETTINGS: StoreShippingSettings = {
     availableForLocalAddresses: true,
     title: "ارسال سراسری پس‌کرایه",
     description: COLLECT_SHIPPING_NOTE,
+  },
+  tipax: {
+    enabled: false,
+    title: "ارسال با تیپاکس",
+    description: CARRIER_CALCULATED_SHIPPING_NOTE,
+  },
+  postPishtaz: {
+    enabled: false,
+    title: "ارسال با پست پیشتاز",
+    description: CARRIER_CALCULATED_SHIPPING_NOTE,
   },
   coverage: {
     province: "کرمان",
@@ -145,6 +169,7 @@ export interface OrderShippingSnapshot {
   feeStatus: ShippingFeeStatus;
   destinationCity: string;
   addressSnapshot: Record<string, unknown>;
+  trackingCode?: string | null;
 }
 
 function digits(value: unknown) {
@@ -231,6 +256,29 @@ export function getAvailableShippingMethods(
     });
   }
 
+  const carrierMethods: Array<{
+    method: "tipax" | "post_pishtaz";
+    setting: CarrierCollectSetting;
+  }> = [
+    { method: "tipax", setting: settings.tipax },
+    { method: "post_pishtaz", setting: settings.postPishtaz },
+  ];
+  for (const carrier of carrierMethods) {
+    if (!carrier.setting.enabled) continue;
+    methods.push({
+      method: carrier.method,
+      title: carrier.setting.title,
+      feeToman: null,
+      cost: null,
+      paymentTiming: "on_delivery",
+      feeStatus: "pending_carrier",
+      paymentType: "COLLECT",
+      isKerman: isLocal,
+      label: "محاسبه توسط شرکت حمل‌ونقل",
+      description: carrier.setting.description,
+    });
+  }
+
   return methods;
 }
 
@@ -281,7 +329,21 @@ export function formatOrderShippingDisplay(order: {
   subtext?: string;
   isCollect: boolean;
   feeToman: number | null;
+  trackingCode?: string | null;
 } {
+  if (order.shipping?.method === "tipax" || order.shipping?.method === "post_pishtaz") {
+    const setting = order.shipping.method === "tipax"
+      ? DEFAULT_SHIPPING_SETTINGS.tipax
+      : DEFAULT_SHIPPING_SETTINGS.postPishtaz;
+    return {
+      title: order.shipping.title || setting.title,
+      label: "محاسبه توسط شرکت حمل‌ونقل",
+      subtext: CARRIER_CALCULATED_SHIPPING_NOTE,
+      isCollect: true,
+      feeToman: null,
+      trackingCode: order.shipping.trackingCode || null,
+    };
+  }
   if (order.shipping?.method === "national_collect") {
     return {
       title: order.shipping.title || DEFAULT_SHIPPING_SETTINGS.nationalCollect.title,
@@ -289,6 +351,7 @@ export function formatOrderShippingDisplay(order: {
       subtext: COLLECT_SHIPPING_NOTE,
       isCollect: true,
       feeToman: null,
+      trackingCode: order.shipping.trackingCode || null,
     };
   }
   if (order.shipping?.method === "kerman_local") {
@@ -307,6 +370,7 @@ export function formatOrderShippingDisplay(order: {
       label: `${fee.toLocaleString("fa-IR")} تومان`,
       isCollect: false,
       feeToman: fee,
+      trackingCode: order.shipping.trackingCode || null,
     };
   }
   if (order?.shippingPaymentType === "COLLECT") {

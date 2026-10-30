@@ -293,7 +293,7 @@ export interface OrderItem {
 }
 
 export type ShippingPaymentType = "PREPAID" | "COLLECT";
-export type ShippingMethod = "kerman_local" | "national_collect";
+export type ShippingMethod = "kerman_local" | "national_collect" | "tipax" | "post_pishtaz";
 export interface OrderShipping {
   method: ShippingMethod;
   title: string;
@@ -302,6 +302,7 @@ export interface OrderShipping {
   feeStatus: "fixed" | "pending_carrier";
   destinationCity: string;
   addressSnapshot?: Record<string, unknown>;
+  trackingCode?: string | null;
 }
 
 export interface Order {

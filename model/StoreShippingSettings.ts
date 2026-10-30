@@ -23,6 +23,16 @@ const StoreShippingSettingsSchema = new mongoose.Schema(
         default: DEFAULT_SHIPPING_SETTINGS.nationalCollect.description,
       },
     },
+    tipax: {
+      enabled: { type: Boolean, default: false },
+      title: { type: String, default: DEFAULT_SHIPPING_SETTINGS.tipax.title },
+      description: { type: String, default: DEFAULT_SHIPPING_SETTINGS.tipax.description },
+    },
+    postPishtaz: {
+      enabled: { type: Boolean, default: false },
+      title: { type: String, default: DEFAULT_SHIPPING_SETTINGS.postPishtaz.title },
+      description: { type: String, default: DEFAULT_SHIPPING_SETTINGS.postPishtaz.description },
+    },
     coverage: {
       province: { type: String, default: "کرمان" },
       cities: { type: [String], default: ["کرمان"] },

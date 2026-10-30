@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import moment from "moment-jalaali";
-import senSMS from "@/helpers/CustomerSms";
+import { deliverBusinessSms } from "@/lib/sms/business";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/mongodb";
@@ -54,9 +54,14 @@ export async function PUT(
       );
     }
 
-    const order = await StoreOrder.findById(orderId).populate("customer");
+    const validStatuses = ["دریافت از مشتری", "آماده", "تحویل به مشتری"];
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json({ message: "وضعیت سفارش معتبر نیست." }, { status: 422 });
+    }
 
-    if (!order) {
+    const existing = await StoreOrder.findById(orderId).populate("customer");
+
+    if (!existing) {
       return NextResponse.json(
         { message: "سفارشی پیدا نشد." },
         { status: 404 }
@@ -68,12 +73,27 @@ export async function PUT(
       deliveryDate = moment().format("jYYYY/jMM/jDD HH:mm");
     }
 
-    order.deliveryStatus = status;
-    if (deliveryDate) {
-      order.deliveryDate = deliveryDate;
+    if (existing.deliveryStatus === status) {
+      return NextResponse.json({
+        message: "وضعیت سفارش قبلاً ثبت شده است.",
+        data: existing,
+        sms: null,
+      });
     }
 
-    await order.save();
+    const order = await StoreOrder.findOneAndUpdate(
+      { _id: orderId, deliveryStatus: existing.deliveryStatus },
+      {
+        $set: {
+          deliveryStatus: status,
+          ...(deliveryDate ? { deliveryDate } : {}),
+        },
+      },
+      { returnDocument: "after", runValidators: true },
+    ).populate("customer");
+    if (!order) {
+      return NextResponse.json({ message: "وضعیت سفارش هم‌زمان تغییر کرده است." }, { status: 409 });
+    }
 
     let smsResponse = null;
 
@@ -81,7 +101,11 @@ export async function PUT(
       const persianConsole = getPersianConsoleName(order.consoleType);
 
       if (status === "آماده") {
-        smsResponse = await senSMS({
+        smsResponse = await deliverBusinessSms({
+          eventKey: `STORE_ORDER_STATUS:${order._id}:READY`,
+          eventType: "STORE_ORDER_READY",
+          entityType: "StoreOrder",
+          entityId: order._id.toString(),
           bodyId: 332452,
           to: order.customer.mobile,
           args: [
@@ -89,11 +113,20 @@ export async function PUT(
             order.customer.lastName,
             toPersianDigits(order.deliveryCode),
           ],
-        });
+        }).catch(() => ({
+          eventKey: `STORE_ORDER_STATUS:${order._id}:READY`,
+          state: "failed" as const,
+          providerStatus: null,
+          errorCode: "OUTBOX_UNAVAILABLE",
+        }));
       }
 
       if (status === "تحویل به مشتری") {
-        smsResponse = await senSMS({
+        smsResponse = await deliverBusinessSms({
+          eventKey: `STORE_ORDER_STATUS:${order._id}:DELIVERED`,
+          eventType: "STORE_ORDER_DELIVERED",
+          entityType: "StoreOrder",
+          entityId: order._id.toString(),
           bodyId: 323178,
           to: order.customer.mobile,
           args: [
@@ -102,7 +135,12 @@ export async function PUT(
             persianConsole,
             toPersianDigits(deliveryDate || ""),
           ],
-        });
+        }).catch(() => ({
+          eventKey: `STORE_ORDER_STATUS:${order._id}:DELIVERED`,
+          state: "failed" as const,
+          providerStatus: null,
+          errorCode: "OUTBOX_UNAVAILABLE",
+        }));
       }
     }
 

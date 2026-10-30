@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   CalendarDays,
@@ -28,6 +29,13 @@ import type {
   ServiceType,
 } from "@/types/appointments";
 import { ButtonLoading } from "@/app/components/loading/LoadingSystem";
+import {
+  clearAppointmentDraft,
+  readAppointmentDraft,
+  saveAppointmentDraft,
+  type AppointmentWizardDraft,
+} from "@/lib/appointments/draft";
+import { profileRoute } from "@/lib/profileRoutes";
 
 type Step = 1 | 2 | 3 | 4;
 type Slot = { startsAt: string; endsAt: string; time: string; remaining: number; available: boolean };
@@ -165,7 +173,12 @@ export default function GameOrderSelector({
   initialFulfillment?: Fulfillment | null;
 }) {
   const reduceMotion = useReducedMotion();
+  const router = useRouter();
   const submittingRef = useRef(false);
+  const wizardTopRef = useRef<HTMLDivElement | null>(null);
+  const scrollAfterNextRef = useRef(false);
+  const restoredDraftRef = useRef<AppointmentWizardDraft | null>(null);
+  const skipDraftResetEffectsRef = useRef(0);
   const [step, setStep] = useState<Step>(1);
   const [serviceType, setServiceType] = useState<ServiceType | null>(null);
   const [device, setDevice] = useState("");
@@ -215,6 +228,26 @@ export default function GameOrderSelector({
   );
 
   useEffect(() => {
+    const draft = readAppointmentDraft(sessionStorage);
+    if (!draft) return;
+    restoredDraftRef.current = draft;
+    skipDraftResetEffectsRef.current = 2;
+    setStep(draft.step);
+    setServiceType(draft.serviceType);
+    setDevice(draft.device);
+    setInstallationType(draft.installationType);
+    setRepairIssue(draft.repairIssue);
+    setFulfillment(draft.fulfillment);
+    setDescription(draft.description);
+    setSelectedDate(draft.selectedDate);
+    setSelectedAddressId(draft.newAddressId || draft.selectedAddressId);
+    setCustomerName(draft.customerName);
+    setPhone(draft.phone);
+    setIdempotencyKey(draft.idempotencyKey);
+    clearAppointmentDraft(sessionStorage);
+  }, []);
+
+  useEffect(() => {
     let active = true;
     Promise.all([
       fetch("/api/profile/account", { cache: "no-store" }),
@@ -226,16 +259,29 @@ export default function GameOrderSelector({
         if (!active) return;
         if (profileResponse.ok) {
           const profile = await profileResponse.json();
-          setCustomerName(profile.username || "");
-          setPhone(profile.mobile || "");
+          setCustomerName(restoredDraftRef.current?.customerName || profile.username || "");
+          setPhone(restoredDraftRef.current?.phone || profile.mobile || "");
         }
         if (rewardsResponse.ok) {
           const payload = await rewardsResponse.json();
-          setRewards(Array.isArray(payload?.data?.rewards) ? payload.data.rewards : []);
+          const nextRewards = Array.isArray(payload?.data?.rewards) ? payload.data.rewards : [];
+          setRewards(nextRewards);
+          const restoredRewardId = restoredDraftRef.current?.selectedRewardId;
+          if (restoredRewardId && nextRewards.some((reward: Reward) => reward._id === restoredRewardId)) {
+            setSelectedRewardId(restoredRewardId);
+          }
         }
         if (addressesResponse.ok) {
           const payload = await addressesResponse.json();
-          setAddresses(Array.isArray(payload) ? payload : []);
+          const nextAddresses = Array.isArray(payload) ? payload : [];
+          setAddresses(nextAddresses);
+          const restoredAddressId =
+            restoredDraftRef.current?.newAddressId || restoredDraftRef.current?.selectedAddressId;
+          if (restoredAddressId && nextAddresses.some((address: AddressItem) => address._id === restoredAddressId)) {
+            setSelectedAddressId(restoredAddressId);
+          } else if (restoredAddressId) {
+            setSelectedAddressId("");
+          }
         }
         if (courierResponse.ok) {
           const payload = await courierResponse.json();
@@ -257,11 +303,16 @@ export default function GameOrderSelector({
   }, [dates]);
 
   useEffect(() => {
-    setDevice("");
-    if (serviceType !== "game_install") setInstallationType("");
-    if (serviceType !== "repair") setRepairIssue("");
-    setSupportedDeviceIds([]);
-    setDevicesError("");
+    const restoring = serviceType && skipDraftResetEffectsRef.current > 0;
+    if (restoring) {
+      skipDraftResetEffectsRef.current -= 1;
+    } else {
+      setDevice("");
+      if (serviceType !== "game_install") setInstallationType("");
+      if (serviceType !== "repair") setRepairIssue("");
+      setSupportedDeviceIds([]);
+      setDevicesError("");
+    }
     if (!serviceType) return;
     const controller = new AbortController();
     setDevicesLoading(true);
@@ -288,6 +339,10 @@ export default function GameOrderSelector({
   }, [dates, serviceType]);
 
   useEffect(() => {
+    if (serviceType && device && skipDraftResetEffectsRef.current > 0) {
+      skipDraftResetEffectsRef.current -= 1;
+      return;
+    }
     setSelectedDate("");
     setSelectedSlot(null);
     setSlots([]);
@@ -312,7 +367,13 @@ export default function GameOrderSelector({
       .then(async (response) => {
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error || "زمان‌های آزاد دریافت نشدند؛ روز دیگری را انتخاب یا دوباره تلاش کنید.");
-        setSlots(Array.isArray(data.slots) ? data.slots : []);
+        const nextSlots = Array.isArray(data.slots) ? data.slots : [];
+        setSlots(nextSlots);
+        const restored = restoredDraftRef.current?.selectedSlot;
+        if (restored) {
+          setSelectedSlot(nextSlots.find((slot: Slot) => slot.startsAt === restored.startsAt) || null);
+          if (restoredDraftRef.current) restoredDraftRef.current.selectedSlot = null;
+        }
       })
       .catch((reason) => {
         if (reason instanceof Error && reason.name !== "AbortError") {
@@ -340,7 +401,18 @@ export default function GameOrderSelector({
         setCourierSupported(enabled);
         if (!enabled) setFulfillment((current) => current === "courier" ? null : current);
         setCourierBookingDays(Number(payload?.settings?.bookingDaysAhead) || 14);
-        setCourierWindows(Array.isArray(payload?.windows) ? payload.windows : []);
+        const nextWindows = Array.isArray(payload?.windows) ? payload.windows : [];
+        setCourierWindows(nextWindows);
+        const restored = restoredDraftRef.current?.selectedCourierWindow;
+        if (restored) {
+          setSelectedCourierWindow(
+            nextWindows.find(
+              (window: CourierWindow) =>
+                window.start === restored.start && window.end === restored.end,
+            ) || null,
+          );
+          if (restoredDraftRef.current) restoredDraftRef.current.selectedCourierWindow = null;
+        }
       })
       .catch((reason) => {
         if (reason instanceof Error && reason.name !== "AbortError") setCourierError(reason.message);
@@ -428,6 +500,51 @@ export default function GameOrderSelector({
       : false;
   const selectedService = services.find((item) => item.value === serviceType);
 
+  useEffect(() => {
+    if (!scrollAfterNextRef.current) return;
+    scrollAfterNextRef.current = false;
+    const frame = requestAnimationFrame(() => {
+      wizardTopRef.current?.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start",
+      });
+      wizardTopRef.current?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [reduceMotion, step]);
+
+  const advanceStep = () => {
+    scrollAfterNextRef.current = true;
+    setStep((value) => Math.min(4, value + 1) as Step);
+  };
+
+  const openAddressManagement = () => {
+    const key = idempotencyKey || crypto.randomUUID();
+    if (!idempotencyKey) setIdempotencyKey(key);
+    saveAppointmentDraft(sessionStorage, {
+      step,
+      serviceType,
+      device,
+      installationType,
+      repairIssue,
+      fulfillment,
+      description,
+      selectedDate,
+      selectedSlot: selectedSlot
+        ? { startsAt: selectedSlot.startsAt, endsAt: selectedSlot.endsAt, time: selectedSlot.time }
+        : null,
+      selectedCourierWindow: selectedCourierWindow
+        ? { start: selectedCourierWindow.start, end: selectedCourierWindow.end }
+        : null,
+      selectedAddressId,
+      selectedRewardId,
+      customerName,
+      phone,
+      idempotencyKey: key,
+    });
+    router.push(profileRoute("addresses"));
+  };
+
   const submit = async () => {
     if (submittingRef.current || !serviceType || !fulfillment || !scheduleValid || !stageThreeValid) return;
     submittingRef.current = true;
@@ -466,6 +583,7 @@ export default function GameOrderSelector({
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "درخواست ثبت نشد؛ اطلاعات را بررسی و دوباره تلاش کنید.");
+      clearAppointmentDraft(sessionStorage);
       setCreated(payload.appointment as CreatedAppointment);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "درخواست ثبت نشد؛ دوباره تلاش کنید.");
@@ -537,7 +655,7 @@ export default function GameOrderSelector({
       </div>
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="min-w-0 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+        <div ref={wizardTopRef} tabIndex={-1} className="min-w-0 scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm outline-none md:p-6">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={step}
@@ -665,7 +783,7 @@ export default function GameOrderSelector({
                     <div className="mt-5">
                       <h3 className="font-black text-slate-900">آدرس دریافت</h3>
                       {addressesLoading ? <div className="mt-3 h-24 animate-pulse rounded-2xl bg-slate-100" /> : addresses.length === 0 ? (
-                        <div className="mt-3 rounded-2xl border border-dashed border-slate-300 p-5 text-sm text-slate-600"><p>برای استفاده از پیک ابتدا یک آدرس ثبت کنید.</p><Link href="/my-profile?step=2" className="mt-3 inline-flex rounded-xl bg-[#001A6E] px-4 py-2 font-bold text-white">افزودن آدرس</Link></div>
+                        <div className="mt-3 rounded-2xl border border-dashed border-slate-300 p-5 text-sm text-slate-600"><p>برای استفاده از پیک ابتدا یک آدرس ثبت کنید.</p><button type="button" onClick={openAddressManagement} className="mt-3 inline-flex rounded-xl bg-[#001A6E] px-4 py-2 font-bold text-white">افزودن آدرس</button></div>
                       ) : (
                         <div className="mt-3 grid gap-2 sm:grid-cols-2">
                           {addresses.map((address) => {
@@ -782,7 +900,7 @@ export default function GameOrderSelector({
           <div className="mt-7 hidden items-center justify-between border-t border-slate-100 pt-5 lg:flex">
             <button type="button" disabled={step === 1} onClick={() => setStep((value) => Math.max(1, value - 1) as Step)} className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-slate-200 px-5 font-bold text-slate-700 disabled:opacity-40"><ChevronRight className="h-4 w-4" /> قبل</button>
             {step < 4 ? (
-              <button type="button" disabled={step === 1 ? !stageOneValid || (repairIssue === "other" && !description.trim()) : step === 2 ? !fulfillment : !scheduleValid} onClick={() => setStep((value) => Math.min(4, value + 1) as Step)} className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-[#001A6E] px-7 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300">ادامه <ChevronLeft className="h-4 w-4" /></button>
+              <button type="button" disabled={step === 1 ? !stageOneValid || (repairIssue === "other" && !description.trim()) : step === 2 ? !fulfillment : !scheduleValid} onClick={advanceStep} className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-[#001A6E] px-7 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300">ادامه <ChevronLeft className="h-4 w-4" /></button>
             ) : (
               <button type="button" disabled={!stageThreeValid || !scheduleValid || submitting} onClick={() => void submit()} className="inline-flex min-h-12 min-w-36 items-center justify-center gap-2 rounded-2xl bg-[#001A6E] px-7 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300">{submitting ? <ButtonLoading label="در حال ثبت…" /> : <><ShieldCheck className="h-5 w-5" /> ثبت نوبت</>}</button>
             )}
@@ -818,11 +936,11 @@ export default function GameOrderSelector({
         </aside>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-screen-md items-center gap-2">
           <button type="button" disabled={step === 1} onClick={() => setStep((value) => Math.max(1, value - 1) as Step)} aria-label="مرحله قبل" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200 text-slate-700 disabled:opacity-40"><ChevronRight className="h-5 w-5" /></button>
           {step < 4 ? (
-            <button type="button" disabled={step === 1 ? !stageOneValid || (repairIssue === "other" && !description.trim()) : step === 2 ? !fulfillment : !scheduleValid} onClick={() => setStep((value) => Math.min(4, value + 1) as Step)} className="h-12 flex-1 rounded-2xl bg-[#001A6E] font-black text-white disabled:bg-slate-300">ادامه</button>
+            <button type="button" disabled={step === 1 ? !stageOneValid || (repairIssue === "other" && !description.trim()) : step === 2 ? !fulfillment : !scheduleValid} onClick={advanceStep} className="h-12 flex-1 rounded-2xl bg-[#001A6E] font-black text-white disabled:bg-slate-300">ادامه</button>
           ) : (
             <button type="button" disabled={!stageThreeValid || !scheduleValid || submitting} onClick={() => void submit()} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#001A6E] font-black text-white disabled:bg-slate-300">{submitting ? <ButtonLoading label="در حال ثبت…" /> : "ثبت نوبت"}</button>
           )}

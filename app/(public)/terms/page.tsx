@@ -307,6 +307,8 @@ export default async function TermsPage() {
         <h2 className="font-black text-slate-900">شرایط فعلی ارسال فروشگاه</h2>
         {shippingSettings.localDelivery.enabled && <p>{formatLocalShippingPolicyText(shippingSettings.localDelivery.feeToman)}</p>}
         {shippingSettings.nationalCollect.enabled && <p>{shippingSettings.nationalCollect.description}</p>}
+        {shippingSettings.tipax.enabled && <p>{shippingSettings.tipax.title}: {shippingSettings.tipax.description}</p>}
+        {shippingSettings.postPishtaz.enabled && <p>{shippingSettings.postPishtaz.title}: {shippingSettings.postPishtaz.description}</p>}
       </section>
 
       <div className="mt-8 grid items-start gap-7 lg:grid-cols-[18rem_minmax(0,1fr)]">

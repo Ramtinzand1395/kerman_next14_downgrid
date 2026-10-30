@@ -50,6 +50,9 @@ const AddCustomerOrder = ({
   onBack,
 }: AddCustomerOrderProps) => {
   const [loading, setLoading] = useState(false);
+  const [requestKey] = useState(
+    () => readStoreOrderDraft()?.requestKey || crypto.randomUUID(),
+  );
 
   const [order, setOrder] = useState<storeOrder | null>(() => {
     const baseOrder: storeOrder = {
@@ -84,8 +87,8 @@ const AddCustomerOrder = ({
 
   // ذخیره خودکار پیش‌نویس سفارش هنگام هر تغییر
   useEffect(() => {
-    if (order) writeStoreOrderDraft({ order });
-  }, [order]);
+    if (order) writeStoreOrderDraft({ order, requestKey });
+  }, [order, requestKey]);
 
   const handleSubmit = async () => {
     if (!customerData._id) {
@@ -103,7 +106,10 @@ const AddCustomerOrder = ({
     try {
       const res = await fetch("/api/admin/store-order", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": requestKey,
+        },
         body: JSON.stringify({ ...order, customerId: customerData._id }),
       });
 
@@ -121,7 +127,9 @@ const AddCustomerOrder = ({
 
       toast.success(data.message || "سفارش ثبت شد و به ابتدای فهرست اضافه شد.");
 
-      if (data?.sms?.body) toast.info(data.sms.body);
+      if (data?.sms?.state === "failed") {
+        toast.warning("سفارش ثبت شد، اما پیامک اطلاع‌رسانی ارسال نشد.");
+      }
 
       // ثبت موفق → پیش‌نویس ذخیره‌شده پاک شود
       clearStoreOrderDraft();

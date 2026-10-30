@@ -14,17 +14,18 @@
 
 ```ts
 shipping: {
-  method: "kerman_local" | "national_collect";
+  method: "kerman_local" | "national_collect" | "tipax" | "post_pishtaz";
   title: string;
   feeToman: number | null;
   paymentTiming: "online" | "on_delivery";
   feeStatus: "fixed" | "pending_carrier";
   destinationCity: string;
   addressSnapshot: object;
+  trackingCode?: string | null;
 }
 ```
 
-در `national_collect` مقدار `feeToman` همیشه `null`، زمان پرداخت `on_delivery` و وضعیت هزینه `pending_carrier` است. POS نباید برای این روش عدد صفر را به معنی ارسال رایگان نمایش دهد.
+در `national_collect`، `tipax` و `post_pishtaz` تا زمانی که اتصال نرخ معتبر وجود ندارد، مقدار `feeToman` همیشه `null`، زمان پرداخت `on_delivery` و وضعیت هزینه `pending_carrier` است. POS نباید برای این روش‌ها عدد صفر را به معنی ارسال رایگان نمایش دهد. عنوان روش و snapshot آدرس در زمان پرداخت ثابت می‌ماند و `trackingCode` بعداً توسط مدیر قابل ثبت است.
 
 ## خروجی افزوده API مدیریت سفارش
 

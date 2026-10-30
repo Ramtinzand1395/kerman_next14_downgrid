@@ -54,6 +54,7 @@ const CourierSchema = new Schema(
     finalShippingCost: { type: Number, default: 0, min: 0 },
     pickupAt: { type: Date, default: null },
     arrivedAtStoreAt: { type: Date, default: null },
+    returnReadyAt: { type: Date, default: null },
     returnStartedAt: { type: Date, default: null },
     deliveredAt: { type: Date, default: null },
   },

@@ -8,8 +8,11 @@ import { Iran } from "provinces-and-cities";
 import { addressSchema } from "@/validations/UserInfoValidation";
 import * as yup from "yup";
 import { Address } from "@/types";
+import { useRouter } from "next/navigation";
+import { attachNewAddressToAppointmentDraft } from "@/lib/appointments/draft";
 
 export default function MyAddresses() {
+  const router = useRouter();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<Partial<Address>>({});
@@ -50,11 +53,18 @@ export default function MyAddresses() {
         body: JSON.stringify(form),
       });
 
-      if (!res.ok) throw new Error();
+      const savedAddress = await res.json().catch(() => null);
+      if (!res.ok || !savedAddress?._id) throw new Error();
 
       toast.success("آدرس شما ذخیره شد.");
       setForm({});
-      getAddresses();
+      await getAddresses();
+      if (
+        method === "POST" &&
+        attachNewAddressToAppointmentDraft(sessionStorage, savedAddress._id)
+      ) {
+        router.replace("/my-profile?step=6&fulfillment=courier&resume=address");
+      }
     } catch {
       toast.error("آدرس ذخیره نشد؛ اطلاعات را بررسی و دوباره تلاش کنید.");
     }

@@ -139,6 +139,7 @@ export function toOrderDto(record: AnyRecord, source: "order" | "payment_attempt
       label: shipping.label,
       note: shipping.subtext || null,
       isCollect: shipping.isCollect,
+      trackingCode: stringValue(record.shipping?.trackingCode) || null,
     },
     couponCode: stringValue(record.couponCode) || null,
     historicalFallback:

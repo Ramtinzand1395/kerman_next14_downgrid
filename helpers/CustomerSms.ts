@@ -16,9 +16,14 @@ export default async function senSMS({
   to: string;
   args: string[];
 }): Promise<SmsResult> {
-  const defaultSharedUrl =
-    "https://console.melipayamak.com/api/send/shared/cba17fa6705a4348b2e2d10279cf3fb9";
-  const url = process.env.MELIPAYAMAK_SHARED_URL?.trim() || defaultSharedUrl;
+  const url = process.env.MELIPAYAMAK_SHARED_URL?.trim();
+  if (!url) {
+    return {
+      ok: false,
+      status: null,
+      body: "پیکربندی سرویس پیامک کامل نیست.",
+    };
+  }
 
   try {
     const res = await fetch(url, {
@@ -41,9 +46,9 @@ export default async function senSMS({
     }
 
     return { ok: true, status: res.status, body };
-  } catch (err) {
+  } catch {
     // خطای شبکه / تایم‌اوت اتصال به ملی‌پیامک — نباید کل عملیات را بشکند
-    console.error("senSMS network error:", err);
+    console.error("[business-sms] provider request failed");
     return {
       ok: false,
       status: null,

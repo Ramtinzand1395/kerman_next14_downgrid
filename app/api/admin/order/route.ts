@@ -44,7 +44,8 @@ export async function GET(req: Request) {
   return NextResponse.json({
     orders: orders.map((order: any) => {
       const isCollect =
-        order.shipping?.method === "national_collect" ||
+        order.shipping?.paymentTiming === "on_delivery" ||
+        order.shipping?.feeStatus === "pending_carrier" ||
         order.shippingPaymentType === "COLLECT";
       const storedShippingFee = Number(order.shipping?.feeToman ?? order.shippingCost);
       const shippingFeeToman = isCollect
@@ -76,7 +77,7 @@ export async function PUT(req: NextRequest) {
   if (!session || session.user.role !== "superadmin")
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-  const { status, orderId } = await req.json();
+  const { status, orderId, shippingTrackingCode } = await req.json();
 
   const validStatuses = [
     "pending",
@@ -85,13 +86,28 @@ export async function PUT(req: NextRequest) {
     "delivered",
     "cancelled",
   ];
-  if (!validStatuses.includes(status))
+  if (status !== undefined && !validStatuses.includes(status))
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  if (
+    shippingTrackingCode !== undefined &&
+    (typeof shippingTrackingCode !== "string" || shippingTrackingCode.trim().length > 64)
+  ) {
+    return NextResponse.json({ error: "Invalid shipping tracking code" }, { status: 400 });
+  }
+  if (status === undefined && shippingTrackingCode === undefined) {
+    return NextResponse.json({ error: "No update was provided" }, { status: 400 });
+  }
+
+  const set: Record<string, unknown> = {};
+  if (status !== undefined) set.status = status;
+  if (shippingTrackingCode !== undefined) {
+    set["shipping.trackingCode"] = shippingTrackingCode.trim() || null;
+  }
 
   // فقط در صورتی به کیف پول برگردان که قبلاً لغو نشده باشد — اتمیک و idempotent
   const order = await Order.findOneAndUpdate(
-    { _id: orderId, status: { $ne: "cancelled" } },
-    { status },
+    { _id: orderId, ...(status !== undefined ? { status: { $ne: "cancelled" } } : {}) },
+    { $set: set },
     { returnDocument: "after" },
   );
   if (!order) {
@@ -134,7 +150,7 @@ export async function PUT(req: NextRequest) {
     delivered: { title: "سفارش تکمیل شد", message: "سفارش شما با موفقیت تکمیل شد.", type: "ORDER_COMPLETED" },
     cancelled: { title: "سفارش لغو شد", message: "سفارش شما لغو شد. در صورت پرداخت، مبلغ به کیف پول بازمی‌گردد.", type: "ORDER_CANCELLED", priority: "high" },
   };
-  const notification = statusInfo[status];
+  const notification = status ? statusInfo[status] : undefined;
   if (order.user && notification) {
     await notifyUser({
       userId: order.user,

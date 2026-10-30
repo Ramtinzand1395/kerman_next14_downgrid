@@ -464,7 +464,7 @@ export default function PaymentForm({
                       />
                       <span>
                         <span className="block text-sm font-bold text-slate-900">
-                          {option.title} — {option.feeToman === null ? "پس‌کرایه" : `${formatPrice(option.feeToman)} تومان`}
+                          {option.title} — {option.label}
                         </span>
                         <span className="mt-1 block text-xs leading-6 text-slate-600">
                           {option.description}

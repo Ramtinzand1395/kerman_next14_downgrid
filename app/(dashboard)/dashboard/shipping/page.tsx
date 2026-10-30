@@ -69,6 +69,17 @@ export default function ShippingSettingsPage() {
           <TextArea label="توضیح پرداخت هنگام تحویل" value={settings.nationalCollect.description} onChange={(description) => setSettings({ ...settings, nationalCollect: { ...settings.nationalCollect, description } })} />
           <p className="rounded-xl bg-amber-50 p-3 text-xs leading-6 text-amber-800">این روش نرخ ثابت ندارد؛ مبلغ حمل در سفارش و پرداخت آنلاین صفر ذخیره نمی‌شود و مقدار آن نامشخص باقی می‌ماند.</p>
         </div>
+
+        <CarrierSettingsCard
+          label="ارسال با تیپاکس"
+          value={settings.tipax}
+          onChange={(tipax) => setSettings({ ...settings, tipax })}
+        />
+        <CarrierSettingsCard
+          label="ارسال با پست پیشتاز"
+          value={settings.postPishtaz}
+          onChange={(postPishtaz) => setSettings({ ...settings, postPishtaz })}
+        />
       </section>
 
       <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -95,4 +106,26 @@ function NumberField({ label, value, onChange }: { label: string; value: number;
 
 function TextArea({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return <label className="block text-sm font-bold text-slate-700">{label}<textarea rows={4} value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 p-3 font-normal leading-7 outline-none focus:border-blue-500" /></label>;
+}
+
+function CarrierSettingsCard({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: { enabled: boolean; title: string; description: string };
+  onChange: (value: { enabled: boolean; title: string; description: string }) => void;
+}) {
+  return (
+    <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <label className="flex items-center justify-between gap-3">
+        <span className="font-bold">{label}</span>
+        <input type="checkbox" checked={value.enabled} onChange={(event) => onChange({ ...value, enabled: event.target.checked })} />
+      </label>
+      <Field label="عنوان قابل نمایش" value={value.title} onChange={(title) => onChange({ ...value, title })} />
+      <TextArea label="توضیح هزینه محاسبه‌شده توسط شرکت حمل‌ونقل" value={value.description} onChange={(description) => onChange({ ...value, description })} />
+      <p className="rounded-xl bg-amber-50 p-3 text-xs leading-6 text-amber-800">نرخ ساختگی ثبت نمی‌شود؛ هزینه حمل در پرداخت آنلاین محاسبه نشده و هنگام تحویل طبق تعرفه شرکت دریافت می‌شود.</p>
+    </div>
+  );
 }

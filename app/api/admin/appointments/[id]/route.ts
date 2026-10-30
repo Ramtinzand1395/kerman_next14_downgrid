@@ -17,6 +17,7 @@ import {
   releaseVisitReward,
 } from "@/lib/appointments/rewards.service";
 import { notifyUser } from "@/lib/notifications/service";
+import { deliverBusinessSms } from "@/lib/sms/business";
 
 const labels: Record<string, string> = {
   pending: "در انتظار تأیید",
@@ -33,9 +34,9 @@ const courierLabels: Record<string, string> = {
   assigned: "اختصاص‌یافته به پیک",
   picked_up: "تحویل‌گرفته‌شده توسط پیک",
   at_store: "رسیده به فروشگاه",
-  return_ready: "آماده بازگشت",
-  returning: "در حال بازگشت",
-  delivered: "تحویل داده‌شده",
+  return_ready: "تکمیل خدمات و آماده ارسال",
+  returning: "تحویل به پیک",
+  delivered: "تحویل به مشتری",
   cancelled: "لغوشده",
 };
 
@@ -102,6 +103,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (!canCourierTransition(currentCourierStatus, nextCourierStatus as CourierStatus)) {
       return fail("این انتقال وضعیت پیک مجاز نیست.", 409);
     }
+    if (
+      ["return_ready", "returning", "delivered"].includes(nextCourierStatus) &&
+      current.status !== "completed"
+    ) {
+      return fail("ارسال برگشت فقط پس از تکمیل و ثبت نهایی خدمت مجاز است.", 409);
+    }
   }
 
   const correctingCompletion = current.status === "completed" && nextStatus === "confirmed";
@@ -142,6 +149,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
     if (nextCourierStatus === "at_store" && !current.courier.arrivedAtStoreAt) {
       set["courier.arrivedAtStoreAt"] = now;
+    }
+    if (nextCourierStatus === "return_ready" && !current.courier.returnReadyAt) {
+      set["courier.returnReadyAt"] = now;
     }
     if (nextCourierStatus === "returning" && !current.courier.returnStartedAt) {
       set["courier.returnStartedAt"] = now;
@@ -242,8 +252,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     };
   }
 
+  const updateFilter: Record<string, unknown> = { _id: current._id, status: current.status };
+  if (nextCourierStatus && nextCourierStatus !== current.courier?.status) {
+    updateFilter["courier.status"] = current.courier?.status || "pending";
+  }
   const updated = await Appointment.findOneAndUpdate(
-    { _id: current._id, status: current.status },
+    updateFilter,
     update,
     { returnDocument: "after", runValidators: true },
   );
@@ -297,6 +311,23 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       senderId: auth.userId,
       eventKey: `COURIER_STATUS:${current._id}:${nextCourierStatus}`,
     }).catch(() => {});
+
+    if (["return_ready", "returning", "delivered"].includes(nextCourierStatus)) {
+      const bodyIdByStatus: Record<string, number | undefined> = {
+        return_ready: Number(process.env.APPOINTMENT_SMS_RETURN_READY_BODY_ID) || undefined,
+        returning: Number(process.env.APPOINTMENT_SMS_HANDED_TO_COURIER_BODY_ID) || undefined,
+        delivered: Number(process.env.APPOINTMENT_SMS_DELIVERED_BODY_ID) || undefined,
+      };
+      await deliverBusinessSms({
+        eventKey: `APPOINTMENT_COURIER:${current._id}:${nextCourierStatus}`,
+        eventType: `APPOINTMENT_COURIER_${nextCourierStatus.toUpperCase()}`,
+        entityType: "Appointment",
+        entityId: current._id.toString(),
+        bodyId: bodyIdByStatus[nextCourierStatus],
+        to: current.phone,
+        args: [current.trackingCode],
+      }).catch(() => null);
+    }
   }
 
   return ok(updated);

@@ -47,9 +47,9 @@ export const courierLabel: Record<CourierStatus, string> = {
   assigned: "به پیک اختصاص یافت",
   picked_up: "دستگاه دریافت شد",
   at_store: "به فروشگاه رسید",
-  return_ready: "آماده بازگشت",
-  returning: "در مسیر بازگشت",
-  delivered: "تحویل شد",
+  return_ready: "تکمیل خدمات و آماده ارسال",
+  returning: "تحویل به پیک",
+  delivered: "تحویل به مشتری",
   cancelled: "لغو شد",
 };
 
@@ -85,6 +85,19 @@ export const courierTimeline: CourierStatus[] = [
   "returning",
   "delivered",
 ];
+
+export const courierReturnTimeline: Array<{ status: CourierStatus; label: string }> = [
+  { status: "return_ready", label: "تکمیل خدمات و آماده ارسال" },
+  { status: "returning", label: "تحویل به پیک" },
+  { status: "delivered", label: "تحویل به مشتری" },
+];
+
+export function courierReturnProgress(status: CourierStatus) {
+  if (status === "delivered") return 3;
+  if (status === "returning") return 2;
+  if (status === "return_ready") return 1;
+  return 0;
+}
 
 export function toman(value: number | null | undefined) {
   if (value === null || value === undefined) return "نامشخص";
