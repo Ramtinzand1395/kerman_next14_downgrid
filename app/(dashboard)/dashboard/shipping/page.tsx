@@ -56,7 +56,7 @@ export default function ShippingSettingsPage() {
 
       <section className="grid gap-5 xl:grid-cols-2">
         <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <label className="flex items-center justify-between gap-3"><span className="font-bold">ارسال شهری کرمان</span><input type="checkbox" checked={settings.localDelivery.enabled} onChange={(event) => setSettings({ ...settings, localDelivery: { ...settings.localDelivery, enabled: event.target.checked } })} /></label>
+          <div className="flex items-center justify-between gap-3"><span className="font-bold">ارسال به شهرستان کرمان</span><span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">همیشه فعال</span></div>
           <Field label="عنوان قابل نمایش" value={settings.localDelivery.title} onChange={(title) => setSettings({ ...settings, localDelivery: { ...settings.localDelivery, title } })} />
           <NumberField label="هزینه ثابت (تومان)" value={settings.localDelivery.feeToman} onChange={(feeToman) => setSettings({ ...settings, localDelivery: { ...settings.localDelivery, feeToman } })} />
           <TextArea label="توضیحات" value={settings.localDelivery.description} onChange={(description) => setSettings({ ...settings, localDelivery: { ...settings.localDelivery, description } })} />

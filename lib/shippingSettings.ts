@@ -10,12 +10,22 @@ const text = (value: unknown, fallback: string) =>
 
 export function normalizeShippingSettings(value: any): StoreShippingSettingsValue {
   const fee = Number(value?.localDelivery?.feeToman);
+  const localTitle = text(
+    value?.localDelivery?.title,
+    DEFAULT_SHIPPING_SETTINGS.localDelivery.title,
+  );
   return {
     version: 1,
     localDelivery: {
-      enabled: value?.localDelivery?.enabled !== false,
+      // Fixed-price Kerman delivery is a required baseline method. Historical
+      // settings may still contain `false`; normalize those records safely at
+      // read time without requiring a production data migration.
+      enabled: true,
       feeToman: Number.isSafeInteger(fee) && fee > 0 ? fee : 150_000,
-      title: text(value?.localDelivery?.title, DEFAULT_SHIPPING_SETTINGS.localDelivery.title),
+      title:
+        localTitle === "ارسال شهری کرمان"
+          ? DEFAULT_SHIPPING_SETTINGS.localDelivery.title
+          : localTitle,
       description: text(
         value?.localDelivery?.description,
         DEFAULT_SHIPPING_SETTINGS.localDelivery.description,

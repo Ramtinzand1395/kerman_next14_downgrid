@@ -25,6 +25,7 @@ export class InvalidShippingDestinationError extends Error {
 export type ShippingPaymentType = "PREPAID" | "COLLECT";
 
 export const KERMAN_SHIPPING_COST = 150_000;
+export const KERMAN_LOCAL_SHIPPING_TITLE = "ارسال به شهرستان کرمان";
 export const COLLECT_SHIPPING_LABEL = "پس‌کرایه";
 export const LOCAL_SHIPPING_DESCRIPTION =
   "ارسال سفارش در محدوده تحت پوشش شهر کرمان با هزینه ثابت ۱۵۰٬۰۰۰ تومان انجام می‌شود.";
@@ -67,7 +68,7 @@ export const DEFAULT_SHIPPING_SETTINGS: StoreShippingSettings = {
   localDelivery: {
     enabled: true,
     feeToman: KERMAN_SHIPPING_COST,
-    title: "ارسال شهری کرمان",
+    title: KERMAN_LOCAL_SHIPPING_TITLE,
     description: LOCAL_SHIPPING_DESCRIPTION,
   },
   nationalCollect: {
@@ -222,7 +223,10 @@ export function getAvailableShippingMethods(
   const isLocal = isDestinationInLocalCoverage(destination, settings);
   const methods: ShippingCalculation[] = [];
 
-  if (isLocal && settings.localDelivery.enabled) {
+  // Kerman fixed-price delivery is a baseline checkout method. Keep it
+  // available even when an older persisted settings document contains
+  // `enabled: false`, which previously made the option disappear entirely.
+  if (isLocal) {
     const fee = settings.localDelivery.feeToman;
     methods.push({
       method: "kerman_local",
