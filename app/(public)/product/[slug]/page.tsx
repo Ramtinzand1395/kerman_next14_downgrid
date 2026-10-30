@@ -208,6 +208,12 @@ export default async function ProductPage({
     shippingSettings.nationalCollect.enabled
       ? shippingSettings.nationalCollect.description
       : null,
+    shippingSettings.tipax.enabled
+      ? `${shippingSettings.tipax.title}: ${shippingSettings.tipax.description}`
+      : null,
+    shippingSettings.postPishtaz.enabled
+      ? `${shippingSettings.postPishtaz.title}: ${shippingSettings.postPishtaz.description}`
+      : null,
   ].filter((value): value is string => Boolean(value));
   const finalPrice = product.discountPrice ?? product.price;
   const productUrl = toAbsoluteUrl(`/product/${product.slug}`);

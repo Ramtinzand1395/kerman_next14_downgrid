@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
@@ -37,6 +37,11 @@ const OTP_EXPIRE_KEY = "otpExpireTime";
 const OTP_TOTAL_TIME = 120;
 const OTP_LENGTH = 5;
 
+const clearOtpStorage = () => {
+  localStorage.removeItem(OTP_EXPIRE_KEY);
+  localStorage.removeItem(OTP_META_KEY);
+};
+
 const normalizeOtpCode = (value: string) => {
   const faDigits = "۰۱۲۳۴۵۶۷۸۹";
   const arDigits = "٠١٢٣٤٥٦٧٨٩";
@@ -63,16 +68,13 @@ export default function LoginWithOtp() {
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const otpInputRef = useRef<HTMLInputElement | null>(null);
+  const isVerifyingRef = useRef(false);
+  const verificationAbortRef = useRef<AbortController | null>(null);
 
   const formatTime = (sec: number) => {
     const m = Math.floor(sec / 60);
     const s = sec % 60;
     return `${m}:${s < 10 ? "0" : ""}${s}`;
-  };
-
-  const clearOtpStorage = () => {
-    localStorage.removeItem(OTP_EXPIRE_KEY);
-    localStorage.removeItem(OTP_META_KEY);
   };
 
   const currentStep = useMemo(() => (otpSent ? "otp" : "mobile"), [otpSent]);
@@ -166,6 +168,89 @@ export default function LoginWithOtp() {
     toast.info("کد تأیید منقضی شد؛ برای ورود، کد جدید دریافت کنید.");
   }, [otpSent, timer]);
 
+  useEffect(
+    () => () => {
+      verificationAbortRef.current?.abort();
+    },
+    [],
+  );
+
+  const verifyOtpCode = useCallback(async (rawCode: string) => {
+    const code = normalizeOtpCode(rawCode).slice(0, OTP_LENGTH);
+    setEnteredOtp(code);
+    if (code.length !== OTP_LENGTH || isVerifyingRef.current) return;
+    if (!otpId) {
+      toast.error("اطلاعات تأیید کامل نیست؛ لطفاً کد جدید دریافت کنید.");
+      return;
+    }
+
+    try {
+      await otpSchema.validate(code);
+    } catch (err) {
+      toast.error(
+        err instanceof yup.ValidationError
+          ? err.message
+          : "کد تأیید معتبر نیست؛ کد پیامک‌شده را دوباره بررسی کنید.",
+      );
+      return;
+    }
+
+    isVerifyingRef.current = true;
+    setIsVerifying(true);
+    verificationAbortRef.current?.abort();
+    const controller = new AbortController();
+    verificationAbortRef.current = controller;
+
+    try {
+      const res = await fetch("/api/verifyOtp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ otpId, enteredOtp: code }),
+        signal: controller.signal,
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "کد واردشده درست نیست؛ دوباره بررسی کنید.");
+      }
+      if (!data.verificationToken) {
+        throw new Error("ورود تکمیل نشد؛ لطفاً کد جدید دریافت و دوباره تلاش کنید.");
+      }
+
+      const signInResult = await signIn("credentials", {
+        verificationToken: data.verificationToken,
+        callbackUrl,
+        redirect: false,
+      });
+      if (!signInResult?.ok) {
+        clearOtpStorage();
+        setOtpSent(false);
+        setEnteredOtp("");
+        setOtpId(null);
+        throw new Error("ورود انجام نشد؛ لطفاً کد جدید دریافت و دوباره تلاش کنید.");
+      }
+
+      toast.success("با موفقیت وارد حساب شدید.");
+      if (data.referral?.ok) {
+        toast.success("کد دعوت ثبت شد و پاداش آن پس از احراز شرایط اعمال می‌شود.");
+      } else if (data.referral?.error) {
+        toast.warning(data.referral.error);
+      }
+
+      clearOtpStorage();
+      window.location.assign(callbackUrl);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "کد تأیید بررسی نشد؛ اتصال اینترنت را بررسی و دوباره تلاش کنید.",
+      );
+      isVerifyingRef.current = false;
+      setIsVerifying(false);
+    }
+  }, [callbackUrl, otpId]);
+
   useEffect(() => {
     if (
       !otpSent ||
@@ -190,7 +275,7 @@ export default function LoginWithOtp() {
         if (!otpCode) return;
 
         setEnteredOtp(otpCode);
-        toast.info("کد پیامک به‌صورت خودکار وارد شد؛ برای ورود آن را تأیید کنید.");
+        void verifyOtpCode(otpCode);
       } catch {
         // در بسیاری از مرورگرها WebOTP پشتیبانی نمی‌شود یا کاربر پیامک را تایید نمی‌کند.
       }
@@ -199,11 +284,9 @@ export default function LoginWithOtp() {
     getOtpFromSms();
 
     return () => controller.abort();
-  }, [otpSent]);
+  }, [otpSent, verifyOtpCode]);
 
-  // تأیید کد فقط با زدن دکمه‌ی «تایید و ورود» انجام می‌شود.
-  // ارسال خودکار فرم بعد از تکمیل طول کد حذف شده تا در صورت اشتباه
-  // بودن کد، حلقه‌ی ارسال مجدد و نمایش چندتوییست «منقضی شده» پیش نیاید.
+  // ورود دستی، paste، پیشنهاد iOS و WebOTP همگی از verifyOtpCode عبور می‌کنند.
 
   const sendOtp = async () => {
     const savedExpireTime = localStorage.getItem(OTP_EXPIRE_KEY);
@@ -295,88 +378,11 @@ export default function LoginWithOtp() {
 
   const handleVerifyOtp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isVerifying) return;
-    if (!otpId) {
-      toast.error("اطلاعات تأیید کامل نیست؛ لطفاً کد جدید دریافت کنید.");
-      return;
-    }
-
-    try {
-      await otpSchema.validate(enteredOtp);
-    } catch (err) {
-      if (err instanceof yup.ValidationError) {
-        toast.error(err.message);
-      } else {
-        toast.error("کد تأیید معتبر نیست؛ کد پیامک‌شده را دوباره بررسی کنید.");
-      }
-      return;
-    }
-
-    try {
-      setIsVerifying(true);
-      const res = await fetch("/api/verifyOtp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ otpId, enteredOtp }),
-      });
-
-      const data = await res.json();
-
-      if (!data.success) {
-        toast.error(data.message || "کد واردشده درست نیست؛ دوباره بررسی کنید.");
-        setIsVerifying(false);
-        return;
-      }
-
-      if (!data.verificationToken) {
-        toast.error("ورود تکمیل نشد؛ لطفاً کد جدید دریافت و دوباره تلاش کنید.");
-        setIsVerifying(false);
-        return;
-      }
-
-      // isVerifying را true نگه می‌داریم چون در حال redirect هستیم و
-      // دکمه‌ی «تایید و ورود» باید غیرفعال بماند تا کلیک مضاعف پیش نیاید.
-      const signInResult = await signIn("credentials", {
-        verificationToken: data.verificationToken,
-        callbackUrl,
-        redirect: false,
-      });
-
-      if (!signInResult?.ok) {
-        toast.error("ورود انجام نشد؛ لطفاً کد جدید دریافت و دوباره تلاش کنید.");
-        clearOtpStorage();
-        setOtpSent(false);
-        setEnteredOtp("");
-        setOtpId(null);
-        setIsVerifying(false);
-        return;
-      }
-
-      toast.success("با موفقیت وارد حساب شدید.");
-      if (data.referral?.ok) {
-        toast.success("کد دعوت ثبت شد و پاداش آن پس از احراز شرایط اعمال می‌شود.");
-      } else if (data.referral?.error) {
-        toast.warning(data.referral.error);
-      }
-
-      clearOtpStorage();
-      setTimer(0);
-      setOtpSent(false);
-      setEnteredOtp("");
-      setOtpId(null);
-      setReferralCode("");
-      setReferralBoundMobile(null);
-
-      window.location.href = callbackUrl;
-    } catch (err) {
-      console.log(err);
-      toast.error("کد تأیید بررسی نشد؛ اتصال اینترنت را بررسی و دوباره تلاش کنید.");
-      setIsVerifying(false);
-    }
+    await verifyOtpCode(enteredOtp);
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-100 via-slate-50 to-white px-4 py-8 sm:py-12">
+    <div className="min-h-screen bg-gradient-to-b from-slate-100 via-slate-50 to-white px-4 py-8 sm:py-12">
       <section className="mx-auto grid w-full max-w-4xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl md:grid-cols-2">
         <div className="hidden flex-col justify-between bg-slate-900 p-8 text-white md:flex">
           <div>
@@ -425,7 +431,7 @@ export default function LoginWithOtp() {
               className={`flex-1 rounded-lg px-3 py-2 text-center font-semibold transition ${
                 currentStep === "mobile"
                   ? "bg-white text-slate-900 shadow"
-                  : "text-slate-500"
+                  : "text-slate-600"
               }`}
             >
               ۱) شماره موبایل
@@ -434,7 +440,7 @@ export default function LoginWithOtp() {
               className={`flex-1 rounded-lg px-3 py-2 text-center font-semibold transition ${
                 currentStep === "otp"
                   ? "bg-white text-slate-900 shadow"
-                  : "text-slate-500"
+                  : "text-slate-600"
               }`}
             >
               ۲) کد تایید
@@ -537,11 +543,11 @@ export default function LoginWithOtp() {
                   pattern="[0-9]{5}"
                   maxLength={OTP_LENGTH}
                   value={enteredOtp}
-                  onChange={(e) =>
-                    setEnteredOtp(
-                      normalizeOtpCode(e.target.value).slice(0, OTP_LENGTH),
-                    )
-                  }
+                  onChange={(e) => {
+                    const code = normalizeOtpCode(e.target.value).slice(0, OTP_LENGTH);
+                    setEnteredOtp(code);
+                    if (code.length === OTP_LENGTH) void verifyOtpCode(code);
+                  }}
                   placeholder="-----"
                   className="w-full rounded-xl border border-slate-300 px-4 py-3 text-center text-lg tracking-[0.45em] outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                 />
@@ -572,6 +578,6 @@ export default function LoginWithOtp() {
           )}
         </div>
       </section>
-    </main>
+    </div>
   );
 }

@@ -34,6 +34,19 @@ export function normalizeShippingSettings(value: any): StoreShippingSettingsValu
         DEFAULT_SHIPPING_SETTINGS.nationalCollect.description,
       ),
     },
+    tipax: {
+      enabled: value?.tipax?.enabled === true,
+      title: text(value?.tipax?.title, DEFAULT_SHIPPING_SETTINGS.tipax.title),
+      description: text(value?.tipax?.description, DEFAULT_SHIPPING_SETTINGS.tipax.description),
+    },
+    postPishtaz: {
+      enabled: value?.postPishtaz?.enabled === true,
+      title: text(value?.postPishtaz?.title, DEFAULT_SHIPPING_SETTINGS.postPishtaz.title),
+      description: text(
+        value?.postPishtaz?.description,
+        DEFAULT_SHIPPING_SETTINGS.postPishtaz.description,
+      ),
+    },
     coverage: {
       province: text(value?.coverage?.province, "کرمان"),
       cities:

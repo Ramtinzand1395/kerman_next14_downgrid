@@ -107,7 +107,7 @@ export default function CartDropdown({
     >
       <Link
         aria-label="سبد خرید"
-        href="/cart"
+        href="/cart?step=1"
         className="group relative flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 transition-colors hover:border-slate-300 md:border-0 md:bg-transparent md:px-0 md:py-0"
       >
         <ShoppingBag className="h-4 w-4 text-slate-900" />
@@ -164,10 +164,10 @@ export default function CartDropdown({
                   </div>
 
                   <Link
-                    href="/cart"
+                    href="/cart?step=1"
                     className="block w-full rounded-xl bg-blue-900 py-2.5 text-center text-sm text-white transition-colors hover:bg-blue-700"
                   >
-                    رفتن به سبد خرید
+                    ادامه خرید و پرداخت
                   </Link>
                 </div>
               </>

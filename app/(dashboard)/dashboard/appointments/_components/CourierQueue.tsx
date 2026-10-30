@@ -5,6 +5,8 @@ import type { AppointmentItem, CourierStatus } from "@/types/appointments";
 import {
   courierLabel,
   courierNext,
+  courierReturnProgress,
+  courierReturnTimeline,
   courierTimeline,
   courierTone,
   formatTehranDate,
@@ -56,6 +58,11 @@ export default function CourierQueue({
     <section className="grid gap-4 xl:grid-cols-2">
       {courierItems.map(({ item, courier }) => {
         const activeIndex = courierTimeline.indexOf(courier.status);
+        const returnProgress = courierReturnProgress(courier.status);
+        const returnStarted = ["at_store", "return_ready", "returning", "delivered"].includes(courier.status);
+        const nextStatuses = (courierNext[courier.status] || []).filter(
+          (status) => !(status === "return_ready" && item.status !== "completed"),
+        );
         return (
           <article
             key={item._id}
@@ -117,7 +124,7 @@ export default function CourierQueue({
               </div>
             </div>
 
-            {courier.status !== "cancelled" ? (
+            {courier.status !== "cancelled" && !returnStarted ? (
               <ol
                 className="mt-4 grid grid-cols-4 gap-1"
                 aria-label="پیشرفت وضعیت پیک"
@@ -143,8 +150,32 @@ export default function CourierQueue({
               </ol>
             ) : null}
 
+            {courier.status !== "cancelled" && returnStarted ? (
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <p className="mb-3 text-xs font-black text-slate-700">ارسال دستگاه پس از پایان خدمات</p>
+                <ol className="grid grid-cols-3 gap-2" aria-label="پیشرفت سه‌مرحله‌ای تحویل به مشتری">
+                  {courierReturnTimeline.map((stage, index) => {
+                    const completed = index < returnProgress;
+                    return (
+                      <li key={stage.status} className="min-w-0">
+                        <div className={`h-1.5 rounded-full ${completed ? "bg-emerald-500" : "bg-slate-200"}`} />
+                        <span className={`mt-2 block text-[10px] leading-5 ${completed ? "font-black text-emerald-800" : "text-slate-500"}`}>
+                          {stage.label}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ol>
+                {courier.status === "at_store" && item.status !== "completed" && (
+                  <p className="mt-3 rounded-xl bg-amber-50 p-2 text-xs leading-5 text-amber-800">
+                    برای شروع ارسال برگشت، ابتدا خدمت را با مبلغ نهایی «انجام‌شده» ثبت کنید.
+                  </p>
+                )}
+              </div>
+            ) : null}
+
             <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-              {(courierNext[courier.status] || []).map((status) => (
+              {nextStatuses.map((status) => (
                 <button
                   key={status}
                   type="button"

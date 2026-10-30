@@ -13,7 +13,12 @@ export async function POST(req: Request) {
   await dbConnect();
   const { otpId, enteredOtp } = await req.json();
 
-  if (!otpId || !enteredOtp) {
+  const normalizedOtp = String(enteredOtp ?? "")
+    .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+    .replace(/\D/g, "");
+
+  if (!otpId || !/^\d{5}$/.test(normalizedOtp)) {
     return new Response(
       JSON.stringify({ success: false, message: "اطلاعات تایید ناقص است" }),
       { status: 400 },
@@ -24,7 +29,12 @@ export async function POST(req: Request) {
   let otpDoc;
   try {
     otpDoc = await Otp.findOneAndUpdate(
-      { _id: otpId, otp: enteredOtp, verifiedAt: { $exists: false } },
+      {
+        _id: otpId,
+        otp: normalizedOtp,
+        verifiedAt: { $exists: false },
+        createdAt: { $gt: new Date(now.getTime() - 2 * 60_000) },
+      },
       {
         $unset: { otp: 1 },
         $set: {

@@ -36,6 +36,7 @@ const storeOrderSchema = new mongoose.Schema(
     },
     deliveryDate: { type: String, default: "تحویل داده نشده", required: true },
     deliveryCode: { type: String, unique: true },
+    clientRequestKey: { type: String, trim: true, maxlength: 128, default: null },
   },
   {
     timestamps: true,
@@ -62,6 +63,10 @@ storeOrderSchema.pre("save", async function () {
 });
 
 storeOrderSchema.index({ createdAt: 1, deliveryStatus: 1 });
+storeOrderSchema.index(
+  { clientRequestKey: 1 },
+  { unique: true, partialFilterExpression: { clientRequestKey: { $type: "string" } } },
+);
 
 export default mongoose.models.StoreOrder ||
   mongoose.model("StoreOrder", storeOrderSchema);

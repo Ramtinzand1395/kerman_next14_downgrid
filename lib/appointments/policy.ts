@@ -74,6 +74,19 @@ export function canCourierTransition(from: CourierStatus, to: CourierStatus): bo
   return from === to || (COURIER_TRANSITIONS[from]?.includes(to) ?? false);
 }
 
+export const COURIER_RETURN_DELIVERY_STAGES = [
+  { status: "return_ready", label: "تکمیل خدمات و آماده ارسال" },
+  { status: "returning", label: "تحویل به پیک" },
+  { status: "delivered", label: "تحویل به مشتری" },
+] as const;
+
+export function courierReturnDeliveryProgress(status: CourierStatus): 0 | 1 | 2 | 3 {
+  if (status === "delivered") return 3;
+  if (status === "returning") return 2;
+  if (status === "return_ready") return 1;
+  return 0;
+}
+
 export function courierUserCancellationAllowed(courierStatus: CourierStatus): boolean {
   return ["pending", "scheduled", "assigned"].includes(courierStatus);
 }

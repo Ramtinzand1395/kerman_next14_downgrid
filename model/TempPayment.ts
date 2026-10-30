@@ -27,13 +27,14 @@ const VariantAttributeSchema = new mongoose.Schema(
 
 const ShippingSnapshotSchema = new mongoose.Schema(
   {
-    method: { type: String, enum: ["kerman_local", "national_collect"], required: true },
+    method: { type: String, enum: ["kerman_local", "national_collect", "tipax", "post_pishtaz"], required: true },
     title: { type: String, required: true },
     feeToman: { type: Number, default: null, min: 1 },
     paymentTiming: { type: String, enum: ["online", "on_delivery"], required: true },
     feeStatus: { type: String, enum: ["fixed", "pending_carrier"], required: true },
     destinationCity: { type: String, required: true },
     addressSnapshot: { type: AddressSnapshotSchema, required: true },
+    trackingCode: { type: String, trim: true, maxlength: 64, default: null },
   },
   { _id: false },
 );

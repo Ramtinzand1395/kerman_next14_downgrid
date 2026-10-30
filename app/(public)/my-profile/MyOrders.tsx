@@ -29,6 +29,14 @@ interface Order {
   totalPrice: number;
   shippingCost?: number;
   shippingPaymentType?: "PREPAID" | "COLLECT";
+  shipping?: {
+    method?: "kerman_local" | "national_collect" | "tipax" | "post_pishtaz";
+    title?: string;
+    feeToman?: number | null;
+    paymentTiming?: "online" | "on_delivery";
+    feeStatus?: "fixed" | "pending_carrier";
+    trackingCode?: string | null;
+  } | null;
   finalPrice: number;
   status: string;
   createdAt: string;
@@ -257,6 +265,11 @@ export default function MyOrders() {
               {shippingDisplay.subtext && (
                 <p className="text-xs text-slate-500">
                   {shippingDisplay.subtext}
+                </p>
+              )}
+              {shippingDisplay.trackingCode && (
+                <p className="text-xs font-bold text-blue-900" dir="ltr">
+                  کد رهگیری مرسوله: {shippingDisplay.trackingCode}
                 </p>
               )}
             </div>

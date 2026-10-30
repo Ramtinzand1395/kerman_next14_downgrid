@@ -18,6 +18,16 @@ const schema = z.object({
     title: text.max(100),
     description: text,
   }),
+  tipax: z.object({
+    enabled: z.boolean(),
+    title: text.max(100),
+    description: text,
+  }),
+  postPishtaz: z.object({
+    enabled: z.boolean(),
+    title: text.max(100),
+    description: text,
+  }),
   coverage: z.object({
     province: z.string().trim().min(2).max(100),
     cities: z.array(z.string().trim().min(2).max(100)).min(1).max(50),
@@ -36,7 +46,12 @@ export async function PATCH(req: Request) {
   if ("error" in auth) return auth.error;
   const parsed = schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return fail(parsed.error.issues[0]?.message || "تنظیمات ارسال نامعتبر است.", 422);
-  if (!parsed.data.localDelivery.enabled && !parsed.data.nationalCollect.enabled) {
+  if (
+    !parsed.data.localDelivery.enabled &&
+    !parsed.data.nationalCollect.enabled &&
+    !parsed.data.tipax.enabled &&
+    !parsed.data.postPishtaz.enabled
+  ) {
     return fail("حداقل یک روش ارسال باید فعال باشد.", 422);
   }
   const invalidCity = parsed.data.coverage.cities.find(

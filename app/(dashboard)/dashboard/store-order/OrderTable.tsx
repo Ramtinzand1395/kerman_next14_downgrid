@@ -94,7 +94,7 @@ const OrderTable = ({
 
       toast.success(data.message || "وضعیت سفارش ذخیره شد.");
 
-      if (data.sms?.status === 200) {
+      if (data.sms?.state === "sent") {
         toast.success("پیامک تغییر وضعیت برای مشتری ارسال شد.");
       }
     } catch (err) {

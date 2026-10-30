@@ -9,6 +9,7 @@ import {
   Package,
   Phone,
   ShoppingBag,
+  Save,
   User,
 } from "lucide-react";
 import ProductImage from "@/app/components/ProductImage";
@@ -52,6 +53,14 @@ type OrdersResponse = {
     totalPrice?: number;
     shippingCost?: number;
     shippingPaymentType?: "PREPAID" | "COLLECT";
+    shipping?: {
+      method?: "kerman_local" | "national_collect" | "tipax" | "post_pishtaz";
+      title?: string;
+      feeToman?: number | null;
+      paymentTiming?: "online" | "on_delivery";
+      feeStatus?: "fixed" | "pending_carrier";
+      trackingCode?: string | null;
+    } | null;
     finalPrice: number;
     paymentStatus: "paid" | "unpaid";
     status: OrderStatus;
@@ -154,6 +163,29 @@ export default function Orders() {
         ),
       };
     });
+  };
+
+  const updateTrackingCode = async (orderId: string, shippingTrackingCode: string) => {
+    const response = await fetch("/api/admin/order", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId, shippingTrackingCode }),
+    });
+    if (!response.ok) throw new Error("کد رهگیری ذخیره نشد.");
+    setData((previous) => previous && ({
+      ...previous,
+      orders: previous.orders.map((order) =>
+        order._id === orderId
+          ? {
+              ...order,
+              shipping: {
+                ...(order.shipping || {}),
+                trackingCode: shippingTrackingCode.trim() || null,
+              },
+            }
+          : order,
+      ),
+    }));
   };
 
   const summary = useMemo(() => {
@@ -416,6 +448,11 @@ export default function Orders() {
                   >
                     ارسال: {shippingDisplay.title} — {shippingDisplay.label}
                   </span>
+                  <ShippingTrackingEditor
+                    orderId={order._id}
+                    value={shippingDisplay.trackingCode || ""}
+                    onSave={updateTrackingCode}
+                  />
                 </td>
 
                 <td className="py-4 px-4">
@@ -557,6 +594,11 @@ export default function Orders() {
               >
                 ارسال: {shippingDisplay.title} — {shippingDisplay.label}
               </span>
+              <ShippingTrackingEditor
+                orderId={order._id}
+                value={shippingDisplay.trackingCode || ""}
+                onSave={updateTrackingCode}
+              />
             </div>
 
             <div className="flex items-center justify-between gap-2 pt-1">
@@ -608,5 +650,54 @@ export default function Orders() {
         ))}
       </div>
     </section>
+  );
+}
+
+function ShippingTrackingEditor({
+  orderId,
+  value,
+  onSave,
+}: {
+  orderId: string;
+  value: string;
+  onSave: (orderId: string, value: string) => Promise<void>;
+}) {
+  const [trackingCode, setTrackingCode] = useState(value);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => setTrackingCode(value), [value]);
+
+  return (
+    <div className="mt-2 flex max-w-56 items-center gap-1" dir="ltr">
+      <input
+        aria-label="کد رهگیری مرسوله"
+        value={trackingCode}
+        maxLength={64}
+        onChange={(event) => setTrackingCode(event.target.value)}
+        placeholder="کد رهگیری مرسوله"
+        className="min-w-0 flex-1 rounded-lg border border-slate-200 px-2 py-1 text-xs outline-none focus:border-blue-400"
+      />
+      <button
+        type="button"
+        aria-label="ذخیره کد رهگیری"
+        disabled={saving || trackingCode === value}
+        onClick={async () => {
+          setSaving(true);
+          setError("");
+          try {
+            await onSave(orderId, trackingCode);
+          } catch (reason) {
+            setError(reason instanceof Error ? reason.message : "ذخیره نشد.");
+          } finally {
+            setSaving(false);
+          }
+        }}
+        className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-900 text-white disabled:bg-slate-300"
+      >
+        <Save className="h-3.5 w-3.5" />
+      </button>
+      {error && <span className="sr-only" role="alert">{error}</span>}
+    </div>
   );
 }

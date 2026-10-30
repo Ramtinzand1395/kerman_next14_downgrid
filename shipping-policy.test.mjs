@@ -40,6 +40,40 @@ test("national delivery keeps an unknown fee out of the online total", () => {
   assert.equal(summary.payable, 1_900_000);
 });
 
+for (const [method, title] of [
+  ["tipax", "ارسال با تیپاکس"],
+  ["post_pishtaz", "ارسال با پست پیشتاز"],
+]) {
+  test(`${method} is carrier-calculated, on-delivery, and never silently free`, () => {
+    const settings = structuredClone(DEFAULT_SHIPPING_SETTINGS);
+    settings.tipax.enabled = true;
+    settings.postPishtaz.enabled = true;
+    const result = calculateShippingInfo(
+      { province: "تهران", city: "تهران", postalCode: "1111111111" },
+      method,
+      settings,
+    );
+    assert.equal(result.title, title);
+    assert.equal(result.feeToman, null);
+    assert.equal(result.paymentTiming, "on_delivery");
+    assert.equal(result.feeStatus, "pending_carrier");
+    assert.match(result.label, /شرکت حمل‌ونقل/);
+  });
+}
+
+test("Tipax and Post Pishtaz can be disabled independently", () => {
+  const settings = structuredClone(DEFAULT_SHIPPING_SETTINGS);
+  settings.tipax.enabled = true;
+  settings.postPishtaz.enabled = true;
+  settings.tipax.enabled = false;
+  const methods = getAvailableShippingMethods(
+    { province: "تهران", city: "تهران" },
+    settings,
+  ).map((option) => option.method);
+  assert.equal(methods.includes("tipax"), false);
+  assert.equal(methods.includes("post_pishtaz"), true);
+});
+
 test("dashboard fee changes are honored by the calculation contract", () => {
   const settings = structuredClone(DEFAULT_SHIPPING_SETTINGS);
   settings.localDelivery.feeToman = 175_000;
@@ -149,6 +183,8 @@ test("POS-facing order fields keep items, site payment, and shipping separate", 
   assert.match(modelSource, /finalPrice/);
   assert.match(modelSource, /shippingCost/);
   assert.match(modelSource, /shipping:/);
+  assert.match(modelSource, /tipax/);
+  assert.match(modelSource, /post_pishtaz/);
   assert.match(apiSource, /itemsSubtotalToman/);
   assert.match(apiSource, /shippingFeeToman/);
   assert.match(apiSource, /onlinePaymentAmountToman/);
