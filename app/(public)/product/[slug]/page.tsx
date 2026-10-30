@@ -115,13 +115,9 @@ export async function generateMetadata({
     product = await getProduct(params.slug);
   } catch (error) {
     if (error instanceof ProductNotFoundError) {
-      return {
-        title: "محصول یافت نشد | کرمان آتاری",
-        robots: {
-          index: false,
-          follow: false,
-        },
-      };
+      // Resolve absence before Next.js 14 starts streaming the loading UI.
+      // Returning metadata here would commit 200 before the page calls notFound().
+      notFound();
     }
     throw error;
   }
