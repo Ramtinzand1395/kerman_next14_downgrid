@@ -347,6 +347,7 @@ export default async function ProductPage({
       </section>
 
       <ProductVariantProvider
+        key={product._id}
         product={product}
         initialVariantId={searchParams?.variant}
       >

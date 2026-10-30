@@ -12,6 +12,8 @@ import useFavoriteStore from "@/stores/favoriteStore";
 import ProductImage from "@/app/components/ProductImage";
 import { useRouter } from "next/navigation";
 
+import { getDefaultVariant } from "@/lib/variantSelector";
+
 interface CartProps {
   game: Product;
   onFavoriteChange?: (isFavorite: boolean, productId: string) => void;
@@ -43,8 +45,6 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
 
   const hasVariants =
     game.productType === "multi" && (game.variants?.length || 0) > 0;
-  const requiresConfiguredSelection =
-    hasVariants && game.variantSelector?.enabled === true;
 
   const activeVariants = useMemo(
     () => (hasVariants ? (game.variants || []).filter((v: any) => v.isActive !== false) : []),
@@ -57,9 +57,12 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
   }, [hasVariants, activeVariants, game.stock]);
 
   const defaultVariant = useMemo(() => {
-    if (!hasVariants || activeVariants.length === 0) return null;
-    return activeVariants.find((v: any) => Number(v.stock) > 0) || activeVariants[0];
-  }, [hasVariants, activeVariants]);
+    if (!hasVariants) return undefined;
+    return getDefaultVariant(activeVariants, game.variantSelector);
+  }, [hasVariants, activeVariants, game.variantSelector]);
+
+  const requiresConfiguredSelection =
+    hasVariants && (game.variantSelector?.enabled === true || Number(defaultVariant?.stock || 0) <= 0);
 
   const {
     minEffectivePrice,
@@ -109,7 +112,9 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
     : game._id;
   const currentQuantityInCart =
     cart.find((item) => item.id === cartItemId)?.quantity || 0;
-  const isAtStockLimit = totalStock > 0 && currentQuantityInCart >= totalStock;
+  const selectedStock = hasVariants ? Number(defaultVariant?.stock || 0) : totalStock;
+  const isAtStockLimit = !requiresConfiguredSelection && selectedStock > 0 &&
+    currentQuantityInCart >= selectedStock;
 
   const rating = useMemo(() => {
     if (!game.comments?.length) {

@@ -382,3 +382,32 @@ export function isVariantMappedForSale(
     )
   );
 }
+
+// Stock does not change the default price: an unavailable cheapest model stays
+// selected and the purchase controls show its availability.
+export function getDefaultVariant(
+  variants: readonly ProductVariant[],
+  config?: VariantSelectorConfig,
+  preferredVariantId?: string,
+): ProductVariant | undefined {
+  let cheapest: ProductVariant | undefined;
+  let lowestPrice = Infinity;
+  for (const variant of variants) {
+    const price = Number(variant.discountPrice ?? variant.price);
+    if (
+      variant.isActive === false ||
+      !Number.isFinite(price) || price < 0 ||
+      !isVariantMappedForSale(config, String(variant._id))
+    ) continue;
+
+    // A link to a specific model represents an explicit customer choice.
+    if (preferredVariantId && String(variant._id) === preferredVariantId) {
+      return variant;
+    }
+    if (price < lowestPrice) {
+      cheapest = variant;
+      lowestPrice = price;
+    }
+  }
+  return cheapest;
+}
