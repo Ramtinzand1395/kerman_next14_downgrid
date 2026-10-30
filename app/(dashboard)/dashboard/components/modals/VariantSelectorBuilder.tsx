@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
-  Eye,
   Plus,
   Search,
   Trash2,
@@ -16,8 +15,6 @@ import type {
   VariantSelectorGroup,
 } from "@/types";
 import {
-  getAvailableOptionIds,
-  resolveVariantId,
   sortedSelectorGroups,
 } from "@/lib/variantSelector";
 
@@ -50,7 +47,6 @@ function normalizeOrders(groups: VariantSelectorGroup[]) {
 
 export default function VariantSelectorBuilder({ value, variants, onChange }: Props) {
   const config = value || EMPTY_CONFIG;
-  const [previewSelections, setPreviewSelections] = useState<Record<string, string>>({});
   const [optionSearch, setOptionSearch] = useState<Record<string, string>>({});
   const groups = useMemo(() => sortedSelectorGroups(config), [config]);
 
@@ -179,11 +175,6 @@ export default function VariantSelectorBuilder({ value, variants, onChange }: Pr
     });
   };
 
-  const previewVariantId = resolveVariantId(config, previewSelections);
-  const previewVariant = variants.find(
-    (variant) => String(variant._id) === String(previewVariantId),
-  );
-
   return (
     <div dir="rtl" className="space-y-5 rounded-2xl border border-indigo-500/30 bg-slate-900/50 p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -273,11 +264,6 @@ export default function VariantSelectorBuilder({ value, variants, onChange }: Pr
             <div className="overflow-x-auto"><table className="min-w-full text-right text-xs"><thead className="bg-slate-900 text-slate-400"><tr><th className="px-3 py-2">مدل واقعی</th>{groups.map((group) => <th key={group.id} className="min-w-40 px-3 py-2">{group.label}</th>)}</tr></thead><tbody className="divide-y divide-slate-800">{variants.map((variant) => { const variantId = String(variant._id || ""); const mapping = config.mappings.find((item) => String(item.variantId) === variantId); return <tr key={variantId} className="bg-slate-900/40"><td className="whitespace-nowrap px-3 py-3"><strong className="text-slate-200">{variant.title || "مدل بدون نام"}</strong><span className="mt-1 block font-mono text-[10px] text-slate-500">{variantId}</span></td>{groups.map((group) => <td key={group.id} className="px-3 py-3"><select aria-label={`${group.label} برای ${variant.title}`} value={mapping?.optionIds[group.id] || ""} onChange={(event) => setMappingOption(variantId, group.id, event.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-2 text-xs text-white"><option value="">انتخاب نشده</option>{group.options.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select></td>)}</tr>; })}</tbody></table></div>
           </section>
 
-          <section className="rounded-xl border border-emerald-500/20 bg-emerald-950/10 p-4">
-            <div className="mb-3 flex items-center gap-2"><Eye className="h-4 w-4 text-emerald-400" /><h4 className="text-xs font-bold text-slate-200">پیش‌نمایش انتخاب مشتری</h4></div>
-            <div className="grid gap-3 sm:grid-cols-2">{groups.map((group) => { const available = getAvailableOptionIds(config, group.id, previewSelections); return <label key={group.id} className="text-xs text-slate-300">{group.label}{group.required ? " *" : ""}<select value={previewSelections[group.id] || ""} onChange={(event) => { const next = { ...previewSelections, [group.id]: event.target.value }; setPreviewSelections(next); }} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-white"><option value="">{group.placeholder || "انتخاب کنید"}</option>{group.options.map((option) => <option key={option.id} value={option.id} disabled={!available.has(option.id)}>{option.label}</option>)}</select></label>; })}</div>
-            <p className={`mt-3 rounded-lg px-3 py-2 text-xs ${previewVariant ? "bg-emerald-500/10 text-emerald-300" : "bg-slate-800 text-slate-400"}`}>{previewVariant ? `مدل نهایی: ${previewVariant.title}` : "پس از انتخاب یک ترکیب کامل و معتبر، مدل نهایی اینجا نمایش داده می‌شود."}</p>
-          </section>
         </>
       ) : (
         <p className="rounded-xl border border-dashed border-slate-700 p-4 text-xs leading-6 text-slate-400">انتخاب‌گر خاموش است و فروشگاه از انتخاب مدل قدیمی استفاده می‌کند. تنظیمات ذخیره‌شده حذف نمی‌شوند.</p>

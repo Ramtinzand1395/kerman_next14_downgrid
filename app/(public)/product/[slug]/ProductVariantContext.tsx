@@ -9,6 +9,7 @@ import React, {
   useEffect,
 } from "react";
 import type { Product, ProductVariant } from "@/types";
+import { getDefaultVariant, isVariantMappedForSale } from "@/lib/variantSelector";
 
 interface ProductVariantContextValue {
   product: Product;
@@ -30,49 +31,6 @@ const ProductVariantContext = createContext<
   ProductVariantContextValue | undefined
 >(undefined);
 
-function resolveDefaultVariantId(
-  variants: ProductVariant[],
-  defaultVariantId?: string | null,
-  preferredVariantId?: string,
-): string {
-  if (variants.length === 0) return "";
-
-  // 1. Preferred (from URL) if active
-  if (preferredVariantId) {
-    const match = variants.find(
-      (v) => String(v._id) === String(preferredVariantId),
-    );
-    if (match) return String(match._id);
-  }
-
-  // 2. defaultVariantId if in-stock
-  if (defaultVariantId) {
-    const defaultVar = variants.find(
-      (v) => String(v._id) === String(defaultVariantId),
-    );
-    if (defaultVar && Number(defaultVar.stock || 0) > 0) {
-      return String(defaultVar._id);
-    }
-  }
-
-  // 3. First active variant with stock > 0
-  const firstInStock = variants.find((v) => Number(v.stock || 0) > 0);
-  if (firstInStock) {
-    return String(firstInStock._id);
-  }
-
-  // 4. defaultVariantId (even if out of stock)
-  if (defaultVariantId) {
-    const defaultVar = variants.find(
-      (v) => String(v._id) === String(defaultVariantId),
-    );
-    if (defaultVar) return String(defaultVar._id);
-  }
-
-  // 5. First active variant
-  return String(variants[0]._id);
-}
-
 export function ProductVariantProvider({
   product,
   initialVariantId,
@@ -91,17 +49,10 @@ export function ProductVariantProvider({
 
   const isMulti =
     product.productType === "multi" && activeVariants.length > 0;
-  const hasCustomSelector = isMulti && product.variantSelector?.enabled === true;
 
   const [selectedVariantId, setSelectedVariantIdState] = useState<string>(() => {
     if (!isMulti) return "";
-    if (hasCustomSelector) {
-      const mappedPreferred = product.variantSelector?.mappings.some(
-        (mapping) => String(mapping.variantId) === String(initialVariantId || ""),
-      );
-      return mappedPreferred ? String(initialVariantId) : "";
-    }
-    return resolveDefaultVariantId(activeVariants, product.defaultVariantId, initialVariantId);
+    return String(getDefaultVariant(activeVariants, product.variantSelector, initialVariantId)?._id || "");
   });
 
   const selectedVariant = useMemo(() => {
@@ -111,31 +62,21 @@ export function ProductVariantProvider({
     );
   }, [isMulti, activeVariants, selectedVariantId]);
 
-  // Synchronize selection if variants change or initial is passed
+  // Recover if the selected model is removed or disconnected.
   useEffect(() => {
     if (isMulti) {
       const exists = activeVariants.some(
-        (v) => String(v._id) === String(selectedVariantId),
+        (v) => String(v._id) === selectedVariantId &&
+          isVariantMappedForSale(product.variantSelector, selectedVariantId),
       );
+      // Empty is intentional while a customer edits an incomplete combination.
       if (!exists && selectedVariantId) {
-        const nextId = hasCustomSelector
-          ? ""
-          : resolveDefaultVariantId(
-              activeVariants,
-              product.defaultVariantId,
-              initialVariantId,
-            );
-        setSelectedVariantIdState(nextId);
+        setSelectedVariantIdState(
+          String(getDefaultVariant(activeVariants, product.variantSelector)?._id || ""),
+        );
       }
     }
-  }, [
-    isMulti,
-    hasCustomSelector,
-    activeVariants,
-    selectedVariantId,
-    product.defaultVariantId,
-    initialVariantId,
-  ]);
+  }, [isMulti, activeVariants, selectedVariantId, product.variantSelector]);
 
   const setSelectedVariantId = useCallback(
     (variantId: string) => {

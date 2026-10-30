@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { VariantSelectorGroup } from "@/types";
 import {
   getAvailableOptionIds,
@@ -84,15 +84,10 @@ export default function CustomVariantSelector() {
         : undefined,
     [config, activeVariantIds],
   );
-  const [selections, setSelections] = useState<Record<string, string>>(() =>
-    selectionsForVariant(config, selectedVariantId),
-  );
-
-  useEffect(() => {
-    if (selectedVariantId && Object.keys(selections).length === 0) {
-      setSelections(selectionsForVariant(config, selectedVariantId));
-    }
-  }, [config, selectedVariantId, selections]);
+  const [pendingSelections, setPendingSelections] = useState<Record<string, string>>({});
+  const selections = selectedVariantId
+    ? selectionsForVariant(config, selectedVariantId)
+    : pendingSelections;
 
   if (!activeConfig?.enabled) return null;
 
@@ -109,7 +104,7 @@ export default function CustomVariantSelector() {
       }
     }
 
-    setSelections(next);
+    setPendingSelections(next);
     setSelectedVariantId(resolveVariantId(activeConfig, next) || "");
   };
 
