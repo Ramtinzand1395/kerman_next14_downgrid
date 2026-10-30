@@ -24,6 +24,21 @@ test("Kerman local delivery uses the configured fixed fee", () => {
   assert.equal(result.feeStatus, "fixed");
 });
 
+test("Kerman fixed-price delivery cannot disappear because of legacy disabled settings", () => {
+  const settings = structuredClone(DEFAULT_SHIPPING_SETTINGS);
+  settings.localDelivery.enabled = false;
+  const methods = getAvailableShippingMethods(
+    { province: "کرمان", city: "کرمان", postalCode: "7616912345" },
+    settings,
+  );
+  const local = methods.find((option) => option.method === "kerman_local");
+
+  assert.ok(local);
+  assert.equal(local.title, "ارسال به شهرستان کرمان");
+  assert.equal(local.feeToman, KERMAN_SHIPPING_COST);
+  assert.equal(local.paymentTiming, "online");
+});
+
 test("national delivery keeps an unknown fee out of the online total", () => {
   const result = calculateShippingInfo(
     { province: "تهران", city: "تهران", postalCode: "1111111111" },

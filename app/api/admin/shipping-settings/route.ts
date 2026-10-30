@@ -46,6 +46,9 @@ export async function PATCH(req: Request) {
   if ("error" in auth) return auth.error;
   const parsed = schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return fail(parsed.error.issues[0]?.message || "تنظیمات ارسال نامعتبر است.", 422);
+  if (!parsed.data.localDelivery.enabled) {
+    return fail("روش ارسال ثابت شهرستان کرمان باید فعال بماند.", 422);
+  }
   if (
     !parsed.data.localDelivery.enabled &&
     !parsed.data.nationalCollect.enabled &&
