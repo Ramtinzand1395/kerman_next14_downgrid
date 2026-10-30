@@ -13,6 +13,7 @@ import ProductImage from "@/app/components/ProductImage";
 import { getStoreShippingSettings } from "@/lib/shippingSettings";
 import { tomanToIrr } from "@/lib/currency";
 import { formatLocalShippingPolicyText } from "@/lib/shipping";
+import { merchantReturnPolicyId, normalizeProductCategory } from "@/lib/merchantSchema";
 import {
   getRelatedProducts,
   type RelatedProduct,
@@ -249,11 +250,13 @@ export default async function ProductPage({
       "@type": "Brand",
       name: product.brand || "Kerman Atari",
     },
-    category: product.category?.name,
+    category: normalizeProductCategory(product.category),
     offers:
       product.productType === "multi" && activeVariants.length > 0
         ? {
             "@type": "AggregateOffer",
+            seller: { "@id": `${SITE_URL}/#organization` },
+            hasMerchantReturnPolicy: { "@id": merchantReturnPolicyId(SITE_URL) },
             priceCurrency: "IRR",
             lowPrice: minPriceInIRR,
             highPrice: maxPriceInIRR,
@@ -266,6 +269,8 @@ export default async function ProductPage({
           }
         : {
             "@type": "Offer",
+            seller: { "@id": `${SITE_URL}/#organization` },
+            hasMerchantReturnPolicy: { "@id": merchantReturnPolicyId(SITE_URL) },
             priceCurrency: "IRR",
             price: tomanToIrr(finalPrice),
             availability:
