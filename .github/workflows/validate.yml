@@ -1,5 +1,6 @@
 name: Validate store changes
 on:
+  workflow_call:
   pull_request:
     branches: [main]
   push:
@@ -18,7 +19,7 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-      - run: npm ci
+      - run: npm ci --no-audit --no-fund
       - run: npm test
       - run: npx tsc --noEmit
       - run: npm run build
