@@ -43,7 +43,23 @@ const baseMetadata: Metadata = {
     locale: "fa_IR",
   },
 };
+async function redirectLegacyCategory(searchParams: ProductsSearchParams) {
+  if (searchParams.category) {
+    const value = decodeCategorySlug(searchParams.category);
+    const rows = await getCategoryCatalog();
+    const category = rows.find(row => row.slug === value || row.name === value || row._id === value);
+    if (category) {
+      const query = new URLSearchParams();
+      for (const key of ["sort", "page", "q", "tag"] as const) {
+        if (typeof searchParams[key] === "string") query.set(key, searchParams[key]!);
+      }
+      permanentRedirect(categoryHref(category.slug) + (query.size ? `?${query}` : ""));
+    }
+  }
+}
+
 export async function generateMetadata({ searchParams }: { searchParams: ProductsSearchParams }): Promise<Metadata> {
+  await redirectLegacyCategory(searchParams);
   const filtered = Boolean(searchParams.q || searchParams.tag || searchParams.category || searchParams.sort);
   const page = /^\d+$/.test(searchParams.page || "") ? Number(searchParams.page) : 1;
   const canonical = !filtered && page > 1 ? `/products?page=${page}` : "/products";
@@ -151,18 +167,7 @@ export default async function ProductsPage({
 }: {
   searchParams: ProductsSearchParams;
 }) {
-  if (searchParams.category) {
-    const value = decodeCategorySlug(searchParams.category);
-    const rows = await getCategoryCatalog();
-    const category = rows.find(row => row.slug === value || row.name === value || row._id === value);
-    if (category) {
-      const query = new URLSearchParams();
-      for (const key of ["sort", "page", "q", "tag"] as const) {
-        if (typeof searchParams[key] === "string") query.set(key, searchParams[key]!);
-      }
-      permanentRedirect(categoryHref(category.slug) + (query.size ? `?${query}` : ""));
-    }
-  }
+  await redirectLegacyCategory(searchParams);
   const data = await getProducts(searchParams);
   const products = data.products as Product[];
   const returnedTags = (data.filters?.tags || []) as ProductTagFacet[];

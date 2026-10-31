@@ -7,6 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
+import ts from 'typescript';
 const root = path.dirname(fileURLToPath(import.meta.url));
 const next = path.join(root, 'node_modules/next/dist/bin/next');
 function request(port, pathname) {
@@ -25,7 +26,7 @@ test('production category HTTP serves real routes, metadata, filters and deep li
     if (server && server.exitCode === null) { const exit = once(server, 'exit'); server.kill('SIGTERM'); await exit; }
     await rm(dir, { recursive: true, force: true });
   });
-  for (const part of ['app/category/[slug]', 'app/categories', 'app/components', 'lib/catalog']) await mkdir(path.join(dir, part), { recursive: true });
+  for (const part of ['app/category/[slug]', 'app/categories', 'app/products', 'app/components', 'lib/catalog']) await mkdir(path.join(dir, part), { recursive: true });
   await symlink(path.join(root, 'node_modules'), path.join(dir, 'node_modules'), 'dir');
   await writeFile(path.join(dir, 'package.json'), '{"private":true}');
   await writeFile(path.join(dir, 'tsconfig.json'), JSON.stringify({ compilerOptions: { baseUrl: '.', paths: { '@/*': ['./*'] }, jsx: 'preserve' } }));
@@ -37,10 +38,33 @@ test('production category HTTP serves real routes, metadata, filters and deep li
     ['app/(public)/categories/page.tsx','app/categories/page.tsx'],
     ['lib/catalog/category-seo.ts','lib/catalog/category-seo.ts'], ['lib/site.ts','lib/site.ts'],
   ]) await copyFile(path.join(root, from), path.join(dir,to));
+  // Use the actual legacy redirect helper and metadata function, and mirror
+  // the route loading boundary so reintroducing streaming makes this fail.
+  const productsSource = await readFile(path.join(root, 'app/(public)/products/page.tsx'), 'utf8');
+  const ast = ts.createSourceFile('products.tsx', productsSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const declaration = name => {
+    const node = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === name);
+    assert.ok(node, `Missing ${name}`);
+    return node.getText(ast);
+  };
+  await writeFile(path.join(dir, 'app/products/page.tsx'), `
+import { permanentRedirect } from 'next/navigation';
+import { getCategoryCatalog } from '@/lib/catalog/category-data';
+import { decodeCategorySlug, categoryHref } from '@/lib/catalog/category-seo';
+export const dynamic = 'force-dynamic';
+type ProductsSearchParams = any; type Metadata = any; const baseMetadata = {};
+${declaration('redirectLegacyCategory')}
+${declaration('generateMetadata')}
+export default async function Page({searchParams}: any) { await redirectLegacyCategory(searchParams); return <h1>Products</h1>; }
+`);
+  try {
+    await readFile(path.join(root, 'app/(public)/products/loading.tsx'));
+    await writeFile(path.join(dir, 'app/products/loading.tsx'), 'export default function Loading() { return <p>Loading</p>; }');
+  } catch (error) { if (error.code !== 'ENOENT') throw error; }
   await writeFile(path.join(dir, 'app/components/Cart.tsx'), 'import Link from "next/link"; export default function Card({game}: any) { return <article><h2><Link href={`/product/${game.slug}`}>{game.title}</Link></h2></article>; }');
   await writeFile(path.join(dir, 'lib/catalog/category-data.ts'), `
 export const PAGE_SIZE = 12;
-export async function getCategoryCatalog() { return [
+export async function getCategoryCatalog() { await new Promise(resolve => setTimeout(resolve, 25)); return [
   { _id: 'root', slug: 'accessories', name: 'لوازم جانبی', parent: null, productCount: 13 },
   { _id: 'art', slug: 'gaming-wall-art', name: 'تابلو گیمینگ', parent: 'root', productCount: 13 },
   { _id: 'deep', slug: 'tekken', name: 'تیکن', parent: 'art', productCount: 1 },
@@ -74,6 +98,19 @@ export async function getCategoryProducts(id: string, rows: any, query: any) {
   assert.equal((await request(port, '/category/not-real')).status, 404);
   assert.equal((await request(port, '/category/gaming-wall-art?page=3')).status, 404);
   assert.equal((await request(port, '/category/gaming-wall-art?q=service-error')).status, 500);
+  const legacy = await request(port, '/products?category=gaming-wall-art');
+  assert.equal(legacy.status, 308);
+  assert.equal(legacy.headers.location, '/category/gaming-wall-art');
+  const legacyFilters = await request(port, '/products?category=gaming-wall-art&page=2&tag=tekken&q=poster');
+  assert.equal(legacyFilters.status, 308);
+  const legacyTarget = new URL(legacyFilters.headers.location, 'https://kermanatari.ir');
+  assert.equal(legacyTarget.pathname, '/category/gaming-wall-art');
+  assert.equal(legacyTarget.searchParams.get('page'), '2');
+  assert.equal(legacyTarget.searchParams.get('tag'), 'tekken');
+  assert.equal(legacyTarget.searchParams.get('q'), 'poster');
+  assert.equal(legacyTarget.searchParams.has('category'), false);
+  assert.equal((await request(port, '/products')).status, 200);
+  assert.equal((await request(port, '/products?category=unknown')).status, 200);
   const redirect = await request(port, '/category/gaming-wall-art?category=accessories');
   assert.equal(redirect.status, 308); assert.equal(redirect.headers.location, '/category/gaming-wall-art');
 });
