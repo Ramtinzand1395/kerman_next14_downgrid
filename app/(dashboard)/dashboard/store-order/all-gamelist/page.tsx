@@ -9,6 +9,7 @@ import GameListTable from "./GameListTable";
 
 import { GameItem, GameList } from "@/types";
 import { DashboardRouteSkeleton } from "@/app/components/loading/LoadingSystem";
+import { toast } from "react-toastify";
 
 const LIMIT = 20;
 
@@ -63,11 +64,18 @@ export default function AllGameList() {
 
       const result = await res.json();
 
+      if (!res.ok) {
+        throw new Error(result.message || "فهرست بازی‌ها دریافت نشد.");
+      }
+
       setData(result.gameList);
 
       setTotalPages(result.pagination?.totalPages || 1);
     } catch (error) {
-      console.log(error);
+      setData(null);
+      toast.error(
+        error instanceof Error ? error.message : "فهرست بازی‌ها دریافت نشد.",
+      );
     } finally {
       setLoading(false);
     }

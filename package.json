@@ -15,6 +15,9 @@
     "test": "node --test *.test.mjs",
     "audit:pos-catalog": "node --env-file=.env scripts/audit-pos-catalog-identities.mjs",
     "audit:referral": "node --env-file=.env scripts/audit-referral-integrity.mjs",
+    "ps5:catalog:dry-run": "node --env-file=.env scripts/migrate-ps5-catalog.mjs",
+    "ps5:catalog:apply": "node --env-file=.env scripts/migrate-ps5-catalog.mjs --apply",
+    "ps5:catalog:rollback": "node --env-file=.env scripts/migrate-ps5-catalog.mjs --rollback",
     "seed": "node helpers/seed.mjs"
   },
   "dependencies": {
@@ -46,6 +49,7 @@
     "eslint": "^8.57.1",
     "eslint-config-next": "14.2.35",
     "postcss": "^8.5.6",
+    "sharp": "^0.35.5",
     "tailwindcss": "3.4.1",
     "typescript": "5.9.3"
   }

@@ -1,0 +1,12 @@
+12	6a68cc06c1b8d6060ad3aee2	Ben 10	عنوان «Ben 10» مشخص نمی‌کند منظور بازی ۲۰۱۷ است یا Ben 10: Power Trip.
+52	6a68cc06c1b8d6060ad3af0a	Ghost of Yōtei™	فروشگاه فعلی فقط Complete Edition را برمی‌گرداند؛ نسخهٔ رکورد موجود مشخص نیست.
+72	6a68cc06c1b8d6060ad3af1e	LEGO® Star Wars	عنوان «LEGO Star Wars» برای تشخیص قسمت بازی کافی نیست.
+78	6a68cc06c1b8d6060ad3af24	Marvel's Avengers	Marvel's Avengers از فروش خارج شده و نتیجهٔ رسمی قابل اتکای همان محصول پیدا نشد.
+96	6a68cc06c1b8d6060ad3af36	Overcooked	عنوان «Overcooked» بین نسخهٔ اصلی PS4 و All You Can Eat مبهم است.
+97	6a68cc06c1b8d6060ad3af37	Ratchet & Clank 	عنوان «Ratchet & Clank» بین Size Matters و Rift Apart مبهم است.
+103	6a68cc06c1b8d6060ad3af3d	Resident Evil Village 	فروشگاه فقط Gold Edition را برمی‌گرداند و Edition رکورد فعلی مشخص نیست.
+123	6a68cc06c1b8d6060ad3af51	spongebob squarepants	عنوان «SpongeBob SquarePants» قسمت مشخصی از مجموعه را تعیین نمی‌کند.
+131	6a68cc06c1b8d6060ad3af59	Teenage Mutant Ninja Turtles	عنوان «Teenage Mutant Ninja Turtles» قسمت مشخصی از مجموعه را تعیین نمی‌کند.
+137	6a68cc06c1b8d6060ad3af5f	Truck Driver	عنوان «Truck Driver» بین Gold Edition و The American Dream مبهم است.
+141	6a68cc06c1b8d6060ad3af63	Watch Dogs® Legion	نسخهٔ پایهٔ Watch Dogs: Legion در نتایج فعلی نیست؛ DLC/Edition حدس زده نمی‌شود.
+146	6a68cc06c1b8d6060ad3af68	<empty>	نام رکورد خالی است و بدون حذف یا ادغام برای بررسی دستی نگه داشته شد.

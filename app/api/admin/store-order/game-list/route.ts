@@ -1,4 +1,8 @@
+export { GET, POST, PUT, DELETE } from "./handlers";
+
+/* Legacy implementation retained below temporarily for a compact route diff.
 import { NextRequest, NextResponse } from "next/server";
+// Server-authorized CRUD for embedded game-list items.
 
 import GameList from "@/model/GameList";
 
@@ -352,3 +356,4 @@ export async function DELETE(req: NextRequest) {
     );
   }
 }
+*/

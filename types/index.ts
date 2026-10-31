@@ -199,11 +199,17 @@ export interface GameItem {
 
   name: string;
 
-  size?: number;
+  size?: number | null;
 
-  price?: number;
+  price?: number | null;
 
-  storage?: string;
+  storage?: string | null;
+
+  imageUrl?: string | null;
+
+  imagePublicId?: string | null;
+
+  imageAlt?: string | null;
 }
 
 export interface GameList {

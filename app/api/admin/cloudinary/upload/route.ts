@@ -16,7 +16,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
     }
 
-    if (session.user.role !== "superadmin") {
+    if (!["admin", "superadmin"].includes(session.user.role)) {
       return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
     }
 
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "فایل تصویر ارسال نشده است" }, { status: 400 });
     }
 
-    if (!file.type.startsWith("image/")) {
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       return NextResponse.json({ error: "فقط فایل تصویری مجاز است" }, { status: 400 });
     }
 

@@ -6,11 +6,13 @@ import {
 import { Types } from "mongoose";
 
 import Blog from "@/model/Blog";
+import GameList from "@/model/GameList";
 import Product from "@/model/Product";
 
 type DeletionContext = {
   excludeBlogId?: string;
   excludeProductId?: string;
+  excludeGameItemId?: string;
 };
 
 const getCloudName = () => process.env.CLOUDINARY_CLOUD_NAME || "";
@@ -33,12 +35,20 @@ const configureCloudinary = () => {
   });
 };
 
-export const uploadCloudinaryImage = (buffer: Buffer) => {
+export const uploadCloudinaryImage = (
+  buffer: Buffer,
+  options: { folder?: string; publicId?: string } = {},
+) => {
   configureCloudinary();
 
   return new Promise<{ url: string; publicId: string }>((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { resource_type: "image" },
+      {
+        resource_type: "image",
+        folder: options.folder,
+        public_id: options.publicId,
+        overwrite: false,
+      },
       (
         error: UploadApiErrorResponse | undefined,
         result: UploadApiResponse | undefined,
@@ -97,7 +107,7 @@ const getCloudinaryPublicId = (value: string) => {
 
 const isReferencedElsewhere = async (
   url: string,
-  { excludeBlogId, excludeProductId }: DeletionContext,
+  { excludeBlogId, excludeProductId, excludeGameItemId }: DeletionContext,
 ) => {
   // Use the native collection here so legacy string entries in `images` do
   // not get cast as embedded documents by Mongoose before the query runs.
@@ -111,12 +121,24 @@ const isReferencedElsewhere = async (
   }
   if (excludeBlogId) blogFilter._id = { $ne: excludeBlogId };
 
-  const [productReference, blogReference] = await Promise.all([
+  const gameFilter: Record<string, unknown> = { "items.imageUrl": url };
+  if (excludeGameItemId && Types.ObjectId.isValid(excludeGameItemId)) {
+    gameFilter.items = {
+      $elemMatch: {
+        imageUrl: url,
+        _id: { $ne: new Types.ObjectId(excludeGameItemId) },
+      },
+    };
+    delete gameFilter["items.imageUrl"];
+  }
+
+  const [productReference, blogReference, gameReference] = await Promise.all([
     Product.collection.findOne(productFilter, { projection: { _id: 1 } }),
     Blog.exists(blogFilter),
+    GameList.exists(gameFilter),
   ]);
 
-  return Boolean(productReference || blogReference);
+  return Boolean(productReference || blogReference || gameReference);
 };
 
 /**

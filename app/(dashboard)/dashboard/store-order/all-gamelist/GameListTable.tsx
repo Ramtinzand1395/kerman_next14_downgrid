@@ -1,6 +1,7 @@
 "use client";
 
 import { Pencil, Trash2 } from "lucide-react";
+import Image from "next/image";
 
 import { toast } from "react-toastify";
 
@@ -49,15 +50,18 @@ export default function GameListTable({
         }),
       });
 
-      if (!res.ok) throw new Error();
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "بازی حذف نشد.");
 
       toast.success("بازی از فهرست حذف شد.");
 
       await onChanged();
     } catch (error) {
-      console.log(error);
-
-      toast.error("بازی حذف نشد؛ دوباره تلاش کنید.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "بازی حذف نشد؛ دوباره تلاش کنید.",
+      );
     }
   };
 
@@ -121,6 +125,8 @@ text-gray-600
 "
           >
             <tr>
+              <th className="px-5 py-4">کاور</th>
+
               <th
                 className="
 px-5
@@ -172,7 +178,7 @@ py-4
             {list.length === 0 ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   className="
 py-10
 text-center
@@ -192,6 +198,17 @@ hover:bg-gray-50
 transition
 "
                 >
+                  <td className="px-5 py-3">
+                    <Image
+                      src={game.imageUrl || "/images/game-cover-placeholder.svg"}
+                      alt={game.imageAlt || `کاور ${game.name}`}
+                      width={64}
+                      height={64}
+                      unoptimized
+                      className="h-16 w-16 rounded-xl border border-gray-200 bg-slate-100 object-cover"
+                    />
+                  </td>
+
                   <td
                     className="
 px-5

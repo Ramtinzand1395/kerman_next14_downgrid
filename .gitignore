@@ -43,3 +43,11 @@ next-env.d.ts
 
 
 .test/
+# PS5 catalog working data and database backups stay local. The reviewed
+# reports and deliverable ZIP are added explicitly.
+artifacts/ps5-catalog-2026-10-31/backup/
+artifacts/ps5-catalog-2026-10-31/covers/
+artifacts/ps5-catalog-2026-10-31/discovery.json
+artifacts/ps5-catalog-2026-10-31/review-candidates.csv
+artifacts/ps5-catalog-2026-10-31/migration-*.json
+artifacts/ps5-catalog-2026-10-31/migration-last.json

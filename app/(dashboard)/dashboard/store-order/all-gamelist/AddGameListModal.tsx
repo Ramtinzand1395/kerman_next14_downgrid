@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-import { X } from "lucide-react";
+import { ImagePlus, Trash2, X } from "lucide-react";
+import Image from "next/image";
 
 import { toast } from "react-toastify";
 
@@ -56,6 +57,12 @@ export default function GameFormModal({
 }: Props) {
   const [loading, setLoading] = useState(false);
 
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+
+  const [removeCover, setRemoveCover] = useState(false);
+
   const [form, setForm] = useState({
     platform,
 
@@ -83,6 +90,16 @@ export default function GameFormModal({
       });
     }
   }, [editGame, platform]);
+
+  useEffect(() => {
+    if (!coverFile) {
+      setCoverPreview(null);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(coverFile);
+    setCoverPreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [coverFile]);
 
   const submit = async () => {
     if (!form.name.trim()) {
@@ -126,6 +143,36 @@ export default function GameFormModal({
         throw new Error(data.message || "بازی ذخیره نشد.");
       }
 
+      const itemId = editGame?._id || data.item?._id;
+      if (coverFile && itemId) {
+        const coverData = new FormData();
+        coverData.set("platform", form.platform);
+        coverData.set("file", coverFile);
+        const coverResponse = await fetch(
+          `/api/admin/store-order/game-list/${itemId}/image`,
+          { method: "POST", body: coverData },
+        );
+        const coverResult = await coverResponse.json();
+        if (!coverResponse.ok) {
+          throw new Error(
+            coverResult.message || "اطلاعات ذخیره شد اما آپلود کاور ناموفق بود.",
+          );
+        }
+      } else if (removeCover && editGame?.imageUrl && itemId) {
+        const coverResponse = await fetch(
+          `/api/admin/store-order/game-list/${itemId}/image`,
+          {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ platform: form.platform }),
+          },
+        );
+        const coverResult = await coverResponse.json();
+        if (!coverResponse.ok) {
+          throw new Error(coverResult.message || "حذف کاور ناموفق بود.");
+        }
+      }
+
       toast.success(
         editGame ? "تغییرات بازی ذخیره شد." : "بازی به فهرست اضافه شد.",
       );
@@ -134,8 +181,11 @@ export default function GameFormModal({
 
       close();
     } catch (error) {
-      console.log(error);
-      toast.error("بازی ذخیره نشد؛ اطلاعات را بررسی و دوباره تلاش کنید.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "بازی ذخیره نشد؛ اطلاعات را بررسی و دوباره تلاش کنید.",
+      );
     } finally {
       setLoading(false);
     }
@@ -167,7 +217,7 @@ backdrop-blur-sm
 relative
 z-50
 w-[95vw]
-max-w-lg
+        max-w-xl
 rounded-3xl
 bg-white
 p-6
@@ -203,6 +253,59 @@ mt-6
 space-y-4
 "
         >
+          <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <Image
+                src={
+                  coverPreview ||
+                  (!removeCover ? editGame?.imageUrl : null) ||
+                  "/images/game-cover-placeholder.svg"
+                }
+                alt={form.name ? `پیش‌نمایش کاور ${form.name}` : "پیش‌نمایش کاور"}
+                width={112}
+                height={112}
+                unoptimized
+                className="h-28 w-28 shrink-0 rounded-2xl border bg-slate-100 object-cover"
+              />
+              <div className="min-w-0 flex-1 space-y-2">
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-bold text-white transition hover:bg-blue-700">
+                  <ImagePlus size={18} />
+                  {editGame?.imageUrl ? "جایگزینی کاور" : "انتخاب کاور"}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="sr-only"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] || null;
+                      if (file && file.size > 5 * 1024 * 1024) {
+                        toast.warning("حجم کاور باید کمتر از ۵ مگابایت باشد.");
+                        event.target.value = "";
+                        return;
+                      }
+                      setCoverFile(file);
+                      setRemoveCover(false);
+                    }}
+                  />
+                </label>
+                {(editGame?.imageUrl || coverFile) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCoverFile(null);
+                      setRemoveCover(Boolean(editGame?.imageUrl));
+                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 size={16} /> حذف کاور
+                  </button>
+                )}
+                <p className="text-xs leading-5 text-gray-500">
+                  JPG، PNG یا WebP؛ حداکثر ۵ مگابایت
+                </p>
+              </div>
+            </div>
+          </div>
+
           <select
             value={form.platform}
             disabled={!!editGame}
