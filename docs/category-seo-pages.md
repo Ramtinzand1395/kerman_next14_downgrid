@@ -8,7 +8,7 @@ Reviewed against `main` at `5cb5bb35665073f46374207ee3014fc27b099e2d` (31 Octobe
 - A different artwork remains a distinct product; size and frame/mounted options remain variants.
 - `/categories` is the crawlable category directory. `/category/[slug]` serves every valid database category, including subcategories at any depth. The globally unique category slug gives each category one stable URL even when its parent changes.
 - Categories derive their hierarchy and counts from MongoDB, not the hard-coded menu. The directory exposes the complete current tree; menu shortcuts and the product filter point to landing pages.
-- Existing `/products?category=<slug>` links permanently redirect to the corresponding landing page, retaining search, tag, sort and pagination parameters. Products are never redirected or renamed.
+- Existing `/products?category=<slug>` links permanently redirect to the corresponding landing page with HTTP 308, retaining search, tag, sort and pagination parameters. This is resolved during metadata generation and page rendering, with the products route loading boundary removed to prevent an early streamed 200. In-page navigation pending feedback remains. Products are never redirected or renamed.
 
 ## Delivered behavior
 
