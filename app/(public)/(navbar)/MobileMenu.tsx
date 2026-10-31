@@ -121,7 +121,7 @@ export default function MobileMenu({
                     {quickLinks.slice(0, 6).map((link) => (
                       <Link
                         key={link.slug}
-                        href={`/products?sort=newest&category=${link.slug}&page=1`}
+                        href={`/category/${encodeURIComponent(link.slug)}`}
                         onClick={onClose}
                         className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700"
                       >
@@ -168,7 +168,7 @@ export default function MobileMenu({
                             {categories.map((cat) => (
                               <li key={cat.slug} className="space-y-1">
                                 <Link
-                                  href={`/products?sort=newest&category=${cat.slug}&page=1`}
+                                  href={`/category/${encodeURIComponent(cat.slug)}`}
                                   onClick={onClose}
                                   className="flex items-center gap-1 font-bold text-[#001A6E]"
                                 >
@@ -183,7 +183,7 @@ export default function MobileMenu({
                                     <li key={sub.slug}>
                                       <Link
                                         aria-label={`رفتن به ${sub.name}`}
-                                        href={`/products?sort=newest&category=${sub.slug}&page=1`}
+                                        href={`/category/${encodeURIComponent(sub.slug)}`}
                                         onClick={onClose}
                                         className="block text-sm text-gray-600 transition hover:text-blue-600"
                                       >

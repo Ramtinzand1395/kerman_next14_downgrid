@@ -29,7 +29,7 @@ const menuItems = [
   { name: "خانه", link: "/", icon: <Home className="h-4 w-4 ml-1" /> },
   {
     name: "دسته‌بندی‌ها",
-    link: "#",
+    link: "/categories",
     icon: <Grid2x2 className="h-4 w-4 ml-1" />,
   },
   {
@@ -177,14 +177,14 @@ export default function Navbar() {
                           key={cat.name}
                           className="rounded-xl border border-slate-100 bg-slate-50/60 p-3"
                         >
-                          <div className="mb-2 text-sm font-bold text-slate-800">
+                          <Link href={`/category/${encodeURIComponent(cat.slug)}`} className="mb-2 block text-sm font-bold text-slate-800">
                             {cat.name}
-                          </div>
+                          </Link>
                           <div className="flex flex-col gap-1">
                             {cat.subcategories.slice(0, 5).map((sub) => (
                               <Link
                                 key={sub.name}
-                               href={`/products?sort=newest&category=${sub.slug}&page=1`}
+                               href={`/category/${encodeURIComponent(sub.slug)}`}
                                 className="rounded-lg px-2 py-1 text-xs text-slate-700 transition hover:bg-white hover:text-blue-600"
                               >
                                 {sub.name}

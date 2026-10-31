@@ -1,4 +1,8 @@
 import { Metadata } from "next";
+import Link from "next/link";
+import { permanentRedirect } from "next/navigation";
+import { getCategoryCatalog } from "@/lib/catalog/category-data";
+import { categoryHref, decodeCategorySlug } from "@/lib/catalog/category-seo";
 import { SlidersHorizontal, Tags, X } from "lucide-react";
 
 import type { Product, ProductTagFacet } from "@/types";
@@ -16,7 +20,7 @@ import {
 import { SITE_URL, toAbsoluteUrl } from "@/lib/site";
 import { categories } from "../constants/categories";
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   title: "محصولات",
   description:
     "لیست کامل محصولات کرمان آتاری شامل کنسول، بازی و لوازم جانبی با امکان فیلتر و مرتب‌سازی سریع.",
@@ -39,6 +43,13 @@ export const metadata: Metadata = {
     locale: "fa_IR",
   },
 };
+export async function generateMetadata({ searchParams }: { searchParams: ProductsSearchParams }): Promise<Metadata> {
+  const filtered = Boolean(searchParams.q || searchParams.tag || searchParams.category || searchParams.sort);
+  const page = /^\d+$/.test(searchParams.page || "") ? Number(searchParams.page) : 1;
+  const canonical = !filtered && page > 1 ? `/products?page=${page}` : "/products";
+  return { ...baseMetadata, alternates: { canonical }, robots: { index: !filtered, follow: true } };
+}
+
 async function getProducts(params: {
   category?: string;
   sort?: string;
@@ -140,6 +151,18 @@ export default async function ProductsPage({
 }: {
   searchParams: ProductsSearchParams;
 }) {
+  if (searchParams.category) {
+    const value = decodeCategorySlug(searchParams.category);
+    const rows = await getCategoryCatalog();
+    const category = rows.find(row => row.slug === value || row.name === value || row._id === value);
+    if (category) {
+      const query = new URLSearchParams();
+      for (const key of ["sort", "page", "q", "tag"] as const) {
+        if (typeof searchParams[key] === "string") query.set(key, searchParams[key]!);
+      }
+      permanentRedirect(categoryHref(category.slug) + (query.size ? `?${query}` : ""));
+    }
+  }
   const data = await getProducts(searchParams);
   const products = data.products as Product[];
   const returnedTags = (data.filters?.tags || []) as ProductTagFacet[];
@@ -209,6 +232,7 @@ export default async function ProductsPage({
 
       <ProductNavigationProvider>
 
+      <div className="mb-4 flex flex-wrap gap-3 text-sm font-semibold text-blue-700"><Link href="/categories">همه دسته‌بندی‌ها</Link><Link href="/category/gaming-wall-art">تابلو گیمینگ</Link></div>
       <ProductArtSlider />
 
       <header className="mb-5 rounded-2xl border border-blue-100 bg-white p-4 shadow-sm md:p-5">

@@ -213,6 +213,11 @@ export interface GameList {
 }
 
 export interface Category {
+  seoTitle?: string;
+  metaDescription?: string;
+  introduction?: string;
+  buyingGuide?: string;
+  faqs?: { question: string; answer: string }[];
   _id: string;
   name: string;
   slug: string;

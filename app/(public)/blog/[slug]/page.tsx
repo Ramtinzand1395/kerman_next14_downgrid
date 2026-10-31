@@ -68,10 +68,8 @@ export async function generateMetadata({
   const blog = await getBlog(slug);
 
   if (!blog) {
-    return {
-      title: "مقاله یافت نشد",
-      description: "این مقاله در حال حاضر در دسترس نیست.",
-    };
+    // Reject missing posts during blocking metadata resolution, before streaming.
+    notFound();
   }
 
   const title = blog.seoTitle || blog.title;

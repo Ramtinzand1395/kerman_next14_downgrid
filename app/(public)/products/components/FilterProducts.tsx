@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   ChevronDown,
   Filter,
@@ -132,17 +133,16 @@ export default function FilterProducts({ tags }: FilterProductsProps) {
                 className="rounded-xl border border-gray-100 p-2"
               >
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => updateFilter("category", cat.slug)}
-                    className={`flex-1 rounded-lg px-3 py-2 text-right text-sm font-semibold transition-colors ${
+                  <Link
+                    href={`/category/${encodeURIComponent(cat.slug)}`}
+                    className={`block flex-1 rounded-lg px-3 py-2 text-right text-sm font-semibold transition-colors ${
                       isActiveParent
                         ? "bg-blue-600 text-white"
                         : "bg-gray-50 text-gray-800 hover:bg-blue-50 hover:text-blue-700"
                     }`}
                   >
                     {cat.name}
-                  </button>
+                  </Link>
                   <button
                     type="button"
                     onClick={() =>
@@ -164,19 +164,16 @@ export default function FilterProducts({ tags }: FilterProductsProps) {
                       const isActive = isCatActive(sub.slug);
                       return (
                         <li key={sub.slug}>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              updateFilter("category", sub.slug)
-                            }
-                            className={`w-full rounded-lg px-3 py-2 text-right text-sm transition-colors ${
+                          <Link
+                            href={`/category/${encodeURIComponent(sub.slug)}`}
+                            className={`block w-full rounded-lg px-3 py-2 text-right text-sm transition-colors ${
                               isActive
                                 ? "bg-blue-100 font-semibold text-blue-700"
                                 : "text-gray-600 hover:bg-gray-100"
                             }`}
                           >
                             {sub.name}
-                          </button>
+                          </Link>
                         </li>
                       );
                     })}
