@@ -24,7 +24,7 @@ Clean populated category pages are indexable and enter the dynamic sitemap. Empt
 
 | PR | Branch | Review result |
 | --- | --- | --- |
-| #36 | `fix/seo-status-canonical-redirects` | Mergeable; missing-record status and domain redirect changes included. Regression fixture passes. Proxy scheme handling still needs a live Nginx check after release. |
+| #36 | `fix/seo-status-canonical-redirects` | Mergeable; missing-record status and domain redirect changes included. Regression fixture passes. Includes the ArvanCloud compatibility correction: canonical-host requests are not redirected based on the HTTP origin header. |
 | #37 | `fix/blog-sitemap` | Mergeable; published blog sitemap changes included, with category URLs added on top. |
 | #38 | `fix/merchant-policy-schema` | Mergeable; return-policy/schema changes included. No fabricated shipping/rating data. |
 
@@ -34,10 +34,10 @@ All three remote PRs were still Draft, had no unresolved review threads, and had
 
 - `npm test`: **85 passed, 0 failed**. Unit/service/authorization/sitemap tests plus real production Next.js HTTP fixtures use controlled data, never the store database.
 - `npx tsc --noEmit` and `git diff --check`: passed.
-- `npm run build`: full store build passed without production credentials. Dynamic data is intentionally resolved at runtime. One pre-existing `no-img-element` warning remains in the admin product drawer.
+- `npm run build`: full store build passed without production credentials. Dynamic data is intentionally resolved at runtime. One pre-existing `no-img-element` warning remains in the public footer.
 - New PR validation workflow runs install, tests, type checking and full build, without production secrets.
 - No database writes, main updates, deployment or Search Console submissions are part of this branch.
 
-Before release, review the combined diff and run with the deployment environment's existing configuration. After release, check the live category directory, a populated category, a child category, page 2, a missing slug, legacy query redirects and sitemap. Check the Nginx `X-Forwarded-Proto` overwrite noted in `docs/seo-http-status.md`; then resubmit the sitemap and inspect category URLs in Search Console. Indexing and search ranking are not guaranteed by code or build success.
+Before release, review the combined diff and run with the deployment environment's existing configuration. After release, check the live category directory, a populated category, a child category, page 2, a missing slug, legacy query redirects and sitemap. Verify public HTTP-to-HTTPS at the ArvanCloud CDN edge as noted in `docs/seo-http-status.md`; then resubmit the sitemap and inspect category URLs in Search Console. Indexing and search ranking are not guaranteed by code or build success.
 
 Official reference: https://developers.google.com/search/docs/specialty/ecommerce/designing-a-url-structure-for-ecommerce-sites

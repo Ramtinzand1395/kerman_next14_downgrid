@@ -12,13 +12,12 @@ The affected routes wait for existence checks instead of showing a route skeleto
 Do not add ancestor loading boundaries without running the HTTP regression test.
 
 `next.config.js` redirects the exact www host to HTTPS without www using 308.
-It also upgrades the canonical host when a trusted reverse proxy supplies
-`X-Forwarded-Proto: http`. Path and query are preserved; local and preview hosts
-are unaffected. The VPS proxy must overwrite this header from the actual client
-scheme (for example `proxy_set_header X-Forwarded-Proto $scheme;`). Existing
-HTTP-to-HTTPS handling at the proxy may result in two hops for HTTP www URLs;
-a single-hop edge rule can be applied once the real Nginx configuration is reviewed.
-Never blindly replace server blocks or trust a client-supplied forwarding header.
+Path and query are preserved; local and preview hosts are unaffected.
+HTTPS terminates at ArvanCloud, while this VPS listens only on port 80 and Nginx
+sets X-Forwarded-Proto from its own HTTP connection. Do not redirect the canonical
+host based on that header: public HTTPS requests would loop. Enforce public
+HTTP-to-HTTPS at the CDN edge, and verify its setting separately. No CDN or VPS
+configuration is modified by this PR. Do not blindly trust client forwarding headers.
 
 ## Validation
 
