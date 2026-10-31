@@ -131,9 +131,11 @@ export default async function Page({params}: any) {
     assert.equal(www.status, 308);
     assert.equal(new URL(www.headers.location).href, `https://kermanatari.ir${pathname}`);
   }
-  const httpRedirect = await request(port, '/products?page=2', { Host: 'kermanatari.ir', 'x-forwarded-proto': 'http' });
-  assert.equal(httpRedirect.status, 308);
-  assert.equal(httpRedirect.headers.location, 'https://kermanatari.ir/products?page=2');
+  // ArvanCloud terminates TLS before the HTTP-only VPS. Nginx sets this
+  // header from its own HTTP connection, even for public HTTPS requests.
+  const originResponse = await request(port, '/', { Host: 'kermanatari.ir', 'x-forwarded-proto': 'http' });
+  assert.equal(originResponse.status, 200, 'CDN-to-origin HTTP must not loop to public HTTPS');
+  assert.equal(originResponse.headers.location, undefined);
   assert.equal((await request(port, '/', { Host: 'kermanatari.ir', 'x-forwarded-proto': 'https' })).status, 200, 'No canonical redirect loop');
   assert.equal((await request(port, '/', { Host: 'localhost' })).status, 200, 'Local development remains accessible');
   assert.equal((await request(port, '/', { Host: 'wwwXkermanatariXir' })).status, 200, 'Host rules require literal dots');

@@ -8,15 +8,6 @@ const nextConfig = {
         destination: "https://kermanatari.ir/:path*",
         permanent: true,
       },
-      {
-        source: "/:path*",
-        has: [
-          { type: "host", value: "kermanatari\\.ir" },
-          { type: "header", key: "x-forwarded-proto", value: "http" },
-        ],
-        destination: "https://kermanatari.ir/:path*",
-        permanent: true,
-      },
     ];
   },
   images: {
