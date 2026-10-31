@@ -8,6 +8,7 @@ import Navbar from "./(navbar)/Navbar";
 import Footer from "./Footer";
 import { SITE_URL } from "@/lib/site";
 import type { Metadata } from "next";
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
 const INSTAGRAM_URL =
    "https://www.instagram.com/kermanatari.ir?igsh=MTh4cmd3NnNib2N5dw==";
 
@@ -128,7 +129,21 @@ export default function RootLayout({
           }}
         />
 
-        {/* Analytics / other scripts can be added here with appropriate strategies */}
+        {/* One Google tag per public page. GA4 handles enhanced measurement including SPA history changes. */}
+        {GA_MEASUREMENT_ID && /^G-[A-Z0-9]+$/.test(GA_MEASUREMENT_ID) ? (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="ga4-config" strategy="afterInteractive">{`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${GA_MEASUREMENT_ID}');
+            `}</Script>
+          </>
+        ) : null}
       </body>
     </html>
   );
