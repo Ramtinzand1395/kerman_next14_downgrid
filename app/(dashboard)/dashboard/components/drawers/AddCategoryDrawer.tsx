@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "react-toastify";
-import { FolderTree, Loader2, Plus, Trash2, X } from "lucide-react";
+import { FolderTree, Loader2, Plus, Trash2, X, Pencil } from "lucide-react";
 import { Category } from "@/types";
 
 interface AddCategoryDrawerProps {
@@ -23,6 +23,46 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
   const [parentId, setParentId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState<Category | null>(null);
+  const [seo, setSeo] = useState({
+    seoTitle: "",
+    metaDescription: "",
+    introduction: "",
+    buyingGuide: "",
+  });
+  const [faqs, setFaqs] = useState<Array<{ question: string; answer: string }>>(
+    [],
+  );
+  const startSeoEdit = (category: Category) => {
+    setEditing(category);
+    setSeo({
+      seoTitle: category.seoTitle || "",
+      metaDescription: category.metaDescription || "",
+      introduction: category.introduction || "",
+      buyingGuide: category.buyingGuide || "",
+    });
+    setFaqs(category.faqs || []);
+  };
+  const saveSeo = async () => {
+    if (!editing) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/category/${editing._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...seo, faqs }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "ذخیره انجام نشد");
+      toast.success("اطلاعات سئوی دسته ذخیره شد.");
+      setEditing(null);
+      await fetchCategories();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "ذخیره انجام نشد");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -122,7 +162,7 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
         onClick={onClose}
       />
 
-      <div className="relative h-full w-full max-w-md border-r border-slate-700 bg-slate-900 text-slate-100 shadow-2xl">
+      <div className="relative h-full w-full max-w-md overflow-y-auto border-r border-slate-700 bg-slate-900 text-slate-100 shadow-2xl">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-700 bg-slate-900/95 px-5 py-4 backdrop-blur">
           <div className="flex items-center gap-2">
             <FolderTree className="h-5 w-5 text-emerald-400" />
@@ -138,6 +178,127 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
         </div>
 
         <div className="space-y-5 p-5">
+          {editing && (
+            <div className="space-y-3 rounded-xl border border-emerald-700 bg-slate-800 p-4">
+              <h3 className="text-sm font-bold">سئوی {editing.name}</h3>
+              <a
+                href={`/category/${encodeURIComponent(editing.slug)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="block text-xs text-emerald-300"
+              >
+                مشاهده صفحه دسته‌بندی
+              </a>
+              <p className="text-xs leading-6 text-slate-400">
+                متن خالی از راهنمای پیش‌فرض استفاده می‌کند. آدرس دسته و محصولات
+                حفظ می‌شود.
+              </p>
+              {(
+                [
+                  { key: "seoTitle", label: "عنوان سئو", max: 100 },
+                  { key: "metaDescription", label: "توضیحات متا", max: 200 },
+                  { key: "introduction", label: "معرفی مجموعه", max: 3000 },
+                  { key: "buyingGuide", label: "راهنمای خرید", max: 10000 },
+                ] as const
+              ).map((field) => (
+                <label key={field.key} className="block text-xs">
+                  {field.label}
+                  <textarea
+                    value={seo[field.key]}
+                    maxLength={field.max}
+                    rows={field.key === "buyingGuide" ? 5 : 2}
+                    onChange={(e) =>
+                      setSeo((current) => ({
+                        ...current,
+                        [field.key]: e.target.value,
+                      }))
+                    }
+                    className="mt-2 w-full rounded-lg border border-slate-600 bg-slate-900 p-2"
+                  />
+                </label>
+              ))}
+              <h4 className="text-xs font-bold">پرسش‌های متداول</h4>
+              {faqs.map((faq, index) => (
+                <div
+                  key={index}
+                  className="space-y-2 rounded-lg border border-slate-600 p-2"
+                >
+                  <label className="block text-xs">
+                    پرسش
+                    <input
+                      value={faq.question}
+                      maxLength={200}
+                      onChange={(e) =>
+                        setFaqs((items) =>
+                          items.map((item, i) =>
+                            i === index
+                              ? { ...item, question: e.target.value }
+                              : item,
+                          ),
+                        )
+                      }
+                      className="mt-1 w-full rounded bg-slate-900 p-2"
+                    />
+                  </label>
+                  <label className="block text-xs">
+                    پاسخ
+                    <textarea
+                      value={faq.answer}
+                      maxLength={2000}
+                      onChange={(e) =>
+                        setFaqs((items) =>
+                          items.map((item, i) =>
+                            i === index
+                              ? { ...item, answer: e.target.value }
+                              : item,
+                          ),
+                        )
+                      }
+                      className="mt-1 w-full rounded bg-slate-900 p-2"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFaqs((items) => items.filter((_, i) => i !== index))
+                    }
+                    className="text-xs text-rose-300"
+                  >
+                    حذف پرسش
+                  </button>
+                </div>
+              ))}
+              {faqs.length < 10 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFaqs((items) => [...items, { question: "", answer: "" }])
+                  }
+                  className="text-xs text-emerald-300"
+                >
+                  افزودن پرسش
+                </button>
+              )}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={saveSeo}
+                  className="rounded-lg bg-emerald-600 px-3 py-2 text-xs disabled:opacity-50"
+                >
+                  {saving ? "در حال ذخیره…" : "ذخیره سئو"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditing(null)}
+                  className="text-xs"
+                >
+                  انصراف
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="rounded-xl border border-slate-700 bg-slate-800/70 p-4">
             <p className="mb-3 text-xs text-slate-300">افزودن دسته جدید</p>
             <div className="space-y-2">
@@ -220,6 +381,14 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
                         مادر: {cat.parent ? cat.parent.name : "-"}
                       </span>
                     </div>
+                    <button
+                      type="button"
+                      aria-label={`ویرایش سئوی ${cat.name}`}
+                      onClick={() => startSeoEdit(cat)}
+                      className="mr-auto ml-2 rounded-md bg-slate-700 p-1.5"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
                     <button
                       title="delete"
                       onClick={() => handleDelete(cat._id)}

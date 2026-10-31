@@ -13,6 +13,7 @@ import ProductImage from "@/app/components/ProductImage";
 import { getStoreShippingSettings } from "@/lib/shippingSettings";
 import { tomanToIrr } from "@/lib/currency";
 import { formatLocalShippingPolicyText } from "@/lib/shipping";
+import { merchantReturnPolicyId, normalizeProductCategory } from "@/lib/merchantSchema";
 import {
   getRelatedProducts,
   type RelatedProduct,
@@ -115,13 +116,9 @@ export async function generateMetadata({
     product = await getProduct(params.slug);
   } catch (error) {
     if (error instanceof ProductNotFoundError) {
-      return {
-        title: "محصول یافت نشد | کرمان آتاری",
-        robots: {
-          index: false,
-          follow: false,
-        },
-      };
+      // Resolve absence before Next.js 14 starts streaming the loading UI.
+      // Returning metadata here would commit 200 before the page calls notFound().
+      notFound();
     }
     throw error;
   }
@@ -249,11 +246,13 @@ export default async function ProductPage({
       "@type": "Brand",
       name: product.brand || "Kerman Atari",
     },
-    category: product.category?.name,
+    category: normalizeProductCategory(product.category),
     offers:
       product.productType === "multi" && activeVariants.length > 0
         ? {
             "@type": "AggregateOffer",
+            seller: { "@id": `${SITE_URL}/#organization` },
+            hasMerchantReturnPolicy: { "@id": merchantReturnPolicyId(SITE_URL) },
             priceCurrency: "IRR",
             lowPrice: minPriceInIRR,
             highPrice: maxPriceInIRR,
@@ -266,6 +265,8 @@ export default async function ProductPage({
           }
         : {
             "@type": "Offer",
+            seller: { "@id": `${SITE_URL}/#organization` },
+            hasMerchantReturnPolicy: { "@id": merchantReturnPolicyId(SITE_URL) },
             priceCurrency: "IRR",
             price: tomanToIrr(finalPrice),
             availability:

@@ -18,6 +18,7 @@ import {
 import { SITE_URL } from "@/lib/site";
 import { getStoreShippingSettings } from "@/lib/shippingSettings";
 import { formatLocalShippingPolicyText } from "@/lib/shipping";
+import { buildMerchantReturnPolicy } from "@/lib/merchantSchema";
 
 export const dynamic = "force-dynamic";
 
@@ -246,6 +247,13 @@ export default async function TermsPage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${SITE_URL}/#organization`,
+        name: "کرمان آتاری",
+        url: SITE_URL,
+        hasMerchantReturnPolicy: buildMerchantReturnPolicy(SITE_URL),
+      },
       {
         "@type": "WebPage",
         name: "قوانین و مقررات کرمان آتاری",
