@@ -103,6 +103,7 @@ export default function AppointmentsTable({
                   </span>
                 </div>
               </div>
+              {item.selectedGames?.length ? <p className="mt-3 rounded-xl bg-blue-50 px-3 py-2 text-xs font-bold text-[#001A6E]">{item.selectedGames.length.toLocaleString("fa-IR")} بازی · حجم ثبت‌شده: <span dir="ltr">{(item.totalSizeGB ?? 0).toLocaleString("fa-IR")} GB</span></p> : null}
 
               <dl className="mt-4 grid gap-3 rounded-2xl bg-slate-50 p-4 text-sm sm:grid-cols-2">
                 <div>
