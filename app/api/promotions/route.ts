@@ -30,10 +30,9 @@ export async function GET() {
       const coupon = modal.coupon;
       if (!coupon || !canShowCoupon({ ...coupon, allowedUsers: coupon.allowedUsers.map(String) },
         userId, usedIds.has(String(coupon._id)))) continue;
-      const conditions = ["هر حساب فقط یک‌بار می‌تونه از این کد استفاده کنه."];
+      const conditions = ["کد رو کپی کن و موقع پرداخت، تخفیفت رو بگیر."];
       if (coupon.minPurchaseAmount) conditions.push(`حداقل خرید: ${coupon.minPurchaseAmount.toLocaleString("fa-IR")} تومان.`);
       if (coupon.maxDiscountAmount) conditions.push(`سقف تخفیف: ${coupon.maxDiscountAmount.toLocaleString("fa-IR")} تومان.`);
-      if (coupon.products.length || coupon.categories.length) conditions.push("تخفیف فقط روی کالاهای همین پیشنهاد حساب می‌شه.");
       promotion = {
         id: String(modal._id), title: modal.title, body: modal.body,
         ctaLabel: modal.ctaLabel, ctaHref: modal.ctaHref, dismissLabel: modal.dismissLabel,
