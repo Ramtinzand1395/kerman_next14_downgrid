@@ -5,6 +5,7 @@ import Script from "next/script";
 import { ToastContainer } from "react-toastify";
 import AuthProvider from "../AuthProvider";
 import Navbar from "./(navbar)/Navbar";
+import WallArtCampaignBanner from "./components/WallArtCampaignBanner";
 import Footer from "./Footer";
 import { SITE_URL } from "@/lib/site";
 import type { Metadata } from "next";
@@ -72,6 +73,7 @@ export default function RootLayout({
         {/* Client-side wrappers (Auth, Navbar, Footer, Toast) are loaded dynamically */}
         <AuthProvider>
           <Navbar />
+          <WallArtCampaignBanner />
           <main id="content">{children}</main>
           {/* <SpeedInsights /> */}
           <Footer />
