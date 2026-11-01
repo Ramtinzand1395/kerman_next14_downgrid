@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import Coupon from "@/model/Loyalty Club/Coupon";
 import { fail, ok, parseBody, requireAdmin } from "@/lib/loyalty/api";
 import { couponUpdateSchema } from "@/validations/loyalty.validation";
+import PromotionModal from "@/model/PromotionModal";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -22,6 +23,11 @@ export async function PATCH(req: Request, ctx: Ctx) {
 
   const { data, error } = await parseBody(req, couponUpdateSchema);
   if (error) return error;
+
+  if (data!.perUserLimit !== undefined && data!.perUserLimit !== 1 &&
+    await PromotionModal.exists({ coupon: id, deletedAt: null })) {
+    return fail("این کد به یک مودال وصل است و باید برای هر کاربر فقط یک بار قابل استفاده باشد.", 422);
+  }
 
   const coupon = await Coupon.findByIdAndUpdate(
     id,

@@ -51,6 +51,7 @@ export const navItems: NavItem[] = [
   { label: "کاربران", href: "/dashboard/users", icon: Users },
   { label: "وبلاگ", href: "/dashboard/blogs", icon: Newspaper },
   { label: "باشگاه مشتریان", href: "/dashboard/loyalty", icon: Trophy },
+  { label: "پیام‌های پیشنهادی سایت", href: "/dashboard/promotion-modals", icon: Sparkles },
   { label: "نوبت‌ها", href: "/dashboard/appointments", icon: CalendarClock },
   { label: "تنظیمات ارسال", href: "/dashboard/shipping", icon: Truck },
   {
