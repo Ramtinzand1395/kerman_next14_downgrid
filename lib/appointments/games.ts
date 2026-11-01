@@ -40,6 +40,8 @@ export function installationCatalog(docs: GameCatalogDocument[], platforms: stri
     const platform = normalizeGamePlatform(doc.platform);
     if (!platforms.includes(platform)) continue;
     for (const item of doc.items || []) {
+      // Legacy imports can contain unnamed placeholder rows. They are not games.
+      if (!item || typeof item.name !== "string" || !item.name.trim()) continue;
       const game: InstallationGame = {
         platform, gameId: String(item._id), name: item.name,
         version: platform === "xbox" ? "Xbox" : platform.startsWith("ps5") ? "PS5" : "PS4",

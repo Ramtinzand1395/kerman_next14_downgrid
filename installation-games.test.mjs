@@ -196,3 +196,42 @@ test('Mongoose preserves game snapshots and legacy appointments can still valida
   await legacy.validate();
   assert.deepEqual(legacy.toObject().selectedGames,[]);
 });
+
+
+test('unnamed legacy placeholders never appear in the installation catalog or resolve as selections', () => {
+  const placeholderId = 'b'.repeat(24);
+  const valid = { _id: id4, name: 'Valid game without a cover', size: 0 };
+  const catalog = games.installationCatalog([{platform:'ps4',items:[
+    {_id:placeholderId,name:'',size:0},
+    {_id:'c'.repeat(24),name:' \t\n ',size:50},
+    {_id:'d'.repeat(24),size:10},
+    {_id:'e'.repeat(24),name:null,size:10},
+    {_id:'f'.repeat(24),name:123,size:10},
+    null,
+    valid,
+  ]}], ['ps4']);
+  assert.equal(catalog.length,1);
+  assert.equal(catalog[0].name,valid.name);
+  assert.equal(catalog[0].sizeGB,0);
+  assert.equal(catalog[0].imageUrl,'');
+  assert.throws(()=>games.resolveInstallationGames([{platform:'ps4',gameId:placeholderId}],catalog));
+});
+
+test('combined catalog pagination and search exclude blank imported rows before counting', async () => {
+  const route = loadModule('./app/api/profile/appointments/games/route.ts',{
+    ...routeDeps,
+    '@/model/GameList':{default:{find:()=>({select:()=>({lean:async()=>[
+      ...fixtures,
+      {platform:'ps4',items:[{_id:'b'.repeat(24),name:'',size:0},{_id:'c'.repeat(24),name:'   ',size:0}]},
+    ]})})}},
+  });
+  const url='https://example.test/api/profile/appointments/games?device=ps5&installationType=account&limit=1';
+  const first=await route.GET({url});
+  const second=await route.GET({url:url+'&page=2'});
+  assert.equal(first.status,200);
+  assert.equal(first.data.total,2);
+  assert.equal(first.data.pages,2);
+  assert.ok(first.data.games[0].name.trim());
+  assert.ok(second.data.games[0].name.trim());
+  assert.equal((await route.GET({url:url+'&search=Same'})).data.total,2);
+});
