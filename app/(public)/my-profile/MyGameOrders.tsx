@@ -1,5 +1,6 @@
 "use client";
 
+import { gameVersionLabel, gameSelectionKey } from "@/lib/appointments/games";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarClock, Gamepad2, MapPin, RefreshCw, Wrench } from "lucide-react";
@@ -26,6 +27,7 @@ const statusClass: Record<string, string> = {
 };
 
 const devices: Record<string, string> = {
+  xbox: "Xbox",
   ps5: "PlayStation 5",
   ps4: "PlayStation 4",
   "xbox-series": "Xbox Series",
@@ -164,6 +166,7 @@ export default function MyGameOrders() {
                   <p className="text-slate-600">دستگاه: <strong className="text-slate-900">{devices[item.device] || item.device}</strong></p>
                   {item.installationType && <p className="text-slate-600">نوع نصب: <strong className="text-slate-900">{item.installationType === "copy" ? "کپی‌خور" : "اکانتی / قانونی"}</strong></p>}
                   {item.repairIssue && <p className="text-slate-600">مشکل: <strong className="text-slate-900">{issues[item.repairIssue] || item.repairIssue}</strong></p>}
+{Boolean(item.selectedGames?.length) && <div className="mt-3 rounded-xl bg-blue-50 p-3 text-sm"><strong>بازی‌های انتخابی</strong><ul className="mt-2 space-y-2">{item.selectedGames?.map(game => <li key={gameSelectionKey(game)} dir="auto">{game.name} · {gameVersionLabel(game.platform)}</li>)}</ul></div>}
                   {item.description && <p className="rounded-xl bg-slate-50 p-3 leading-6 text-slate-600">{item.description}</p>}
                   {item.fulfillment === "courier" && item.courier?.addressSnapshot ? <p className="flex items-start gap-2 rounded-xl bg-cyan-50 p-3 text-xs leading-6 text-cyan-900"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /> {item.courier.addressSnapshot.city}، {item.courier.addressSnapshot.address}</p> : <p className="flex items-start gap-2 rounded-xl bg-blue-50 p-3 text-xs leading-6 text-blue-900"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /> خیابان ناصریه بین کوچه ۲ و ۴ نبش داروخانه مادر</p>}
                   {item.fulfillment === "courier" && item.courier && (

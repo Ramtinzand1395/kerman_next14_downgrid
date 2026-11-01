@@ -146,6 +146,7 @@ export type AppointmentItem = {
   trackingCode: string;
   serviceType: ServiceType;
   device: string;
+  selectedGames?: import("@/lib/appointments/games").AppointmentGame[];
   installationType?: InstallationType | null;
   repairIssue?: RepairIssue | null;
   description?: string;

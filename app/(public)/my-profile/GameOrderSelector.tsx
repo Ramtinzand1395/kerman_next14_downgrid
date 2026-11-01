@@ -13,7 +13,6 @@ import {
   Gamepad2,
   Loader2,
   MapPin,
-  MonitorCog,
   PackageOpen,
   RefreshCw,
   ShieldCheck,
@@ -36,8 +35,11 @@ import {
   type AppointmentWizardDraft,
 } from "@/lib/appointments/draft";
 import { profileRoute } from "@/lib/profileRoutes";
+import InstallationGames from "./InstallationGames";
+import ConsoleIcon from "./ConsoleIcon";
+import { requiresInstallationType, gameVersionLabel, gameSelectionKey, type AppointmentGame } from "@/lib/appointments/games";
 
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3 | 4 | 5;
 type Slot = { startsAt: string; endsAt: string; time: string; remaining: number; available: boolean };
 type CourierWindow = { start: string; end: string; remaining: number; available: boolean };
 type AddressItem = { _id: string; province: string; city: string; address: string; plaque?: string; unit?: string; postalCode?: string };
@@ -107,11 +109,10 @@ const deviceLabels: Record<string, string> = {
   ps4: "PlayStation 4",
   ps2: "PlayStation 2",
   ps1: "PlayStation 1",
+  xbox: "Xbox",
   "xbox-series": "Xbox Series",
   "xbox-one": "Xbox One",
 };
-
-const installationDeviceIds = new Set(["ps5", "ps4"]);
 
 const issues = [
   { value: "power", label: "روشن‌نشدن" },
@@ -183,6 +184,7 @@ export default function GameOrderSelector({
   const [serviceType, setServiceType] = useState<ServiceType | null>(null);
   const [device, setDevice] = useState("");
   const [installationType, setInstallationType] = useState<InstallationType | "">("");
+  const [selectedGames, setSelectedGames] = useState<AppointmentGame[]>([]);
   const [repairIssue, setRepairIssue] = useState<RepairIssue | "">("");
   const [fulfillment, setFulfillment] = useState<Fulfillment | null>(initialFulfillment);
   const [supportedDeviceIds, setSupportedDeviceIds] = useState<string[]>([]);
@@ -237,6 +239,7 @@ export default function GameOrderSelector({
     setDevice(draft.device);
     setInstallationType(draft.installationType);
     setRepairIssue(draft.repairIssue);
+    setSelectedGames(draft.selectedGames || []);
     setFulfillment(draft.fulfillment);
     setDescription(draft.description);
     setSelectedDate(draft.selectedDate);
@@ -486,11 +489,11 @@ export default function GameOrderSelector({
   const selectedAddress = addresses.find((item) => item._id === selectedAddressId);
 
   const installationTypeAvailable =
-    serviceType === "game_install" && installationDeviceIds.has(device);
+    serviceType === "game_install" && requiresInstallationType(device);
   const stageOneValid =
     Boolean(serviceType && device) &&
     (serviceType === "game_install"
-      ? installationTypeAvailable && Boolean(installationType)
+      ? (!installationTypeAvailable || Boolean(installationType))
       : Boolean(repairIssue));
   const stageThreeValid = customerName.trim().length >= 2 && /^09\d{9}$/.test(phone.trim());
   const scheduleValid = fulfillment === "in_store"
@@ -515,7 +518,7 @@ export default function GameOrderSelector({
 
   const advanceStep = () => {
     scrollAfterNextRef.current = true;
-    setStep((value) => Math.min(4, value + 1) as Step);
+    setStep((value) => Math.min(5, value === 1 && serviceType === "repair" ? 3 : value + 1) as Step);
   };
 
   const openAddressManagement = () => {
@@ -526,6 +529,7 @@ export default function GameOrderSelector({
       serviceType,
       device,
       installationType,
+      selectedGames,
       repairIssue,
       fulfillment,
       description,
@@ -546,7 +550,7 @@ export default function GameOrderSelector({
   };
 
   const submit = async () => {
-    if (submittingRef.current || !serviceType || !fulfillment || !scheduleValid || !stageThreeValid) return;
+    if (submittingRef.current || !serviceType || !fulfillment || !stageOneValid || (serviceType === "game_install" && !selectedGames.length) || !scheduleValid || !stageThreeValid) return;
     submittingRef.current = true;
     setSubmitting(true);
     setError("");
@@ -560,7 +564,8 @@ export default function GameOrderSelector({
           clientRequestKey: key,
           serviceType,
           device,
-          installationType: serviceType === "game_install" ? installationType : null,
+          installationType: installationTypeAvailable ? installationType : null,
+          selectedGames: serviceType === "game_install" ? selectedGames.map(({ gameId, platform }) => ({ gameId, platform })) : [],
           repairIssue: serviceType === "repair" ? repairIssue : null,
           description,
           customerName: customerName.trim(),
@@ -639,14 +644,15 @@ export default function GameOrderSelector({
           </div>
           <span className="rounded-2xl bg-white/10 px-4 py-2 text-xs font-bold">منطقه زمانی تهران</span>
         </div>
-        <ol className="mt-6 grid grid-cols-4 gap-2" aria-label="مراحل ثبت نوبت">
-          {["خدمت و دستگاه", "روش دریافت", "روز و ساعت", "تأیید و ثبت"].map((label, index) => {
-            const number = (index + 1) as Step;
+        <ol className={`mt-6 grid gap-2 ${serviceType === "repair" ? "grid-cols-4" : "grid-cols-5"}`} aria-label="مراحل ثبت نوبت">
+          {(serviceType === "repair"
+            ? [{ number: 1, label: "خدمت و دستگاه" }, { number: 3, label: "روش دریافت" }, { number: 4, label: "روز و ساعت" }, { number: 5, label: "تأیید و ثبت" }]
+            : ["خدمت و دستگاه", "انتخاب بازی", "روش دریافت", "روز و ساعت", "تأیید و ثبت"].map((label, index) => ({ number: index + 1, label }))).map(({ label, number }, index) => {
             return (
               <li key={label} className="min-w-0">
                 <div className={`h-1 rounded-full ${step >= number ? "bg-cyan-300" : "bg-white/20"}`} />
                 <p className={`mt-2 truncate text-[11px] sm:text-xs ${step === number ? "font-black text-white" : "text-blue-200"}`}>
-                  {fa(number)}. {label}
+                  {fa(index + 1)}. {label}
                 </p>
               </li>
             );
@@ -673,7 +679,7 @@ export default function GameOrderSelector({
                       {services.map((item) => {
                         const Icon = item.icon;
                         return (
-                          <button key={item.value} type="button" aria-pressed={serviceType === item.value} onClick={() => setServiceType(item.value)} className={choiceClass(serviceType === item.value)}>
+                          <button key={item.value} type="button" aria-pressed={serviceType === item.value} onClick={() => { setServiceType(item.value); if (serviceType !== item.value) setSelectedGames([]); }} className={choiceClass(serviceType === item.value)}>
                             <Icon className="h-7 w-7" />
                             <strong className="mt-3 block">{item.title}</strong>
                             <span className="mt-1 block text-xs leading-6 text-slate-500">{item.description}</span>
@@ -697,8 +703,8 @@ export default function GameOrderSelector({
                     ) : (
                       <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
                         {supportedDeviceIds.map((item) => (
-                          <button key={item} type="button" aria-pressed={device === item} onClick={() => setDevice(item)} className={choiceClass(device === item)}>
-                            <MonitorCog className="h-5 w-5" />
+                          <button key={item} type="button" aria-pressed={device === item} onClick={() => { if (device !== item) { setDevice(item); setInstallationType(""); setSelectedGames([]); } }} className={choiceClass(device === item)}>
+                            <ConsoleIcon device={item} />
                             <span className="mt-2 block text-sm font-bold">{deviceLabels[item] || item}</span>
                           </button>
                         ))}
@@ -711,11 +717,11 @@ export default function GameOrderSelector({
                     <fieldset>
                       <legend className="font-black text-slate-900">نوع نصب</legend>
                       <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                        <button type="button" aria-pressed={installationType === "account"} onClick={() => setInstallationType("account")} className={choiceClass(installationType === "account")}>
+                        <button type="button" aria-pressed={installationType === "account"} onClick={() => { if (installationType !== "account") { setInstallationType("account"); setSelectedGames([]); } }} className={choiceClass(installationType === "account")}>
                           <strong>اکانتی / قانونی</strong>
                           <span className="mt-1 block text-xs text-slate-500">هزینه اکانت جداگانه و پس از بررسی مشخص می‌شود.</span>
                         </button>
-                        <button type="button" aria-pressed={installationType === "copy"} onClick={() => setInstallationType("copy")} className={choiceClass(installationType === "copy")}>
+                        <button type="button" aria-pressed={installationType === "copy"} onClick={() => { if (installationType !== "copy") { setInstallationType("copy"); setSelectedGames([]); } }} className={choiceClass(installationType === "copy")}>
                           <strong>کپی‌خور</strong>
                           <span className="mt-1 block text-xs text-slate-500">فقط برای دستگاه و شرایط فنی واجد شرایط.</span>
                         </button>
@@ -748,7 +754,11 @@ export default function GameOrderSelector({
                 </div>
               )}
 
-              {step === 2 && (
+              {step === 2 && serviceType === "game_install" && (
+                <InstallationGames key={`${device}:${installationType}`} device={device} installationType={installationType} selected={selectedGames} onChange={setSelectedGames} />
+              )}
+
+              {step === 3 && (
                 <div>
                   <h2 className="text-xl font-black text-slate-950">چگونه می‌خواهید خدمات بگیرید؟</h2>
                   <p className="mt-1 text-sm leading-7 text-slate-500">روش دریافت، زمان‌بندی و مراحل بعدی را مشخص می‌کند.</p>
@@ -775,7 +785,7 @@ export default function GameOrderSelector({
                 </div>
               )}
 
-              {step === 3 && (
+              {step === 4 && (
                 <div>
                   <h2 className="text-xl font-black text-slate-950">{fulfillment === "courier" ? "آدرس و زمان دریافت دستگاه" : "روز و ساعت مراجعه"}</h2>
                   <p className="mt-1 text-sm leading-7 text-slate-500">{fulfillment === "courier" ? "آدرس، روز و بازه دریافت پیک را انتخاب کنید." : "روز و ساعت آزاد را از ظرفیت واقعی فروشگاه انتخاب کنید."}</p>
@@ -847,7 +857,7 @@ export default function GameOrderSelector({
                 </div>
               )}
 
-              {step === 4 && (
+              {step === 5 && (
                 <div className="space-y-6">
                   <div>
                     <h2 className="text-xl font-black text-slate-950">خلاصه و ثبت درخواست</h2>
@@ -898,9 +908,9 @@ export default function GameOrderSelector({
           </AnimatePresence>
 
           <div className="mt-7 hidden items-center justify-between border-t border-slate-100 pt-5 lg:flex">
-            <button type="button" disabled={step === 1} onClick={() => setStep((value) => Math.max(1, value - 1) as Step)} className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-slate-200 px-5 font-bold text-slate-700 disabled:opacity-40"><ChevronRight className="h-4 w-4" /> قبل</button>
-            {step < 4 ? (
-              <button type="button" disabled={step === 1 ? !stageOneValid || (repairIssue === "other" && !description.trim()) : step === 2 ? !fulfillment : !scheduleValid} onClick={advanceStep} className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-[#001A6E] px-7 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300">ادامه <ChevronLeft className="h-4 w-4" /></button>
+            <button type="button" disabled={step === 1} onClick={() => setStep((value) => Math.max(1, value === 3 && serviceType === "repair" ? 1 : value - 1) as Step)} className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-slate-200 px-5 font-bold text-slate-700 disabled:opacity-40"><ChevronRight className="h-4 w-4" /> قبل</button>
+            {step < 5 ? (
+              <button type="button" disabled={step === 1 ? !stageOneValid || (repairIssue === "other" && !description.trim()) : step === 2 ? !selectedGames.length : step === 3 ? !fulfillment : !scheduleValid} onClick={advanceStep} className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-[#001A6E] px-7 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300">ادامه <ChevronLeft className="h-4 w-4" /></button>
             ) : (
               <button type="button" disabled={!stageThreeValid || !scheduleValid || submitting} onClick={() => void submit()} className="inline-flex min-h-12 min-w-36 items-center justify-center gap-2 rounded-2xl bg-[#001A6E] px-7 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300">{submitting ? <ButtonLoading label="در حال ثبت…" /> : <><ShieldCheck className="h-5 w-5" /> ثبت نوبت</>}</button>
             )}
@@ -912,6 +922,7 @@ export default function GameOrderSelector({
           <dl className="mt-4 space-y-3 text-sm">
             <div className="flex justify-between gap-3"><dt className="text-slate-500">خدمت</dt><dd className="font-bold">{selectedService?.title || "انتخاب نشده"}</dd></div>
             <div className="flex justify-between gap-3"><dt className="text-slate-500">دستگاه</dt><dd className="font-bold">{device ? deviceLabels[device] || device : "انتخاب نشده"}</dd></div>
+            {serviceType === "game_install" && <div><dt className="text-slate-500">بازی‌های انتخابی ({fa(selectedGames.length)})</dt><dd className="mt-2 max-h-48 space-y-2 overflow-y-auto text-xs">{selectedGames.length ? selectedGames.map(game => <p key={gameSelectionKey(game)} dir="auto" className="rounded-lg bg-blue-50 p-2">{game.name} · {gameVersionLabel(game.platform)}</p>) : "هنوز انتخاب نشده"}</dd></div>}
             <div className="flex justify-between gap-3"><dt className="text-slate-500">روش دریافت</dt><dd className="font-bold">{fulfillment === "in_store" ? "مراجعه حضوری" : fulfillment === "courier" ? "ارسال با پیک" : "انتخاب نشده"}</dd></div>
             {fulfillment === "courier" && <div className="flex justify-between gap-3"><dt className="text-slate-500">آدرس</dt><dd className="max-w-44 text-left text-xs font-bold leading-6">{selectedAddress ? `${selectedAddress.city}، ${selectedAddress.address}` : "انتخاب نشده"}</dd></div>}
             <div className="flex justify-between gap-3"><dt className="text-slate-500">روز</dt><dd className="text-left font-bold">{selectedDate ? persianDate(`${selectedDate}T12:00:00+03:30`, { weekday: "long", month: "long", day: "numeric" }) : "انتخاب نشده"}</dd></div>
@@ -938,9 +949,9 @@ export default function GameOrderSelector({
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-screen-md items-center gap-2">
-          <button type="button" disabled={step === 1} onClick={() => setStep((value) => Math.max(1, value - 1) as Step)} aria-label="مرحله قبل" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200 text-slate-700 disabled:opacity-40"><ChevronRight className="h-5 w-5" /></button>
-          {step < 4 ? (
-            <button type="button" disabled={step === 1 ? !stageOneValid || (repairIssue === "other" && !description.trim()) : step === 2 ? !fulfillment : !scheduleValid} onClick={advanceStep} className="h-12 flex-1 rounded-2xl bg-[#001A6E] font-black text-white disabled:bg-slate-300">ادامه</button>
+          <button type="button" disabled={step === 1} onClick={() => setStep((value) => Math.max(1, value === 3 && serviceType === "repair" ? 1 : value - 1) as Step)} aria-label="مرحله قبل" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200 text-slate-700 disabled:opacity-40"><ChevronRight className="h-5 w-5" /></button>
+          {step < 5 ? (
+            <button type="button" disabled={step === 1 ? !stageOneValid || (repairIssue === "other" && !description.trim()) : step === 2 ? !selectedGames.length : step === 3 ? !fulfillment : !scheduleValid} onClick={advanceStep} className="h-12 flex-1 rounded-2xl bg-[#001A6E] font-black text-white disabled:bg-slate-300">ادامه</button>
           ) : (
             <button type="button" disabled={!stageThreeValid || !scheduleValid || submitting} onClick={() => void submit()} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#001A6E] font-black text-white disabled:bg-slate-300">{submitting ? <ButtonLoading label="در حال ثبت…" /> : "ثبت نوبت"}</button>
           )}

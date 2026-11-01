@@ -1,5 +1,6 @@
 "use client";
 
+import { gameVersionLabel, gameSelectionKey } from "@/lib/appointments/games";
 import { useEffect } from "react";
 import {
   Check,
@@ -108,6 +109,7 @@ export default function AppointmentDetailsDrawer({ item, onClose }: Props) {
                 ) : null}
               </div>
             </div>
+{Boolean(item.selectedGames?.length) && <div className="mt-3 rounded-xl bg-blue-50 p-3 text-sm"><strong>بازی‌های انتخابی</strong><ul className="mt-2 space-y-2">{item.selectedGames?.map(game => <li key={gameSelectionKey(game)} dir="auto">{game.name} · {gameVersionLabel(game.platform)}</li>)}</ul></div>}
             {item.description ? (
               <p className="mt-3 rounded-xl bg-slate-50 p-3 text-sm leading-6 text-slate-600">
                 {item.description}

@@ -1,4 +1,6 @@
 import crypto from "crypto";
+import GameList from "@/model/GameList";
+import { installationGamePlatforms, requiresInstallationType, validateGameSelections, type GameSelection } from "./games";
 import Appointment from "@/model/Appointment";
 import AppointmentReservation from "@/model/AppointmentReservation";
 import Address from "@/model/Address";
@@ -34,6 +36,7 @@ export type CreateAppointmentInput =
       clientRequestKey: string;
       serviceType: ServiceType;
       device: string;
+      selectedGames?: GameSelection[];
       installationType?: "account" | "copy" | null;
       repairIssue?: "power" | "display" | "controller" | "sound" | "overheating" | "other" | null;
       description?: string;
@@ -47,6 +50,7 @@ export type CreateAppointmentInput =
       clientRequestKey: string;
       serviceType: ServiceType;
       device: string;
+      selectedGames?: GameSelection[];
       installationType?: "account" | "copy" | null;
       repairIssue?: "power" | "display" | "controller" | "sound" | "overheating" | "other" | null;
       description?: string;
@@ -129,14 +133,28 @@ export async function createAppointment(userId: string, input: CreateAppointment
   if (!supportedDevices.includes(input.device)) {
     return { error: "دستگاه انتخاب‌شده پشتیبانی نمی‌شود.", status: 422 } as const;
   }
-  if (input.serviceType === "game_install" && !input.installationType) {
+  if (input.serviceType === "game_install" && requiresInstallationType(input.device) && !input.installationType) {
     return { error: "نوع نصب را انتخاب کنید.", status: 422 } as const;
   }
-  if (input.serviceType === "repair" && input.installationType) {
+  if ((input.serviceType === "repair" || !requiresInstallationType(input.device)) && input.installationType) {
     return { error: "نوع نصب فقط برای PlayStation 4 و PlayStation 5 قابل انتخاب است.", status: 422 } as const;
   }
   if (input.serviceType === "repair" && !input.repairIssue) {
     return { error: "نوع مشکل را انتخاب کنید.", status: 422 } as const;
+  }
+
+  let selectedGames: import("./games").AppointmentGame[] = [];
+  if (input.serviceType === "game_install") {
+    const platforms = installationGamePlatforms(input.device, input.installationType);
+    const docs = await GameList.find({ platform: { $in: platforms } }).select("platform items._id items.name").lean();
+    const catalog = docs.flatMap(doc => doc.items.map((item: { _id: unknown; name: string }) => ({
+      gameId: String(item._id), platform: doc.platform as string, name: item.name,
+    })));
+    const validated = validateGameSelections(input.selectedGames || [], platforms, catalog);
+    if (!validated) return { error: "بازی‌های انتخاب‌شده معتبر نیستند؛ فهرست را بررسی و حداقل یک بازی انتخاب کنید.", status: 422 } as const;
+    selectedGames = validated;
+  } else if (input.selectedGames?.length) {
+    return { error: "انتخاب بازی فقط برای نصب بازی مجاز است.", status: 422 } as const;
   }
 
   let startsAt: Date;
@@ -246,6 +264,7 @@ export async function createAppointment(userId: string, input: CreateAppointment
     serviceType: input.serviceType,
     device: input.device,
     installationType: input.installationType ?? null,
+    selectedGames: selectedGames.map(({ gameId, platform }) => ({ gameId, platform })).sort((a, b) => `${a.platform}:${a.gameId}`.localeCompare(`${b.platform}:${b.gameId}`)),
     repairIssue: input.repairIssue ?? null,
     description: input.description ?? "",
     customerName: input.customerName,
@@ -303,6 +322,7 @@ export async function createAppointment(userId: string, input: CreateAppointment
         serviceType: input.serviceType,
         device: input.device,
         installationType: input.serviceType === "game_install" ? input.installationType : null,
+        selectedGames,
         repairIssue: input.serviceType === "repair" ? input.repairIssue : null,
         description: input.description ?? "",
         customerName: input.customerName,

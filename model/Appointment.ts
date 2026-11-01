@@ -70,6 +70,11 @@ const AppointmentSchema = new Schema(
     serviceType: { type: String, enum: ["game_install", "repair"], required: true },
     device: { type: String, required: true, maxlength: 60 },
     installationType: { type: String, enum: ["account", "copy", "", null], default: null },
+    selectedGames: { type: [new Schema({
+      gameId: { type: Schema.Types.ObjectId, required: true },
+      platform: { type: String, enum: ["ps4", "ps5", "copy", "ps5Copy", "xbox"], required: true },
+      name: { type: String, required: true, maxlength: 250 },
+    }, { _id: false })], default: [] },
     repairIssue: { type: String, enum: ["power", "display", "controller", "sound", "overheating", "other", "", null], default: null },
     description: { type: String, trim: true, maxlength: 1000, default: "" },
     customerName: { type: String, trim: true, minlength: 2, maxlength: 100, required: true },
