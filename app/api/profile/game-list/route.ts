@@ -10,6 +10,9 @@ type GameListDoc = {
     _id: string;
     name: string;
     size?: number;
+    imageUrl?: string;
+    imageAlt?: string;
+    imagePublicId?: string;
   }[];
 };
 

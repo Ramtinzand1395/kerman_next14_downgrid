@@ -198,6 +198,9 @@ export interface GameItem {
   _id: string;
 
   name: string;
+  imageUrl?: string;
+  imageAlt?: string;
+  imagePublicId?: string;
 
   size?: number;
 

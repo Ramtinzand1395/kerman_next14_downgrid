@@ -7,6 +7,9 @@ const gameItemSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    imageUrl: { type: String, trim: true, default: "" },
+    imageAlt: { type: String, trim: true, default: "" },
+    imagePublicId: { type: String, trim: true, default: "" },
 
     size: {
       type: Number,
