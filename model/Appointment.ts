@@ -61,6 +61,20 @@ const CourierSchema = new Schema(
   { _id: false },
 );
 
+// Keep the requested versions and sizes even if the catalog changes later.
+const InstallationGameSnapshotSchema = new Schema(
+  {
+    gameId: { type: String, required: true },
+    platform: { type: String, required: true, enum: ["ps4", "ps5", "copy", "ps5Copy", "xbox"] },
+    name: { type: String, required: true },
+    version: { type: String, required: true, enum: ["PS4", "PS5", "Xbox"] },
+    sizeGB: { type: Number, default: null, min: 0 },
+    imageUrl: { type: String, default: "" },
+    imageAlt: { type: String, default: "" },
+  },
+  { _id: false },
+);
+
 const AppointmentSchema = new Schema(
   {
     user: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
@@ -70,6 +84,8 @@ const AppointmentSchema = new Schema(
     serviceType: { type: String, enum: ["game_install", "repair"], required: true },
     device: { type: String, required: true, maxlength: 60 },
     installationType: { type: String, enum: ["account", "copy", "", null], default: null },
+    selectedGames: { type: [InstallationGameSnapshotSchema], default: [] },
+    totalSizeGB: { type: Number, default: 0, min: 0 },
     repairIssue: { type: String, enum: ["power", "display", "controller", "sound", "overheating", "other", "", null], default: null },
     description: { type: String, trim: true, maxlength: 1000, default: "" },
     customerName: { type: String, trim: true, minlength: 2, maxlength: 100, required: true },

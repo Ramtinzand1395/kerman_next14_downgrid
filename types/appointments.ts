@@ -1,3 +1,5 @@
+import type { InstallationGame } from "@/lib/appointments/games";
+
 export type ServiceType = "game_install" | "repair";
 export type Fulfillment = "in_store" | "courier";
 
@@ -147,6 +149,8 @@ export type AppointmentItem = {
   serviceType: ServiceType;
   device: string;
   installationType?: InstallationType | null;
+  selectedGames?: InstallationGame[];
+  totalSizeGB?: number;
   repairIssue?: RepairIssue | null;
   description?: string;
   customerName: string;

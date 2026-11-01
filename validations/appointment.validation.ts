@@ -18,6 +18,10 @@ const baseAppointmentSchema = z.object({
   serviceType: z.enum(["game_install", "repair"]),
   device: z.string().trim().min(2).max(60),
   installationType: z.enum(["account", "copy"]).nullable().optional(),
+  selectedGames: z.array(z.object({
+    platform: z.enum(["ps4", "ps5", "copy", "ps5Copy", "xbox"]),
+    gameId: z.string().regex(objectIdRegex, "شناسه بازی نامعتبر است"),
+  })).max(100).default([]),
   repairIssue: z.enum(["power", "display", "controller", "sound", "overheating", "other"]).nullable().optional(),
   description: z.string().trim().max(1000).default(""),
   customerName: z.string().trim().min(2).max(100),

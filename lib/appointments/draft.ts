@@ -1,3 +1,4 @@
+import type { InstallationGame } from "./games";
 import type {
   Fulfillment,
   InstallationType,
@@ -5,18 +6,19 @@ import type {
   ServiceType,
 } from "@/types/appointments";
 
-export const APPOINTMENT_DRAFT_KEY = "appointment-wizard-draft:v1";
-export const APPOINTMENT_DRAFT_VERSION = 1;
+export const APPOINTMENT_DRAFT_KEY = "appointment-wizard-draft:v2";
+export const APPOINTMENT_DRAFT_VERSION = 2;
 const MAX_DRAFT_AGE_MS = 2 * 60 * 60 * 1000;
 
 export type AppointmentWizardDraft = {
-  version: 1;
+  version: 2;
   savedAt: number;
   returnTo: string;
-  step: 1 | 2 | 3 | 4;
+  step: 1 | 2 | 3 | 4 | 5;
   serviceType: ServiceType | null;
   device: string;
   installationType: InstallationType | "";
+  selectedGames: InstallationGame[];
   repairIssue: RepairIssue | "";
   fulfillment: Fulfillment | null;
   description: string;
@@ -54,7 +56,7 @@ export function readAppointmentDraft(storage: Storage): AppointmentWizardDraft |
       typeof value.savedAt === "number" &&
       Date.now() - value.savedAt <= MAX_DRAFT_AGE_MS &&
       value.fulfillment === "courier" &&
-      [1, 2, 3, 4].includes(Number(value.step)) &&
+      [1, 2, 3, 4, 5].includes(Number(value.step)) &&
       value.returnTo === "/my-profile?step=6&fulfillment=courier&resume=address";
     if (!valid) throw new Error("INVALID_DRAFT");
     return value as AppointmentWizardDraft;

@@ -10,6 +10,7 @@ import {
   Truck,
   X,
 } from "lucide-react";
+import InstallationGameSummary from "@/app/components/games/InstallationGameSummary";
 import type { AppointmentItem } from "@/types/appointments";
 import {
   courierLabel,
@@ -108,12 +109,15 @@ export default function AppointmentDetailsDrawer({ item, onClose }: Props) {
                 ) : null}
               </div>
             </div>
+            {item.installationType && <p className="mt-3 text-sm text-slate-600">نوع نصب: <strong>{item.installationType === "copy" ? "کپی‌خور" : "اکانتی / قانونی"}</strong></p>}
             {item.description ? (
               <p className="mt-3 rounded-xl bg-slate-50 p-3 text-sm leading-6 text-slate-600">
                 {item.description}
               </p>
             ) : null}
           </section>
+
+          <InstallationGameSummary games={item.selectedGames} />
 
           <section className="rounded-2xl border border-slate-200 p-4">
             <h3 className="font-black text-slate-900">مشتری</h3>

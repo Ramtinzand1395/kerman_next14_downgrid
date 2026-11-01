@@ -3,6 +3,18 @@ import Appointment from "@/model/Appointment";
 import AppointmentReservation from "@/model/AppointmentReservation";
 import Address from "@/model/Address";
 import User from "@/model/User";
+import GameList from "@/model/GameList";
+import {
+  catalogPlatformAliases,
+  gameKey,
+  installationCatalog,
+  installationPlatforms,
+  installationSize,
+  resolveInstallationGames,
+  type GameCatalogDocument,
+  type InstallationGameRef,
+  type InstallationGame,
+} from "./games";
 import { notifyAdmins, notifyUser } from "@/lib/notifications/service";
 import {
   canonicalPayloadHash,
@@ -35,6 +47,7 @@ export type CreateAppointmentInput =
       serviceType: ServiceType;
       device: string;
       installationType?: "account" | "copy" | null;
+      selectedGames?: InstallationGameRef[];
       repairIssue?: "power" | "display" | "controller" | "sound" | "overheating" | "other" | null;
       description?: string;
       customerName: string;
@@ -48,6 +61,7 @@ export type CreateAppointmentInput =
       serviceType: ServiceType;
       device: string;
       installationType?: "account" | "copy" | null;
+      selectedGames?: InstallationGameRef[];
       repairIssue?: "power" | "display" | "controller" | "sound" | "overheating" | "other" | null;
       description?: string;
       customerName: string;
@@ -129,15 +143,20 @@ export async function createAppointment(userId: string, input: CreateAppointment
   if (!supportedDevices.includes(input.device)) {
     return { error: "دستگاه انتخاب‌شده پشتیبانی نمی‌شود.", status: 422 } as const;
   }
-  if (input.serviceType === "game_install" && !input.installationType) {
+  if (input.serviceType === "game_install" && input.device !== "xbox" && !input.installationType) {
     return { error: "نوع نصب را انتخاب کنید.", status: 422 } as const;
   }
-  if (input.serviceType === "repair" && input.installationType) {
+  if ((input.serviceType === "repair" || input.device === "xbox") && input.installationType) {
     return { error: "نوع نصب فقط برای PlayStation 4 و PlayStation 5 قابل انتخاب است.", status: 422 } as const;
   }
   if (input.serviceType === "repair" && !input.repairIssue) {
     return { error: "نوع مشکل را انتخاب کنید.", status: 422 } as const;
   }
+
+  if (input.serviceType === "repair" && input.selectedGames?.length) {
+    return { error: "انتخاب بازی فقط برای نصب بازی مجاز است.", status: 422 } as const;
+  }
+  const gameRefs = (input.selectedGames || []).map(({ platform, gameId }) => ({ platform, gameId })).sort((a, b) => gameKey(a).localeCompare(gameKey(b)));
 
   let startsAt: Date;
   let endsAt: Date;
@@ -246,6 +265,7 @@ export async function createAppointment(userId: string, input: CreateAppointment
     serviceType: input.serviceType,
     device: input.device,
     installationType: input.installationType ?? null,
+    selectedGames: gameRefs,
     repairIssue: input.repairIssue ?? null,
     description: input.description ?? "",
     customerName: input.customerName,
@@ -274,6 +294,18 @@ export async function createAppointment(userId: string, input: CreateAppointment
       return { appointment: publicAppointment(appointment.toObject()), reused: true } as const;
     }
   } else {
+    let selectedGames: InstallationGame[] = [];
+    if (input.serviceType === "game_install") {
+      const platforms = installationPlatforms(input.device, input.installationType);
+      if (!platforms.length) return { error: "دستگاه یا نوع نصب نامعتبر است.", status: 422 } as const;
+      const docs = await GameList.find({ platform: { $in: catalogPlatformAliases(platforms) } })
+        .select("platform items._id items.name items.size items.imageUrl items.imageAlt").lean() as GameCatalogDocument[];
+      try {
+        selectedGames = resolveInstallationGames(gameRefs, installationCatalog(docs, platforms));
+      } catch (error) {
+        return { error: (error as Error).message, status: 422 } as const;
+      }
+    }
     const activeCount = await Appointment.countDocuments({
       user: userId,
       status: { $in: ["pending", "confirmed"] },
@@ -303,6 +335,8 @@ export async function createAppointment(userId: string, input: CreateAppointment
         serviceType: input.serviceType,
         device: input.device,
         installationType: input.serviceType === "game_install" ? input.installationType : null,
+        selectedGames,
+        totalSizeGB: installationSize(selectedGames).totalSizeGB,
         repairIssue: input.serviceType === "repair" ? input.repairIssue : null,
         description: input.description ?? "",
         customerName: input.customerName,

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarClock, Gamepad2, MapPin, RefreshCw, Wrench } from "lucide-react";
+import InstallationGameSummary from "@/app/components/games/InstallationGameSummary";
 import type { AppointmentItem } from "@/types/appointments";
 import { ButtonLoading, Skeleton } from "@/app/components/loading/LoadingSystem";
 
@@ -26,6 +27,7 @@ const statusClass: Record<string, string> = {
 };
 
 const devices: Record<string, string> = {
+  xbox: "Xbox",
   ps5: "PlayStation 5",
   ps4: "PlayStation 4",
   "xbox-series": "Xbox Series",
@@ -163,6 +165,7 @@ export default function MyGameOrders() {
                   <p className="flex items-start gap-2 text-slate-700"><CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-[#001A6E]" /><strong>{dateTime(item.startsAt)}</strong></p>
                   <p className="text-slate-600">دستگاه: <strong className="text-slate-900">{devices[item.device] || item.device}</strong></p>
                   {item.installationType && <p className="text-slate-600">نوع نصب: <strong className="text-slate-900">{item.installationType === "copy" ? "کپی‌خور" : "اکانتی / قانونی"}</strong></p>}
+                  <InstallationGameSummary games={item.selectedGames} />
                   {item.repairIssue && <p className="text-slate-600">مشکل: <strong className="text-slate-900">{issues[item.repairIssue] || item.repairIssue}</strong></p>}
                   {item.description && <p className="rounded-xl bg-slate-50 p-3 leading-6 text-slate-600">{item.description}</p>}
                   {item.fulfillment === "courier" && item.courier?.addressSnapshot ? <p className="flex items-start gap-2 rounded-xl bg-cyan-50 p-3 text-xs leading-6 text-cyan-900"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /> {item.courier.addressSnapshot.city}، {item.courier.addressSnapshot.address}</p> : <p className="flex items-start gap-2 rounded-xl bg-blue-50 p-3 text-xs leading-6 text-blue-900"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /> خیابان ناصریه بین کوچه ۲ و ۴ نبش داروخانه مادر</p>}
