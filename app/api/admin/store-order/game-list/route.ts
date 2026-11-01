@@ -1,354 +1,89 @@
 import { NextRequest, NextResponse } from "next/server";
-
-import GameList from "@/model/GameList";
-
-import dbConnect from "@/lib/mongodb";
-
 import { getServerSession } from "next-auth";
-
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
+import GameList from "@/model/GameList";
+import dbConnect from "@/lib/mongodb";
+import { gameInput, gameItemId, gamePlatform } from "@/lib/game-list-validation";
 
-const normalizePlatform = (value?: string | null) => {
-  if (!value) return "";
-
-  const map: Record<string, string> = {
-    ps5: "ps5",
-
-    ps5copy: "ps5Copy",
-
-    ps5Copy: "ps5Copy",
-
-    ps4: "ps4",
-
-    xbox: "xbox",
-
-    copy: "copy",
-  };
-
-  return map[value.trim()] || value.trim();
-};
-
-async function checkAuth() {
+async function authorized() {
   const session = await getServerSession(authOptions);
-
-  if (!session?.user) return false;
-
-  return ["admin", "superadmin"].includes(session.user.role);
+  return Boolean(session?.user && ["admin", "superadmin"].includes(session.user.role));
 }
-
-// =========================
-// GET
-// =========================
+const forbidden = () => NextResponse.json({ message: "دسترسی غیرمجاز" }, { status: 403 });
+const invalid = (message = "اطلاعات بازی معتبر نیست") => NextResponse.json({ message }, { status: 400 });
 
 export async function GET(req: NextRequest) {
+  if (!(await authorized())) return forbidden();
+  const params = req.nextUrl.searchParams;
+  const platform = gamePlatform.safeParse(params.get("platform"));
+  if (!platform.success) return invalid("پلتفرم معتبر انتخاب کنید");
+  const page = Number(params.get("page") || 1);
+  const limit = Number(params.get("limit") || 20);
+  if (!Number.isSafeInteger(page) || page < 1 || !Number.isSafeInteger(limit) || limit < 1 || limit > 5000) return invalid();
   try {
     await dbConnect();
-
-    const { searchParams } = new URL(req.url);
-
-    const platform = normalizePlatform(searchParams.get("platform"));
-
-    const search = searchParams.get("search")?.trim() || "";
-
-    const page = Math.max(Number(searchParams.get("page")) || 1, 1);
-
-    const limit = Math.max(Number(searchParams.get("limit")) || 20, 1);
-
-    if (!platform) {
-      return NextResponse.json(
-        {
-          message: "platform required",
-        },
-        {
-          status: 400,
-        },
-      );
-    }
-
-    const data = await GameList.findOne({
-      platform,
-    }).lean();
-
-    if (!data) {
-      return NextResponse.json({
-        success: true,
-
-        gameList: {
-          platform,
-          items: [],
-        },
-
-        pagination: {
-          page,
-
-          limit,
-
-          totalItems: 0,
-
-          totalPages: 0,
-        },
-      });
-    }
-
-    let items: any[] = data.items || [];
-
-    if (search) {
-      items = items.filter((item) =>
-        item.name.toLowerCase().includes(search.toLowerCase()),
-      );
-    }
-
-    const totalItems = items.length;
-
-    const totalPages = Math.ceil(totalItems / limit);
-
-    const result = items.slice(
-      (page - 1) * limit,
-
-      page * limit,
-    );
-
-    return NextResponse.json({
-      success: true,
-
-      gameList: {
-        platform: data.platform,
-
-        items: result,
-      },
-
-      pagination: {
-        page,
-
-        limit,
-
-        totalItems,
-
-        totalPages,
-      },
-    });
+    const data = await GameList.findOne({ platform: platform.data }).lean();
+    const search = (params.get("search") || "").trim().toLowerCase();
+    const items = (data?.items || []).filter((item: { name: string }) => !search || item.name.toLowerCase().includes(search));
+    return NextResponse.json({ success: true, gameList: { platform: platform.data, items: items.slice((page - 1) * limit, page * limit) }, pagination: { page, limit, totalItems: items.length, totalPages: Math.ceil(items.length / limit) } });
   } catch (error) {
-    console.log(error);
-
-    return NextResponse.json(
-      {
-        message: "فهرست بازی‌ها دریافت نشد؛ دوباره تلاش کنید.",
-      },
-      {
-        status: 500,
-      },
-    );
+    console.error("Game list read failed", error);
+    return NextResponse.json({ message: "فهرست بازی‌ها دریافت نشد" }, { status: 500 });
   }
 }
-
-// =========================
-// POST
-// =========================
 
 export async function POST(req: NextRequest) {
-  if (!(await checkAuth())) {
-    return NextResponse.json(
-      {
-        message: "دسترسی غیرمجاز",
-      },
-      {
-        status: 403,
-      },
-    );
-  }
-
+  if (!(await authorized())) return forbidden();
+  const body = await req.json().catch(() => null);
+  const parsed = gameInput.safeParse(body);
+  if (!parsed.success) return invalid(parsed.error.issues[0]?.message);
+  const { platform, ...item } = parsed.data;
+  if (!item.imageUrl && (item.imageAlt || item.imagePublicId)) return invalid("ابتدا آدرس کاور را وارد کنید");
   try {
     await dbConnect();
-
-    const body = await req.json();
-
-    const platform = normalizePlatform(body.platform);
-
-    if (!platform || !body.name) {
-      return NextResponse.json(
-        {
-          message: "اطلاعات بازی کامل نیست؛ نام و پلتفرم را بررسی کنید.",
-        },
-        {
-          status: 400,
-        },
-      );
-    }
-
-    const item = {
-      name: body.name.trim(),
-
-      size: body.size ? Number(body.size) : null,
-
-      price: body.price ? Number(body.price) : null,
-
-      storage: body.storage || null,
-    };
-
-    const updated = await GameList.findOneAndUpdate(
-      {
-        platform,
-      },
-
-      {
-        $push: {
-          items: item,
-        },
-      },
-
-      {
-        upsert: true,
-
-        returnDocument: "after",
-      },
-    );
-
-    return NextResponse.json({
-      success: true,
-
-      message: "بازی اضافه شد",
-
-      item: updated.items.at(-1),
-    });
+    const updated = await GameList.findOneAndUpdate({ platform }, { $push: { items: item } }, { upsert: true, returnDocument: "after", runValidators: true });
+    return NextResponse.json({ success: true, message: "بازی اضافه شد", item: updated.items.at(-1) }, { status: 201 });
   } catch (error) {
-    console.log(error);
-
-    return NextResponse.json(
-      {
-        message: "بازی ذخیره نشد؛ دوباره تلاش کنید.",
-      },
-      {
-        status: 500,
-      },
-    );
+    console.error("Game creation failed", error);
+    return NextResponse.json({ message: "بازی ذخیره نشد" }, { status: 500 });
   }
 }
-
-// =========================
-// PUT
-// =========================
 
 export async function PUT(req: NextRequest) {
-  if (!(await checkAuth())) {
-    return NextResponse.json(
-      {
-        message: "دسترسی غیرمجاز",
-      },
-      {
-        status: 403,
-      },
-    );
-  }
-
+  if (!(await authorized())) return forbidden();
+  const body = await req.json().catch(() => null);
+  const parsed = gameInput.safeParse(body);
+  const id = gameItemId.safeParse(body?.itemId);
+  if (!parsed.success) return invalid(parsed.error.issues[0]?.message);
+  if (!id.success) return invalid("شناسه بازی معتبر نیست");
+  const { platform, ...item } = parsed.data;
+  if (item.imageUrl === "") { item.imageAlt = ""; item.imagePublicId = ""; }
+  const fields = Object.fromEntries(Object.entries(item).filter(([, value]) => value !== undefined).map(([key, value]) => [`items.$.${key}`, value]));
   try {
     await dbConnect();
-
-    const body = await req.json();
-
-    const updated = await GameList.findOneAndUpdate(
-      {
-        platform: normalizePlatform(body.platform),
-
-        "items._id": body.itemId,
-      },
-
-      {
-        $set: {
-          "items.$.name": body.name.trim(),
-
-          "items.$.size": body.size ? Number(body.size) : null,
-
-          "items.$.price": body.price ? Number(body.price) : null,
-
-          "items.$.storage": body.storage || null,
-        },
-      },
-
-      {
-        returnDocument: "after",
-      },
-    );
-
-    if (!updated) {
-      return NextResponse.json(
-        {
-          message: "بازی پیدا نشد",
-        },
-        {
-          status: 404,
-        },
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-
-      message: "ویرایش شد",
-    });
+    const updated = await GameList.findOneAndUpdate({ platform, "items._id": id.data }, { $set: fields }, { returnDocument: "after", runValidators: true });
+    if (!updated) return NextResponse.json({ message: "بازی پیدا نشد" }, { status: 404 });
+    return NextResponse.json({ success: true, message: "ویرایش شد", item: updated.items.id(id.data) });
   } catch (error) {
-    console.log(error);
-
-    return NextResponse.json(
-      {
-        message: "تغییرات بازی ذخیره نشد؛ دوباره تلاش کنید.",
-      },
-      {
-        status: 500,
-      },
-    );
+    console.error("Game update failed", error);
+    return NextResponse.json({ message: "تغییرات بازی ذخیره نشد" }, { status: 500 });
   }
 }
 
-// =========================
-// DELETE
-// =========================
-
 export async function DELETE(req: NextRequest) {
-  if (!(await checkAuth())) {
-    return NextResponse.json(
-      {
-        message: "دسترسی غیرمجاز",
-      },
-      {
-        status: 403,
-      },
-    );
-  }
-
+  if (!(await authorized())) return forbidden();
+  const body = await req.json().catch(() => null);
+  const platform = gamePlatform.safeParse(body?.platform);
+  const id = gameItemId.safeParse(body?.itemId);
+  if (!platform.success || !id.success) return invalid();
   try {
     await dbConnect();
-
-    const body = await req.json();
-
-    await GameList.findOneAndUpdate(
-      {
-        platform: normalizePlatform(body.platform),
-      },
-
-      {
-        $pull: {
-          items: {
-            _id: body.itemId,
-          },
-        },
-      },
-    );
-
-    return NextResponse.json({
-      success: true,
-
-      message: "حذف شد",
-    });
+    const result = await GameList.updateOne({ platform: platform.data, "items._id": id.data }, { $pull: { items: { _id: id.data } } });
+    if (!result.modifiedCount) return NextResponse.json({ message: "بازی پیدا نشد" }, { status: 404 });
+    // Covers may be shared between platforms. Removing a record never destroys the asset.
+    return NextResponse.json({ success: true, message: "حذف شد" });
   } catch (error) {
-    console.log(error);
-
-    return NextResponse.json(
-      {
-        message: "بازی حذف نشد؛ دوباره تلاش کنید.",
-      },
-      {
-        status: 500,
-      },
-    );
+    console.error("Game deletion failed", error);
+    return NextResponse.json({ message: "بازی حذف نشد" }, { status: 500 });
   }
 }

@@ -5,6 +5,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
 
 import { GameItem } from "@/types";
+import GameCover from "@/app/components/games/GameCover";
 
 interface Props {
   title: string;
@@ -200,7 +201,7 @@ font-bold
 text-gray-800
 "
                   >
-                    {game.name}
+                    <span className="flex min-w-52 items-center gap-3"><GameCover game={game} /><span dir="auto">{game.name || "بدون نام"}</span></span>
                   </td>
 
                   <td

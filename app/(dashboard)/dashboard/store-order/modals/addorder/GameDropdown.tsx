@@ -1,3 +1,4 @@
+import GameCover from "@/app/components/games/GameCover";
 import { GameItem, storeOrder } from "@/types";
 import { useEffect, useMemo, useState } from "react";
 
@@ -143,9 +144,10 @@ const GameDropdown: React.FC<GameDropdownProps> = ({
 
                 setSearch("");
               }}
-              className="w-full px-3 py-2 text-right hover:bg-slate-50"
+              className="flex w-full items-center gap-2 px-3 py-2 text-right hover:bg-slate-50"
             >
-              {game.name}
+              <GameCover game={game} />
+              <span dir="auto">{game.name}</span>
               <span className="mr-2 text-xs text-gray-500">
                 ({game.size} GB)
               </span>
