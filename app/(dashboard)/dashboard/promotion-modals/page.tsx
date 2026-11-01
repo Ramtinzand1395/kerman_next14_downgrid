@@ -92,10 +92,9 @@ export default function PromotionModalsPage() {
     if (!/^\/(?!\/)/.test(form.ctaHref) || /[\\\u0000-\u0020]/.test(form.ctaHref)) {
       toast.error("آدرس دکمه باید یک مسیر داخلی سایت باشد."); return;
     }
-    const conditions = ["هر حساب فقط یک‌بار می‌تونه از این کد استفاده کنه."];
+    const conditions = ["کد رو کپی کن و موقع پرداخت، تخفیفت رو بگیر."];
     if (selectedCoupon.minPurchaseAmount) conditions.push(`حداقل خرید: ${selectedCoupon.minPurchaseAmount.toLocaleString("fa-IR")} تومان.`);
     if (selectedCoupon.maxDiscountAmount) conditions.push(`سقف تخفیف: ${selectedCoupon.maxDiscountAmount.toLocaleString("fa-IR")} تومان.`);
-    if (selectedCoupon.products?.length || selectedCoupon.categories?.length) conditions.push("تخفیف فقط روی کالاهای همین پیشنهاد حساب می‌شه.");
     setPreview({ id: "preview", title: form.title, body: form.body, code: selectedCoupon.code,
       ctaLabel: form.ctaLabel, ctaHref: form.ctaHref, dismissLabel: form.dismissLabel,
       discountLabel: selectedCoupon.type === "percent" ? `${selectedCoupon.value.toLocaleString("fa-IR")}٪ تخفیف` : `${selectedCoupon.value.toLocaleString("fa-IR")} تومان تخفیف`,
