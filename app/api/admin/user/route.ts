@@ -137,6 +137,9 @@ export async function GET(req: Request) {
   return NextResponse.json({
     users: userDocuments.map((user) => ({
       ...user,
+      // Lean queries do not apply schema defaults to legacy documents.
+      totalPurchase: user.totalPurchase ?? 0,
+      successfulOrders: user.successfulOrders ?? 0,
       addressCount: addressesByUser.get(String(user._id)) ?? 0,
       commentCount: commentsByUser.get(String(user._id)) ?? 0,
       favorites: favoritesByUser.get(String(user._id)) ?? [],
