@@ -257,19 +257,19 @@ export default function UsersPage() {
                   <div className="rounded-lg bg-slate-50 p-2">
                     <dt className="text-xs text-slate-500">آدرس</dt>
                     <dd className="text-base font-bold text-slate-900">
-                      {user.addressCount.toLocaleString("fa-IR")}
+                      {(user.addressCount ?? 0).toLocaleString("fa-IR")}
                     </dd>
                   </div>
                   <div className="rounded-lg bg-slate-50 p-2">
                     <dt className="text-xs text-slate-500">سفارش موفق</dt>
                     <dd className="text-base font-bold text-slate-900">
-                      {user.successfulOrders.toLocaleString("fa-IR")}
+                      {(user.successfulOrders ?? 0).toLocaleString("fa-IR")}
                     </dd>
                   </div>
                   <div className="rounded-lg bg-slate-50 p-2">
                     <dt className="text-xs text-slate-500">کامنت</dt>
                     <dd className="text-base font-bold text-slate-900">
-                      {user.commentCount.toLocaleString("fa-IR")}
+                      {(user.commentCount ?? 0).toLocaleString("fa-IR")}
                     </dd>
                   </div>
                 </dl>
@@ -281,7 +281,7 @@ export default function UsersPage() {
                   </p>
                   <p>
                     مجموع خرید:{" "}
-                    {user.totalPurchase.toLocaleString("fa-IR")}{" "}
+                    {(user.totalPurchase ?? 0).toLocaleString("fa-IR")}{" "}
                     تومان
                   </p>
                 </div>
