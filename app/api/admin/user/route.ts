@@ -6,6 +6,7 @@ import User from "@/model/User";
 import Address from "@/model/Address";
 import Comment from "@/model/Comment";
 import Favorite from "@/model/Favorite";
+import Order from "@/model/Order";
 import "@/model/Product";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,13 @@ export const runtime = "nodejs";
 export const fetchCache = "force-no-store";
 
 const USER_ROLES = ["user", "admin", "superadmin"] as const;
+// User loyalty counters can outlive an order. This report describes current,
+// paid online orders, without changing historical loyalty/VIP entitlements.
+const successfulOrderFilter = {
+  paymentStatus: "paid",
+  status: { $in: ["pending", "processing", "shipped", "delivered"] },
+  user: { $type: "objectId" },
+};
 
 function positiveInteger(value: string | null, fallback: number, maximum?: number) {
   const parsed = Number(value);
@@ -56,13 +64,13 @@ export async function GET(req: Request) {
     ];
   }
 
-  const [userDocuments, total, summaryRows, totalComments] = await Promise.all([
+  const [userDocuments, total, summaryRows, totalComments, successfulOrders] = await Promise.all([
     User.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .select(
-        "username email mobile role createdAt updatedAt totalPurchase successfulOrders",
+        "username email mobile role createdAt updatedAt phoneVerifiedAt",
       )
       .lean(),
     User.countDocuments(filter),
@@ -71,7 +79,7 @@ export async function GET(req: Request) {
       totalUsers: number;
       regularUsers: number;
       admins: number;
-      successfulOrders: number;
+      missingVerificationRecords: number;
     }>([
       {
         $group: {
@@ -85,17 +93,18 @@ export async function GET(req: Request) {
               $cond: [{ $in: ["$role", ["admin", "superadmin"]] }, 1, 0],
             },
           },
-          successfulOrders: {
-            $sum: { $ifNull: ["$successfulOrders", 0] },
+          missingVerificationRecords: {
+            $sum: { $cond: [{ $eq: [{ $type: "$phoneVerifiedAt" }, "date"] }, 0, 1] },
           },
         },
       },
     ]),
     Comment.countDocuments(),
+    Order.countDocuments(successfulOrderFilter),
   ]);
 
   const userIds = userDocuments.map((user) => user._id);
-  const [addressCounts, commentCounts, favorites] = userIds.length
+  const [addressCounts, commentCounts, favorites, purchaseStats] = userIds.length
     ? await Promise.all([
         Address.aggregate<{ _id: string; count: number }>([
           { $match: { userId: { $in: userIds } } },
@@ -109,8 +118,22 @@ export async function GET(req: Request) {
           .sort({ createdAt: -1 })
           .populate({ path: "productId", select: "title mainImage" })
           .lean(),
+        Order.aggregate<{ _id: string; successfulOrders: number; totalPurchase: number }>([
+          { $match: { ...successfulOrderFilter, user: { $in: userIds } } },
+          {
+            $group: {
+              _id: "$user",
+              successfulOrders: { $sum: 1 },
+              totalPurchase: { $sum: "$finalPrice" },
+            },
+          },
+        ]),
       ])
-    : [[], [], []];
+    : [[], [], [], []];
+
+  const purchasesByUser = new Map(
+    purchaseStats.map((item) => [String(item._id), item]),
+  );
 
   const addressesByUser = new Map(
     addressCounts.map((item) => [String(item._id), item.count]),
@@ -131,20 +154,22 @@ export async function GET(req: Request) {
     totalUsers: 0,
     regularUsers: 0,
     admins: 0,
-    successfulOrders: 0,
+    missingVerificationRecords: 0,
   };
 
   return NextResponse.json({
-    users: userDocuments.map((user) => ({
+    users: userDocuments.map(({ phoneVerifiedAt, ...user }) => ({
       ...user,
-      // Lean queries do not apply schema defaults to legacy documents.
-      totalPurchase: user.totalPurchase ?? 0,
-      successfulOrders: user.successfulOrders ?? 0,
+      phoneVerificationStatus: phoneVerifiedAt instanceof Date
+        ? "verified"
+        : "no_record",
+      totalPurchase: purchasesByUser.get(String(user._id))?.totalPurchase ?? 0,
+      successfulOrders: purchasesByUser.get(String(user._id))?.successfulOrders ?? 0,
       addressCount: addressesByUser.get(String(user._id)) ?? 0,
       commentCount: commentsByUser.get(String(user._id)) ?? 0,
       favorites: favoritesByUser.get(String(user._id)) ?? [],
     })),
-    summary: { ...summary, totalComments },
+    summary: { ...summary, successfulOrders, totalComments },
     total,
     page,
     pages: Math.max(1, Math.ceil(total / limit)),

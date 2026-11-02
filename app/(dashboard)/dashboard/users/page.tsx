@@ -22,6 +22,7 @@ interface User {
   email?: string;
   mobile: string;
   role: "user" | "admin" | "superadmin";
+  phoneVerificationStatus: "verified" | "no_record";
   addressCount: number;
   favorites?: Favorite[];
   commentCount: number;
@@ -37,6 +38,7 @@ interface Summary {
   admins: number;
   successfulOrders: number;
   totalComments: number;
+  missingVerificationRecords: number;
 }
 
 interface UsersResponse {
@@ -53,6 +55,7 @@ const emptySummary: Summary = {
   admins: 0,
   successfulOrders: 0,
   totalComments: 0,
+  missingVerificationRecords: 0,
 };
 
 const roleLabel: Record<User["role"], string> = {
@@ -146,6 +149,11 @@ export default function UsersPage() {
         value: summary.totalComments.toLocaleString("fa-IR"),
         tone: "from-violet-100 to-violet-50",
       },
+      {
+        label: "بدون سابقه تأیید شماره",
+        value: summary.missingVerificationRecords.toLocaleString("fa-IR"),
+        tone: "from-orange-100 to-orange-50",
+      },
     ];
   }, [summary]);
 
@@ -162,9 +170,15 @@ export default function UsersPage() {
         </p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm leading-7 text-slate-600">
+        آمار خرید از سفارش‌های آنلاین پرداخت‌شده و لغونشده محاسبه می‌شود.
+        «بدون سابقه تأیید» یعنی زمان تأیید شماره ثبت نشده است؛ حساب‌های قدیمی
+        ممکن است این سابقه را نداشته باشند و در ورود بعدی با کد پیامک تأیید می‌شوند.
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {loading
-          ? Array.from({ length: 5 }).map((_, index) => (
+          ? Array.from({ length: 6 }).map((_, index) => (
               <div
                 key={index}
                 className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
@@ -242,6 +256,11 @@ export default function UsersPage() {
                       {user.username || "بدون نام کاربری"}
                     </h2>
                     <p className="mt-1 text-sm text-slate-500">{user.mobile}</p>
+                    <p className={`mt-1 text-xs ${user.phoneVerificationStatus === "verified" ? "text-emerald-700" : "text-amber-700"}`}>
+                      {user.phoneVerificationStatus === "verified"
+                        ? "شماره موبایل تأیید شده"
+                        : "سابقه تأیید شماره ثبت نشده"}
+                    </p>
                     <p className="mt-1 text-sm text-slate-500">
                       {user.email || "ایمیل ثبت نشده"}
                     </p>
