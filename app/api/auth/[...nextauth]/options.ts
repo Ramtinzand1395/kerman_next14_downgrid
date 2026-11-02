@@ -25,13 +25,32 @@ export const authOptions: NextAuthOptions = {
           .digest("hex");
         const ticket = await Otp.findOneAndDelete({
           loginTokenHash,
-          verifiedAt: { $exists: true },
+          verifiedAt: { $type: "date", $lte: new Date() },
           loginTokenExpiresAt: { $gt: new Date() },
         }).lean();
 
-        if (!ticket) throw new Error("تایید ورود منقضی شده است");
+        if (!ticket || !(ticket.verifiedAt instanceof Date) ||
+          !Number.isFinite(ticket.verifiedAt.getTime()) ||
+          !/^09\d{9}$/.test(ticket.mobile)) {
+          throw new Error("تایید ورود منقضی شده است");
+        }
 
-        const user = await User.findOne({ mobile: ticket.mobile }).lean();
+        // Persist OTP evidence before issuing a session, including legacy accounts.
+        // A failed write must fail login instead of creating an unverified session.
+        const user = await User.findOneAndUpdate(
+          { mobile: ticket.mobile },
+          [{ $set: {
+            phoneVerifiedAt: { $cond: [
+              { $eq: [{ $type: "$phoneVerifiedAt" }, "date"] },
+              "$phoneVerifiedAt", ticket.verifiedAt,
+            ] },
+            registrationCompletedAt: { $cond: [
+              { $eq: [{ $type: "$registrationCompletedAt" }, "date"] },
+              "$registrationCompletedAt", ticket.verifiedAt,
+            ] },
+          } }],
+          { returnDocument: "after" },
+        ).lean();
 
         if (!user) throw new Error("کاربری با این شماره موبایل یافت نشد");
 
