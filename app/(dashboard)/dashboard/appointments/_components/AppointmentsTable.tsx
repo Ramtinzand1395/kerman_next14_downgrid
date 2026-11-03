@@ -10,9 +10,11 @@ import {
 import type {
   AppointmentItem,
   AppointmentStatus,
+  CourierStatus,
 } from "@/types/appointments";
 import {
   appointmentTransitions,
+  courierNext,
   courierLabel,
   courierTone,
   formatTehranDate,
@@ -31,6 +33,7 @@ type Props = {
   onPageChange: (page: number) => void;
   onOpenDetails: (item: AppointmentItem) => void;
   onOpenSettlement: (item: AppointmentItem) => void;
+  onRequestCourier: (item: AppointmentItem, status: CourierStatus) => void;
   onRequestStatus: (
     item: AppointmentItem,
     status: AppointmentStatus,
@@ -46,6 +49,7 @@ export default function AppointmentsTable({
   onPageChange,
   onOpenDetails,
   onOpenSettlement,
+  onRequestCourier,
   onRequestStatus,
 }: Props) {
   if (items.length === 0) {
@@ -184,6 +188,12 @@ export default function AppointmentsTable({
                       : statusLabel[status]}
                   </button>
                 ))}
+                {courier && !["cancelled", "rejected", "no_show"].includes(item.status) && (courierNext[courier.status] || []).filter((status) => status !== "cancelled" && status !== "return_ready" && !(status === "assigned" && (item.status !== "confirmed" || !item.pricing?.known))).map((status) => (
+                  <button key={status} type="button" disabled={workingId === item._id} onClick={() => onRequestCourier(item, status)} className="rounded-xl bg-blue-900 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">
+                    {status === "assigned" ? "اعزام پیک برای دریافت" : status === "picked_up" ? "تحویل دستگاه به پیک" : status === "returning" ? "حرکت پیک برای برگشت" : courierLabel[status]}
+                  </button>
+                ))}
+                {item.pricing?.known && <span className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700">پرداخت: {item.payment?.status === "paid" ? "موفق" : item.payment?.status === "pending" ? "در انتظار مشتری" : "پرداخت‌نشده"}{item.payment?.refId ? ` · پیگیری ${item.payment.refId}` : ""}</span>}
                 <button
                   type="button"
                   onClick={() => onOpenDetails(item)}
