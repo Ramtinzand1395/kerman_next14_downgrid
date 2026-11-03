@@ -19,7 +19,6 @@ import {
   Loader2,
   Settings2,
   Sparkles,
-  Truck,
 } from "lucide-react";
 import type {
   AppointmentItem,
@@ -33,7 +32,6 @@ import AppointmentDetailsDrawer from "./_components/AppointmentDetailsDrawer";
 import AppointmentsFilters from "./_components/AppointmentsFilters";
 import AppointmentsOverview from "./_components/AppointmentsOverview";
 import AppointmentsTable from "./_components/AppointmentsTable";
-import CourierQueue from "./_components/CourierQueue";
 import CourierSettings from "./_components/CourierSettings";
 import RewardRules from "./_components/RewardRules";
 import SettlementModal from "./_components/SettlementModal";
@@ -51,7 +49,6 @@ type ApiEnvelope<T> = {
 
 const tabs = [
   { key: "appointments", label: "همه درخواست‌ها", icon: CalendarClock },
-  { key: "courier", label: "صف پیک", icon: Truck },
   { key: "settings", label: "تنظیمات", icon: Settings2 },
   { key: "rewards", label: "قواعد پاداش", icon: Sparkles },
 ] satisfies Array<{ key: AdminTab; label: string; icon: typeof CalendarClock }>;
@@ -61,9 +58,7 @@ function AppointmentsAdminContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<AdminTab>(
-    searchParams.get("fulfillment") === "courier"
-      ? "courier"
-      : "appointments",
+    "appointments",
   );
   const [filters, setFilters] = useState<AppointmentFiltersState>({
     status: searchParams.get("status") || "",
@@ -99,12 +94,8 @@ function AppointmentsAdminContent() {
     if (filters.page > 1) params.set("page", String(filters.page));
     if (filters.status) params.set("status", filters.status);
     if (filters.serviceType) params.set("service", filters.serviceType);
-    if (filters.courierStatus && tab === "courier") {
-      params.set("courierStatus", filters.courierStatus);
-    }
     if (filters.date) params.set("date", filters.date);
     if (filters.search) params.set("search", filters.search);
-    if (tab === "courier") params.set("fulfillment", "courier");
     router.replace(
       params.size ? `${pathname}?${params.toString()}` : pathname,
       { scroll: false },
@@ -125,12 +116,6 @@ function AppointmentsAdminContent() {
       }
       if (filters.date) params.set("date", filters.date);
       if (deferredSearch) params.set("search", deferredSearch);
-      if (tab === "courier") {
-        params.set("fulfillment", "courier");
-        if (filters.courierStatus) {
-          params.set("courierStatus", filters.courierStatus);
-        }
-      }
 
       const response = await fetch(
         `/api/admin/appointments?${params.toString()}`,
@@ -161,12 +146,10 @@ function AppointmentsAdminContent() {
     }
   }, [
     deferredSearch,
-    filters.courierStatus,
     filters.date,
     filters.page,
     filters.serviceType,
     filters.status,
-    tab,
   ]);
 
   const loadConfiguration = useCallback(async () => {
@@ -463,44 +446,17 @@ function AppointmentsAdminContent() {
         </div>
       ) : null}
 
-      {tab === "appointments" || tab === "courier" ? (
+      {tab === "appointments" ? (
         <div className="space-y-4">
           <AppointmentsFilters
             filters={filters}
-            courierMode={tab === "courier"}
+            courierMode={false}
             onChange={setFilters}
           />
           {listError ? (
-            <ErrorState
-              message={listError}
-              onRetry={() => void loadAppointments()}
-            />
+            <ErrorState message={listError} onRetry={() => void loadAppointments()} />
           ) : listLoading ? (
             <PageLoading />
-          ) : tab === "courier" ? (
-            <>
-              <CourierQueue
-                items={items}
-                workingId={workingId}
-                onOpenSettlement={setSettlement}
-                onOpenDetails={setDetail}
-                onRequestStatus={(item, nextStatus) =>
-                  setTransitionRequest({
-                    kind: "courier",
-                    item,
-                    nextStatus,
-                  })
-                }
-              />
-              <PaginationBar
-                total={listMeta.total}
-                page={filters.page}
-                pages={listMeta.pages}
-                onPageChange={(page) =>
-                  setFilters((value) => ({ ...value, page }))
-                }
-              />
-            </>
           ) : (
             <AppointmentsTable
               items={items}
@@ -508,17 +464,14 @@ function AppointmentsAdminContent() {
               page={filters.page}
               pages={listMeta.pages}
               workingId={workingId}
-              onPageChange={(page) =>
-                setFilters((value) => ({ ...value, page }))
-              }
+              onPageChange={(page) => setFilters((value) => ({ ...value, page }))}
               onOpenDetails={setDetail}
               onOpenSettlement={setSettlement}
+              onRequestCourier={(item, nextStatus) =>
+                setTransitionRequest({ kind: "courier", item, nextStatus })
+              }
               onRequestStatus={(item, nextStatus) =>
-                setTransitionRequest({
-                  kind: "appointment",
-                  item,
-                  nextStatus,
-                })
+                setTransitionRequest({ kind: "appointment", item, nextStatus })
               }
             />
           )}
