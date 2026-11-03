@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ShoppingBasket, Gamepad2 } from "lucide-react";
 import MyStoreOrders from "./MyStoreOrders";
 import MyGameOrders from "./MyGameOrders";
@@ -13,7 +13,15 @@ const tabs: { key: TabKey; title: string; icon: typeof ShoppingBasket }[] = [
 ];
 
 export default function MyOrdersTabs() {
-  const [active, setActive] = useState<TabKey>("products");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const active: TabKey = searchParams.get("ordersTab") === "games" ? "games" : "products";
+  const setActive = (tab: TabKey) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("ordersTab", tab);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
 
   return (
     <div className="space-y-4">

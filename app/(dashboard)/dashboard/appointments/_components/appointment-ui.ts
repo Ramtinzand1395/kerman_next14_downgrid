@@ -42,7 +42,7 @@ export const appointmentTransitions: Partial<
 };
 
 export const courierLabel: Record<CourierStatus, string> = {
-  pending: "درخواست ثبت شد",
+  pending: "در انتظار تکمیل خدمات",
   scheduled: "زمان‌بندی شد",
   assigned: "به پیک اختصاص یافت",
   picked_up: "دستگاه دریافت شد",

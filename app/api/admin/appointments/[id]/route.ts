@@ -157,6 +157,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   // Handle courier status transition timestamps
   if (nextCourierStatus && current.courier) {
     set["courier.status"] = nextCourierStatus;
+    if (nextCourierStatus === "pending") set["courier.returnReadyAt"] = null;
     const now = new Date();
     if (nextCourierStatus === "picked_up" && !current.courier.pickupAt) {
       set["courier.pickupAt"] = now;
@@ -301,7 +302,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       category: "request",
       entityType: "Appointment",
       entityId: current._id,
-      link: "/dashboard/appointments?tab=courier",
+      link: "/dashboard/appointments?fulfillment=courier",
       senderType: "admin",
       senderId: auth.userId,
       eventKey: `ADMIN_COURIER_STATUS:${current._id}:${nextCourierStatus}`,
@@ -318,7 +319,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       category: "request",
       entityType: "Appointment",
       entityId: current._id,
-      link: "/my-profile?step=5",
+      link: "/my-profile?step=5&ordersTab=games",
       senderType: "admin",
       senderId: auth.userId,
       eventKey: `APPOINTMENT_STATUS:${current._id}:${nextStatus}`,
@@ -335,7 +336,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       category: "request",
       entityType: "Appointment",
       entityId: current._id,
-      link: "/my-profile?step=5",
+      link: "/my-profile?step=5&ordersTab=games",
       senderType: "admin",
       senderId: auth.userId,
       eventKey: `COURIER_STATUS:${current._id}:${nextCourierStatus}`,
