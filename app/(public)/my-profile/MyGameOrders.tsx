@@ -187,7 +187,7 @@ export default function MyGameOrders() {
                         ? `مبلغ نهایی: ${(item.pricing.finalAmount || 0).toLocaleString("fa-IR")} تومان`
                         : "هزینه پس از بررسی مشخص می‌شود"}
                     </span>
-                    {item.payment?.status === "paid" ? <span className="text-xs font-bold text-emerald-700">پرداخت‌شده</span> : item.status === "completed" && item.pricing?.known && Number(item.pricing.finalAmount) > 0 ? (
+                    {item.payment?.status === "paid" ? <span className="text-xs font-bold text-emerald-700">پرداخت موفق{item.payment.refId ? ` · کد پیگیری ${item.payment.refId}` : ""}</span> : item.status === "completed" && item.pricing?.known && Number(item.pricing.finalAmount) > 0 ? (
                       <button type="button" disabled={Boolean(paying)} onClick={() => void pay(item._id)} className="rounded-xl bg-blue-800 px-4 py-2 text-xs font-bold text-white disabled:opacity-50">{paying === item._id ? <ButtonLoading label="اتصال به درگاه…" /> : "پرداخت آنلاین"}</button>
                     ) : null}
                     {cancellable && (
