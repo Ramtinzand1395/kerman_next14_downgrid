@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarClock, Gamepad2, MapPin, RefreshCw, Wrench } from "lucide-react";
 import InstallationGameSummary from "@/app/components/games/InstallationGameSummary";
+import { COURIER_RETURN_DELIVERY_STAGES, courierReturnDeliveryProgress } from "@/lib/appointments/courier-policy";
 import type { AppointmentItem } from "@/types/appointments";
 import { ButtonLoading, Skeleton } from "@/app/components/loading/LoadingSystem";
 
@@ -42,17 +43,6 @@ const issues: Record<string, string> = {
   overheating: "داغ‌شدن",
   other: "سایر",
 };
-
-const courierSteps = [
-  ["pending", "درخواست ثبت شد"],
-  ["scheduled", "پیک زمان‌بندی شد"],
-  ["assigned", "پیک اختصاص یافت"],
-  ["picked_up", "دستگاه دریافت شد"],
-  ["at_store", "به فروشگاه رسید"],
-  ["return_ready", "آماده بازگشت"],
-  ["returning", "در مسیر"],
-  ["delivered", "تحویل شد"],
-] as const;
 
 function dateTime(value: string) {
   return new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
@@ -170,7 +160,7 @@ export default function MyGameOrders() {
                   {item.description && <p className="rounded-xl bg-slate-50 p-3 leading-6 text-slate-600">{item.description}</p>}
                   {item.fulfillment === "courier" && item.courier?.addressSnapshot ? <p className="flex items-start gap-2 rounded-xl bg-cyan-50 p-3 text-xs leading-6 text-cyan-900"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /> {item.courier.addressSnapshot.city}، {item.courier.addressSnapshot.address}</p> : <p className="flex items-start gap-2 rounded-xl bg-blue-50 p-3 text-xs leading-6 text-blue-900"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /> خیابان ناصریه بین کوچه ۲ و ۴ نبش داروخانه مادر</p>}
                   {item.fulfillment === "courier" && item.courier && (
-                    <div className="rounded-2xl border border-slate-200 p-3"><p className="text-xs font-bold text-slate-700">پیگیری پیک</p><ol className="mt-3 grid gap-2 sm:grid-cols-2">{courierSteps.map(([status, label], index) => { const currentIndex = courierSteps.findIndex(([value]) => value === item.courier?.status); const done = index <= currentIndex; return <li key={status} className={`flex items-center gap-2 text-xs ${done ? "font-bold text-emerald-700" : "text-slate-400"}`}><span className={`flex h-5 w-5 items-center justify-center rounded-full border ${done ? "border-emerald-500 bg-emerald-50" : "border-slate-200"}`}>{done ? "✓" : ""}</span>{label}</li>; })}</ol><div className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-600"><div className="flex justify-between"><span>هزینه پیک</span><strong>{item.pricing?.shippingFinalAmount !== undefined ? `${item.pricing.shippingFinalAmount.toLocaleString("fa-IR")} تومان` : item.courier.finalShippingCost !== undefined ? `${item.courier.finalShippingCost.toLocaleString("fa-IR")} تومان` : "نامشخص"}</strong></div></div></div>
+                    <div className="rounded-2xl border border-slate-200 p-3"><p className="text-xs font-bold text-slate-700">{item.courier.status === "cancelled" ? "پیک لغو شد" : "ارسال دستگاه پس از پایان خدمات"}</p><ol className="mt-3 grid gap-2 sm:grid-cols-2">{COURIER_RETURN_DELIVERY_STAGES.map(({status, label}, index) => { const done = index < courierReturnDeliveryProgress(item.courier!.status); return <li key={status} className={`flex items-center gap-2 text-xs ${done ? "font-bold text-emerald-700" : "text-slate-400"}`}><span className={`flex h-5 w-5 items-center justify-center rounded-full border ${done ? "border-emerald-500 bg-emerald-50" : "border-slate-200"}`}>{done ? "✓" : ""}</span>{label}</li>; })}</ol><div className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-600"><div className="flex justify-between"><span>هزینه پیک</span><strong>{item.pricing?.shippingFinalAmount !== undefined ? `${item.pricing.shippingFinalAmount.toLocaleString("fa-IR")} تومان` : item.courier.finalShippingCost !== undefined ? `${item.courier.finalShippingCost.toLocaleString("fa-IR")} تومان` : "نامشخص"}</strong></div></div></div>
                   )}
                   <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
                     <span className="text-xs text-slate-500">

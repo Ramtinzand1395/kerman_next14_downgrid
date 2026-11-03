@@ -16,7 +16,8 @@ import {
   redeemVisitReward,
   releaseVisitReward,
 } from "@/lib/appointments/rewards.service";
-import { notifyUser } from "@/lib/notifications/service";
+import { courierStatusAfterService } from "@/lib/appointments/courier-policy";
+import { notifyAdmins, notifyUser } from "@/lib/notifications/service";
 import { deliverBusinessSms } from "@/lib/sms/business";
 
 const labels: Record<string, string> = {
@@ -41,11 +42,11 @@ const courierLabels: Record<string, string> = {
 };
 
 const courierMessages: Record<string, string> = {
-  scheduled: "پیک برای دریافت دستگاه شما برنامه‌ریزی شد.",
+  pending: "خدمت شما برای بررسی مجدد بازگشایی شد و ارسال دستگاه منتظر تکمیل خدمت است.",
   picked_up: "دستگاه شما توسط پیک تحویل گرفته شد.",
   at_store: "دستگاه شما به فروشگاه تحویل داده شد.",
-  return_ready: "دستگاه شما آماده بازگشت با پیک است.",
-  returning: "دستگاه شما در مسیر بازگشت است.",
+  return_ready: "خدمات دستگاه شما تکمیل شده و آماده ارسال با پیک است.",
+  returning: "دستگاه شما برای ارسال به پیک تحویل داده شد.",
   delivered: "دستگاه با موفقیت توسط پیک تحویل داده شد.",
   cancelled: "درخواست پیک لغو شد.",
 };
@@ -94,18 +95,31 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return fail("این انتقال وضعیت نوبت مجاز نیست.", 409);
   }
 
-  const nextCourierStatus = parsed.data.courierStatus;
+  const effectiveServiceStatus = nextStatus || current.status;
+  const automaticCourierStatus = current.courier
+    ? courierStatusAfterService(current.courier.status as CourierStatus, effectiveServiceStatus)
+    : undefined;
+  const nextCourierStatus = parsed.data.courierStatus ||
+    (automaticCourierStatus !== current.courier?.status ? automaticCourierStatus : undefined);
+  if (parsed.data.courierStatus && ["cancelled", "rejected", "no_show"].includes(effectiveServiceStatus) &&
+      parsed.data.courierStatus !== automaticCourierStatus) {
+    return fail("برای خدمت لغوشده یا ردشده نمی‌توان ارسال جدید ثبت کرد.", 409);
+  }
+  if (nextStatus === "confirmed" && current.status === "completed" &&
+      ["returning", "delivered"].includes(current.courier?.status)) {
+    return fail("پس از تحویل دستگاه به پیک، بازگشایی خدمت مجاز نیست.", 409);
+  }
   if (nextCourierStatus) {
     if (current.fulfillment !== "courier" || !current.courier) {
       return fail("این نوبت فاقد پیک است و نمی‌توان وضعیت پیک را تغییر داد.", 422);
     }
     const currentCourierStatus = (current.courier.status || "pending") as CourierStatus;
-    if (!canCourierTransition(currentCourierStatus, nextCourierStatus as CourierStatus)) {
+    if (parsed.data.courierStatus && !canCourierTransition(currentCourierStatus, nextCourierStatus as CourierStatus)) {
       return fail("این انتقال وضعیت پیک مجاز نیست.", 409);
     }
     if (
       ["return_ready", "returning", "delivered"].includes(nextCourierStatus) &&
-      current.status !== "completed"
+      effectiveServiceStatus !== "completed"
     ) {
       return fail("ارسال برگشت فقط پس از تکمیل و ثبت نهایی خدمت مجاز است.", 409);
     }
@@ -253,7 +267,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const updateFilter: Record<string, unknown> = { _id: current._id, status: current.status };
-  if (nextCourierStatus && nextCourierStatus !== current.courier?.status) {
+  if (current.courier) {
     updateFilter["courier.status"] = current.courier?.status || "pending";
   }
   const updated = await Appointment.findOneAndUpdate(
@@ -277,6 +291,21 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     await issueVisitRewards(String(current._id)).catch((error) => {
       console.error("[appointments] visit reward issuance failed", error);
     });
+  }
+
+  if (nextCourierStatus && nextCourierStatus !== current.courier?.status) {
+    await notifyAdmins({
+      title: "وضعیت پیک تغییر کرد",
+      message: `پیک درخواست ${current.trackingCode}: ${courierLabels[nextCourierStatus]}`,
+      type: "REQUEST_STATUS_CHANGED",
+      category: "request",
+      entityType: "Appointment",
+      entityId: current._id,
+      link: "/dashboard/appointments?tab=courier",
+      senderType: "admin",
+      senderId: auth.userId,
+      eventKey: `ADMIN_COURIER_STATUS:${current._id}:${nextCourierStatus}`,
+    }).catch((error) => console.error("[appointments] admin courier notification failed", error));
   }
 
   // User notifications

@@ -58,34 +58,7 @@ export function canAdminTransition(from: AppointmentStatus, to: AppointmentStatu
   return from === to || ADMIN_TRANSITIONS[from].includes(to);
 }
 
-export const COURIER_TRANSITIONS: Record<CourierStatus, CourierStatus[]> = {
-  pending: ["scheduled", "cancelled"],
-  scheduled: ["assigned", "picked_up", "cancelled"],
-  assigned: ["picked_up", "scheduled", "cancelled"],
-  picked_up: ["at_store"],
-  at_store: ["return_ready"],
-  return_ready: ["returning"],
-  returning: ["delivered"],
-  delivered: [],
-  cancelled: [],
-};
-
-export function canCourierTransition(from: CourierStatus, to: CourierStatus): boolean {
-  return from === to || (COURIER_TRANSITIONS[from]?.includes(to) ?? false);
-}
-
-export const COURIER_RETURN_DELIVERY_STAGES = [
-  { status: "return_ready", label: "تکمیل خدمات و آماده ارسال" },
-  { status: "returning", label: "تحویل به پیک" },
-  { status: "delivered", label: "تحویل به مشتری" },
-] as const;
-
-export function courierReturnDeliveryProgress(status: CourierStatus): 0 | 1 | 2 | 3 {
-  if (status === "delivered") return 3;
-  if (status === "returning") return 2;
-  if (status === "return_ready") return 1;
-  return 0;
-}
+export { COURIER_TRANSITIONS, canCourierTransition, COURIER_RETURN_DELIVERY_STAGES, courierReturnDeliveryProgress } from "./courier-policy.ts";
 
 export function courierUserCancellationAllowed(courierStatus: CourierStatus): boolean {
   return ["pending", "scheduled", "assigned"].includes(courierStatus);

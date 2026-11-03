@@ -65,39 +65,9 @@ export const courierTone: Record<CourierStatus, string> = {
   cancelled: "bg-rose-50 text-rose-800 ring-rose-200",
 };
 
-export const courierNext: Partial<Record<CourierStatus, CourierStatus[]>> = {
-  pending: ["scheduled", "cancelled"],
-  scheduled: ["assigned", "picked_up", "cancelled"],
-  assigned: ["picked_up", "scheduled", "cancelled"],
-  picked_up: ["at_store"],
-  at_store: ["return_ready"],
-  return_ready: ["returning"],
-  returning: ["delivered"],
-};
+export { COURIER_TRANSITIONS as courierNext, COURIER_RETURN_DELIVERY_STAGES as courierReturnTimeline, courierReturnDeliveryProgress as courierReturnProgress } from "@/lib/appointments/courier-policy";
 
-export const courierTimeline: CourierStatus[] = [
-  "pending",
-  "scheduled",
-  "assigned",
-  "picked_up",
-  "at_store",
-  "return_ready",
-  "returning",
-  "delivered",
-];
-
-export const courierReturnTimeline: Array<{ status: CourierStatus; label: string }> = [
-  { status: "return_ready", label: "تکمیل خدمات و آماده ارسال" },
-  { status: "returning", label: "تحویل به پیک" },
-  { status: "delivered", label: "تحویل به مشتری" },
-];
-
-export function courierReturnProgress(status: CourierStatus) {
-  if (status === "delivered") return 3;
-  if (status === "returning") return 2;
-  if (status === "return_ready") return 1;
-  return 0;
-}
+export const courierTimeline: CourierStatus[] = ["return_ready", "returning", "delivered"];
 
 export function toman(value: number | null | undefined) {
   if (value === null || value === undefined) return "نامشخص";

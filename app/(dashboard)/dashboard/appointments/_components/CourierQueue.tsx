@@ -7,7 +7,6 @@ import {
   courierNext,
   courierReturnProgress,
   courierReturnTimeline,
-  courierTimeline,
   courierTone,
   formatTehranDate,
   getCourierView,
@@ -57,11 +56,9 @@ export default function CourierQueue({
   return (
     <section className="grid gap-4 xl:grid-cols-2">
       {courierItems.map(({ item, courier }) => {
-        const activeIndex = courierTimeline.indexOf(courier.status);
         const returnProgress = courierReturnProgress(courier.status);
-        const returnStarted = ["at_store", "return_ready", "returning", "delivered"].includes(courier.status);
         const nextStatuses = (courierNext[courier.status] || []).filter(
-          (status) => !(status === "return_ready" && item.status !== "completed"),
+          (status) => !["cancelled", "rejected", "no_show"].includes(item.status) && !(status === "return_ready" && item.status !== "completed"),
         );
         return (
           <article
@@ -124,33 +121,7 @@ export default function CourierQueue({
               </div>
             </div>
 
-            {courier.status !== "cancelled" && !returnStarted ? (
-              <ol
-                className="mt-4 grid grid-cols-4 gap-1"
-                aria-label="پیشرفت وضعیت پیک"
-              >
-                {courierTimeline.map((status, index) => (
-                  <li key={status} className="min-w-0">
-                    <div
-                      className={`h-1.5 rounded-full ${
-                        index <= activeIndex ? "bg-[#1269f5]" : "bg-slate-200"
-                      }`}
-                    />
-                    <span
-                      className={`mt-1 block truncate text-[9px] ${
-                        index <= activeIndex
-                          ? "font-bold text-[#001A6E]"
-                          : "text-slate-400"
-                      }`}
-                    >
-                      {courierLabel[status]}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            ) : null}
-
-            {courier.status !== "cancelled" && returnStarted ? (
+            {courier.status !== "cancelled" ? (
               <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
                 <p className="mb-3 text-xs font-black text-slate-700">ارسال دستگاه پس از پایان خدمات</p>
                 <ol className="grid grid-cols-3 gap-2" aria-label="پیشرفت سه‌مرحله‌ای تحویل به مشتری">
@@ -166,7 +137,7 @@ export default function CourierQueue({
                     );
                   })}
                 </ol>
-                {courier.status === "at_store" && item.status !== "completed" && (
+                {returnProgress === 0 && item.status !== "completed" && (
                   <p className="mt-3 rounded-xl bg-amber-50 p-2 text-xs leading-5 text-amber-800">
                     برای شروع ارسال برگشت، ابتدا خدمت را با مبلغ نهایی «انجام‌شده» ثبت کنید.
                   </p>

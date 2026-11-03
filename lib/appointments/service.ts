@@ -440,7 +440,7 @@ export async function createAppointment(userId: string, input: CreateAppointment
       category: "request",
       entityType: "Appointment",
       entityId: appointment._id,
-      link: "/dashboard/appointments",
+      link: isCourier ? "/dashboard/appointments?tab=courier" : "/dashboard/appointments",
       priority: "high",
       eventKey: `ADMIN_APPOINTMENT_CREATED:${appointment._id}`,
     }),
@@ -486,6 +486,19 @@ export async function cancelAppointment(userId: string, appointmentId: string) {
     AppointmentReservation.updateOne({ appointment: current._id, releasedAt: null }, { $set: { releasedAt: new Date() } }),
     releaseVisitReward(String(current._id)),
   ]);
+  await Promise.all([
+    notifyUser({
+      userId, title: "درخواست شما لغو شد", message: `درخواست ${current.trackingCode} لغو شد.`,
+      type: "REQUEST_STATUS_CHANGED", category: "request", entityType: "Appointment", entityId: current._id,
+      link: "/my-profile?step=5", eventKey: `APPOINTMENT_STATUS:${current._id}:cancelled`,
+    }),
+    notifyAdmins({
+      title: "لغو درخواست توسط کاربر", message: `درخواست ${current.trackingCode} توسط کاربر لغو شد.`,
+      type: "REQUEST_STATUS_CHANGED", category: "request", entityType: "Appointment", entityId: current._id,
+      link: current.fulfillment === "courier" ? "/dashboard/appointments?tab=courier" : "/dashboard/appointments",
+      eventKey: `ADMIN_APPOINTMENT_CANCELLED:${current._id}`,
+    }),
+  ]).catch((error) => console.error("[appointments] cancellation notification failed", error));
   return { appointment: updated.toObject() } as const;
 }
 
