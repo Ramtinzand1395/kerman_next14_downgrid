@@ -1,5 +1,5 @@
 import { cache } from "react";
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import Cart from "../../components/Cart";

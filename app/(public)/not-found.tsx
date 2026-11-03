@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import { Home, ShoppingBag } from "lucide-react";
 
 export default function NotFound() {

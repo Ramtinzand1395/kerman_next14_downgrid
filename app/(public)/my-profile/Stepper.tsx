@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/app/components/navigation/NavigationFeedback";
 import {
   Heart,
   MapPinHouse,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import { Archive, Bell, Check, CheckCheck, ChevronLeft, ChevronRight, LoaderCircle, RefreshCcw, Search } from "lucide-react";
 import { toast } from "react-toastify";
 import type { NotificationItem, NotificationResponse } from "./types";

@@ -61,6 +61,8 @@ export default async function Page({searchParams}: any) { await redirectLegacyCa
     await readFile(path.join(root, 'app/(public)/products/loading.tsx'));
     await writeFile(path.join(dir, 'app/products/loading.tsx'), 'export default function Loading() { return <p>Loading</p>; }');
   } catch (error) { if (error.code !== 'ENOENT') throw error; }
+  await mkdir(path.join(dir, 'app/components/navigation'), { recursive: true });
+  await writeFile(path.join(dir, 'app/components/navigation/NavigationFeedback.tsx'), 'export { default } from "next/link";');
   await writeFile(path.join(dir, 'app/components/Cart.tsx'), 'import Link from "next/link"; export default function Card({game}: any) { return <article><h2><Link href={`/product/${game.slug}`}>{game.title}</Link></h2></article>; }');
   await writeFile(path.join(dir, 'lib/catalog/category-data.ts'), `
 export const PAGE_SIZE = 12;

@@ -1,7 +1,7 @@
 "use client";
 
 import { LucideIcon } from "lucide-react";
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 
 type ColorType = "indigo" | "green" | "amber" | "blue";
 

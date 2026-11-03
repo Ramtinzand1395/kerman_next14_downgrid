@@ -1,3 +1,6 @@
+import { NavigationProvider } from "@/app/components/navigation/NavigationFeedback";
+import { Suspense } from "react";
+import NavigationScroll from "@/app/components/navigation/NavigationScroll";
 import "@/app/globals.css";
 import "react-loading-skeleton/dist/skeleton.css";
 import localFont from "next/font/local";
@@ -72,11 +75,14 @@ export default function RootLayout({
       <body>
         {/* Client-side wrappers (Auth, Navbar, Footer, Toast) are loaded dynamically */}
         <AuthProvider>
+        <NavigationProvider>
+          <Suspense fallback={null}><NavigationScroll /></Suspense>
           <Navbar />
           <PromotionModalHost />
           <main id="content">{children}</main>
           {/* <SpeedInsights /> */}
           <Footer />
+        </NavigationProvider>
         </AuthProvider>
 
         {/* Toast notifications (client-only) */}

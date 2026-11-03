@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronDown, User, Sparkles, Search } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/app/components/navigation/NavigationFeedback";
 
 interface Category {
   name: string;

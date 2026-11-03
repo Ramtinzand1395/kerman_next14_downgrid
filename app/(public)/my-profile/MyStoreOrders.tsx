@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import { ChevronDown, FileText, Printer, RefreshCcw } from "lucide-react";
 import ProductImage from "@/app/components/ProductImage";
 import OrderMoneySummaryView from "../components/OrderMoneySummary";

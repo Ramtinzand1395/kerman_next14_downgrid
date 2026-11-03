@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useRouter } from "@/app/components/navigation/NavigationFeedback";
 import { ShoppingBasket, Gamepad2 } from "lucide-react";
 import MyStoreOrders from "./MyStoreOrders";
 import MyGameOrders from "./MyGameOrders";

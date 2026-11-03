@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import { useRouter } from "next/navigation";
+import { ProductGridSkeleton } from "@/app/components/loading/LoadingSystem";
 import { LoaderCircle } from "lucide-react";
 import {
   createContext,
@@ -119,4 +120,9 @@ export function ProductNavigationLink({
       aria-disabled={isPending || undefined}
     />
   );
+}
+
+export function ProductResults({ children }: { children: React.ReactNode }) {
+  const { isPending } = useProductNavigation();
+  return isPending ? <ProductGridSkeleton /> : <>{children}</>;
 }

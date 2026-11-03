@@ -32,21 +32,22 @@ const labels: Record<string, string> = {
 const courierLabels: Record<string, string> = {
   pending: "در انتظار",
   scheduled: "برنامه‌ریزی‌شده",
-  assigned: "اختصاص‌یافته به پیک",
-  picked_up: "تحویل‌گرفته‌شده توسط پیک",
+  assigned: "حرکت از فروشگاه به سمت مشتری",
+  picked_up: "تحویل دستگاه به پیک",
   at_store: "رسیده به فروشگاه",
   return_ready: "تکمیل خدمات و آماده ارسال",
-  returning: "تحویل به پیک",
+  returning: "حرکت به سمت مشتری پس از خدمات",
   delivered: "تحویل به مشتری",
   cancelled: "لغوشده",
 };
 
 const courierMessages: Record<string, string> = {
+  assigned: "پیک برای دریافت دستگاه از فروشگاه به سمت شما حرکت کرد.",
   pending: "خدمت شما برای بررسی مجدد بازگشایی شد و ارسال دستگاه منتظر تکمیل خدمت است.",
   picked_up: "دستگاه شما توسط پیک تحویل گرفته شد.",
   at_store: "دستگاه شما به فروشگاه تحویل داده شد.",
   return_ready: "خدمات دستگاه شما تکمیل شده و آماده ارسال با پیک است.",
-  returning: "دستگاه شما برای ارسال به پیک تحویل داده شد.",
+  returning: "پیک پس از پایان خدمات با دستگاه شما به سمت آدرس شما حرکت کرد.",
   delivered: "دستگاه با موفقیت توسط پیک تحویل داده شد.",
   cancelled: "درخواست پیک لغو شد.",
 };
@@ -91,6 +92,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const nextStatus = parsed.data.status;
+  if ((parsed.data.baseAmount !== undefined || nextStatus === "confirmed") &&
+      ["initiating", "pending", "paid"].includes(current.payment?.status)) {
+    return fail("درخواست در حال پرداخت یا پرداخت‌شده است؛ تغییر مبلغ و بازگشایی مجاز نیست.", 409);
+  }
   if (nextStatus && !canAdminTransition(current.status as AppointmentStatus, nextStatus)) {
     return fail("این انتقال وضعیت نوبت مجاز نیست.", 409);
   }
@@ -113,7 +118,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (current.fulfillment !== "courier" || !current.courier) {
       return fail("این نوبت فاقد پیک است و نمی‌توان وضعیت پیک را تغییر داد.", 422);
     }
-    const currentCourierStatus = (current.courier.status || "pending") as CourierStatus;
+    const currentCourierStatus = (effectiveServiceStatus === "completed" ? automaticCourierStatus : current.courier.status || "pending") as CourierStatus;
     if (parsed.data.courierStatus && !canCourierTransition(currentCourierStatus, nextCourierStatus as CourierStatus)) {
       return fail("این انتقال وضعیت پیک مجاز نیست.", 409);
     }
@@ -123,6 +128,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     ) {
       return fail("ارسال برگشت فقط پس از تکمیل و ثبت نهایی خدمت مجاز است.", 409);
     }
+  }
+
+  if (nextCourierStatus === "assigned" &&
+      (effectiveServiceStatus !== "confirmed" || !current.pricing?.known)) {
+    return fail("ابتدا درخواست را تأیید و مبلغ اولیه خدمت را ثبت کنید.", 409);
+  }
+  if (nextStatus === "completed" && current.fulfillment === "courier" &&
+      ["pending", "scheduled", "assigned"].includes(current.courier?.status)) {
+    return fail("ابتدا تحویل دستگاه به پیک را ثبت کنید.", 409);
   }
 
   const correctingCompletion = current.status === "completed" && nextStatus === "confirmed";
@@ -183,7 +197,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       current.pricing?.shippingBaseAmount ?? (current.courier?.totalShippingCost || 0);
     const deliveryCity = current.courier?.addressSnapshot?.city || "";
 
-    const applied = await redeemVisitReward(
+    const applied = nextStatus === "completed" ? await redeemVisitReward(
       {
         _id: current._id,
         user: current.user,
@@ -194,7 +208,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       serviceBaseAmount,
       shippingBaseAmount,
       deliveryCity,
-    );
+    ) : { discount: 0, shippingDiscount: current.pricing?.shippingDiscountAmount || 0 };
 
     const serviceDiscount = applied.discount;
     const shippingDiscount = applied.shippingDiscount;
@@ -268,6 +282,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const updateFilter: Record<string, unknown> = { _id: current._id, status: current.status };
+  updateFilter["payment.status"] = !current.payment?.status || current.payment.status === "unpaid" ? { $in: ["unpaid", null] } : current.payment.status;
   if (current.courier) {
     updateFilter["courier.status"] = current.courier?.status || "pending";
   }
@@ -314,12 +329,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     await notifyUser({
       userId: current.user,
       title: "وضعیت نوبت تغییر کرد",
-      message: `وضعیت نوبت ${current.trackingCode} به «${labels[nextStatus]}» تغییر کرد.`,
+      message: nextStatus === "completed"
+        ? `خدمات درخواست ${current.trackingCode} پایان یافت. مبلغ نهایی: ${updated.pricing.finalAmount.toLocaleString("fa-IR")} تومان. برای مشاهده و پرداخت روی اعلان بزنید.`
+        : `وضعیت نوبت ${current.trackingCode} به «${labels[nextStatus]}» تغییر کرد.`,
       type: "REQUEST_STATUS_CHANGED",
       category: "request",
       entityType: "Appointment",
       entityId: current._id,
-      link: "/my-profile?step=5&ordersTab=games",
+      link: `/my-profile?step=5&ordersTab=games#appointment-${current._id}`,
       senderType: "admin",
       senderId: auth.userId,
       eventKey: `APPOINTMENT_STATUS:${current._id}:${nextStatus}`,
@@ -336,7 +353,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       category: "request",
       entityType: "Appointment",
       entityId: current._id,
-      link: "/my-profile?step=5&ordersTab=games",
+      link: `/my-profile?step=5&ordersTab=games#appointment-${current._id}`,
       senderType: "admin",
       senderId: auth.userId,
       eventKey: `COURIER_STATUS:${current._id}:${nextCourierStatus}`,

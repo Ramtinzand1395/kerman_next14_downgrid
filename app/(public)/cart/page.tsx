@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { Suspense } from "react";
 import CartPage from "./CartPage";
-import { CartSkeleton } from "@/app/components/loading/LoadingSystem";
+import { PageLoading } from "@/app/components/loading/LoadingSystem";
 import { getStoreShippingSettings } from "@/lib/shippingSettings";
 
 export const metadata: Metadata = {
@@ -42,7 +42,7 @@ export default async function page({ searchParams }: CartPageProps) {
   const shippingSettings = await getStoreShippingSettings();
 
   return (
-    <Suspense fallback={<CartSkeleton />}>
+    <Suspense fallback={<PageLoading />}>
       <CartPage shippingSettings={shippingSettings} />
     </Suspense>
   );

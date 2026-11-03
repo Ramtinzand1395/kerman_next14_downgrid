@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import type { Metadata } from "next";
 import { stripHtmlTags } from "@/helpers/stripHtmlTags";
 import { getPublishedBlogs } from "@/services/blog/getPublishedBlogs";

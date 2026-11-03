@@ -11,7 +11,7 @@ import {
   UserCircle2,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 
 type DropdownType = "user" | "cart" | null;
 

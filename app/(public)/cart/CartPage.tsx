@@ -12,15 +12,16 @@ import {
   ShoppingBag,
   Trash2,
 } from "lucide-react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import Link from "@/app/components/navigation/NavigationFeedback";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "@/app/components/navigation/NavigationFeedback";
 import { useEffect, useMemo, useRef, useState } from "react";
 import PaymentForm, { AppliedCoupon } from "../components/PaymentForm";
 import ShippingForm from "../components/ShippingForm";
 import { safeParseJSON } from "@/helpers/safeParseJSON";
 import { toast } from "react-toastify";
 import ProductImage from "@/app/components/ProductImage";
-import { CartSkeleton } from "@/app/components/loading/LoadingSystem";
+import { PageLoading } from "@/app/components/loading/LoadingSystem";
 import { calculateShippingInfo } from "@/lib/shipping";
 import { summarizeOrderMoney } from "@/lib/orderSummary";
 import OrderMoneySummaryView from "../components/OrderMoneySummary";
@@ -194,7 +195,7 @@ export default function CartPage({ shippingSettings }: { shippingSettings: Store
     router.push(`/cart?step=${step}`, { scroll: false });
   };
 
-  if (!hasHydrated) return <CartSkeleton />;
+  if (!hasHydrated) return <PageLoading />;
 
   return (
     <div className="mx-auto mt-6 w-full max-w-7xl px-4 pb-36 md:mt-10 xl:pb-16">

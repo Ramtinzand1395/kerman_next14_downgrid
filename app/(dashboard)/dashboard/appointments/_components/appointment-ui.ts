@@ -1,3 +1,4 @@
+import { courierStatusAfterService } from "@/lib/appointments/courier-policy";
 import type {
   AppointmentItem,
   AppointmentStatus,
@@ -42,13 +43,13 @@ export const appointmentTransitions: Partial<
 };
 
 export const courierLabel: Record<CourierStatus, string> = {
-  pending: "در انتظار تکمیل خدمات",
+  pending: "در انتظار قیمت‌گذاری و اعزام",
   scheduled: "زمان‌بندی شد",
-  assigned: "به پیک اختصاص یافت",
-  picked_up: "دستگاه دریافت شد",
+  assigned: "حرکت از فروشگاه به سمت مشتری",
+  picked_up: "تحویل دستگاه به پیک",
   at_store: "به فروشگاه رسید",
   return_ready: "تکمیل خدمات و آماده ارسال",
-  returning: "تحویل به پیک",
+  returning: "حرکت به سمت مشتری پس از خدمات",
   delivered: "تحویل به مشتری",
   cancelled: "لغو شد",
 };
@@ -67,7 +68,7 @@ export const courierTone: Record<CourierStatus, string> = {
 
 export { COURIER_TRANSITIONS as courierNext, COURIER_RETURN_DELIVERY_STAGES as courierReturnTimeline, courierReturnDeliveryProgress as courierReturnProgress } from "@/lib/appointments/courier-policy";
 
-export const courierTimeline: CourierStatus[] = ["return_ready", "returning", "delivered"];
+export const courierTimeline: CourierStatus[] = ["assigned", "picked_up", "returning"];
 
 export function toman(value: number | null | undefined) {
   if (value === null || value === undefined) return "نامشخص";
@@ -117,11 +118,11 @@ export function selectedRewardLabel(item: AppointmentItem) {
 export type CourierView = NonNullable<AppointmentItem["courierSummary"]>;
 
 export function getCourierView(item: AppointmentItem): CourierView | null {
-  if (item.courierSummary) return item.courierSummary;
+  if (item.courierSummary) return { ...item.courierSummary, status: courierStatusAfterService(item.courierSummary.status, item.status) };
   if (!item.courier) return null;
 
   return {
-    status: item.courier.status,
+    status: courierStatusAfterService(item.courier.status, item.status),
     pickupDate: item.courier.pickupDate || item.startsAt,
     pickupWindow: item.courier.pickupWindow || { start: "", end: "" },
     regionTitle: item.courier.regionTitle || "",

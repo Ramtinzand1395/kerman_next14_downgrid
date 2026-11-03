@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import { ArrowLeft, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import {
   useCallback,

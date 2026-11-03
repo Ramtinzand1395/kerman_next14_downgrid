@@ -1,2 +1,1 @@
-import { ProfileSkeleton } from "@/app/components/loading/LoadingSystem";
-export default function Loading() { return <ProfileSkeleton />; }
+export { PageLoading as default } from "@/app/components/loading/LoadingSystem";

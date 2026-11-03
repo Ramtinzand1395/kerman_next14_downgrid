@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import {
   Search,
   Home,
@@ -18,7 +18,8 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { FormEvent, useMemo, useState } from "react";
 import MobileMenu from "./MobileMenu";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useRouter } from "@/app/components/navigation/NavigationFeedback";
 import CartDropdown from "./CartDropdown";
 import UserBtn from "./UserBtn";
 import { categories } from "../constants/categories";

@@ -13,7 +13,7 @@ import {
   Truck,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 
 const quickLinks = [
   { name: "خانه", href: "/", icon: Home },

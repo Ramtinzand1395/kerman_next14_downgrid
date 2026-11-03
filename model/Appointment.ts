@@ -121,6 +121,14 @@ const AppointmentSchema = new Schema(
       baseAmount: { type: Number, default: null, min: 0 },
       discountAmount: { type: Number, default: 0, min: 0 },
     },
+    payment: {
+      status: { type: String, enum: ["unpaid", "initiating", "pending", "paid", "failed"], default: "unpaid" },
+      amount: { type: Number, min: 0 },
+      authority: { type: String },
+      refId: { type: String },
+      startedAt: { type: Date },
+      paidAt: { type: Date },
+    },
     completedAt: { type: Date, default: null },
     visitCountedAt: { type: Date, default: null },
     rewardProcessingState: { type: String, enum: ["pending", "processing", "done", "failed", null], default: null },
@@ -129,6 +137,7 @@ const AppointmentSchema = new Schema(
   { timestamps: true },
 );
 
+AppointmentSchema.index({ "payment.authority": 1 }, { unique: true, partialFilterExpression: { "payment.authority": { $type: "string" } } });
 AppointmentSchema.index({ user: 1, clientRequestKey: 1 }, { unique: true });
 AppointmentSchema.index({ serviceType: 1, startsAt: 1, status: 1 });
 AppointmentSchema.index({ fulfillment: 1, status: 1 });

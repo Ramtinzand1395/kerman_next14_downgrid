@@ -1,7 +1,7 @@
 "use client";
 
 import { Truck, RotateCcw, Box, Store } from "lucide-react";
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import { Comment, Product } from "@/types";
 import AddToCart from "./AddToCart";
 import {

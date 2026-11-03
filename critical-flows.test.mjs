@@ -80,8 +80,8 @@ test("OTP autofill, paste, and manual submit share one verifier", async () => {
 });
 
 test("return delivery presentation maps legacy courier states into three safe stages", () => {
-  assert.equal(courierReturnDeliveryProgress("at_store"), 0);
-  assert.equal(courierReturnDeliveryProgress("return_ready"), 1);
-  assert.equal(courierReturnDeliveryProgress("returning"), 2);
+  assert.equal(courierReturnDeliveryProgress("at_store"), 2);
+  assert.equal(courierReturnDeliveryProgress("return_ready"), 2);
+  assert.equal(courierReturnDeliveryProgress("returning"), 3);
   assert.equal(courierReturnDeliveryProgress("delivered"), 3);
 });

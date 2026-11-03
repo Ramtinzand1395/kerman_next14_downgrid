@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import type { Metadata } from "next";
 import { getCategoryCatalog } from "@/lib/catalog/category-data";
 import { categoryHref } from "@/lib/catalog/category-seo";

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import { ArrowLeft, ChevronLeft, PackageSearch } from "lucide-react";
 import ProductImage from "@/app/components/ProductImage";
 import Motion from "../../components/Motion";

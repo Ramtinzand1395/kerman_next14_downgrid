@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import Link from "@/app/components/navigation/NavigationFeedback";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useRouter } from "@/app/components/navigation/NavigationFeedback";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DatePicker, { DateObject } from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
@@ -33,7 +34,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import DashboardSkeleton from "./components/DashboardSkeleton";
+import { PageLoading } from "@/app/components/loading/LoadingSystem";
 
 type Section<T> =
   | { status: "ok"; data: T }
@@ -698,7 +699,7 @@ export default function DashboardPage() {
           </div>
         )}
         {error && <SectionError message={error} onRetry={retry} />}
-        {loading && <DashboardSkeleton />}
+        {loading && <PageLoading />}
       </div>
     );
   }
