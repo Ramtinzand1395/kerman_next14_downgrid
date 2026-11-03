@@ -2,33 +2,30 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { canCourierTransition, courierStatusAfterService, COURIER_RETURN_DELIVERY_STAGES, courierReturnDeliveryProgress } from './lib/appointments/courier-policy.ts';
 
-test('a newly registered courier request reaches delivery without pickup administration', () => {
-  let courier = 'pending';
-  assert.equal(courierReturnDeliveryProgress(courier), 0);
-  assert.equal(courierStatusAfterService(courier, 'confirmed'), 'pending');
-  courier = courierStatusAfterService(courier, 'completed');
-  assert.equal(courier, 'return_ready');
-  assert.equal(courierReturnDeliveryProgress(courier), 1);
-  assert.equal(canCourierTransition(courier, 'delivered'), false);
-  assert.equal(canCourierTransition(courier, 'returning'), true);
-  assert.equal(canCourierTransition('returning', 'delivered'), true);
-  assert.equal(canCourierTransition('delivered', 'returning'), false);
+test('pickup, receipt and return are the three courier actions in order', () => {
   assert.equal(COURIER_RETURN_DELIVERY_STAGES.length, 3);
-});
-
-test('legacy pickup stages can finish service directly and cannot create more pickup work', () => {
-  const legacy = ['pending', 'scheduled', 'assigned', 'picked_up', 'at_store'];
-  for (const from of legacy) {
-    assert.equal(courierStatusAfterService(from, 'completed'), 'return_ready');
-    assert.equal(canCourierTransition(from, 'return_ready'), true);
-    for (const to of legacy.filter(value => value !== from)) {
-      assert.equal(canCourierTransition(from, to), false);
-    }
+  assert.equal(canCourierTransition('pending', 'assigned'), true);
+  assert.equal(canCourierTransition('pending', 'picked_up'), false);
+  assert.equal(canCourierTransition('assigned', 'picked_up'), true);
+  assert.equal(canCourierTransition('picked_up', 'returning'), false);
+  assert.equal(courierStatusAfterService('picked_up', 'completed'), 'return_ready');
+  assert.equal(canCourierTransition('return_ready', 'returning'), true);
+  assert.equal(canCourierTransition('returning', 'delivered'), false);
+  assert.equal(canCourierTransition('returning', 'assigned'), false);
+  for (const [state, progress] of [['pending',0],['assigned',1],['picked_up',2],['return_ready',2],['returning',3],['delivered',3]]) {
+    assert.equal(courierReturnDeliveryProgress(state), progress);
   }
 });
 
-test('service corrections preserve dispatch facts and never resurrect cancelled deliveries', () => {
-  assert.equal(courierStatusAfterService('return_ready', 'confirmed'), 'pending');
+test('old scheduled and at_store records remain actionable without migration', () => {
+  assert.equal(canCourierTransition('scheduled', 'assigned'), true);
+  assert.equal(courierStatusAfterService('at_store', 'completed'), 'return_ready');
+  assert.equal(canCourierTransition('at_store', 'return_ready'), true);
+  assert.equal(canCourierTransition('picked_up', 'assigned'), false);
+});
+
+test('service corrections preserve courier facts and terminal history', () => {
+  assert.equal(courierStatusAfterService('return_ready', 'confirmed'), 'picked_up');
   for (const status of ['cancelled', 'rejected', 'no_show']) {
     assert.equal(courierStatusAfterService('pending', status), 'cancelled');
     assert.equal(courierStatusAfterService('return_ready', status), 'cancelled');

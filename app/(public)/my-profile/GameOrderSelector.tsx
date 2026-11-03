@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import Link, { useRouter } from "@/app/components/navigation/NavigationFeedback";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   CalendarDays,
@@ -27,7 +26,7 @@ import type {
   RewardType,
   ServiceType,
 } from "@/types/appointments";
-import { ButtonLoading } from "@/app/components/loading/LoadingSystem";
+import { ButtonLoading, PageLoading } from "@/app/components/loading/LoadingSystem";
 import {
   clearAppointmentDraft,
   readAppointmentDraft,
@@ -530,7 +529,10 @@ export default function GameOrderSelector({
   const nextDisabled = step === 1 ? !stageOneValid || (repairIssue === "other" && !description.trim())
     : step === 2 ? selectedGames.length === 0 : step === 3 ? !fulfillment : !scheduleValid;
   const canSubmit = stageThreeValid && stageOneValid && scheduleValid && (serviceType !== "game_install" || selectedGames.length > 0);
-  const previousStep = () => setStep((value) => value === 3 && serviceType !== "game_install" ? 1 : Math.max(1, value - 1) as Step);
+  const previousStep = () => {
+    scrollAfterNextRef.current = true;
+    setStep((value) => value === 3 && serviceType !== "game_install" ? 1 : Math.max(1, value - 1) as Step);
+  };
 
   function chooseDevice(next: string) {
     if (next !== device) { setSelectedGames([]); setInstallationType(""); }
@@ -614,6 +616,10 @@ export default function GameOrderSelector({
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "درخواست ثبت نشد؛ اطلاعات را بررسی و دوباره تلاش کنید.");
       clearAppointmentDraft(sessionStorage);
+      if (fulfillment === "courier") {
+        router.replace("/my-profile?step=5&ordersTab=games", { scroll: true });
+        return;
+      }
       setCreated(payload.appointment as CreatedAppointment);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "درخواست ثبت نشد؛ دوباره تلاش کنید.");
@@ -622,6 +628,8 @@ export default function GameOrderSelector({
       setSubmitting(false);
     }
   };
+
+  if (profileLoading) return <PageLoading label="در حال آماده‌سازی ثبت درخواست…" />;
 
   if (created) {
     return (

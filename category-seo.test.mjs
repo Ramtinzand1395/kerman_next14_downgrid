@@ -52,7 +52,7 @@ test('real page metadata/render preserve product URLs, links and escaped JSON-LD
   const entries = seo.buildCategoryEntries(rows, [{ _id: rows[1]._id, count: 13 }]);
   const page = await load('./app/(public)/category/[slug]/page.tsx', {
     react: { ...require('react'), cache: fn => fn },
-    'next/link': ({ href, children, ...props }) => require('react').createElement('a', { href, ...props }, children),
+    '@/app/components/navigation/NavigationFeedback': ({ href, children, ...props }) => require('react').createElement('a', { href, ...props }, children),
     'next/navigation': { notFound: () => { throw new Error('404'); }, permanentRedirect: value => { throw new Error('308 ' + value); } },
     '../../components/Cart': ({ game }) => require('react').createElement('a', { href: `/product/${game.slug}` }, game.title),
     '@/lib/site': { toAbsoluteUrl: path => `https://kermanatari.ir${path}` },

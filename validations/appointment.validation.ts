@@ -1,6 +1,6 @@
 import { z } from "zod";
 import {
-  APPOINTMENT_STATUSES,
+  APPOINTMENT_STATUSES, COURIER_ACTION_STATUSES,
   normalizeRewardRuleData,
   validateRewardRuleData,
 } from "@/lib/appointments/policy";
@@ -86,7 +86,7 @@ export const appointmentUserUpdateSchema = z.discriminatedUnion("action", [
 export const appointmentAdminUpdateSchema = z
   .object({
     status: z.enum(APPOINTMENT_STATUSES).optional(),
-    courierStatus: z.enum(["pending", "return_ready", "returning", "delivered", "cancelled"]).optional(),
+    courierStatus: z.enum(COURIER_ACTION_STATUSES).optional(),
     startsAt: z.coerce.date().optional(),
     pickupDate: z.string().regex(dateStringRegex).optional(),
     pickupWindow: z

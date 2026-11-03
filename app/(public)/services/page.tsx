@@ -1,6 +1,6 @@
 import { CheckCircle2 } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {

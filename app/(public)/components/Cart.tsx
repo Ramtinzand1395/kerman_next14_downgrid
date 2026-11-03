@@ -3,14 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Heart, ShoppingCart, Star } from "lucide-react";
 import { motion } from "framer-motion";
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import { useSession } from "next-auth/react";
 import { toast } from "react-toastify";
 import useCartStore from "@/stores/cartStore";
 import { Comment, Product } from "@/types";
 import useFavoriteStore from "@/stores/favoriteStore";
 import ProductImage from "@/app/components/ProductImage";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/app/components/navigation/NavigationFeedback";
 
 import { getDefaultVariant } from "@/lib/variantSelector";
 

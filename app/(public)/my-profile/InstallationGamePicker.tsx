@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, ChevronLeft, ChevronRight, HardDrive, Loader2, Search, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, HardDrive, Search, X } from "lucide-react";
+import { GameCardsSkeleton } from "@/app/components/loading/LoadingSystem";
 import GameCover from "@/app/components/games/GameCover";
 import { gameKey, installationSize, MAX_INSTALLATION_GAMES, type InstallationGame } from "@/lib/appointments/games";
 
@@ -73,7 +74,7 @@ export default function InstallationGamePicker({ device, installationType, value
       </div>}
       <label className="block"><span className="text-sm font-bold text-slate-700">جست‌وجوی بازی</span><span className="mt-2 flex items-center gap-2 rounded-2xl border border-slate-200 px-3 focus-within:ring-4 focus-within:ring-blue-100"><Search className="h-5 w-5 shrink-0 text-slate-400" /><input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="نام بازی را بنویسید…" maxLength={250} className="h-12 min-w-0 flex-1 bg-transparent outline-none" /></span></label>
       {value.length >= MAX_INSTALLATION_GAMES && <p role="status" className="text-sm text-amber-800">حداکثر ۱۰۰ بازی قابل انتخاب است.</p>}
-      {loading ? <div role="status" className="flex items-center justify-center gap-2 py-16 text-slate-500"><Loader2 className="h-5 w-5 animate-spin" /> در حال دریافت بازی‌ها…</div> : error ? <div role="alert" className="rounded-2xl bg-rose-50 p-5 text-sm text-rose-700"><p>{error}</p><button type="button" onClick={() => setReload((n) => n + 1)} className="mt-3 min-h-10 rounded-xl border border-rose-200 px-4 font-bold">تلاش دوباره</button></div> : games.length === 0 ? <p className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">{search ? "بازی‌ای با این نام پیدا نشد." : "هنوز بازی‌ای برای این انتخاب ثبت نشده است."}</p> : <>
+      {loading ? <GameCardsSkeleton /> : error ? <div role="alert" className="rounded-2xl bg-rose-50 p-5 text-sm text-rose-700"><p>{error}</p><button type="button" onClick={() => setReload((n) => n + 1)} className="mt-3 min-h-10 rounded-xl border border-rose-200 px-4 font-bold">تلاش دوباره</button></div> : games.length === 0 ? <p className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">{search ? "بازی‌ای با این نام پیدا نشد." : "هنوز بازی‌ای برای این انتخاب ثبت نشده است."}</p> : <>
         <p className="text-xs text-slate-500">{total.toLocaleString("fa-IR")} نسخه بازی در فهرست</p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">{games.map((game) => {
           const selected = selectedKeys.has(gameKey(game));

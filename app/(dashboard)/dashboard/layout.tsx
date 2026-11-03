@@ -1,3 +1,6 @@
+import { NavigationProvider } from "@/app/components/navigation/NavigationFeedback";
+import { Suspense } from "react";
+import NavigationScroll from "@/app/components/navigation/NavigationScroll";
 import "@/app/globals.css";
 import "react-loading-skeleton/dist/skeleton.css";
 import localFont from "next/font/local";
@@ -35,6 +38,8 @@ export default function DashLayout({
 
       <body className="dashboard-shell flex h-screen overflow-hidden">
         <AuthProvider>
+        <NavigationProvider>
+          <Suspense fallback={null}><NavigationScroll /></Suspense>
           {/* Sidebar ثابت در سمت راست */}
           <DashboardSidebar />
           {/* محتوای صفحات */}
@@ -42,6 +47,7 @@ export default function DashLayout({
             <DashboardTopbar />
             <div className="dashboard-content">{children}</div>
           </main>
+        </NavigationProvider>
         </AuthProvider>
         <ToastContainer
           position="bottom-right"

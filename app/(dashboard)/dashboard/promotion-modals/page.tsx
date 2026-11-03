@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { toast } from "react-toastify";
 import { apiFetch } from "@/lib/loyalty/ui";

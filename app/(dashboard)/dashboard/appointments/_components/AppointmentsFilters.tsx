@@ -106,7 +106,7 @@ export default function AppointmentsFilters({
             className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
           >
             <option value="">همه وضعیت‌های پیک</option>
-            {(Object.entries(courierLabel) as Array<[CourierStatus, string]>).filter(([value]) => ["pending", "return_ready", "returning", "delivered", "cancelled"].includes(value)).map(
+            {(Object.entries(courierLabel) as Array<[CourierStatus, string]>).filter(([value]) => ["pending", "assigned", "picked_up", "return_ready", "returning", "delivered", "cancelled"].includes(value)).map(
               ([value, label]) => (
                 <option key={value} value={value}>
                   {label}

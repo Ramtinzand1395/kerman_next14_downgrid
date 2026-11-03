@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import { permanentRedirect } from "next/navigation";
 import { getCategoryCatalog } from "@/lib/catalog/category-data";
 import { categoryHref, decodeCategorySlug } from "@/lib/catalog/category-seo";
@@ -14,6 +14,7 @@ import SortProducts from "./components/SortProducts";
 import ProductsSearch from "./components/ProductsSearch";
 import ProductArtSlider from "./components/ProductArtSlider";
 import {
+  ProductResults,
   ProductNavigationLink,
   ProductNavigationProvider,
 } from "./components/ProductNavigation";
@@ -307,6 +308,7 @@ export default async function ProductsPage({
         <FilterProducts tags={availableTags} />
 
         <div className="w-full">
+          <ProductResults>
           {products && products.length > 0 ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
               {products.map((game: Product) => (
@@ -337,6 +339,7 @@ export default async function ProductsPage({
             </div>
           )}
 
+          </ProductResults>
           <Pagination totalPages={totalPages} currentPage={currentPage} />
         </div>
       </div>

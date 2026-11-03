@@ -28,6 +28,7 @@ export default function SettlementModal({
 }: Props) {
   if (!item) return null;
   const courier = getCourierView(item);
+  const initialPricing = courier && ["pending", "scheduled"].includes(courier.status);
   const reward = selectedRewardLabel(item);
 
   return (
@@ -47,7 +48,7 @@ export default function SettlementModal({
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 id="settlement-title" className="font-black text-slate-950">
-              تکمیل و تسویه
+              {initialPricing ? "قیمت‌گذاری اولیه" : "پایان خدمات و قیمت‌گذاری نهایی"}
             </h2>
             <p className="mt-1 font-mono text-xs text-slate-400" dir="ltr">
               {item.trackingCode}
@@ -59,8 +60,8 @@ export default function SettlementModal({
         </div>
 
         <p className="mt-4 rounded-2xl bg-blue-50 p-4 text-sm leading-7 text-blue-950">
-          فقط مبلغ واقعی خدمت ارسال می‌شود؛ تمام تخفیف‌ها و جمع نهایی را سرور
-          محاسبه و ذخیره می‌کند.
+          مبلغ خدمت را به تومان وارد کنید؛ هزینه پیک و تخفیف‌ها در جمع نهایی محاسبه می‌شوند.
+          {initialPricing ? " این مبلغ اولیه است و هنگام پایان خدمات قابل اصلاح است." : " پس از ثبت، اعلان مبلغ نهایی و لینک پرداخت برای مشتری ارسال می‌شود."}
         </p>
 
         {courier ? (
@@ -128,7 +129,7 @@ export default function SettlementModal({
             ) : (
               <Check className="h-4 w-4" />
             )}
-            ثبت تسویه
+            {initialPricing ? "ثبت مبلغ اولیه" : "ثبت مبلغ نهایی و ارسال لینک پرداخت"}
           </button>
         </div>
       </section>

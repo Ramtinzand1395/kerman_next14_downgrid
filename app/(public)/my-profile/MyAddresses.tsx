@@ -8,7 +8,7 @@ import { Iran } from "provinces-and-cities";
 import { addressSchema } from "@/validations/UserInfoValidation";
 import * as yup from "yup";
 import { Address } from "@/types";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/app/components/navigation/NavigationFeedback";
 import { attachNewAddressToAppointmentDraft } from "@/lib/appointments/draft";
 
 export default function MyAddresses() {

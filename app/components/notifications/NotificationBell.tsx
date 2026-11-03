@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import { Bell, CheckCheck, Loader2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import type { NotificationItem, NotificationResponse } from "./types";

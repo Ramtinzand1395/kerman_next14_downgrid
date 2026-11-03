@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import { useEffect, useId, useRef, useState } from "react";
 import { X, Copy, Check, ArrowLeft } from "lucide-react";
 import type { PromotionOffer } from "@/lib/promotions/policy";

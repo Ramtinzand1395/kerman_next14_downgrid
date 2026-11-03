@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import {
   Home,
   Users,

@@ -6,7 +6,7 @@
 //   WalletCards,
 //   FilePlus,
 // } from "lucide-react";
-// import Link from "next/link";
+// import Link from "@/app/components/navigation/NavigationFeedback";
 
 // export default function Sidebar() {
 //   return (
@@ -75,7 +75,7 @@ import {
   FilePlus,
   MessageCircle,
 } from "lucide-react";
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 
 export default function Sidebar() {
   return (

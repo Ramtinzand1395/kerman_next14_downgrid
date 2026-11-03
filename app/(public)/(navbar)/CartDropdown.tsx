@@ -5,7 +5,7 @@ import useCartStore from "@/stores/cartStore";
 import { CartItem } from "@/types";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronDown, ShoppingBag } from "lucide-react";
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import ProductImage from "@/app/components/ProductImage";
 
 type DropdownType = "user" | "cart" | null;

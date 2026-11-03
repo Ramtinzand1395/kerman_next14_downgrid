@@ -1,5 +1,7 @@
 "use client";
 
+import { PageLoading } from "@/app/components/loading/LoadingSystem";
+
 import {
   FormEvent,
   Suspense,
@@ -8,7 +10,8 @@ import {
   useEffect,
   useState,
 } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useRouter } from "@/app/components/navigation/NavigationFeedback";
 import {
   CalendarClock,
   ChevronLeft,
@@ -234,7 +237,7 @@ function AppointmentsAdminContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status,
-          ...(status === "completed" ? { baseAmount: forcedAmount } : {}),
+          ...(forcedAmount !== undefined ? { baseAmount: forcedAmount } : {}),
         }),
       });
       const payload = (await response.json().catch(() => ({}))) as {
@@ -473,12 +476,13 @@ function AppointmentsAdminContent() {
               onRetry={() => void loadAppointments()}
             />
           ) : listLoading ? (
-            <DashboardSkeleton />
+            <PageLoading />
           ) : tab === "courier" ? (
             <>
               <CourierQueue
                 items={items}
                 workingId={workingId}
+                onOpenSettlement={setSettlement}
                 onOpenDetails={setDetail}
                 onRequestStatus={(item, nextStatus) =>
                   setTransitionRequest({
@@ -525,7 +529,7 @@ function AppointmentsAdminContent() {
           onRetry={() => void loadConfiguration()}
         />
       ) : configLoading ? (
-        <DashboardSkeleton />
+        <PageLoading />
       ) : tab === "settings" && settings ? (
         <CourierSettings
           settings={settings}
@@ -560,9 +564,14 @@ function AppointmentsAdminContent() {
         onClose={() => setSettlement(null)}
         onSubmit={() => {
           if (!settlement) return;
+          const amount = completionAmounts[settlement._id];
+          if (!amount?.trim() || !Number.isSafeInteger(Number(amount)) || Number(amount) < 0) {
+            setNotice("مبلغ خدمت را به تومان وارد کنید.");
+            return;
+          }
           void updateStatus(
             settlement,
-            "completed",
+            settlement.courier && ["pending", "scheduled"].includes(settlement.courier.status) ? "confirmed" : "completed",
             Number(completionAmounts[settlement._id]),
           );
         }}
@@ -576,23 +585,6 @@ function AppointmentsAdminContent() {
         onConfirm={confirmTransition}
       />
     </main>
-  );
-}
-
-function DashboardSkeleton() {
-  return (
-    <div className="grid gap-4 xl:grid-cols-2" aria-label="در حال دریافت">
-      {Array.from({ length: 4 }, (_, index) => (
-        <div
-          key={index}
-          className="h-56 animate-pulse rounded-3xl border border-slate-200 bg-white p-5"
-        >
-          <div className="h-4 w-2/5 rounded bg-slate-100" />
-          <div className="mt-4 h-20 rounded-2xl bg-slate-100" />
-          <div className="mt-4 h-10 rounded-xl bg-slate-100" />
-        </div>
-      ))}
-    </div>
   );
 }
 

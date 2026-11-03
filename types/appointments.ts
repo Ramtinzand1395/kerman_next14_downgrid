@@ -181,6 +181,7 @@ export type AppointmentItem = {
   customerSummary?: CustomerHistorySummary;
   rewardSummary?: AdminRewardSummary;
   history?: AppointmentHistoryItem[];
+  payment?: { status: "unpaid" | "initiating" | "pending" | "paid" | "failed"; amount?: number; refId?: string; paidAt?: string };
   completedAt?: string | null;
 };
 

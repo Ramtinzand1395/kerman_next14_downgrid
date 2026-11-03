@@ -1,2 +1,1 @@
-import { DashboardRouteSkeleton } from "@/app/components/loading/LoadingSystem";
-export default function Loading() { return <DashboardRouteSkeleton variant="notifications" />; }
+export { PageLoading as default } from "@/app/components/loading/LoadingSystem";

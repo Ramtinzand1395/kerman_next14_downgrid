@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import { useState } from "react";
 import { ChevronLeft, PackageSearch } from "lucide-react";
 import ProductImage from "@/app/components/ProductImage";

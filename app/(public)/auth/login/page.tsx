@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/app/components/navigation/NavigationFeedback";
 import { signIn } from "next-auth/react";
 import { toast } from "react-toastify";
 import * as yup from "yup";

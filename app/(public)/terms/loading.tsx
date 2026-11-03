@@ -1,2 +1,1 @@
-import { PageLoading } from "@/app/components/loading/LoadingSystem";
-export default function Loading() { return <PageLoading label="در حال بارگذاری قوانین…" />; }
+export { PageLoading as default } from "@/app/components/loading/LoadingSystem";

@@ -58,7 +58,7 @@ export function canAdminTransition(from: AppointmentStatus, to: AppointmentStatu
   return from === to || ADMIN_TRANSITIONS[from].includes(to);
 }
 
-export { COURIER_TRANSITIONS, canCourierTransition, COURIER_RETURN_DELIVERY_STAGES, courierReturnDeliveryProgress } from "./courier-policy.ts";
+export { COURIER_ACTION_STATUSES, COURIER_TRANSITIONS, canCourierTransition, COURIER_RETURN_DELIVERY_STAGES, courierReturnDeliveryProgress } from "./courier-policy.ts";
 
 export function courierUserCancellationAllowed(courierStatus: CourierStatus): boolean {
   return ["pending", "scheduled", "assigned"].includes(courierStatus);
