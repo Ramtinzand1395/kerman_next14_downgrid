@@ -200,6 +200,36 @@ function AppointmentsAdminContent() {
     await Promise.all([loadAppointments(), loadConfiguration()]);
   };
 
+  const sendPaymentLink = async (itemId: string): Promise<string> => {
+    const response = await fetch(`/api/admin/appointments/${itemId}/payment`, { method: "POST" });
+    const payload = await response.json().catch(() => ({})) as {
+      data?: { url: string; smsStatus?: string; notificationStatus?: string };
+      error?: string;
+    };
+    if (!response.ok || !payload.data?.url) {
+      throw new Error(payload.error || "لینک پرداخت ساخته نشد.");
+    }
+    try {
+      await navigator.clipboard.writeText(payload.data.url);
+    } catch {
+      // The link is still shown in the notice if clipboard permission is denied.
+    }
+    return `لینک پرداخت: ${payload.data.url} · اعلان: ${payload.data.notificationStatus === "sent" ? "ارسال شد" : "ناموفق"} · پیامک: ${payload.data.smsStatus === "sent" ? "ارسال شد" : "ارسال نشد یا الگوی پیامک تنظیم نیست"}`;
+  };
+
+  const requestPaymentLink = async (item: AppointmentItem) => {
+    setWorkingId(item._id);
+    setNotice("");
+    try {
+      setNotice(await sendPaymentLink(item._id));
+      await loadAppointments();
+    } catch (reason) {
+      setNotice(reason instanceof Error ? reason.message : "لینک پرداخت آماده نشد.");
+    } finally {
+      setWorkingId("");
+    }
+  };
+
   const updateStatus = async (
     item: AppointmentItem,
     status: AppointmentStatus,
@@ -231,7 +261,15 @@ function AppointmentsAdminContent() {
       }
       setSettlement(null);
       setTransitionRequest(null);
-      setNotice("وضعیت خدمت با موفقیت به‌روزرسانی شد.");
+      if (status === "completed") {
+        try {
+          setNotice(await sendPaymentLink(item._id));
+        } catch (paymentError) {
+          setNotice(`مبلغ نهایی ثبت شد اما لینک پرداخت ارسال نشد: ${paymentError instanceof Error ? paymentError.message : "خطای نامشخص"}`);
+        }
+      } else {
+        setNotice("وضعیت سفارش به‌روزرسانی شد.");
+      }
       await loadAppointments();
     } catch (reason) {
       setNotice(
@@ -467,6 +505,7 @@ function AppointmentsAdminContent() {
               onPageChange={(page) => setFilters((value) => ({ ...value, page }))}
               onOpenDetails={setDetail}
               onOpenSettlement={setSettlement}
+              onRequestPayment={requestPaymentLink}
               onRequestCourier={(item, nextStatus) =>
                 setTransitionRequest({ kind: "courier", item, nextStatus })
               }
