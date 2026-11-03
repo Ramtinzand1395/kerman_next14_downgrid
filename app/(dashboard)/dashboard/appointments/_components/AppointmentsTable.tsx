@@ -165,6 +165,18 @@ export default function AppointmentsTable({
                 </p>
               ) : null}
 
+              {courier && !["cancelled", "rejected", "no_show"].includes(item.status) && (
+                <div className="mt-3 rounded-2xl border border-blue-100 bg-blue-50/40 p-3">
+                  <p className="mb-2 text-xs font-black text-slate-700">مسیر سفارش</p>
+                  <ol className="grid grid-cols-4 gap-1.5 text-center text-[10px] leading-5 sm:text-xs">
+                    {["دریافت اطلاعات", "حرکت پیک", "نصب و پرداخت", "بازگشت مشتری"].map((label, index) => {
+                      const progressed = index === 0 || (index === 1 && !["pending", "scheduled"].includes(courier.status)) ||
+                        (index === 2 && item.status === "completed") || (index === 3 && ["returning", "delivered"].includes(courier.status));
+                      return <li key={label} className={`rounded-xl p-2 ${progressed ? "bg-emerald-100 font-black text-emerald-900" : "bg-white text-slate-500"}`}>{label}</li>;
+                    })}
+                  </ol>
+                </div>
+              )}
               <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
                 {item.status === "pending" && (
                   <button type="button" disabled={workingId === item._id} onClick={() => courier ? onOpenSettlement(item) : onRequestStatus(item, "confirmed")} className="rounded-xl bg-blue-900 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">
