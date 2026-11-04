@@ -1,8 +1,8 @@
 import { deliverBusinessSms } from "@/lib/sms/business";
 import { buildOrderIdentifiers } from "@/lib/orderIdentifierValue";
 
-// Approved Melipayamak service-pattern IDs from the merchant panel.
-// The game-install template may still be pending approval; keep its status visible in SMS logs.
+// Melipayamak service-pattern IDs provided by the merchant.
+// The screenshots showed pending approval for installation and paid-order patterns; provider approval must be checked before live use.
 export const SERVICE_SMS_PATTERNS = {
   installationPayment: 577164,
   productOrderCreated: 577166,
@@ -10,7 +10,7 @@ export const SERVICE_SMS_PATTERNS = {
 } as const;
 
 function validMobile(value: unknown): value is string {
-  return typeof value === "string" && /^09\\d{9}$/.test(value.trim());
+  return typeof value === "string" && /^09\d{9}$/.test(value.trim());
 }
 
 function tomanAmount(value: number): string {
