@@ -22,8 +22,8 @@ export async function POST(_req: Request, { params }: { params: { id: string } |
   const [notification, sms] = await Promise.allSettled([
     notifyUser({
       userId: appointment.user,
-      title: "مبلغ خدمات نصب بازی آماده پرداخت است",
-      message: `مبلغ نهایی درخواست ${appointment.trackingCode}: ${appointment.pricing.finalAmount.toLocaleString("fa-IR")} تومان. برای پرداخت، وارد جزئیات سفارش شوید.`,
+      title: "پرداخت سفارش نصب بازی",
+      message: `مبلغ نهایی درخواست ${appointment.trackingCode}: ${appointment.pricing.finalAmount.toLocaleString("fa-IR")} تومان. برای مشاهده سفارش و پرداخت آنلاین، این اعلان را باز کنید.`,
       type: "REQUEST_STATUS_CHANGED",
       category: "request",
       entityType: "Appointment",
