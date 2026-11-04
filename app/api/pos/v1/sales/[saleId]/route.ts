@@ -29,11 +29,11 @@ export async function GET(
         saleId: String(sale.saleId),
         siteSaleId: String(sale.siteSaleId),
         invoiceNumber: String(sale.invoiceNumber),
-        soldAtUtc: new Date(sale.soldAtUtc).toISOString(),
-        syncedAtUtc: new Date(sale.syncedAtUtc).toISOString(),
+        soldAtUtc: new Date(String(sale.soldAtUtc)).toISOString(),
+        syncedAtUtc: new Date(String(sale.syncedAtUtc)).toISOString(),
         finalAmountToman: Number(sale.finalAmountToman),
-        syncStatus: sale.syncStatus,
-        reviewReasons: [...(sale.reviewReasons ?? [])],
+        syncStatus: sale.syncStatus === "review_required" ? "review_required" : "synced",
+        reviewReasons: (sale.reviewReasons ?? []).map(String),
       };
     },
   });
