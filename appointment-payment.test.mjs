@@ -66,7 +66,7 @@ test('payment uses server toman total converted to rial and stores authority bef
 });
 
 test('pending payment reuses authority and gateway failure releases only its own lock', async () => {
-  const h=harness({current:{status:'completed',pricing:{known:true},payment:{status:'pending',authority:'Aexisting'}}});
+  const h=harness({current:{status:'completed',pricing:{known:true,finalAmount:125000},payment:{status:'pending',authority:'Aexisting'}}});
   assert.match((await h.post()).data.url,/Aexisting$/);
   assert.equal(h.calls.length,1);
   const failed=harness({gatewayError:true});
