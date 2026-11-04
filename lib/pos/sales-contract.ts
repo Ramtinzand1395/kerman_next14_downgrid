@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 
 const OBJECT_ID_PATTERN = /^[0-9a-f]{24}$/i;
-const SALE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+// Reject trailing newlines too; JavaScript $ alone permits them.
+export const SALE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$(?![\s\S])/;
 const MAX_ITEMS = 100;
 const MAX_PAYMENT_METHODS = 10;
 

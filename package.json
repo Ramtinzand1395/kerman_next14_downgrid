@@ -15,7 +15,8 @@
     "test": "node --test *.test.mjs",
     "audit:pos-catalog": "node --env-file=.env scripts/audit-pos-catalog-identities.mjs",
     "audit:referral": "node --env-file=.env scripts/audit-referral-integrity.mjs",
-    "seed": "node helpers/seed.mjs"
+    "seed": "node helpers/seed.mjs",
+    "test:pos:transactions": "POS_LOCAL_TRANSACTION_TESTS=true node --test pos-sales-transaction.test.mjs"
   },
   "dependencies": {
     "cloudinary": "^2.11.0",
@@ -45,8 +46,14 @@
     "autoprefixer": "^10.4.23",
     "eslint": "^8.57.1",
     "eslint-config-next": "14.2.35",
+    "mongodb-memory-server": "11.0.0",
     "postcss": "^8.5.6",
     "tailwindcss": "3.4.1",
     "typescript": "5.9.3"
+  },
+  "config": {
+    "mongodbMemoryServer": {
+      "disablePostinstall": true
+    }
   }
 }

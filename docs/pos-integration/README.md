@@ -308,3 +308,83 @@ Content-Type: application/json
 6. Snapshot و Changes روی یک دستگاه production-scoped بررسی شده و سپس scope `sales` فقط به دستگاه‌های تأییدشده داده شود.
 
 فعال‌سازی این gate مجوز اجرای migration یا تغییر خودکار داده‌های قدیمی نیست.
+
+## استعلام فاکتور و Reconciliation
+
+`GET /api/pos/v1/sales/<saleId>` فقط برای دستگاه فعال با Scope برابر `sales` است؛ از همان هدرهای `Authorization: Bearer <token>` و `X-POS-Device-ID` استفاده کنید.
+این مسیر مستقل از `POS_SALES_ENABLED` است و حتی با ارسال فروش خاموش قابل استفاده می‌ماند.
+
+saleId باید دقیقاً شناسه ذخیره‌شده، ۱ تا ۱۲۸ کاراکتر ASCII، با حرف/رقم در ابتدا و حرف/رقم یا `._:-` در ادامه باشد. فاصله، newline، slash و Unicode پذیرفته نمی‌شوند. شناسه را هنگام ساخت URL encode کنید.
+query همیشه ترکیب `(deviceId احرازشده, saleId)` است؛ رسید دستگاه دیگر با 404 یکسان پنهان می‌ماند.
+
+```json
+{
+  "apiVersion": "v1",
+  "registrationStatus": "registered",
+  "sale": {
+    "saleId": "counter-1-20261026-000042",
+    "siteSaleId": "66f123456789abcdef123460",
+    "invoiceNumber": "POS-66F123456789ABCDEF123460",
+    "soldAtUtc": "2026-10-26T10:30:00.000Z",
+    "syncedAtUtc": "2026-10-26T10:30:01.000Z",
+    "finalAmountToman": 34000000,
+    "syncStatus": "synced",
+    "reviewReasons": []
+  }
+}
+```
+
+registered یعنی تراکنش ثبت شده است؛ `review_required` نیز فروش ثبت‌شده با کسر موجودی است و نباید مجدداً با شناسه جدید ارسال شود.
+رسید GET حاوی token، requestHash، customer، cashier، audit یا reference پرداخت نیست. پاسخ‌های موفق و خطا همگی no-store هستند.
+
+| HTTP | کد یا معنا |
+| --- | --- |
+| 200 | رسید ثبت‌شده همراه شناسه‌ها، زمان، مبلغ و وضعیت بررسی |
+| 400 | POS_SALE_INVALID_ID |
+| 401 | POS_UNAUTHORIZED؛ توکن نامعتبر، دستگاه غیرفعال یا هدر مفقود |
+| 403 | POS_SCOPE_FORBIDDEN |
+| 404 | POS_SALE_NOT_FOUND؛ رسیدی برای همین دستگاه پیدا نشد |
+| 429 | POS_RATE_LIMITED؛ رعایت Retry-After |
+| 500 | POS_AUTH_UNAVAILABLE |
+| 503 | POS_SALE_LOOKUP_UNAVAILABLE؛ خطای موقت خواندن |
+
+GET هیچ Sale، Movement، Product یا Outbox را تغییر نمی‌دهد. زیرساخت مشترک احراز هویت همچنان شمارنده rate-limit و lastSeenAt را به‌روزرسانی می‌کند.
+
+### Timeout و Retry در WPF
+
+1. پیش از اولین POST، saleId و payload کامل را پایدار در صف محلی ذخیره کنید.
+2. پس از Timeout نتیجه را «نامشخص» نگه دارید و همان saleId را با همان دستگاه GET کنید.
+3. پاسخ 200 را با مبلغ و شناسه و تاریخ محلی تطبیق دهید؛ synced و review_required هر دو ثبت موفق‌اند.
+4. **404 شکست قطعی POST قبلی نیست**؛ ممکن است درخواست اول هنوز در حال پردازش باشد. با backoff افزایشی، jitter و تعداد تلاش محدود دوباره بررسی کنید.
+5. در POST مجدد همان deviceId، saleId و payload ذخیره‌شده را حفظ کنید؛ soldAtUtc، اقلام، پرداخت و صندوقدار را دوباره تولید نکنید. Idempotency موجود مانع کسر دوباره می‌شود.
+6. 409 idempotency، کمبود موجودی یا ابهام ماندگار به بررسی دستی نیاز دارد؛ پس از 401/403 ابتدا هویت/Scope اصلاح شود. با gate ارسال خاموش صف pending بماند.
+7. Rotation توکن همان deviceId را حفظ می‌کند؛ صف نامشخص دستگاه قبلی را با deviceId تازه ارسال نکنید.
+
+## داشبورد فقط‌خواندنی فروش حضوری
+
+مسیر `/dashboard/pos-sales` و لینک «فروش‌های صندوق» فقط برای superadmin مجازند؛ Middleware و کنترل مجوز سمت سرور اعمال می‌شوند.
+۲۰ فاکتور در صفحه، صفحه‌بندی، فیلتر وضعیت، شماره‌ها، تاریخ تهران، مبلغ تومان، دستگاه، صندوقدار، محصولات/مدل‌ها، تعداد، اختلاف قیمت و گردش موجودی نمایش داده می‌شوند.
+توکن، hash و اطلاعات مشتری در این صفحه نمایش داده نمی‌شوند. حذف، refund، ویرایش یا تغییر موجودی وجود ندارد.
+
+## دستگاه مستقل صندوق — پس از بررسی آمادگی عملیاتی
+
+1. با حساب superadmin ابتدا وجود دستگاه مستقل با catalog و sales را از GET devices بررسی کنید؛ اگر موجود و معتبر است ساخت مجدد اجباری نیست.
+2. در صورت نیاز از POST devices موجود با body برابر `{"name":"Kerman Store Counter 1","scopes":["catalog","sales"]}` استفاده کنید. Scope دستگاه آزمایشی/فعلی را تغییر ندهید.
+3. deviceId را ثبت و توکن یک‌بارنمایش را مستقیم در Windows DPAPI یا Credential Manager صندوق ذخیره کنید؛ توکن در Git، گزارش، log یا عکس قرار نگیرد.
+4. نام، Scope، وضعیت و lastSeenAt از لیست امن بررسی شوند. deactivate/activate/rotate همان PATCH موجود هستند؛ rotation توکن قبلی را فوراً باطل می‌کند.
+5. pepper موجود را عوض نکنید؛ تغییر آن همه توکن‌ها را باطل می‌کند. ابتدا Snapshot، Changes و استعلام امن را بررسی کنید.
+
+## تست محلی
+
+`npm test` تست‌های معمول را اجرا و مجموعه Replica Set را به‌صورت پیش‌فرض skip می‌کند.
+
+```bash
+npm run test:pos:transactions
+# تمام Regressionها همراه تراکنش واقعی محلی:
+POS_LOCAL_TRANSACTION_TESTS=true npm test
+npm run build
+npx tsc --noEmit
+```
+
+Node 24 و devDependency به نام mongodb-memory-server لازم‌اند. تست یک Replica Set موقت MongoDB 7.0.24 فقط روی loopback ایجاد می‌کند و MONGODB_URI ارث‌رسیده را با URI محلی تولیدشده جایگزین می‌کند؛ URI خارجی از کاربر نمی‌پذیرد. داده‌های ساختگی پس از تست حذف می‌شوند.
+دانلود binary در npm install غیرفعال است؛ نخستین اجرای تست ممکن است binary نسخه مشخص‌شده را دانلود کند. scripts/pos-test-loader.mjs فقط برای resolve aliasهای Next در تست مستقیم Node است و runtime سایت آن را استفاده نمی‌کند.

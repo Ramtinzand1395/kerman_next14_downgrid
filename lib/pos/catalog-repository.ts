@@ -1,5 +1,7 @@
 import dbConnect from "@/lib/mongodb";
 import Product from "@/model/Product";
+// Register populate dependency in Snapshot-only cold starts.
+import "@/model/Category";
 import PosCatalogCounter from "@/model/PosCatalogCounter";
 import mongoose from "mongoose";
 import {

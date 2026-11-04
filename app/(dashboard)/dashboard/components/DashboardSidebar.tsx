@@ -68,6 +68,7 @@ export const navItems: NavItem[] = [
     label: "سفارشات",
     icon: ClipboardList,
     children: [
+      { label: "فروش‌های صندوق", href: "/dashboard/pos-sales", icon: ClipboardList },
       { label: "سفارشات محصول", href: "/dashboard/orders", icon: Layers3 },
       { label: "ثبت سفارش دستی", href: "/dashboard/store-order", icon: Plus },
     ],
