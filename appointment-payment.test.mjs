@@ -17,20 +17,31 @@ function load(path, deps, fetch) {
 }
 function harness({ current, claim = true, auth = {userId: id}, gatewayError = false } = {}) {
   const calls = [], writes = [];
-  const fixture = current === undefined ? {_id:id, user:id, status:'completed', trackingCode:'KA1', pricing:{known:true,finalAmount:125000}, payment:{status:'unpaid'}} : current;
-  const route = load('./app/api/profile/appointments/[id]/payment/route.ts', {
-    '@/model/Appointment': { default: {
-      findOne: filter => { calls.push(['read',filter]); return {lean:async()=>fixture}; },
-      findOneAndUpdate: async filter => { calls.push(['claim',filter]); return claim ? {payment:{startedAt:new Date(0)}} : null; },
-      updateOne: async (filter, update) => {writes.push({filter,update}); return {modifiedCount:1};},
-    }},
-    '@/lib/loyalty/api': { requireUser: async()=>auth, withRateLimit:()=>null, fail:(error,status)=>({error,status}), ok:data=>({status:200,data}) },
-    '@/lib/baseUrl': {getSiteUrl:()=> 'https://example.test'},
-  }, async (url, options) => {
+  const fixture = current === undefined
+    ? {_id:id, user:id, status:'completed', trackingCode:'KA1', phone:'09123456789', pricing:{known:true,finalAmount:125000}, payment:{status:'unpaid'}}
+    : current;
+  const Appointment = {
+    findOne: filter => { calls.push(['read',filter]); return {lean:async()=>fixture}; },
+    findOneAndUpdate: async filter => { calls.push(['claim',filter]); return claim ? {payment:{startedAt:new Date(0)}} : null; },
+    updateOne: async (filter, update) => { writes.push({filter,update}); return {modifiedCount:1}; },
+  };
+  const gateway = async (url,options) => {
     calls.push(['gateway',JSON.parse(options.body)]);
     if (gatewayError) throw new Error('network');
     return {ok:true,json:async()=>({data:{code:100,authority:'Atest123'}})};
-  });
+  };
+  // The route delegates gateway work to this shared server-side module.
+  // Load both modules through the same mock harness to exercise the real payment logic.
+  const payment = load('./lib/appointments/payment-link.ts', {
+    mongoose: {default:{isValidObjectId:()=>true}},
+    '@/model/Appointment': {default:Appointment},
+    '@/lib/mongodb': {default:async()=>{}},
+    '@/lib/baseUrl': {getSiteUrl:()=> 'https://example.test'},
+  }, gateway);
+  const route = load('./app/api/profile/appointments/[id]/payment/route.ts', {
+    '@/lib/loyalty/api': {requireUser: async()=>auth, withRateLimit:()=>null, fail:(error,status)=>({error,status}), ok:data=>({status:200,data})},
+    '@/lib/appointments/payment-link': {createAppointmentPaymentLink:payment.createAppointmentPaymentLink},
+  }, gateway);
   return {post:()=>route.POST(new Request('https://example.test', {method:'POST',body:'{"amount":1}'}), {params:{id}}),calls,writes};
 }
 
