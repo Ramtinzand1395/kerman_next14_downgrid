@@ -3,6 +3,7 @@ import { requireAdmin, fail, ok, withRateLimit } from "@/lib/loyalty/api";
 import { createAppointmentPaymentLink } from "@/lib/appointments/payment-link";
 import { notifyUser } from "@/lib/notifications/service";
 import { deliverBusinessSms } from "@/lib/sms/business";
+import { SERVICE_SMS_PATTERNS } from "@/lib/sms/order-patterns";
 
 export async function POST(_req: Request, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   const auth = await requireAdmin();
@@ -21,7 +22,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } |
   const [notification, sms] = await Promise.allSettled([
     notifyUser({
       userId: appointment.user,
-      title: "لینک پرداخت خدمات شما آماده است",
+      title: "مبلغ خدمات نصب بازی آماده پرداخت است",
       message: `مبلغ نهایی درخواست ${appointment.trackingCode}: ${appointment.pricing.finalAmount.toLocaleString("fa-IR")} تومان. برای پرداخت، وارد جزئیات سفارش شوید.`,
       type: "REQUEST_STATUS_CHANGED",
       category: "request",
@@ -37,9 +38,9 @@ export async function POST(_req: Request, { params }: { params: { id: string } |
       eventType: "APPOINTMENT_PAYMENT_LINK",
       entityType: "Appointment",
       entityId: id,
-      bodyId: Number(process.env.APPOINTMENT_SMS_PAYMENT_LINK_BODY_ID) || undefined,
+      bodyId: SERVICE_SMS_PATTERNS.installationPayment,
       to: appointment.phone,
-      args: [appointment.trackingCode, result.url],
+      args: [appointment.trackingCode],
     }),
   ]);
   return ok({
