@@ -285,8 +285,13 @@ export default function GameOrderSelector({
             restoredDraftRef.current?.newAddressId || restoredDraftRef.current?.selectedAddressId;
           if (restoredAddressId && nextAddresses.some((address: AddressItem) => address._id === restoredAddressId)) {
             setSelectedAddressId(restoredAddressId);
-          } else if (restoredAddressId) {
-            setSelectedAddressId("");
+          } else {
+            // Preserve an explicit selection if it is still available; otherwise default to the first address.
+            setSelectedAddressId((current) =>
+              nextAddresses.some((address: AddressItem) => address._id === current)
+                ? current
+                : (nextAddresses[0]?._id || "")
+            );
           }
         }
         if (courierResponse.ok) {

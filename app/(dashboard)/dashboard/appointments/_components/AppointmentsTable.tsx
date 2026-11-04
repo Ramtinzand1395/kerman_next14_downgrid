@@ -10,9 +10,10 @@ import {
 import type {
   AppointmentItem,
   AppointmentStatus,
+  CourierStatus,
 } from "@/types/appointments";
 import {
-  appointmentTransitions,
+  courierNext,
   courierLabel,
   courierTone,
   formatTehranDate,
@@ -31,6 +32,8 @@ type Props = {
   onPageChange: (page: number) => void;
   onOpenDetails: (item: AppointmentItem) => void;
   onOpenSettlement: (item: AppointmentItem) => void;
+  onRequestPayment: (item: AppointmentItem) => void;
+  onRequestCourier: (item: AppointmentItem, status: CourierStatus) => void;
   onRequestStatus: (
     item: AppointmentItem,
     status: AppointmentStatus,
@@ -46,6 +49,8 @@ export default function AppointmentsTable({
   onPageChange,
   onOpenDetails,
   onOpenSettlement,
+  onRequestPayment,
+  onRequestCourier,
   onRequestStatus,
 }: Props) {
   if (items.length === 0) {
@@ -160,30 +165,39 @@ export default function AppointmentsTable({
                 </p>
               ) : null}
 
+              {courier && !["cancelled", "rejected", "no_show"].includes(item.status) && (
+                <div className="mt-3 rounded-2xl border border-blue-100 bg-blue-50/40 p-3">
+                  <p className="mb-2 text-xs font-black text-slate-700">مسیر سفارش</p>
+                  <ol className="grid grid-cols-4 gap-1.5 text-center text-[10px] leading-5 sm:text-xs">
+                    {["دریافت اطلاعات", "حرکت پیک", "نصب و پرداخت", "بازگشت مشتری"].map((label, index) => {
+                      const progressed = index === 0 || (index === 1 && !["pending", "scheduled"].includes(courier.status)) ||
+                        (index === 2 && item.status === "completed") || (index === 3 && ["returning", "delivered"].includes(courier.status));
+                      return <li key={label} className={`rounded-xl p-2 ${progressed ? "bg-emerald-100 font-black text-emerald-900" : "bg-white text-slate-500"}`}>{label}</li>;
+                    })}
+                  </ol>
+                </div>
+              )}
               <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-                {(appointmentTransitions[item.status] || []).map((status) => (
-                  <button
-                    key={status}
-                    type="button"
-                    disabled={workingId === item._id}
-                    onClick={() =>
-                      status === "completed"
-                        ? onOpenSettlement(item)
-                        : onRequestStatus(item, status)
-                    }
-                    className={`rounded-xl px-3 py-2 text-xs font-bold transition disabled:opacity-50 ${
-                      status === "confirmed" || status === "completed"
-                        ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                        : status === "rejected" || status === "cancelled"
-                          ? "border border-rose-200 text-rose-700 hover:bg-rose-50"
-                          : "border border-slate-200 text-slate-700 hover:bg-slate-50"
-                    }`}
-                  >
-                    {status === "completed"
-                      ? "تکمیل و تسویه"
-                      : statusLabel[status]}
+                {item.status === "pending" && (
+                  <button type="button" disabled={workingId === item._id} onClick={() => courier ? onOpenSettlement(item) : onRequestStatus(item, "confirmed")} className="rounded-xl bg-blue-900 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">
+                    {courier ? "تأیید و ثبت مبلغ اولیه" : "تأیید درخواست"}
+                  </button>
+                )}
+                {item.status === "confirmed" && (!courier || ["picked_up", "at_store"].includes(courier.status)) && (
+                  <button type="button" disabled={workingId === item._id} onClick={() => onOpenSettlement(item)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">ثبت مبلغ نهایی و ارسال لینک پرداخت</button>
+                )}
+                {courier && !["cancelled", "rejected", "no_show"].includes(item.status) && (courierNext[courier.status] || []).filter((status) => status !== "cancelled" && status !== "return_ready" && !(status === "assigned" && (item.status !== "confirmed" || !item.pricing?.known))).map((status) => (
+                  <button key={status} type="button" disabled={workingId === item._id} onClick={() => onRequestCourier(item, status)} className="rounded-xl bg-blue-900 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">
+                    {status === "assigned" ? "حرکت پیک برای دریافت" : status === "picked_up" ? "تحویل دستگاه به پیک" : status === "returning" ? "حرکت پیک برای برگشت" : courierLabel[status]}
                   </button>
                 ))}
+                {item.status === "completed" && item.payment?.status !== "paid" && Number(item.pricing?.finalAmount) > 0 && (
+                  <button type="button" disabled={workingId === item._id} onClick={() => onRequestPayment(item)} className="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">ساخت / کپی / ارسال لینک پرداخت</button>
+                )}
+                {["pending", "confirmed"].includes(item.status) && (!courier || ["pending", "scheduled"].includes(courier.status)) && item.payment?.status !== "paid" && (
+                  <button type="button" disabled={workingId === item._id} onClick={() => onRequestStatus(item, "cancelled")} className="rounded-xl border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700 disabled:opacity-50">لغو سفارش</button>
+                )}
+                {item.pricing?.known && <span className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700">پرداخت: {item.payment?.status === "paid" ? "موفق" : item.payment?.status === "pending" ? "در انتظار مشتری" : "پرداخت‌نشده"}{item.payment?.refId ? ` · پیگیری ${item.payment.refId}` : ""}</span>}
                 <button
                   type="button"
                   onClick={() => onOpenDetails(item)}

@@ -90,6 +90,18 @@ export default function MyGameOrders() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    if (loading || appointments.length === 0) return;
+    const target = decodeURIComponent(window.location.hash.slice(1));
+    if (!target.startsWith("appointment-")) return;
+    const appointmentId = target.slice("appointment-".length);
+    if (!appointments.some((appointment) => appointment._id === appointmentId)) return;
+    // The order cards are rendered after an API call; native anchor scrolling can run too early.
+    document.getElementById(target)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [loading, appointments]);
+
+
+
   const cancel = async (appointmentId: string) => {
     setWorking(appointmentId);
     try {
@@ -156,7 +168,7 @@ export default function MyGameOrders() {
             const ServiceIcon = item.serviceType === "repair" ? Wrench : Gamepad2;
             const cancellable = (!item.courier || ["pending", "scheduled"].includes(item.courier.status)) && ["pending", "confirmed"].includes(item.status) && new Date(item.startsAt) > new Date();
             return (
-              <article id={`appointment-${item._id}`} key={item._id} className="scroll-mt-28 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+              <article id={`appointment-${item._id}`} key={item._id} className="scroll-mt-28 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm target:border-blue-500 target:ring-2 target:ring-blue-200">
                 <header className="flex items-start justify-between gap-3 border-b border-slate-100 bg-slate-50 p-4">
                   <div className="flex items-center gap-3">
                     <span className="rounded-xl bg-blue-100 p-2 text-[#001A6E]"><ServiceIcon className="h-5 w-5" /></span>
@@ -187,7 +199,7 @@ export default function MyGameOrders() {
                         ? `مبلغ نهایی: ${(item.pricing.finalAmount || 0).toLocaleString("fa-IR")} تومان`
                         : "هزینه پس از بررسی مشخص می‌شود"}
                     </span>
-                    {item.payment?.status === "paid" ? <span className="text-xs font-bold text-emerald-700">پرداخت‌شده</span> : item.status === "completed" && item.pricing?.known && Number(item.pricing.finalAmount) > 0 ? (
+                    {item.payment?.status === "paid" ? <span className="text-xs font-bold text-emerald-700">پرداخت موفق{item.payment.refId ? ` · کد پیگیری ${item.payment.refId}` : ""}</span> : item.status === "completed" && item.pricing?.known && Number(item.pricing.finalAmount) > 0 ? (
                       <button type="button" disabled={Boolean(paying)} onClick={() => void pay(item._id)} className="rounded-xl bg-blue-800 px-4 py-2 text-xs font-bold text-white disabled:opacity-50">{paying === item._id ? <ButtonLoading label="اتصال به درگاه…" /> : "پرداخت آنلاین"}</button>
                     ) : null}
                     {cancellable && (

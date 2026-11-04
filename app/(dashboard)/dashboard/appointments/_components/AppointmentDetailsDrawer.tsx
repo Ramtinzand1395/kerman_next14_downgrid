@@ -294,6 +294,7 @@ export default function AppointmentDetailsDrawer({ item, onClose }: Props) {
 
           <section className="rounded-2xl border border-slate-200 p-4">
             <h3 className="font-black text-slate-900">جزئیات مالی</h3>
+            <p className="mt-2 rounded-xl bg-slate-50 p-3 text-xs font-bold text-slate-700">وضعیت پرداخت زرین‌پال: {item.payment?.status === "paid" ? "موفق" : item.payment?.status === "pending" ? "در انتظار پرداخت مشتری" : item.payment?.status === "failed" ? "ناموفق، قابل تلاش مجدد" : "پرداخت‌نشده"}{item.payment?.refId ? ` · کد پیگیری: ${item.payment.refId}` : ""}</p>
             {item.pricing ? (
               <dl className="mt-3 space-y-2 text-sm">
                 <PriceRow

@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSiteUrl } from "@/lib/baseUrl";
 import { notifyInventoryFailure, notifyLowInventory, notifyOrderPaid, notifyPaymentFailed } from "@/lib/notifications/events";
 import { notifyUser } from "@/lib/notifications/service";
+import { smsProductOrderPaid } from "@/lib/sms/order-patterns";
 import mongoose from "mongoose";
 import { adjustProductInventoriesWithCatalogChange } from "@/lib/pos/catalog-outbox";
 import {
@@ -397,6 +398,15 @@ export async function GET(req: NextRequest) {
       }),
       notifyLowInventory(inventoryItems.map((item) => item.product)),
     ]).catch((error) => console.error("[notifications] zarinpal order event failed:", error));
+
+    await smsProductOrderPaid({
+      _id: order._id,
+      trackingCode: order.trackingCode,
+      finalPrice: Number(order.finalPrice),
+      paymentStatus: order.paymentStatus,
+      paymentRefId: order.paymentRefId,
+      buyerSnapshot: order.buyerSnapshot,
+    }).catch((error) => console.error("[business-sms] paid product order SMS failed", error));
 
     await TempPayment.deleteOne({ authority });
 
