@@ -40,7 +40,7 @@ export function saveAppointmentDraft(storage: Storage, input: DraftInput) {
     ...input,
     version: APPOINTMENT_DRAFT_VERSION,
     savedAt: Date.now(),
-    returnTo: "/my-profile?step=6&fulfillment=courier&resume=address",
+    returnTo: input.fulfillment === "courier" ? "/my-profile?step=6&fulfillment=courier&resume=address" : "/my-profile?step=6",
   };
   storage.setItem(APPOINTMENT_DRAFT_KEY, JSON.stringify(draft));
   return draft;
@@ -55,9 +55,9 @@ export function readAppointmentDraft(storage: Storage): AppointmentWizardDraft |
       value.version === APPOINTMENT_DRAFT_VERSION &&
       typeof value.savedAt === "number" &&
       Date.now() - value.savedAt <= MAX_DRAFT_AGE_MS &&
-      value.fulfillment === "courier" &&
+      ["courier", "in_store", null].includes(value.fulfillment ?? null) &&
       [1, 2, 3, 4, 5].includes(Number(value.step)) &&
-      value.returnTo === "/my-profile?step=6&fulfillment=courier&resume=address";
+      (value.returnTo === "/my-profile?step=6&fulfillment=courier&resume=address" || value.returnTo === "/my-profile?step=6");
     if (!valid) throw new Error("INVALID_DRAFT");
     return value as AppointmentWizardDraft;
   } catch {

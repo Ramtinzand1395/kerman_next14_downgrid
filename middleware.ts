@@ -28,10 +28,13 @@ export default withAuth(
 
     // --- مسیر /my-profile فقط برای کاربران وارد شده ---
     if ((pathname.startsWith("/my-profile") || pathname.startsWith("/notifications")) && !role) {
-      return NextResponse.redirect(new URL("/auth/login", req.url));
+      const loginUrl = new URL("/auth/login", req.url);
+      loginUrl.searchParams.set("callbackUrl", `${req.nextUrl.pathname}${req.nextUrl.search}`);
+      return NextResponse.redirect(loginUrl);
     }
   },
   {
+    pages: { signIn: "/auth/login" },
     callbacks: {
       authorized: ({ token }) => !!token, // توکن وجود داشته باشد
     },
