@@ -49,7 +49,7 @@ export const authOptions: NextAuthOptions = {
               "$registrationCompletedAt", ticket.verifiedAt,
             ] },
           } }],
-          { returnDocument: "after" },
+          { returnDocument: "after", updatePipeline: true },
         ).lean();
 
         if (!user) throw new Error("کاربری با این شماره موبایل یافت نشد");
