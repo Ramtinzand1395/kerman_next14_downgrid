@@ -1,5 +1,7 @@
 import dbConnect from "@/lib/mongodb";
 import Product from "@/model/Product";
+// Mongoose populate needs Category registered even on a cold POS-only request.
+import "@/model/Category";
 import PosCatalogCounter from "@/model/PosCatalogCounter";
 import mongoose from "mongoose";
 import {
