@@ -63,6 +63,13 @@ export interface WalletTxResult {
   error?: string;
 }
 
+type WalletCreditBucket = {
+  amount: number;
+  expiresAt: Date;
+  sourceTx?: mongoose.Types.ObjectId;
+  sourceKey?: string;
+};
+
 // Version 0 was absent in a few historical wallets. Compare safely before
 // any write so an old document cannot block all future payments.
 function walletVersionFilter(version: number | undefined) {
@@ -504,7 +511,7 @@ export async function debit(input: DebitInput): Promise<WalletTxResult> {
           return;
         }
 
-        const buckets = (wallet.expiringCredits ?? []).map((bucket) => ({
+        const buckets = (wallet.expiringCredits ?? []).map((bucket: WalletCreditBucket) => ({
           amount: bucket.amount,
           expiresAt: bucket.expiresAt,
           sourceTx: bucket.sourceTx,
@@ -605,7 +612,7 @@ export async function expireWalletCreditsForUser(
     const wallet = await Wallet.findOne({ user: userId });
     if (!wallet) return { expiredCount: 0, totalAmount: 0 };
 
-    const buckets = (wallet.expiringCredits ?? []).map((bucket) => ({
+    const buckets = (wallet.expiringCredits ?? []).map((bucket: WalletCreditBucket) => ({
       amount: bucket.amount,
       expiresAt: bucket.expiresAt,
       sourceTx: bucket.sourceTx,
