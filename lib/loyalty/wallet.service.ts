@@ -656,7 +656,7 @@ export async function expireWalletCreditsForUser(
       }).catch(() => undefined);
     }
     return {
-      expiredCount: buckets.filter((bucket) => bucket.amount > 0 && bucket.expiresAt <= now).length,
+      expiredCount: buckets.filter((bucket) => bucket.amount > 0 && bucket.expiresAt.getTime() <= now.getTime()).length,
       totalAmount: deduction,
     };
   }
