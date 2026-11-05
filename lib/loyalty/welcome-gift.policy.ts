@@ -20,12 +20,12 @@ export function welcomeGiftOffer(input: WelcomeGiftPolicyInput): {
   const registered = new Date(input.registeredAt.getTime());
   const now = new Date(input.now.getTime());
   if (![start, registered, now].every((d) => Number.isFinite(d.getTime()))) return null;
-  if (registered < start || registered > now) return null;
+  if (registered.getTime() < start.getTime() || registered.getTime() > now.getTime()) return null;
   if (input.endAt) {
     const end = new Date(input.endAt);
-    if (!Number.isFinite(end.getTime()) || registered >= end) return null;
+    if (!Number.isFinite(end.getTime()) || registered.getTime() >= end.getTime()) return null;
   }
   const expiresAt = new Date(registered.getTime() + 72 * 60 * 60 * 1000);
-  if (expiresAt <= now) return null;
+  if (expiresAt.getTime() <= now.getTime()) return null;
   return { amount: input.amount, expiresAt };
 }
