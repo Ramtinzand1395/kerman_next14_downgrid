@@ -28,9 +28,12 @@ export async function PATCH(req: Request) {
   );
   if (error) return error;
 
+  const { benefits, ...fields } = data!;
+  const set: Record<string, unknown> = { ...fields };
+  for (const [key, value] of Object.entries(benefits ?? {})) set[`benefits.${key}`] = value;
   const doc = await MembershipLevel.findOneAndUpdate(
     { kind: body.kind, code: body.code },
-    { $set: data! },
+    { $set: set },
     { returnDocument: "after" },
   );
   if (!doc) return fail("سطح یافت نشد", 404);

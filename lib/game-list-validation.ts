@@ -34,3 +34,11 @@ export const gameInput = z.object({
   imageAlt: z.string().trim().max(300).optional(),
   imagePublicId: z.string().trim().max(300).optional(),
 });
+
+// Creation may fill nullable values. Editing must not manufacture nulls for
+// fields an older or partial client omitted.
+export const gameUpdateInput = gameInput.extend({
+  size: gameInput.shape.size.optional(),
+  price: gameInput.shape.price.optional(),
+  storage: z.string().trim().max(100).nullable().transform((value) => value || null).optional(),
+});

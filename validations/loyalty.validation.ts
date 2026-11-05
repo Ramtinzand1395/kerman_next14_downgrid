@@ -73,77 +73,110 @@ export const couponCreateSchema = couponFieldsSchema.extend({
 });
 
 // ---- ماموریت ----
-export const missionSchema = z.object({
+const missionRewardFields = z.object({
+  xp: z.number().int().min(0),
+  walletCredit: z.number().int().min(0),
+  coupon: objectId.optional(),
+});
+const missionFieldsSchema = z.object({
   title: z.string().min(2).max(120),
   description: z.string().max(500).optional(),
   period: z.enum(MISSION_PERIODS),
   metric: z.enum(MISSION_METRICS),
   target: z.number().int().min(1),
   minOrderAmount: z.number().min(0).optional(),
-  reward: z.object({
-    xp: z.number().int().min(0).default(0),
-    walletCredit: z.number().int().min(0).default(0),
-    coupon: objectId.optional(),
-  }),
-  isActive: z.boolean().default(true),
+  reward: missionRewardFields,
+  isActive: z.boolean(),
   startsAt: z.coerce.date().optional(),
   endsAt: z.coerce.date().optional(),
 });
-export const missionUpdateSchema = missionSchema.partial();
+export const missionUpdateSchema = missionFieldsSchema.partial().extend({
+  reward: missionRewardFields.partial().optional(),
+});
+export const missionSchema = missionFieldsSchema.extend({
+  reward: missionRewardFields.extend({
+    xp: missionRewardFields.shape.xp.default(0),
+    walletCredit: missionRewardFields.shape.walletCredit.default(0),
+  }),
+  isActive: missionFieldsSchema.shape.isActive.default(true),
+});
 
 // ---- نشان ----
-export const achievementSchema = z.object({
+const achievementFieldsSchema = z.object({
   code: z.string().min(2).max(50).regex(/^[a-z0-9_]+$/, "کد فقط حروف کوچک/عدد/_"),
   title: z.string().min(2).max(120),
   description: z.string().max(300).optional(),
   icon: z.string().max(300).optional(),
   metric: z.enum(MISSION_METRICS),
   target: z.number().int().min(1),
-  xpReward: z.number().int().min(0).default(0),
-  isActive: z.boolean().default(true),
-  order: z.number().int().default(0),
+  xpReward: z.number().int().min(0),
+  isActive: z.boolean(),
+  order: z.number().int(),
 });
-export const achievementUpdateSchema = achievementSchema.partial();
+export const achievementUpdateSchema = achievementFieldsSchema.partial();
+export const achievementSchema = achievementFieldsSchema.extend({
+  xpReward: achievementFieldsSchema.shape.xpReward.default(0),
+  isActive: achievementFieldsSchema.shape.isActive.default(true),
+  order: achievementFieldsSchema.shape.order.default(0),
+});
 
 // ---- کش‌بک ----
-export const cashbackRuleSchema = z.object({
+const cashbackRuleFieldsSchema = z.object({
   title: z.string().min(2).max(120),
   percent: z.number().min(0).max(100),
   maxAmount: z.number().min(0).optional(),
-  minOrderAmount: z.number().min(0).default(0),
-  vipTiers: z.array(z.enum(VIP_TIERS)).default([]),
-  categories: z.array(objectId).default([]),
-  priority: z.number().int().default(0),
-  isActive: z.boolean().default(true),
+  minOrderAmount: z.number().min(0),
+  vipTiers: z.array(z.enum(VIP_TIERS)),
+  categories: z.array(objectId),
+  priority: z.number().int(),
+  isActive: z.boolean(),
   startsAt: z.coerce.date().optional(),
   endsAt: z.coerce.date().optional(),
 });
-export const cashbackRuleUpdateSchema = cashbackRuleSchema.partial();
+export const cashbackRuleUpdateSchema = cashbackRuleFieldsSchema.partial();
+export const cashbackRuleSchema = cashbackRuleFieldsSchema.extend({
+  minOrderAmount: cashbackRuleFieldsSchema.shape.minOrderAmount.default(0),
+  vipTiers: cashbackRuleFieldsSchema.shape.vipTiers.default([]),
+  categories: cashbackRuleFieldsSchema.shape.categories.default([]),
+  priority: cashbackRuleFieldsSchema.shape.priority.default(0),
+  isActive: cashbackRuleFieldsSchema.shape.isActive.default(true),
+});
 
 // ---- گردونه ----
-export const spinPrizeSchema = z.object({
+const spinPrizeFieldsSchema = z.object({
   title: z.string().min(2).max(120),
   type: z.enum(SPIN_PRIZE_TYPES),
-  value: z.number().min(0).default(0),
+  value: z.number().min(0),
   coupon: objectId.optional(),
   weight: z.number().min(0).max(100_000),
-  isActive: z.boolean().default(true),
-  order: z.number().int().default(0),
+  isActive: z.boolean(),
+  order: z.number().int(),
 });
-export const spinPrizeUpdateSchema = spinPrizeSchema.partial();
+export const spinPrizeUpdateSchema = spinPrizeFieldsSchema.partial();
+export const spinPrizeSchema = spinPrizeFieldsSchema.extend({
+  value: spinPrizeFieldsSchema.shape.value.default(0),
+  isActive: spinPrizeFieldsSchema.shape.isActive.default(true),
+  order: spinPrizeFieldsSchema.shape.order.default(0),
+});
 
 // ---- کمپین ----
-export const campaignSchema = z.object({
+const campaignFieldsSchema = z.object({
   title: z.string().min(2).max(120),
   description: z.string().max(500).optional(),
-  xpMultiplier: z.number().min(0).max(10).default(1),
-  participationXp: z.number().int().min(0).default(0),
-  vipEarlyAccessHours: z.number().int().min(0).default(0),
+  xpMultiplier: z.number().min(0).max(10),
+  participationXp: z.number().int().min(0),
+  vipEarlyAccessHours: z.number().int().min(0),
   startsAt: z.coerce.date(),
   endsAt: z.coerce.date(),
-  isActive: z.boolean().default(true),
+  isActive: z.boolean(),
 });
-export const campaignUpdateSchema = campaignSchema.partial();
+export const campaignUpdateSchema = campaignFieldsSchema.partial();
+export const campaignSchema = campaignFieldsSchema.extend({
+  xpMultiplier: campaignFieldsSchema.shape.xpMultiplier.default(1),
+  participationXp: campaignFieldsSchema.shape.participationXp.default(0),
+  vipEarlyAccessHours: campaignFieldsSchema.shape.vipEarlyAccessHours.default(0),
+  isActive: campaignFieldsSchema.shape.isActive.default(true),
+});
 
 // ---- سطوح ----
 export const membershipLevelUpdateSchema = z.object({

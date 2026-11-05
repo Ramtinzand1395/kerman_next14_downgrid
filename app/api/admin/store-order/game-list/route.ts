@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import GameList from "@/model/GameList";
 import dbConnect from "@/lib/mongodb";
-import { gameInput, gameItemId, gamePlatform } from "@/lib/game-list-validation";
+import { gameInput, gameUpdateInput, gameItemId, gamePlatform } from "@/lib/game-list-validation";
 
 async function authorized() {
   const session = await getServerSession(authOptions);
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   if (!(await authorized())) return forbidden();
   const body = await req.json().catch(() => null);
-  const parsed = gameInput.safeParse(body);
+  const parsed = gameUpdateInput.safeParse(body);
   const id = gameItemId.safeParse(body?.itemId);
   if (!parsed.success) return invalid(parsed.error.issues[0]?.message);
   if (!id.success) return invalid("شناسه بازی معتبر نیست");

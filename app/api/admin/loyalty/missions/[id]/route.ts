@@ -14,9 +14,12 @@ export async function PATCH(req: Request, ctx: Ctx) {
   const { data, error } = await parseBody(req, missionUpdateSchema);
   if (error) return error;
 
+  const { reward, ...fields } = data!;
+  const set: Record<string, unknown> = { ...fields };
+  for (const [key, value] of Object.entries(reward ?? {})) set[`reward.${key}`] = value;
   const mission = await Mission.findByIdAndUpdate(
     id,
-    { $set: data! },
+    { $set: set },
     { returnDocument: "after" },
   );
   if (!mission) return fail("ماموریت یافت نشد", 404);

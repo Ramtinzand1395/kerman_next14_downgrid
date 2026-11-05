@@ -1,5 +1,5 @@
 import { z } from "zod";
-const text = (max: number) => z.string().trim().max(max).default("");
+const text = (max: number) => z.string().trim().max(max).optional();
 export const categorySeoInput = z
   .object({
     seoTitle: text(100),
@@ -14,6 +14,6 @@ export const categorySeoInput = z
         }),
       )
       .max(10)
-      .default([]),
+      .optional(),
   })
   .strict();

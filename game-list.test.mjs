@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import ts from 'typescript';
-import { gameInput, isGameCoverUrl } from './lib/game-list-validation.ts';
+import { gameInput, gameUpdateInput, isGameCoverUrl } from './lib/game-list-validation.ts';
 const require = createRequire(import.meta.url);
 const base = { platform: 'ps5', name: 'ASTRO BOT', size: 0, price: 0, storage: '' };
 const url = 'https://res.cloudinary.com/aeylqy7h/image/upload/v1/game.webp';
@@ -35,7 +35,7 @@ function loadRoute(path, overrides = {}) {
     '@/lib/mongodb': {default:async()=>{}},
     '@/model/GameList': {default:model},
     '@/lib/game-cloudinary': {uploadGameCover:async()=>({url,publicId:'test'})},
-    '@/lib/game-list-validation': {gameInput,gameItemId:require('zod').z.string().regex(/^[a-f\d]{24}$/i),gamePlatform:gameInput.shape.platform},
+    '@/lib/game-list-validation': {gameInput,gameUpdateInput,gameItemId:require('zod').z.string().regex(/^[a-f\d]{24}$/i),gamePlatform:gameInput.shape.platform},
     ...overrides,
   };
   new Function('require','module','exports',code)(n=>deps[n]??require(n),module,module.exports);
