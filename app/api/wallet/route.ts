@@ -2,6 +2,7 @@
 // GET: موجودی + خلاصه کیف پول کاربر
 import { ok, requireUser } from "@/lib/loyalty/api";
 import Wallet from "@/model/Loyalty Club/Wallet";
+import { expireWalletCreditsForUser } from "@/lib/loyalty/wallet.service";
 export interface IExpiringCredit {
   amount: number;
   expiresAt: Date;
@@ -19,6 +20,8 @@ export const revalidate = 0;
 export async function GET() {
   const auth = await requireUser();
   if ("error" in auth) return auth.error;
+
+  await expireWalletCreditsForUser(auth.userId);
 
   const wallet = await Wallet.findOneAndUpdate(
     { user: auth.userId },
