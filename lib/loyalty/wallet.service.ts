@@ -13,6 +13,7 @@ import WalletTransaction, { IWalletTransaction } from "@/model/Loyalty Club/Wall
 import WalletLog from "@/model/Loyalty Club/WalletLog";
 import { notifyUser } from "@/lib/notifications/service";
 import { WalletTxType } from "@/types/loyalty";
+import { spendExpiringCreditFirst, zeroExpiredCredits } from "./wallet-credit.policy";
 
 // ---------- انواع ورودی/خروجی ----------
 
@@ -129,6 +130,7 @@ export async function getOrCreateWallet(
 }
 
 export async function getBalance(userId: string): Promise<number> {
+  await expireWalletCreditsForUser(userId);
   const wallet = await Wallet.findOne({ user: userId }).select("balance").lean();
   return wallet?.balance ?? 0;
 }
@@ -208,7 +210,7 @@ export async function credit(input: CreditInput): Promise<WalletTxResult> {
           ...(input.expiresAt
             ? {
                 $push: {
-                  expiringCredits: { amount, expiresAt: input.expiresAt },
+                  expiringCredits: { amount, expiresAt: input.expiresAt, sourceKey: idempotencyKey },
                 },
               }
             : {}),
@@ -325,7 +327,7 @@ export async function credit(input: CreditInput): Promise<WalletTxResult> {
       };
       if (input.expiresAt) {
         update.$push = {
-          expiringCredits: { amount, expiresAt: input.expiresAt },
+          expiringCredits: { amount, expiresAt: input.expiresAt, sourceKey: idempotencyKey },
         };
       }
 
@@ -436,6 +438,17 @@ export async function debit(input: DebitInput): Promise<WalletTxResult> {
     return { ok: false, error: "مبلغ نامعتبر است" };
   }
 
+  // A stale cron must never make an expired signup gift spendable.
+  // Expire before accepting a payment, even on servers without a scheduled cron.
+  if (type !== "expire" && !input.session) {
+    try {
+      await expireWalletCreditsForUser(userId);
+    } catch (error) {
+      console.error("[wallet] lazy expiry failed", error);
+      return { ok: false, error: "بررسی اعتبار کیف پول ناموفق بود؛ دوباره تلاش کنید" };
+    }
+  }
+
   const existingQuery = WalletTransaction.findOne({ idempotencyKey });
   if (input.session) existingQuery.session(input.session);
   const existing = await existingQuery.lean();
@@ -458,39 +471,60 @@ export async function debit(input: DebitInput): Promise<WalletTxResult> {
     let result: WalletTxResult = { ok: false, error: "خطای ناشناخته" };
 
     const applyDebit = async (activeSession?: mongoose.ClientSession) => {
-      const wallet = await getOrCreateWallet(userId, activeSession);
-      const balanceBefore = wallet.balance;
+      let wallet = await getOrCreateWallet(userId, activeSession);
+      let updated: typeof wallet | null = null;
+      let balanceBefore = wallet.balance;
 
-      // برداشت اتمیک با شرط موجودی کافی — قلب جلوگیری از double-spend.
-      // اگر دو درخواست هم‌زمان بیایند، فقط یکی فیلتر را پاس می‌کند.
-      const updated = await Wallet.findOneAndUpdate(
-        {
-          _id: wallet._id,
-          isActive: true,
-          balance: { $gte: amount },
-        },
-        { $inc: { balance: -amount, version: 1 } },
-        {
-          returnDocument: "after",
-          ...(activeSession ? { session: activeSession } : {}),
-        },
-      );
+      // Consume the earliest expiring gifts before purchased wallet funds.
+      // Updating balance AND remaining bonus buckets under the same version
+      // lock means checkout and expiry cannot spend the same credit twice.
+      for (let attempt = 0; attempt < 4; attempt++) {
+        balanceBefore = wallet.balance;
+        if (!wallet.isActive || balanceBefore < amount) {
+          await log({
+            wallet: wallet._id,
+            user: userId,
+            action: `debit_${type}`,
+            success: false,
+            amount,
+            balanceBefore,
+            errorMessage: "موجودی ناکافی یا کیف پول غیرفعال",
+            performedBy: input.performedBy,
+            session: activeSession,
+          });
+          result = { ok: false, error: "موجودی کیف پول کافی نیست", balance: balanceBefore };
+          return;
+        }
 
-      if (!updated) {
-        await log({
-          wallet: wallet._id,
-          user: userId,
-          action: `debit_${type}`,
-          success: false,
-          amount,
-          balanceBefore,
-          errorMessage: "موجودی ناکافی یا کیف پول غیرفعال",
-          performedBy: input.performedBy,
-          session: activeSession,
-        });
-        result = { ok: false, error: "موجودی کیف پول کافی نیست", balance: balanceBefore };
-        return; // خروج بدون throw → تراکنش commit می‌شود ولی چیزی تغییر نکرده
+        const buckets = (wallet.expiringCredits ?? []).map((bucket) => ({
+          amount: bucket.amount,
+          expiresAt: bucket.expiresAt,
+          sourceTx: bucket.sourceTx,
+          sourceKey: bucket.sourceKey,
+        }));
+        const nextBuckets = type === "expire"
+          ? buckets
+          : spendExpiringCreditFirst(buckets, amount, new Date());
+        updated = await Wallet.findOneAndUpdate(
+          {
+            _id: wallet._id,
+            version: wallet.version,
+            isActive: true,
+            balance: { $gte: amount },
+          },
+          {
+            $inc: { balance: -amount, version: 1 },
+            $set: { expiringCredits: nextBuckets },
+          },
+          {
+            returnDocument: "after",
+            ...(activeSession ? { session: activeSession } : {}),
+          },
+        );
+        if (updated) break;
+        wallet = await getOrCreateWallet(userId, activeSession);
       }
+      if (!updated) throw new Error("WALLET_VERSION_CONFLICT");
 
       const [tx] = await WalletTransaction.create(
         [
@@ -551,53 +585,101 @@ export async function debit(input: DebitInput): Promise<WalletTxResult> {
 // ---------- انقضای اعتبار ----------
 
 /**
- * اعتبارهای منقضی‌شده را از کیف پول کم می‌کند.
- * برای cron روزانه — idempotent بر اساس sourceTx.
+ * On-demand expiry is authoritative: no cron is required for correctness.
+ * An optimistic version lock atomically clears expired buckets and adjusts
+ * only the remaining unspent gift portion. Paid wallet credit is not expired.
  */
+export async function expireWalletCreditsForUser(
+  userId: string,
+  now = new Date(),
+): Promise<{ expiredCount: number; totalAmount: number }> {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const wallet = await Wallet.findOne({ user: userId });
+    if (!wallet) return { expiredCount: 0, totalAmount: 0 };
+
+    const buckets = (wallet.expiringCredits ?? []).map((bucket) => ({
+      amount: bucket.amount,
+      expiresAt: bucket.expiresAt,
+      sourceTx: bucket.sourceTx,
+      sourceKey: bucket.sourceKey,
+    }));
+    const expired = zeroExpiredCredits(buckets, now);
+    if (expired.amount <= 0) return { expiredCount: 0, totalAmount: 0 };
+
+    const deduction = Math.min(Math.max(0, wallet.balance), expired.amount);
+    const updated = await Wallet.findOneAndUpdate(
+      { _id: wallet._id, version: wallet.version },
+      {
+        $inc: { balance: -deduction, version: 1 },
+        $set: { expiringCredits: expired.credits },
+      },
+      { returnDocument: "after" },
+    );
+    if (!updated) continue;
+
+    if (deduction > 0) {
+      const key = `expire:${wallet._id}:v${wallet.version}`;
+      try {
+        const transaction = await WalletTransaction.create({
+          wallet: wallet._id,
+          user: wallet.user,
+          type: "expire",
+          status: "completed",
+          amount: deduction,
+          balanceAfter: updated.balance,
+          idempotencyKey: key,
+          description: "انقضای مانده اعتبارهای هدیه",
+        });
+        await log({
+          wallet: wallet._id,
+          user: String(wallet.user),
+          action: "debit_expire",
+          success: true,
+          amount: deduction,
+          balanceBefore: wallet.balance,
+          balanceAfter: updated.balance,
+          transaction: transaction._id,
+        });
+      } catch (error) {
+        // The balance and bucket change have already committed. Never retry a
+        // debit just because writing the auxiliary ledger record failed.
+        console.error("[wallet] expiration ledger write failed", error);
+      }
+      await notifyUser({
+        userId: wallet.user,
+        title: "انقضای اعتبار هدیه",
+        message: `${deduction.toLocaleString("fa-IR")} تومان اعتبار استفاده‌نشده کیف پول منقضی شد.`,
+        type: "credit_expiry",
+        category: "wallet",
+        link: "/my-profile?step=8",
+        eventKey: key,
+      }).catch(() => undefined);
+    }
+    return {
+      expiredCount: buckets.filter((bucket) => bucket.amount > 0 && bucket.expiresAt <= now).length,
+      totalAmount: deduction,
+    };
+  }
+  throw new Error("WALLET_EXPIRY_VERSION_CONFLICT");
+}
+
+/** Background cleanup; user-facing reads and debits also expire lazily. */
 export async function expireCredits(now = new Date()): Promise<{ expiredCount: number; totalAmount: number }> {
   const wallets = await Wallet.find({
     "expiringCredits.expiresAt": { $lte: now },
     "expiringCredits.amount": { $gt: 0 },
-  });
-
+  }).select("user").lean();
   let expiredCount = 0;
   let totalAmount = 0;
-
   for (const wallet of wallets) {
-    for (const creditItem of wallet.expiringCredits) {
-      if (creditItem.amount <= 0 || creditItem.expiresAt > now) continue;
-
-      const key = `expire:${wallet._id}:${creditItem.sourceTx ?? creditItem.expiresAt.getTime()}`;
-      const res = await debit({
-        userId: wallet.user.toString(),
-        amount: Math.min(creditItem.amount, wallet.balance),
-        type: "expire",
-        idempotencyKey: key,
-        description: "انقضای اعتبار کیف پول",
-      });
-
-      if (res.ok && !res.duplicate) {
-        // صفر کردن سهم منقضی‌شده
-        await Wallet.updateOne(
-          { _id: wallet._id, "expiringCredits.expiresAt": creditItem.expiresAt },
-          { $set: { "expiringCredits.$.amount": 0 } },
-        );
-        expiredCount++;
-        totalAmount += creditItem.amount;
-
-        await notifyUser({
-          userId: wallet.user,
-          title: "انقضای اعتبار",
-          message: `مبلغ ${creditItem.amount.toLocaleString("fa-IR")} تومان از اعتبار کیف پول شما منقضی شد.`,
-          type: "credit_expiry",
-          category: "wallet",
-          link: "/my-profile?step=8",
-          eventKey: `CREDIT_EXPIRY:${key}`,
-        }).catch(() => {});
-      }
+    try {
+      const result = await expireWalletCreditsForUser(String(wallet.user), now);
+      expiredCount += result.expiredCount;
+      totalAmount += result.totalAmount;
+    } catch (error) {
+      console.error("[wallet] scheduled expiry failed for user", String(wallet.user), error);
     }
   }
-
   return { expiredCount, totalAmount };
 }
 
