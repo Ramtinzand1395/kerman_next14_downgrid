@@ -13,6 +13,8 @@ interface IWallet extends Document {
     expiresAt: Date;
     /** شناسه تراکنش مبدا جهت ردیابی */
     sourceTx?: mongoose.Types.ObjectId;
+    /** Idempotency key of the original grant; stable across retries. */
+    sourceKey?: string;
   }[];
   /** شمارنده نسخه برای Optimistic Locking — جلوگیری از race condition */
   version: number;
@@ -39,6 +41,7 @@ const WalletSchema = new Schema<IWallet>(
         amount: { type: Number, required: true, min: 0 },
         expiresAt: { type: Date, required: true },
         sourceTx: { type: Schema.Types.ObjectId, ref: "WalletTransaction" },
+        sourceKey: { type: String, maxlength: 180 },
       },
     ],
     version: { type: Number, default: 0 },
