@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import User from "@/model/User";
+import { normalizeAppointmentPhone } from "@/lib/appointments/wizard-validation";
 import Appointment from "@/model/Appointment";
 import { requireUser } from "@/lib/loyalty/api";
 import { appointmentCreateSchema, appointmentUserUpdateSchema } from "@/validations/appointment.validation";
@@ -21,7 +23,20 @@ export async function GET() {
 export async function POST(req: Request) {
   const auth = await requireUser();
   if ("error" in auth) return auth.error;
-  const parsed = appointmentCreateSchema.safeParse(await req.json().catch(() => null));
+  const user = await User.findById(auth.userId).select("username mobile").lean();
+  if (!user) return NextResponse.json({ error: "حساب کاربری یافت نشد؛ دوباره وارد شوید." }, { status: 401 });
+  const body = await req.json().catch(() => null);
+  const contact = {
+    customerName: stripHtmlTags(String(user.username || "کاربر")).trim() || "کاربر",
+    phone: normalizeAppointmentPhone(String(user.mobile || "")),
+  };
+  if (!/^09\d{9}$/.test(contact.phone)) {
+    return NextResponse.json({ error: "شماره حساب کاربری معتبر نیست؛ اطلاعات حساب را بررسی کنید." }, { status: 422 });
+  }
+  const parsed = appointmentCreateSchema.safeParse(body && typeof body === "object" ? {
+    ...body, ...contact,
+    ...(body.fulfillment === "courier" ? { recipientName: contact.customerName, recipientPhone: contact.phone } : {}),
+  } : body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message || "اطلاعات نوبت نامعتبر است." }, { status: 422 });
   }
