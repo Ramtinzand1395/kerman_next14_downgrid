@@ -26,9 +26,16 @@ test("wallet checkout spends bonus expiring soonest, before paid-in wallet funds
 });
 test("expired credit cannot be spent and is removed at exactly 72 hours", () => {
   const expiredAt = new Date("2026-11-08T10:00:00Z");
-  const credits = [{ amount: 50000, expiresAt: expiredAt }];
+  const credits = [{ amount: 50000, expiresAt: expiredAt, sourceKey: "welcome" }];
   assert.equal(spendExpiringCreditFirst(credits, 25000, expiredAt)[0].amount, 50000);
   const zero = zeroExpiredCredits(credits, expiredAt);
   assert.equal(zero.amount, 50000);
   assert.equal(zero.credits[0].amount, 0);
+});
+
+test("unreconciled legacy gifts never claw back paid-in funds", () => {
+  const legacy = [{ amount: 50000, expiresAt: new Date("2026-11-04T10:00:00Z") }];
+  const result = zeroExpiredCredits(legacy, now);
+  assert.equal(result.amount, 0);
+  assert.equal(result.credits[0].amount, 50000);
 });
