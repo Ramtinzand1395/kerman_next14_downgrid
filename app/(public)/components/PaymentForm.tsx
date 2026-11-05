@@ -601,7 +601,7 @@ export default function PaymentForm({
             href={`/my-profile?step=8&charge=${Math.max(10_000, Math.ceil((orderSummary.payable - walletBalance) / 1000) * 1000)}&from=checkout`}
             className="mt-2 inline-block font-semibold text-indigo-700 underline"
           >
-            شارژ ${"{"}formatPrice(Math.max(10_000, Math.ceil((orderSummary.payable - walletBalance) / 1000) * 1000)){"}"} تومان و استفاده از اعتبار
+            شارژ {formatPrice(Math.max(10_000, Math.ceil((orderSummary.payable - walletBalance) / 1000) * 1000))} تومان و استفاده از اعتبار
           </a>
         </div>
       )}
