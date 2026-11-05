@@ -118,7 +118,7 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <ul className="relative hidden items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-2 text-gray-700 shadow-sm md:flex">
+        <ul className="relative hidden items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-2 text-gray-700 shadow-sm xl:flex">
           {menuItems.map((item) => (
             <li
               key={item.name}
@@ -204,7 +204,7 @@ export default function Navbar() {
 
         <form
           onSubmit={handleSearch}
-          className="hidden items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 shadow-inner lg:flex lg:w-[22vw]"
+          className="hidden items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 shadow-inner xl:flex xl:w-[22vw]"
           role="search"
           aria-label="جستجو در محصولات"
         >
@@ -239,7 +239,7 @@ export default function Navbar() {
           />
 
           <button
-            className="rounded-xl border border-slate-200 bg-white p-2 text-black shadow-sm md:hidden"
+            className="rounded-xl border border-slate-200 bg-white p-2 text-black shadow-sm xl:hidden"
             aria-label="باز کردن منو"
             onClick={() => setMobileMenuOpen(true)}
             title="Open_Menu"

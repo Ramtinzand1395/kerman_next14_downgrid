@@ -670,7 +670,7 @@ export default function GameOrderSelector({
   }
 
   return (
-    <section dir="rtl" className="relative pb-24 lg:pb-0">
+    <section dir="rtl" className="relative min-w-0 max-w-full pb-24 [overflow-wrap:anywhere] lg:pb-0">
       <div className="mb-5 overflow-hidden rounded-3xl bg-[#001A6E] p-5 text-white shadow-xl shadow-blue-950/10 md:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -696,7 +696,7 @@ export default function GameOrderSelector({
         </ol>
       </div>
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid min-w-0 grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div ref={wizardTopRef} tabIndex={-1} className="min-w-0 scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm outline-none md:p-6">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
@@ -860,7 +860,7 @@ export default function GameOrderSelector({
                       )}
                     </div>
                   )}
-                  <div className="mt-5 flex gap-2 overflow-x-auto pb-2" role="list" aria-label="انتخاب روز">
+                  <div className="mt-5 flex min-w-0 max-w-full gap-2 overflow-x-auto pb-2" role="list" aria-label="انتخاب روز">
                     {dates.map((item, index) => (
                       <button key={item.key} type="button" disabled={fulfillment === "courier" && index >= courierBookingDays} onClick={() => setSelectedDate(item.key)} aria-pressed={selectedDate === item.key} className={`min-w-28 rounded-2xl border px-3 py-3 text-center outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-40 ${selectedDate === item.key ? "border-[#001A6E] bg-[#001A6E] text-white" : "border-slate-200 bg-white text-slate-700"}`}>
                         <span className="block text-xs">{persianDate(item.date, { weekday: "long" })}</span>
@@ -954,7 +954,7 @@ export default function GameOrderSelector({
           </div>
         </div>
 
-        <aside className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-24">
+        <aside className="min-w-0 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm xl:sticky xl:top-24">
           <h2 className="flex items-center gap-2 font-black text-slate-900"><PackageOpen className="h-5 w-5 text-[#001A6E]" /> خلاصه نوبت</h2>
           <dl className="mt-4 space-y-3 text-sm">
             <div className="flex justify-between gap-3"><dt className="text-slate-500">خدمت</dt><dd className="font-bold">{selectedService?.title || "انتخاب نشده"}</dd></div>

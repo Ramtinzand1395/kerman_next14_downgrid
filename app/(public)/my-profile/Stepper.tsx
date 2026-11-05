@@ -29,7 +29,7 @@ export default function Stepper({ activeStep }: { activeStep: number }) {
   const router = useRouter();
 
   return (
-    <div className="flex items-center gap-2 md:gap-3 overflow-x-auto pb-1">
+    <div className="flex min-w-0 max-w-full items-center gap-2 overflow-x-auto pb-1 md:gap-3">
       {steps.map((step) => {
         const Icon = step.icon;
         const isActive = step.id === activeStep;
