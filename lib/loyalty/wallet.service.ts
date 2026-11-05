@@ -511,7 +511,7 @@ export async function debit(input: DebitInput): Promise<WalletTxResult> {
           return;
         }
 
-        const buckets = (wallet.expiringCredits ?? []).map((bucket: WalletCreditBucket) => ({
+        const buckets: WalletCreditBucket[] = (wallet.expiringCredits ?? []).map((bucket: WalletCreditBucket) => ({
           amount: bucket.amount,
           expiresAt: bucket.expiresAt,
           sourceTx: bucket.sourceTx,
@@ -612,7 +612,7 @@ export async function expireWalletCreditsForUser(
     const wallet = await Wallet.findOne({ user: userId });
     if (!wallet) return { expiredCount: 0, totalAmount: 0 };
 
-    const buckets = (wallet.expiringCredits ?? []).map((bucket: WalletCreditBucket) => ({
+    const buckets: WalletCreditBucket[] = (wallet.expiringCredits ?? []).map((bucket: WalletCreditBucket) => ({
       amount: bucket.amount,
       expiresAt: bucket.expiresAt,
       sourceTx: bucket.sourceTx,
