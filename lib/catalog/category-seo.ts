@@ -55,7 +55,7 @@ export function categoryAncestors(
   }
   return ancestors;
 }
-export function descendantIds(id: string, rows: CategoryRow[]): string[] {
+export function descendantIds(id: string, rows: Pick<CategoryRow, "_id" | "parent">[]): string[] {
   const ids = new Set([id]);
   const queue = [id];
   for (let index = 0; index < queue.length; index++) {

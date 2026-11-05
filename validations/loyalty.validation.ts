@@ -42,24 +42,35 @@ export const adminAdjustSchema = z.object({
 });
 
 // ---- کوپن ----
-export const couponCreateSchema = z.object({
+const couponFieldsSchema = z.object({
   code: z.string().min(3, "کد حداقل ۳ کاراکتر").max(40).regex(/^[A-Za-z0-9_-]+$/, "کد فقط حروف/عدد/-/_"),
   title: z.string().max(120).optional(),
   type: z.enum(COUPON_TYPES),
   value: z.number().min(1),
-  scope: z.enum(COUPON_SCOPES).default("public"),
-  allowedUsers: z.array(objectId).default([]),
+  scope: z.enum(COUPON_SCOPES),
+  allowedUsers: z.array(objectId),
   maxDiscountAmount: z.number().min(0).optional(),
-  minPurchaseAmount: z.number().min(0).default(0),
+  minPurchaseAmount: z.number().min(0),
   usageLimit: z.number().int().min(1).optional(),
-  perUserLimit: z.number().int().min(1).default(1),
-  products: z.array(objectId).default([]),
-  categories: z.array(objectId).default([]),
+  perUserLimit: z.number().int().min(1),
+  products: z.array(objectId),
+  categories: z.array(objectId),
   startsAt: z.coerce.date().optional(),
   expiresAt: z.coerce.date().optional(),
-  isActive: z.boolean().default(true),
+  isActive: z.boolean(),
 });
-export const couponUpdateSchema = couponCreateSchema.partial();
+// Zod defaults still run inside partial() in v4. PATCH must contain only the
+// fields actually supplied; creation defaults must never erase saved limits.
+export const couponUpdateSchema = couponFieldsSchema.partial();
+export const couponCreateSchema = couponFieldsSchema.extend({
+  scope: couponFieldsSchema.shape.scope.default("public"),
+  allowedUsers: couponFieldsSchema.shape.allowedUsers.default([]),
+  minPurchaseAmount: couponFieldsSchema.shape.minPurchaseAmount.default(0),
+  perUserLimit: couponFieldsSchema.shape.perUserLimit.default(1),
+  products: couponFieldsSchema.shape.products.default([]),
+  categories: couponFieldsSchema.shape.categories.default([]),
+  isActive: couponFieldsSchema.shape.isActive.default(true),
+});
 
 // ---- ماموریت ----
 export const missionSchema = z.object({

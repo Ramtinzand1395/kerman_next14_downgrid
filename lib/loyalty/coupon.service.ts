@@ -6,6 +6,8 @@
 import mongoose from "mongoose";
 import Coupon, { ICoupon } from "@/model/Loyalty Club/Coupon";
 import CouponUsage from "@/model/Loyalty Club/CouponUsage";
+import Category from "@/model/Category";
+import { descendantIds } from "@/lib/catalog/category-seo";
 import { computeCouponDiscount, eligibleCouponAmount } from "./coupon.policy";
 
 export interface ValidateCouponInput {
@@ -54,9 +56,6 @@ export async function validateCoupon(
 
   // کوپن خصوصی
   if (coupon.scope === "private") {
-    // !تغییر با chat
-    // const allowed = coupon.allowedUsers.some((u) => u.toString() === input.userId);
-
     const allowed = coupon.allowedUsers.some(
       (u: mongoose.Types.ObjectId) => u.toString() === input.userId,
     );
@@ -90,21 +89,20 @@ export async function validateCoupon(
   let eligibleAmount = input.orderAmount;
   if (coupon.products.length || coupon.categories.length) {
     const items = input.items ?? [];
-    // !تغییر با chat
-    // const productSet = new Set(coupon.products.map((p) => p.toString()));
-    // const categorySet = new Set(coupon.categories.map((c) => c.toString()));
-    const productSet = new Set<string>(
-      coupon.products.map((p: mongoose.Types.ObjectId) => p.toString()),
-    );
-
-    const categorySet = new Set<string>(
-      coupon.categories.map((c: mongoose.Types.ObjectId) => c.toString()),
-    );
+    const productIds = coupon.products.map((p: mongoose.Types.ObjectId) => p.toString());
+    let categoryIds = coupon.categories.map((c: mongoose.Types.ObjectId) => c.toString());
+    if (categoryIds.length) {
+      const categories = await Category.find().select("_id parent").lean();
+      const rows = categories.map((category) => ({
+        _id: String(category._id), parent: category.parent ? String(category.parent) : null,
+      }));
+      categoryIds = [...new Set(categoryIds.flatMap((id: string) => descendantIds(id, rows)))];
+    }
     const eligibility = eligibleCouponAmount(
       input.orderAmount,
       items,
-      [...productSet],
-      [...categorySet],
+      productIds,
+      categoryIds,
     );
     if (!eligibility.matches)
       return {

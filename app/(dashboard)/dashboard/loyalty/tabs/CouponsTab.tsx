@@ -7,6 +7,7 @@ import { Plus, Search } from "lucide-react";
 import { apiFetch, faNum, toman, Paged } from "@/lib/loyalty/ui";
 import { CouponScope, CouponType } from "@/types/loyalty";
 import { toPersianDate } from "@/helpers/toPersianDate";
+import { couponTargetMode, couponTargetPayload, type CouponTargetMode } from "@/lib/loyalty/coupon-form";
 import {
   AdminTable,
   Field,
@@ -33,6 +34,15 @@ export interface CouponItem {
   usedCount?: number;
   expiresAt?: string;
   isActive: boolean;
+  products?: string[];
+  categories?: string[];
+  allowedUsers?: string[];
+}
+
+interface CouponCategory {
+  _id: string;
+  name: string;
+  parent?: { _id: string; name: string } | null;
 }
 
 const emptyForm = {
@@ -57,6 +67,31 @@ export default function CouponsTab() {
   const [modal, setModal] = useState<null | { id?: string }>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [targetMode, setTargetMode] = useState<CouponTargetMode>("all");
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
+  const [targetDirty, setTargetDirty] = useState(false);
+  const [targetError, setTargetError] = useState("");
+  const [legacyProductCount, setLegacyProductCount] = useState(0);
+  const [allowedUserCount, setAllowedUserCount] = useState(0);
+  const [categories, setCategories] = useState<CouponCategory[]>([]);
+  const [categoryStatus, setCategoryStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+
+  const loadCategories = useCallback(async () => {
+    setCategoryStatus("loading");
+    try {
+      const response = await fetch("/api/admin/category");
+      const rows: CouponCategory[] = await response.json();
+      if (!response.ok || !Array.isArray(rows)) throw new Error("categories");
+      setCategories(rows.sort((a, b) => a.name.localeCompare(b.name, "fa")));
+      setCategoryStatus("ready");
+    } catch {
+      setCategoryStatus("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (modal && categoryStatus === "idle") void loadCategories();
+  }, [modal, categoryStatus, loadCategories]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -74,10 +109,22 @@ export default function CouponsTab() {
 
   const openCreate = () => {
     setForm(emptyForm);
+    setTargetMode("all");
+    setCategoryIds([]);
+    setTargetDirty(false);
+    setTargetError("");
+    setLegacyProductCount(0);
+    setAllowedUserCount(0);
     setModal({});
   };
 
   const openEdit = (c: CouponItem) => {
+    setTargetMode(couponTargetMode(c));
+    setCategoryIds(c.categories ?? []);
+    setTargetDirty(false);
+    setTargetError("");
+    setLegacyProductCount(c.products?.length ?? 0);
+    setAllowedUserCount(c.allowedUsers?.length ?? 0);
     setForm({
       code: c.code,
       title: c.title ?? "",
@@ -97,7 +144,6 @@ export default function CouponsTab() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (saving) return;
-    setSaving(true);
     const payload: Record<string, unknown> = {
       code: form.code.trim(),
       title: form.title || undefined,
@@ -108,10 +154,25 @@ export default function CouponsTab() {
       perUserLimit: Number(form.perUserLimit) || 1,
       isActive: form.isActive,
     };
+    // An ordinary edit omits restriction fields entirely, preserving hidden and
+    // potentially newer product/category/user limits on the server.
+    if (!modal?.id || targetDirty) {
+      try {
+        if (targetMode === "categories" && categoryStatus !== "ready") {
+          throw new Error("برای انتخاب دسته‌بندی، ابتدا فهرست دسته‌ها را دریافت کنید.");
+        }
+        Object.assign(payload, couponTargetPayload(targetMode, categoryIds));
+      } catch (error) {
+        setTargetError((error as Error).message);
+        document.getElementById("coupon-target-mode")?.focus();
+        return;
+      }
+    }
     if (form.maxDiscountAmount) payload.maxDiscountAmount = Number(form.maxDiscountAmount);
     if (form.usageLimit) payload.usageLimit = Number(form.usageLimit);
     if (form.expiresAt) payload.expiresAt = new Date(form.expiresAt).toISOString();
 
+    setSaving(true);
     const res = modal?.id
       ? await apiFetch(`/api/admin/loyalty/coupons/${modal.id}`, {
           method: "PATCH",
@@ -165,7 +226,7 @@ export default function CouponsTab() {
       </div>
 
       <AdminTable
-        headers={["کد", "نوع", "مقدار", "حداقل خرید", "استفاده", "انقضا", "وضعیت", "عملیات"]}
+        headers={["کد", "نوع", "مقدار", "محدوده محصولات", "حداقل خرید", "استفاده", "انقضا", "وضعیت", "عملیات"]}
         loading={loading}
         empty={!data || data.items.length === 0}
       >
@@ -174,6 +235,11 @@ export default function CouponsTab() {
             <Td className="font-mono font-bold text-indigo-600">{c.code}</Td>
             <Td>{c.type === "percent" ? "درصدی" : "مبلغ ثابت"}</Td>
             <Td>{c.type === "percent" ? `${faNum(c.value)}٪` : toman(c.value)}</Td>
+            <Td className="text-xs">
+              {c.products?.length || c.categories?.length
+                ? `${faNum(c.products?.length ?? 0)} محصول / ${faNum(c.categories?.length ?? 0)} دسته`
+                : "همه محصولات"}
+            </Td>
             <Td>{c.minPurchaseAmount ? toman(c.minPurchaseAmount) : "—"}</Td>
             <Td>
               {faNum(c.usedCount ?? 0)}
@@ -295,6 +361,72 @@ export default function CouponsTab() {
                 </select>
               </Field>
             </div>
+            <fieldset className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <legend className="px-1 text-sm font-semibold text-slate-700">محدوده اعمال تخفیف</legend>
+              <Field label="محصولات مشمول کوپن">
+                <select
+                  id="coupon-target-mode"
+                  value={targetMode}
+                  aria-describedby={targetError ? "coupon-target-error" : undefined}
+                  aria-invalid={Boolean(targetError)}
+                  onChange={(e) => {
+                    setTargetMode(e.target.value as CouponTargetMode);
+                    setTargetDirty(true);
+                    setTargetError("");
+                  }}
+                  className={inputCls}
+                >
+                  {legacyProductCount > 0 && <option value="preserve">حفظ محدودیت فعلی محصولات و دسته‌ها</option>}
+                  <option value="all">همه محصولات فروشگاه</option>
+                  <option value="categories">فقط دسته‌بندی‌های انتخابی</option>
+                </select>
+              </Field>
+              {targetMode === "preserve" && (
+                <p className="text-xs text-slate-600">
+                  محدودیت فعلی شامل {faNum(legacyProductCount)} محصول و {faNum(categoryIds.length)} دسته است و با ذخیره فرم حفظ می‌شود.
+                </p>
+              )}
+              {targetMode === "categories" && (
+                <div className="space-y-2">
+                  <p className="text-xs text-slate-600">
+                    فقط مبلغ محصولات این دسته‌ها و زیر‌دسته‌هایشان مشمول تخفیف است؛ سایر محصولات سبد تخفیف نمی‌گیرند.
+                  </p>
+                  {categoryStatus === "loading" && <p role="status" className="text-xs text-slate-500">در حال دریافت دسته‌بندی‌ها…</p>}
+                  {categoryStatus === "error" && (
+                    <div role="alert" className="text-xs text-rose-600">
+                      دریافت دسته‌بندی‌ها ناموفق بود.
+                      <button type="button" onClick={loadCategories} className="mr-2 underline">تلاش دوباره</button>
+                    </div>
+                  )}
+                  {categoryStatus === "ready" && (
+                    <div role="group" aria-label="دسته‌بندی‌های مجاز" className="max-h-48 space-y-2 overflow-y-auto rounded-lg border border-slate-200 bg-white p-3">
+                      {categories.length === 0 && <p className="text-xs text-slate-500">هنوز دسته‌بندی ثبت نشده است.</p>}
+                      {[...categories, ...categoryIds.filter((id) => !categories.some((category) => category._id === id))
+                        .map((id) => ({ _id: id, name: "دسته ثبت‌شده (در فهرست موجود نیست)", parent: null }))].map((category) => (
+                        <label key={category._id} className="flex items-center gap-2 text-sm text-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={categoryIds.includes(category._id)}
+                            onChange={(e) => {
+                              setCategoryIds((ids) => e.target.checked ? [...ids, category._id] : ids.filter((id) => id !== category._id));
+                              setTargetDirty(true);
+                              setTargetError("");
+                            }}
+                          />
+                          {category.parent ? `${category.parent.name} / ${category.name}` : category.name}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-slate-500">{faNum(categoryIds.length)} دسته انتخاب شده</p>
+                </div>
+              )}
+              {targetMode === "all" && <p className="text-xs text-slate-600">همه محصولات سبد خرید مشمول این کوپن هستند.</p>}
+              {targetError && <p id="coupon-target-error" role="alert" className="text-xs text-rose-600">{targetError}</p>}
+            </fieldset>
+            {form.scope === "private" && modal.id && (
+              <p className="text-xs text-slate-500">فهرست {faNum(allowedUserCount)} کاربر مجاز فعلی با ذخیره فرم حفظ می‌شود.</p>
+            )}
             <Toggle
               checked={form.isActive}
               onChange={(v) => setForm({ ...form, isActive: v })}
