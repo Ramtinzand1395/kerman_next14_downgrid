@@ -591,6 +591,20 @@ export default function PaymentForm({
           )}
         </button>
       </div>
+      {walletBalance !== null && walletBalance > 0 && !canPayWithWallet && orderSummary.payable > walletBalance && (
+        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <p>
+            برای استفاده از موجودی کیف پول در این سفارش، اختلاف مبلغ را شارژ کنید.
+            فعلاً پرداخت ترکیبی مستقیم از درگاه و کیف پول فعال نیست.
+          </p>
+          <a
+            href={`/my-profile?step=8&charge=${Math.max(10_000, Math.ceil((orderSummary.payable - walletBalance) / 1000) * 1000)}&from=checkout`}
+            className="mt-2 inline-block font-semibold text-indigo-700 underline"
+          >
+            شارژ ${"{"}formatPrice(Math.max(10_000, Math.ceil((orderSummary.payable - walletBalance) / 1000) * 1000)){"}"} تومان و استفاده از اعتبار
+          </a>
+        </div>
+      )}
     </div>
   );
 }
