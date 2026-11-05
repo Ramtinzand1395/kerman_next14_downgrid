@@ -17,8 +17,8 @@ export function welcomeGiftOffer(input: WelcomeGiftPolicyInput): {
   // Start date is mandatory to avoid retroactive grants to existing accounts.
   if (!input.startAt) return null;
   const start = new Date(input.startAt);
-  const registered = new Date(input.registeredAt);
-  const now = new Date(input.now);
+  const registered = new Date(input.registeredAt.getTime());
+  const now = new Date(input.now.getTime());
   if (![start, registered, now].every((d) => Number.isFinite(d.getTime()))) return null;
   if (registered < start || registered > now) return null;
   if (input.endAt) {
