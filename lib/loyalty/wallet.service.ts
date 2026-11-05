@@ -63,6 +63,14 @@ export interface WalletTxResult {
   error?: string;
 }
 
+// Version 0 was absent in a few historical wallets. Compare safely before
+// any write so an old document cannot block all future payments.
+function walletVersionFilter(version: number | undefined) {
+  return !version
+    ? { $or: [{ version: 0 }, { version: { $exists: false } }] }
+    : { version };
+}
+
 // ---------- ابزارهای داخلی ----------
 
 async function log(input: {
@@ -508,7 +516,7 @@ export async function debit(input: DebitInput): Promise<WalletTxResult> {
         updated = await Wallet.findOneAndUpdate(
           {
             _id: wallet._id,
-            version: wallet.version,
+            ...walletVersionFilter(wallet.version),
             isActive: true,
             balance: { $gte: amount },
           },
@@ -608,7 +616,7 @@ export async function expireWalletCreditsForUser(
 
     const deduction = Math.min(Math.max(0, wallet.balance), expired.amount);
     const updated = await Wallet.findOneAndUpdate(
-      { _id: wallet._id, version: wallet.version },
+      { _id: wallet._id, ...walletVersionFilter(wallet.version) },
       {
         $inc: { balance: -deduction, version: 1 },
         $set: { expiringCredits: expired.credits },
@@ -666,8 +674,13 @@ export async function expireWalletCreditsForUser(
 /** Background cleanup; user-facing reads and debits also expire lazily. */
 export async function expireCredits(now = new Date()): Promise<{ expiredCount: number; totalAmount: number }> {
   const wallets = await Wallet.find({
-    "expiringCredits.expiresAt": { $lte: now },
-    "expiringCredits.amount": { $gt: 0 },
+    expiringCredits: {
+      $elemMatch: {
+        expiresAt: { $lte: now },
+        amount: { $gt: 0 },
+        sourceKey: { $exists: true },
+      },
+    },
   }).select("user").lean();
   let expiredCount = 0;
   let totalAmount = 0;
