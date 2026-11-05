@@ -44,7 +44,7 @@ export async function grantWelcomeGiftForVerifiedSignup(input: {
       .select("amount expiresAt status").lean());
   const amount = Number(tx?.amount ?? offer.amount);
   const expiresAt = tx?.expiresAt ? new Date(tx.expiresAt) : offer.expiresAt;
-  if (expiresAt > new Date()) {
+  if (expiresAt.getTime() > Date.now()) {
     const bodyId = Number(process.env.WELCOME_WALLET_SMS_BODY_ID);
     if (Number.isSafeInteger(bodyId) && bodyId > 0) {
       // Template: "کرمان آتاری: {0} تومان اعتبار هدیه ... تا ۷۲ ساعت ... kermanatari.ir"
