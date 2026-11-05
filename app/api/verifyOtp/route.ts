@@ -1,4 +1,5 @@
 import dbConnect from "@/lib/mongodb";
+import { grantWelcomeGiftForVerifiedSignup } from "@/lib/loyalty/welcome-gift.service";
 import { onUserSignup } from "@/lib/loyalty/purchase.hooks";
 import {
   ownsSignupIntent,
@@ -165,6 +166,20 @@ export async function POST(req: Request) {
       error: "کد دعوت فقط هنگام تکمیل ثبت‌نام کاربر جدید قابل استفاده است",
       retryable: false,
     };
+  }
+
+  // Run only after OTP is verified. Existing accounts are screened by their original
+  // registration date; the idempotency key prevents repeat gifts on subsequent logins.
+  try {
+    await grantWelcomeGiftForVerifiedSignup({
+      userId: user._id.toString(),
+      mobile,
+      registeredAt: user.createdAt,
+    });
+  } catch (error) {
+    // A promotional failure never breaks a verified login; an eligible retry
+    // can finish the grant on the next verified OTP without duplicating credit.
+    console.error(`[welcome-wallet] signup grant failed operationId=${operationId}`, error);
   }
 
   return new Response(
