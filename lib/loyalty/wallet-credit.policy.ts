@@ -18,7 +18,7 @@ export function spendExpiringCreditFirst<T extends ExpiringCreditBucket>(
   for (const index of order) {
     if (remaining <= 0) break;
     const bucket = next[index];
-    if (bucket.amount <= 0 || bucket.expiresAt.getTime() <= now.getTime()) continue;
+    if (!bucket.sourceKey || bucket.amount <= 0 || bucket.expiresAt.getTime() <= now.getTime()) continue;
     const used = Math.min(bucket.amount, remaining);
     bucket.amount -= used;
     remaining -= used;
@@ -32,7 +32,9 @@ export function zeroExpiredCredits<T extends ExpiringCreditBucket>(
 ): { credits: T[]; amount: number } {
   let amount = 0;
   const next = credits.map((item) => {
-    if (item.amount <= 0 || item.expiresAt.getTime() > now.getTime()) return { ...item };
+    // Pre-migration credits have no reliable consumed-amount ledger. Never
+    // reclaim paid-in customer funds from an unreconciled legacy bucket.
+    if (!item.sourceKey || item.amount <= 0 || item.expiresAt.getTime() > now.getTime()) return { ...item };
     amount += item.amount;
     return { ...item, amount: 0 };
   });
