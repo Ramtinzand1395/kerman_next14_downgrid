@@ -1,5 +1,6 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
+import { canAccessDashboardPath } from "@/lib/dashboard-access";
 
 export default withAuth(
   function middleware(req) {
@@ -7,23 +8,10 @@ export default withAuth(
 
     const pathname = req.nextUrl.pathname;
 
-    // --- مسیر /dashboard فقط برای superadmin ---
-    const isDashboardPath = pathname.startsWith("/dashboard");
-    const isStoreOrderPath = pathname.startsWith("/dashboard/store-order");
-
-    // superadmin به همه مسیرهای داشبورد دسترسی دارد
-    if (isDashboardPath && role === "superadmin") {
-      return NextResponse.next();
-    }
-
-    // admin فقط به مسیرهای store-order داشبورد دسترسی دارد
-    const isNotificationPath = pathname.startsWith("/dashboard/notifications");
-    if (isDashboardPath && role === "admin" && !isStoreOrderPath && !isNotificationPath) {
-      return NextResponse.redirect(new URL("/dashboard/store-order", req.url));
-    }
-
-    if (isDashboardPath && role !== "superadmin" && role !== "admin") {
-      return NextResponse.redirect(new URL("/", req.url));
+    const isDashboardPath = pathname === "/dashboard" || pathname.startsWith("/dashboard/");
+    if (isDashboardPath) {
+      if (canAccessDashboardPath(role, pathname)) return NextResponse.next();
+      return NextResponse.redirect(new URL(role === "admin" ? "/dashboard/store-order" : "/", req.url));
     }
 
     // --- مسیر /my-profile فقط برای کاربران وارد شده ---

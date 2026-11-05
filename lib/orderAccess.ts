@@ -4,6 +4,7 @@ import "@/model/Address";
 import "@/model/Product";
 import { ensurePaidOrderIdentifiers } from "@/lib/orderIdentifiers";
 import { toOrderDto } from "@/lib/orderDto";
+import { isSuperadmin } from "@/lib/dashboard-access";
 
 export async function getOrderForViewer(input: {
   orderId: string;
@@ -13,7 +14,7 @@ export async function getOrderForViewer(input: {
 }) {
   if (!mongoose.isValidObjectId(input.orderId)) return null;
 
-  const canViewAny = input.role === "admin" || input.role === "superadmin";
+  const canViewAny = isSuperadmin(input.role);
   const query: Record<string, unknown> = { _id: input.orderId };
   if (!canViewAny) query.user = input.userId;
   if (input.paidOnly) query.paymentStatus = "paid";

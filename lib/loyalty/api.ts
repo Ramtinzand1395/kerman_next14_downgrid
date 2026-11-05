@@ -8,6 +8,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/mongodb";
+import { isSuperadmin } from "@/lib/dashboard-access";
 import { ZodSchema } from "zod";
 
 // ---------- پاسخ استاندارد ----------
@@ -30,13 +31,14 @@ export async function requireUser() {
 }
 
 export async function requireAdmin() {
-  await dbConnect();
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { error: fail("ابتدا وارد حساب کاربری شوید", 401) };
   const role = (session.user as { role?: string }).role;
-  if (role !== "admin" && role !== "superadmin") {
+  // These management APIs back pages that staff (role=admin) cannot access.
+  if (!isSuperadmin(role)) {
     return { error: fail("دسترسی غیرمجاز", 403) };
   }
+  await dbConnect();
   return { userId: session.user.id as string, role, session };
 }
 
