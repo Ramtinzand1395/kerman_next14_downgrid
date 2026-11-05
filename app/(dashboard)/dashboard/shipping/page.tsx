@@ -59,7 +59,6 @@ export default function ShippingSettingsPage() {
           <div className="flex items-center justify-between gap-3"><span className="font-bold">ارسال به شهرستان کرمان</span><span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">همیشه فعال</span></div>
           <Field label="عنوان قابل نمایش" value={settings.localDelivery.title} onChange={(title) => setSettings({ ...settings, localDelivery: { ...settings.localDelivery, title } })} />
           <NumberField label="هزینه ثابت (تومان)" value={settings.localDelivery.feeToman} onChange={(feeToman) => setSettings({ ...settings, localDelivery: { ...settings.localDelivery, feeToman } })} />
-          <TextArea label="توضیحات" value={settings.localDelivery.description} onChange={(description) => setSettings({ ...settings, localDelivery: { ...settings.localDelivery, description } })} />
         </div>
 
         <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -67,7 +66,6 @@ export default function ShippingSettingsPage() {
           <label className="flex items-center justify-between gap-3 text-sm text-slate-600"><span>نمایش پس‌کرایه برای آدرس‌های داخل محدوده شهری</span><input type="checkbox" checked={settings.nationalCollect.availableForLocalAddresses} onChange={(event) => setSettings({ ...settings, nationalCollect: { ...settings.nationalCollect, availableForLocalAddresses: event.target.checked } })} /></label>
           <Field label="عنوان قابل نمایش" value={settings.nationalCollect.title} onChange={(title) => setSettings({ ...settings, nationalCollect: { ...settings.nationalCollect, title } })} />
           <TextArea label="توضیح پرداخت هنگام تحویل" value={settings.nationalCollect.description} onChange={(description) => setSettings({ ...settings, nationalCollect: { ...settings.nationalCollect, description } })} />
-          <p className="rounded-xl bg-amber-50 p-3 text-xs leading-6 text-amber-800">این روش نرخ ثابت ندارد؛ مبلغ حمل در سفارش و پرداخت آنلاین صفر ذخیره نمی‌شود و مقدار آن نامشخص باقی می‌ماند.</p>
         </div>
 
         <CarrierSettingsCard
@@ -125,7 +123,6 @@ function CarrierSettingsCard({
       </label>
       <Field label="عنوان قابل نمایش" value={value.title} onChange={(title) => onChange({ ...value, title })} />
       <TextArea label="توضیح هزینه محاسبه‌شده توسط شرکت حمل‌ونقل" value={value.description} onChange={(description) => onChange({ ...value, description })} />
-      <p className="rounded-xl bg-amber-50 p-3 text-xs leading-6 text-amber-800">نرخ ساختگی ثبت نمی‌شود؛ هزینه حمل در پرداخت آنلاین محاسبه نشده و هنگام تحویل طبق تعرفه شرکت دریافت می‌شود.</p>
     </div>
   );
 }

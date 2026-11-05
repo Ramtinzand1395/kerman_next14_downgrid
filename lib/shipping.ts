@@ -27,12 +27,11 @@ export type ShippingPaymentType = "PREPAID" | "COLLECT";
 export const KERMAN_SHIPPING_COST = 150_000;
 export const KERMAN_LOCAL_SHIPPING_TITLE = "ارسال به شهرستان کرمان";
 export const COLLECT_SHIPPING_LABEL = "پس‌کرایه";
-export const LOCAL_SHIPPING_DESCRIPTION =
-  "ارسال سفارش در محدوده تحت پوشش شهر کرمان با هزینه ثابت ۱۵۰٬۰۰۰ تومان انجام می‌شود.";
+export const LOCAL_SHIPPING_DESCRIPTION = formatLocalShippingPolicyText(KERMAN_SHIPPING_COST);
 export const COLLECT_SHIPPING_NOTE =
-  "ارسال به سراسر ایران به‌صورت پس‌کرایه انجام می‌شود. هزینه حمل هنگام تحویل مرسوله و براساس تعرفه شرکت حمل‌ونقل دریافت خواهد شد.";
+  "هزینه حمل هنگام تحویل و طبق تعرفه شرکت حمل‌ونقل دریافت می‌شود.";
 export const CARRIER_CALCULATED_SHIPPING_NOTE =
-  "هزینه حمل توسط شرکت حمل‌ونقل محاسبه و هنگام تحویل دریافت می‌شود؛ نامشخص بودن مبلغ به معنی ارسال رایگان نیست.";
+  COLLECT_SHIPPING_NOTE;
 
 type CarrierCollectSetting = {
   enabled: boolean;
@@ -95,7 +94,7 @@ export const DEFAULT_SHIPPING_SETTINGS: StoreShippingSettings = {
 };
 
 export function formatLocalShippingPolicyText(feeToman: number): string {
-  return `ارسال سفارش در محدوده تحت پوشش شهر کرمان با هزینه ثابت ${feeToman.toLocaleString("fa-IR")} تومان انجام می‌شود.`;
+  return `هزینه ارسال در محدوده تحت پوشش: ${feeToman.toLocaleString("fa-IR")} تومان.`;
 }
 
 export class ShippingMethodUnavailableError extends Error {
@@ -238,7 +237,7 @@ export function getAvailableShippingMethods(
       paymentType: "PREPAID",
       isKerman: true,
       label: `${fee.toLocaleString("fa-IR")} تومان`,
-      description: settings.localDelivery.description,
+      description: formatLocalShippingPolicyText(fee),
     });
   }
 

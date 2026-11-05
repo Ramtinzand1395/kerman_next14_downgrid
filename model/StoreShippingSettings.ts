@@ -7,7 +7,7 @@ const StoreShippingSettingsSchema = new mongoose.Schema(
     version: { type: Number, default: 1 },
     localDelivery: {
       enabled: { type: Boolean, default: true },
-      feeToman: { type: Number, default: 150_000, min: 1 },
+      feeToman: { type: Number, default: DEFAULT_SHIPPING_SETTINGS.localDelivery.feeToman, min: 1 },
       title: { type: String, default: DEFAULT_SHIPPING_SETTINGS.localDelivery.title },
       description: {
         type: String,

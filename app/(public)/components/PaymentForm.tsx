@@ -17,7 +17,7 @@ import { useRouter } from "@/app/components/navigation/NavigationFeedback";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { ButtonLoading } from "@/app/components/loading/LoadingSystem";
-import type { ShippingCalculation, ShippingMethod } from "@/lib/shipping";
+import { COLLECT_SHIPPING_NOTE, type ShippingCalculation, type ShippingMethod } from "@/lib/shipping";
 import { summarizeOrderMoney } from "@/lib/orderSummary";
 import OrderMoneySummaryView from "./OrderMoneySummary";
 
@@ -343,14 +343,8 @@ export default function PaymentForm({
           <h2 className="text-lg font-bold text-slate-900">
             مرور نهایی و پرداخت
           </h2>
-          <p className="text-sm text-slate-500">
-            اطلاعات سفارش را بررسی کنید و سپس وارد درگاه شوید.
-          </p>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-          روش پرداخت: درگاه امن زرین‌پال یا کیف پول
-        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
@@ -466,14 +460,14 @@ export default function PaymentForm({
                         <span className="block text-sm font-bold text-slate-900">
                           {option.title} — {option.label}
                         </span>
-                        <span className="mt-1 block text-xs leading-6 text-slate-600">
-                          {option.description}
-                        </span>
                       </span>
                     </span>
                   </label>
                 ))}
               </div>
+            )}
+            {shippingInfo?.paymentTiming === "on_delivery" && (
+              <p className="mt-3 text-xs leading-6 text-slate-600">{COLLECT_SHIPPING_NOTE}</p>
             )}
           </div>
 
@@ -527,7 +521,6 @@ export default function PaymentForm({
             <OrderMoneySummaryView
               summary={orderSummary}
               shippingLabel={shippingInfo?.label || "پس از انتخاب روش ارسال"}
-              shippingNote={shippingInfo?.description}
               compact
             />
           </div>

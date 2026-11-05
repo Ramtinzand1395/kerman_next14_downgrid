@@ -10,9 +10,7 @@ import ProductPurchaseSummary from "./ProductPurchaseSummary";
 import type { Product } from "@/types";
 import { SITE_URL, toAbsoluteUrl } from "@/lib/site";
 import ProductImage from "@/app/components/ProductImage";
-import { getStoreShippingSettings } from "@/lib/shippingSettings";
 import { tomanToIrr } from "@/lib/currency";
-import { formatLocalShippingPolicyText } from "@/lib/shipping";
 import { merchantReturnPolicyId, normalizeProductCategory } from "@/lib/merchantSchema";
 import {
   getRelatedProducts,
@@ -194,24 +192,7 @@ export default async function ProductPage({
     throw error;
   }
 
-  const [{ relatedProducts }, shippingSettings] = await Promise.all([
-    loadRelatedProducts(product._id || product.id),
-    getStoreShippingSettings(),
-  ]);
-  const shippingNotices = [
-    shippingSettings.localDelivery.enabled
-      ? formatLocalShippingPolicyText(shippingSettings.localDelivery.feeToman)
-      : null,
-    shippingSettings.nationalCollect.enabled
-      ? shippingSettings.nationalCollect.description
-      : null,
-    shippingSettings.tipax.enabled
-      ? `${shippingSettings.tipax.title}: ${shippingSettings.tipax.description}`
-      : null,
-    shippingSettings.postPishtaz.enabled
-      ? `${shippingSettings.postPishtaz.title}: ${shippingSettings.postPishtaz.description}`
-      : null,
-  ].filter((value): value is string => Boolean(value));
+  const { relatedProducts } = await loadRelatedProducts(product._id || product.id);
   const finalPrice = product.discountPrice ?? product.price;
   const productUrl = toAbsoluteUrl(`/product/${product.slug}`);
 
@@ -372,7 +353,7 @@ export default async function ProductPage({
                   />
                 </div>
                 <div className="xl:col-span-7 xl:border-r xl:pr-8 border-zinc-100">
-                  <ProductInfo product={product} shippingNotices={shippingNotices} />
+                  <ProductInfo product={product} />
                 </div>
               </div>
             </div>

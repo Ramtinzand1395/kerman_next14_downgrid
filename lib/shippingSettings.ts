@@ -2,6 +2,7 @@ import StoreShippingSettings from "@/model/StoreShippingSettings";
 import dbConnect from "@/lib/mongodb";
 import {
   DEFAULT_SHIPPING_SETTINGS,
+  formatLocalShippingPolicyText,
   type StoreShippingSettings as StoreShippingSettingsValue,
 } from "@/lib/shipping";
 
@@ -10,6 +11,7 @@ const text = (value: unknown, fallback: string) =>
 
 export function normalizeShippingSettings(value: any): StoreShippingSettingsValue {
   const fee = Number(value?.localDelivery?.feeToman);
+  const localFee = Number.isSafeInteger(fee) && fee > 0 ? fee : DEFAULT_SHIPPING_SETTINGS.localDelivery.feeToman;
   const localTitle = text(
     value?.localDelivery?.title,
     DEFAULT_SHIPPING_SETTINGS.localDelivery.title,
@@ -21,15 +23,13 @@ export function normalizeShippingSettings(value: any): StoreShippingSettingsValu
       // settings may still contain `false`; normalize those records safely at
       // read time without requiring a production data migration.
       enabled: true,
-      feeToman: Number.isSafeInteger(fee) && fee > 0 ? fee : 150_000,
+      feeToman: localFee,
       title:
         localTitle === "ارسال شهری کرمان"
           ? DEFAULT_SHIPPING_SETTINGS.localDelivery.title
           : localTitle,
-      description: text(
-        value?.localDelivery?.description,
-        DEFAULT_SHIPPING_SETTINGS.localDelivery.description,
-      ),
+      // Historical prose can contain an obsolete price. The numeric fee is authoritative.
+      description: formatLocalShippingPolicyText(localFee),
     },
     nationalCollect: {
       enabled: value?.nationalCollect?.enabled !== false,

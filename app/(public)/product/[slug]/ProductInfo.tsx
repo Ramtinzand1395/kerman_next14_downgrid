@@ -15,10 +15,9 @@ import CustomVariantSelector from "./CustomVariantSelector";
 
 interface ProductInfoProps {
   product?: Product;
-  shippingNotices?: string[];
 }
 
-export const ProductInfo = ({ product: propProduct, shippingNotices = [] }: ProductInfoProps) => {
+export const ProductInfo = ({ product: propProduct }: ProductInfoProps) => {
   const {
     product: contextProduct,
     activeVariants,
@@ -116,14 +115,6 @@ export const ProductInfo = ({ product: propProduct, shippingNotices = [] }: Prod
           </span>
         </div>
       </div>
-
-      {shippingNotices.length > 0 && (
-        <div className="mb-8 space-y-2 rounded-2xl border border-cyan-100 bg-cyan-50/60 p-4">
-          {shippingNotices.map((notice) => (
-            <p key={notice} className="text-xs leading-6 text-slate-700">{notice}</p>
-          ))}
-        </div>
-      )}
 
       {/* tags */}
       {product.tags && product.tags.length > 0 && (

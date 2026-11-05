@@ -10,7 +10,7 @@ const schema = z.object({
     enabled: z.boolean(),
     feeToman: z.number().int().min(1).max(100_000_000),
     title: text.max(100),
-    description: text,
+    description: z.string().trim().max(500).optional(),
   }),
   nationalCollect: z.object({
     enabled: z.boolean(),
@@ -49,14 +49,6 @@ export async function PATCH(req: Request) {
   if (!parsed.data.localDelivery.enabled) {
     return fail("روش ارسال ثابت شهرستان کرمان باید فعال بماند.", 422);
   }
-  if (
-    !parsed.data.localDelivery.enabled &&
-    !parsed.data.nationalCollect.enabled &&
-    !parsed.data.tipax.enabled &&
-    !parsed.data.postPishtaz.enabled
-  ) {
-    return fail("حداقل یک روش ارسال باید فعال باشد.", 422);
-  }
   const invalidCity = parsed.data.coverage.cities.find(
     (city) => !isValidIranDestination({ province: parsed.data.coverage.province, city }),
   );
@@ -64,7 +56,7 @@ export async function PATCH(req: Request) {
 
   const updated = await StoreShippingSettings.findOneAndUpdate(
     { key: "global" },
-    { $set: { ...parsed.data, version: 1, updatedBy: auth.userId } },
+    { $set: { ...normalizeShippingSettings(parsed.data), version: 1, updatedBy: auth.userId } },
     { upsert: true, returnDocument: "after", setDefaultsOnInsert: true, runValidators: true },
   );
   return ok(normalizeShippingSettings(updated));

@@ -2,7 +2,7 @@
 
 import { addressSchema } from "@/validations/UserInfoValidation";
 import { Address } from "@/types";
-import { MapPin, PencilLine, Plus, ShieldCheck, Trash2, Truck } from "lucide-react";
+import { MapPin, PencilLine, Plus, Trash2 } from "lucide-react";
 import { Iran } from "provinces-and-cities";
 import { useRouter } from "@/app/components/navigation/NavigationFeedback";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -153,9 +153,6 @@ export default function ShippingForm({
           </p>
         </div>
 
-        <div className="rounded-xl border border-cyan-100 bg-cyan-50 px-3 py-2 text-xs text-cyan-800">
-          انتخاب آدرس برای ادامه پرداخت الزامی است.
-        </div>
       </div>
 
       <form
@@ -432,17 +429,7 @@ export default function ShippingForm({
         )}
       </div>
 
-      <div className="order-4 mt-6 grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 md:grid-cols-3">
-        <p className="flex items-center gap-2">
-          <ShieldCheck className="h-4 w-4 text-cyan-700" />
-          تضمین امنیت اطلاعات ارسال
-        </p>
-
-        <p className="flex items-center gap-2">
-          <Truck className="h-4 w-4 text-cyan-700" />
-          روش و هزینه ارسال بر اساس شهر مقصد
-        </p>
-
+      <div className="order-4 mt-6 flex justify-end">
         <button
           type="button"
           onClick={() => router.push("/cart?step=3", { scroll: false })}

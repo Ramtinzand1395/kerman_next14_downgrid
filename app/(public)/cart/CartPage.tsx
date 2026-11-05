@@ -25,7 +25,7 @@ import { PageLoading } from "@/app/components/loading/LoadingSystem";
 import { calculateShippingInfo } from "@/lib/shipping";
 import { summarizeOrderMoney } from "@/lib/orderSummary";
 import OrderMoneySummaryView from "../components/OrderMoneySummary";
-import { formatLocalShippingPolicyText, type StoreShippingSettings } from "@/lib/shipping";
+import type { StoreShippingSettings } from "@/lib/shipping";
 
 const checkoutSteps = [
   {
@@ -268,12 +268,6 @@ export default function CartPage({ shippingSettings }: { shippingSettings: Store
         <div className="xl:col-span-8">
           {activeStep === 1 && (
             <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
-              <div className="mb-5 space-y-2 rounded-2xl border border-cyan-100 bg-cyan-50 p-4 text-xs leading-6 text-slate-700">
-                {shippingSettings.localDelivery.enabled && <p>{formatLocalShippingPolicyText(shippingSettings.localDelivery.feeToman)}</p>}
-                {shippingSettings.nationalCollect.enabled && <p>{shippingSettings.nationalCollect.description}</p>}
-                {shippingSettings.tipax.enabled && <p>{shippingSettings.tipax.title}: {shippingSettings.tipax.description}</p>}
-                {shippingSettings.postPishtaz.enabled && <p>{shippingSettings.postPishtaz.title}: {shippingSettings.postPishtaz.description}</p>}
-              </div>
               <h2 className="mb-5 text-lg font-bold text-slate-900">
                 محصولات انتخاب‌شده
               </h2>
@@ -463,7 +457,6 @@ export default function CartPage({ shippingSettings }: { shippingSettings: Store
                       ? shippingInfo.label
                       : "محاسبه بر اساس آدرس"
                   }
-                  shippingNote={shippingInfo?.description}
                   compact
                 />
               )}
