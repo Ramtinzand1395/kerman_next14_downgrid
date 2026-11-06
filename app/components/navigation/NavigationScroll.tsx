@@ -3,11 +3,11 @@
 import { useLayoutEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
-/** Query-only profile steps are pages; filters and tabs keep their position. */
+/** Profile and checkout steps are pages; filters and tabs keep their position. */
 export default function NavigationScroll() {
   const pathname = usePathname();
   const search = useSearchParams();
-  const step = pathname === "/my-profile" ? search.get("step") || "1" : "";
+  const step = pathname === "/my-profile" || pathname === "/cart" ? search.get("step") || "1" : "";
   const key = `${pathname}:${step}`;
   const previous = useRef<string | undefined>(undefined);
   const restoring = useRef(false);
@@ -23,7 +23,9 @@ export default function NavigationScroll() {
     previous.current = key;
     const restore = restoring.current;
     restoring.current = false;
-    if (!changed || restore || window.location.hash) return;
+    // Checkout history also opens the destination step at its start rather
+    // than restoring a position from a different-sized checkout panel.
+    if (!changed || (restore && pathname !== "/cart") || window.location.hash) return;
     // Dashboard pages scroll inside main rather than the window.
     const container = document.querySelector<HTMLElement>(".dashboard-main") || document.documentElement;
     const scroll = () => {
@@ -33,7 +35,7 @@ export default function NavigationScroll() {
     scroll();
     const frame = requestAnimationFrame(scroll);
     return () => cancelAnimationFrame(frame);
-  }, [key]);
+  }, [key, pathname]);
 
   return null;
 }
