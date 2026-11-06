@@ -32,6 +32,7 @@ const CourierAddressSnapshotSchema = new Schema(
 
 const CourierSchema = new Schema(
   {
+    route: { type: String, enum: ["pickup", "return", "round_trip"], default: undefined },
     addressId: { type: Schema.Types.ObjectId, ref: "Address", default: null },
     addressSnapshot: { type: CourierAddressSnapshotSchema, required: true },
     regionId: { type: String, trim: true, default: "" },

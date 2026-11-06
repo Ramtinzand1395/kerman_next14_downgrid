@@ -80,6 +80,7 @@ export type CustomerSummary = {
 };
 
 export type CourierSummary = {
+  route?: import("@/lib/appointments/courier-policy").CourierRoute;
   status: CourierStatus;
   addressId?: string;
   pickupDate?: string;
@@ -164,6 +165,7 @@ export type AppointmentItem = {
   pricing?: PricingSummary;
   courier?: CourierSummary;
   courierSummary?: {
+    route?: import("@/lib/appointments/courier-policy").CourierRoute;
     status: CourierStatus;
     pickupDate: string;
     pickupWindow: { start: string; end: string };

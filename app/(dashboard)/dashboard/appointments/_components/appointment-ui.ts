@@ -118,11 +118,12 @@ export function selectedRewardLabel(item: AppointmentItem) {
 export type CourierView = NonNullable<AppointmentItem["courierSummary"]>;
 
 export function getCourierView(item: AppointmentItem): CourierView | null {
-  if (item.courierSummary) return { ...item.courierSummary, status: courierStatusAfterService(item.courierSummary.status, item.status) };
+  if (item.courierSummary) return { ...item.courierSummary, status: courierStatusAfterService(item.courierSummary.status, item.status, item.courierSummary.route) };
   if (!item.courier) return null;
 
   return {
-    status: courierStatusAfterService(item.courier.status, item.status),
+    route: item.courier.route,
+    status: courierStatusAfterService(item.courier.status, item.status, item.courier.route),
     pickupDate: item.courier.pickupDate || item.startsAt,
     pickupWindow: item.courier.pickupWindow || { start: "", end: "" },
     regionTitle: item.courier.regionTitle || "",

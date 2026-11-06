@@ -3,7 +3,7 @@ import { z } from "zod";
 import Address from "@/model/Address";
 import VisitReward from "@/model/VisitReward";
 import { requireUser } from "@/lib/loyalty/api";
-import { computeAppointmentPricing } from "@/lib/appointments/policy";
+import { COURIER_ROUTES, courierShippingCosts, computeAppointmentPricing } from "@/lib/appointments/policy";
 import { findCourierRegion, getAppointmentSettings } from "@/lib/appointments/settings";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +12,7 @@ export const runtime = "nodejs";
 const objectIdRegex = /^[a-f\d]{24}$/i;
 
 const courierPreviewSchema = z.object({
+  courierRoute: z.enum(COURIER_ROUTES).optional(),
   addressId: z.string().regex(objectIdRegex, "شناسه آدرس نامعتبر است"),
   serviceType: z.enum(["game_install", "repair"]).optional(),
   device: z.string().trim().max(60).optional(),
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { addressId, serviceType, selectedRewardId } = parsed.data;
+  const { addressId, serviceType, selectedRewardId, courierRoute } = parsed.data;
 
   // ── 1. Load settings ──────────────────────────────────────────────────────
   const settings = await getAppointmentSettings();
@@ -86,10 +87,9 @@ export async function POST(req: Request) {
   }
 
   // ── 4. Compute shipping costs from settings (no client-supplied values) ───
-  const pickupShippingCost = Number(region.shippingCost);
-  const returnShippingCost =
-    settings.courierRoundTripMultiplier > 1 ? pickupShippingCost : 0;
-  const shippingBaseAmount = pickupShippingCost + returnShippingCost;
+  const { pickupShippingCost, returnShippingCost, totalShippingCost: shippingBaseAmount } = courierShippingCosts(
+    Number(region.shippingCost), courierRoute, settings.courierRoundTripMultiplier,
+  );
 
   // ── 5. Resolve optional reward ────────────────────────────────────────────
   let rewardDetails: Parameters<typeof computeAppointmentPricing>[0]["reward"] = null;
@@ -145,6 +145,7 @@ export async function POST(req: Request) {
 
   // ── 7. Build response ─────────────────────────────────────────────────────
   const response: Record<string, unknown> = {
+    courierRoute: courierRoute || "round_trip",
     eligible: true,
     courierEnabled: true,
     addressId: String(addressDoc._id),

@@ -21,6 +21,7 @@ export type AppointmentWizardDraft = {
   selectedGames: InstallationGame[];
   repairIssue: RepairIssue | "";
   fulfillment: Fulfillment | null;
+  courierRoute?: import("./courier-policy").CourierRoute;
   description: string;
   selectedDate: string;
   selectedSlot: { startsAt: string; endsAt: string; time: string } | null;

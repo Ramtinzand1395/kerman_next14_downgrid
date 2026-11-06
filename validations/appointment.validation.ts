@@ -1,6 +1,6 @@
 import { z } from "zod";
 import {
-  APPOINTMENT_STATUSES, COURIER_ACTION_STATUSES,
+  COURIER_ROUTES, APPOINTMENT_STATUSES, COURIER_ACTION_STATUSES,
   normalizeRewardRuleData,
   validateRewardRuleData,
 } from "@/lib/appointments/policy";
@@ -35,6 +35,7 @@ export const inStoreAppointmentCreateSchema = baseAppointmentSchema.extend({
 
 export const courierAppointmentCreateSchema = baseAppointmentSchema.extend({
   fulfillment: z.literal("courier"),
+  courierRoute: z.enum(COURIER_ROUTES).optional(),
   addressId: z.string().regex(objectIdRegex, "شناسه آدرس نامعتبر است"),
   pickupDate: z.string().regex(dateStringRegex, "فرمت تاریخ تحویل نامعتبر است"),
   pickupWindow: z.object({

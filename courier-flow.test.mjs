@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { canCourierTransition, courierStatusAfterService, COURIER_RETURN_DELIVERY_STAGES, courierReturnDeliveryProgress } from './lib/appointments/courier-policy.ts';
+import { courierShippingCosts, courierStages, courierStageProgress, canCourierTransition, courierStatusAfterService, COURIER_RETURN_DELIVERY_STAGES, courierReturnDeliveryProgress } from './lib/appointments/courier-policy.ts';
 
 test('pickup, receipt and return are the three courier actions in order', () => {
   assert.equal(COURIER_RETURN_DELIVERY_STAGES.length, 3);
@@ -34,4 +34,18 @@ test('service corrections preserve courier facts and terminal history', () => {
   for (const status of ['return_ready', 'returning', 'delivered', 'cancelled']) {
     assert.equal(courierStatusAfterService(status, 'completed'), status);
   }
+});
+
+
+test('route-specific progress and legacy pricing retain historical behavior',()=>{
+  assert.deepEqual(courierShippingCosts(120000,'pickup'),{pickupShippingCost:120000,returnShippingCost:0,totalShippingCost:120000});
+  assert.deepEqual(courierShippingCosts(120000,'return'),{pickupShippingCost:0,returnShippingCost:120000,totalShippingCost:120000});
+  assert.equal(courierShippingCosts(120000,'round_trip',1).totalShippingCost,240000);
+  assert.equal(courierShippingCosts(120000,undefined,1).totalShippingCost,120000);
+  assert.equal(courierStages('pickup').length,2);
+  assert.equal(courierStageProgress('picked_up','pickup'),2);
+  assert.deepEqual(courierStages('return').map(s=>s.status),['return_ready','returning']);
+  assert.equal(courierStageProgress('return_ready','return'),1);
+  assert.equal(courierStatusAfterService('return_ready','confirmed','return'),'pending');
+  assert.equal(courierStageProgress('cancelled','return'),0);
 });

@@ -34,6 +34,7 @@ import {
   type AppointmentWizardDraft,
 } from "@/lib/appointments/draft";
 import { normalizeAppointmentPhone, validateAppointmentWizard, type WizardField, type WizardIssue } from "@/lib/appointments/wizard-validation";
+import { COURIER_ROUTES, courierRouteLabel, type CourierRoute } from "@/lib/appointments/courier-policy";
 import { profileRoute } from "@/lib/profileRoutes";
 
 import InstallationGamePicker from "./InstallationGamePicker";
@@ -203,6 +204,7 @@ export default function GameOrderSelector({
   const [addresses, setAddresses] = useState<AddressItem[]>([]);
   const [addressesLoading, setAddressesLoading] = useState(true);
   const [selectedAddressId, setSelectedAddressId] = useState("");
+  const [courierRoute, setCourierRoute] = useState<CourierRoute>("round_trip");
   const [courierSupported, setCourierSupported] = useState(false);
   const [courierBookingDays, setCourierBookingDays] = useState(14);
   const [courierWindows, setCourierWindows] = useState<CourierWindow[]>([]);
@@ -248,6 +250,7 @@ export default function GameOrderSelector({
     setSelectedGames(draft.selectedGames || []);
     setRepairIssue(draft.repairIssue);
     setFulfillment(draft.fulfillment);
+    setCourierRoute(draft.courierRoute || "round_trip");
     setDescription(draft.description);
     setSelectedDate(draft.selectedDate);
     setSelectedAddressId(draft.newAddressId || draft.selectedAddressId);
@@ -458,6 +461,7 @@ export default function GameOrderSelector({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         addressId: selectedAddressId,
+        courierRoute,
         serviceType,
         device,
         selectedRewardId: selectedRewardId || null,
@@ -467,6 +471,7 @@ export default function GameOrderSelector({
       .then(async (response) => {
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.error || "هزینه پیک محاسبه نشد؛ آدرس را دوباره انتخاب کنید.");
+        if (controller.signal.aborted) return;
         setCourierPreview(payload as CourierPreview);
         const enabled = Boolean(payload.courierEnabled);
         setCourierSupported(enabled);
@@ -482,7 +487,7 @@ export default function GameOrderSelector({
       });
 
     return () => controller.abort();
-  }, [device, fulfillment, selectedAddressId, selectedRewardId, serviceType]);
+  }, [device, fulfillment, courierRoute, selectedAddressId, selectedRewardId, serviceType]);
 
   const usableRewards = useMemo(
     () =>
@@ -613,6 +618,7 @@ export default function GameOrderSelector({
         ? { start: selectedCourierWindow.start, end: selectedCourierWindow.end }
         : null,
       selectedAddressId,
+      courierRoute,
       selectedRewardId,
       customerName,
       phone,
@@ -656,6 +662,7 @@ export default function GameOrderSelector({
             : fulfillment === "courier" && selectedCourierWindow
               ? {
                   addressId: selectedAddressId,
+                  courierRoute,
                   pickupDate: selectedDate,
                   pickupWindow: {
                     start: selectedCourierWindow.start,
@@ -881,11 +888,27 @@ export default function GameOrderSelector({
 
               {step === 4 && (
                 <div>
-                  <h2 className="text-xl font-black text-slate-950">{fulfillment === "courier" ? "آدرس و زمان دریافت دستگاه" : "روز و ساعت مراجعه"}</h2>
-                  <p className="mt-1 text-sm leading-7 text-slate-500">{fulfillment === "courier" ? "آدرس، روز و بازه دریافت پیک را انتخاب کنید." : "روز و ساعت آزاد را از ظرفیت واقعی فروشگاه انتخاب کنید."}</p>
+                  <h2 className="text-xl font-black text-slate-950">{fulfillment === "courier" ? "آدرس و زمان پیک" : "روز و ساعت مراجعه"}</h2>
+                  <p className="mt-1 text-sm leading-7 text-slate-500">{fulfillment === "courier" ? "مسیر، آدرس و بازه زمانی پیک را انتخاب کنید." : "روز و ساعت آزاد را از ظرفیت واقعی فروشگاه انتخاب کنید."}</p>
+                  {fulfillment === "courier" && (
+                    <fieldset className="mt-5">
+                      <legend className="font-black text-slate-900">مسیر پیک</legend>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                        {COURIER_ROUTES.map(route => (
+                          <label key={route} className={choiceClass(courierRoute === route)}>
+                            <input type="radio" name="courierRoute" value={route} checked={courierRoute === route} onChange={() => { setCourierRoute(route); setIdempotencyKey(""); }} className="ml-2 accent-[#001A6E]" />
+                            {courierRouteLabel(route)}
+                          </label>
+                        ))}
+                      </div>
+                      <p className="mt-3 text-sm leading-7 text-slate-600">
+                        {courierRoute === "return" ? "دستگاه را حضوری به فروشگاه بیاورید. بازه انتخابی، زمان درخواستی برگشت است؛ اعزام پس از آماده‌شدن دستگاه انجام می‌شود." : courierRoute === "pickup" ? "پیک دستگاه را از آدرس شما به فروشگاه می‌آورد؛ پس از پایان خدمات، حضوری تحویل بگیرید." : "پیک دستگاه را دریافت می‌کند و پس از پایان خدمات به آدرس شما بازمی‌گرداند."}
+                      </p>
+                    </fieldset>
+                  )}
                   {fulfillment === "courier" && (
                     <div {...fieldProps("addressId")} className="mt-5">
-                      <h3 className="font-black text-slate-900">آدرس دریافت</h3>
+                      <h3 className="font-black text-slate-900">{courierRoute === "return" ? "آدرس تحویل به مشتری" : "آدرس دریافت دستگاه"}</h3>
                       {addressesLoading ? <div className="mt-3 h-24 animate-pulse rounded-2xl bg-slate-100" /> : addresses.length === 0 ? (
                         <div className="mt-3 rounded-2xl border border-dashed border-slate-300 p-5 text-sm text-slate-600"><p>برای استفاده از پیک ابتدا یک آدرس ثبت کنید.</p><button type="button" onClick={openAddressManagement} className="mt-3 inline-flex rounded-xl bg-[#001A6E] px-4 py-2 font-bold text-white">افزودن آدرس</button></div>
                       ) : (
@@ -909,8 +932,8 @@ export default function GameOrderSelector({
                             <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-black text-emerald-800">واجد شرایط پیک</span>
                           </div>
                           <dl className="mt-4 grid gap-2 border-t border-emerald-200 pt-3 sm:grid-cols-2">
-                            <div className="flex items-center justify-between gap-3"><dt>هزینه رفت</dt><dd className="font-black">{toman(courierPreview.pricing.pickupShippingCost)}</dd></div>
-                            <div className="flex items-center justify-between gap-3"><dt>هزینه برگشت</dt><dd className="font-black">{toman(courierPreview.pricing.returnShippingCost)}</dd></div>
+                            <div className="flex items-center justify-between gap-3"><dt>هزینه رفت</dt><dd className="font-black">{courierRoute === "return" ? "انتخاب نشده" : toman(courierPreview.pricing.pickupShippingCost)}</dd></div>
+                            <div className="flex items-center justify-between gap-3"><dt>هزینه برگشت</dt><dd className="font-black">{courierRoute === "pickup" ? "انتخاب نشده" : toman(courierPreview.pricing.returnShippingCost)}</dd></div>
                             <div className="flex items-center justify-between gap-3"><dt>جمع ارسال</dt><dd className="font-black">{toman(courierPreview.pricing.shippingBaseAmount)}</dd></div>
                             <div className="flex items-center justify-between gap-3"><dt>تخفیف ارسال</dt><dd className="font-black text-emerald-700">{discountToman(courierPreview.pricing.shippingDiscountAmount)}</dd></div>
                             <div className="flex items-center justify-between gap-3 border-t border-emerald-200 pt-2 sm:col-span-2"><dt className="font-black">هزینه نهایی پیک</dt><dd className="text-base font-black">{toman(courierPreview.pricing.shippingFinalAmount)}</dd></div>
@@ -965,7 +988,7 @@ export default function GameOrderSelector({
                     <div><dt className="text-slate-500">نام حساب کاربری</dt><dd className="mt-1 font-bold">{customerName || "کاربر"}</dd></div>
                     <div><dt className="text-slate-500">شماره موبایل حساب</dt><dd dir="ltr" className="mt-1 text-right font-bold">{phone || "هنگام ثبت از حساب شما دریافت می‌شود"}</dd></div>
                     <div><dt className="text-slate-500">خدمت و دستگاه</dt><dd className="mt-1 font-bold">{selectedService?.title} · {deviceLabels[device] || device}{installationType ? ` · ${installationType === "copy" ? "کپی‌خور" : "اکانتی / قانونی"}` : ""}</dd></div>
-                    <div><dt className="text-slate-500">روش دریافت</dt><dd className="mt-1 font-bold">{fulfillment === "courier" ? "ارسال با پیک" : "مراجعه حضوری"}</dd></div>
+                    <div><dt className="text-slate-500">روش دریافت</dt><dd className="mt-1 font-bold">{fulfillment === "courier" ? `ارسال با پیک · ${courierRouteLabel(courierRoute)}` : "مراجعه حضوری"}</dd></div>
                     <div><dt className="text-slate-500">روز و ساعت</dt><dd className="mt-1 font-bold">{selectedDate && persianDate(`${selectedDate}T12:00:00+03:30`, { weekday: "long", month: "long", day: "numeric" })} · {fulfillment === "courier" ? `${fa(selectedCourierWindow?.start || "")} تا ${fa(selectedCourierWindow?.end || "")}` : fa(selectedSlot?.time || "")}</dd></div>
                     <div><dt className="text-slate-500">آدرس</dt><dd className="mt-1 font-bold leading-7">{fulfillment === "courier" ? `${selectedAddress?.city || ""}، ${selectedAddress?.address || ""}${selectedAddress?.plaque ? `، پلاک ${selectedAddress.plaque}` : ""}` : storeAddress}</dd></div>
                     {fulfillment === "courier" && courierPreview?.pricing && <div><dt className="text-slate-500">هزینه نهایی پیک</dt><dd className="mt-1 font-bold">{toman(courierPreview.pricing.shippingFinalAmount)}</dd></div>}
@@ -1024,13 +1047,14 @@ export default function GameOrderSelector({
             <div className="flex justify-between gap-3"><dt className="text-slate-500">دستگاه</dt><dd className="font-bold">{device ? deviceLabels[device] || device : "انتخاب نشده"}</dd></div>
             <div className="flex justify-between gap-3"><dt className="text-slate-500">روش دریافت</dt><dd className="font-bold">{fulfillment === "in_store" ? "مراجعه حضوری" : fulfillment === "courier" ? "ارسال با پیک" : "انتخاب نشده"}</dd></div>
             {serviceType === "game_install" && <div className="flex justify-between gap-3"><dt className="text-slate-500">بازی‌ها</dt><dd className="text-left font-bold">{fa(selectedGames.length)} بازی · <span dir="ltr">{fa(installationSize(selectedGames).totalSizeGB)} GB</span></dd></div>}
+            {fulfillment === "courier" && <div className="flex justify-between gap-3"><dt className="text-slate-500">مسیر پیک</dt><dd className="text-left text-xs font-bold">{courierRouteLabel(courierRoute)}</dd></div>}
             {fulfillment === "courier" && <div className="flex justify-between gap-3"><dt className="text-slate-500">آدرس</dt><dd className="max-w-44 text-left text-xs font-bold leading-6">{selectedAddress ? `${selectedAddress.city}، ${selectedAddress.address}` : "انتخاب نشده"}</dd></div>}
             <div className="flex justify-between gap-3"><dt className="text-slate-500">روز</dt><dd className="text-left font-bold">{selectedDate ? persianDate(`${selectedDate}T12:00:00+03:30`, { weekday: "long", month: "long", day: "numeric" }) : "انتخاب نشده"}</dd></div>
             <div className="flex justify-between gap-3"><dt className="text-slate-500">ساعت</dt><dd className="font-bold">{fulfillment === "courier" && selectedCourierWindow ? `${fa(selectedCourierWindow.start)} تا ${fa(selectedCourierWindow.end)}` : selectedSlot ? fa(selectedSlot.time) : "انتخاب نشده"}</dd></div>
             {fulfillment === "courier" && courierPreview?.region && <div className="flex justify-between gap-3"><dt className="text-slate-500">منطقه پیک</dt><dd className="text-left text-xs font-bold">{courierPreview.region.title || courierPreview.region.city}</dd></div>}
             {fulfillment === "courier" && courierPreview?.pricing && <>
-              <div className="flex justify-between gap-3"><dt className="text-slate-500">هزینه رفت</dt><dd className="text-left text-xs font-bold">{toman(courierPreview.pricing.pickupShippingCost)}</dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-slate-500">هزینه برگشت</dt><dd className="text-left text-xs font-bold">{toman(courierPreview.pricing.returnShippingCost)}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-slate-500">هزینه رفت</dt><dd className="text-left text-xs font-bold">{courierRoute === "return" ? "انتخاب نشده" : toman(courierPreview.pricing.pickupShippingCost)}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-slate-500">هزینه برگشت</dt><dd className="text-left text-xs font-bold">{courierRoute === "pickup" ? "انتخاب نشده" : toman(courierPreview.pricing.returnShippingCost)}</dd></div>
               <div className="flex justify-between gap-3"><dt className="text-slate-500">تخفیف ارسال</dt><dd className="text-left text-xs font-bold text-emerald-700">{discountToman(courierPreview.pricing.shippingDiscountAmount)}</dd></div>
               <div className="flex justify-between gap-3 border-t border-slate-200 pt-3"><dt className="font-black text-slate-700">هزینه نهایی پیک</dt><dd className="text-left text-xs font-black text-[#001A6E]">{toman(courierPreview.pricing.shippingFinalAmount)}</dd></div>
             </>}

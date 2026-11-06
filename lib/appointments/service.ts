@@ -17,6 +17,7 @@ import {
 } from "./games";
 import { notifyAdmins, notifyUser } from "@/lib/notifications/service";
 import {
+  courierShippingCosts,
   canonicalPayloadHash,
   cancellationAllowed,
   claimFirstAvailableSeat,
@@ -66,6 +67,7 @@ export type CreateAppointmentInput =
       description?: string;
       customerName: string;
       phone: string;
+      courierRoute?: import("./courier-policy").CourierRoute;
       addressId: string;
       pickupDate: string;
       pickupWindow: { start: string; end: string };
@@ -204,13 +206,13 @@ export async function createAppointment(userId: string, input: CreateAppointment
     key = courierSlotKey(courierInput.pickupDate, courierInput.pickupWindow.start, courierInput.pickupWindow.end);
     capacity = Number(settings.courierCapacityPerWindow || 3);
 
-    const pickupShippingCost = Number(region.shippingCost);
-    const returnShippingCost =
-      settings.courierRoundTripMultiplier > 1 ? pickupShippingCost : 0;
-    const totalShippingCost = pickupShippingCost + returnShippingCost;
+    const { pickupShippingCost, returnShippingCost, totalShippingCost } = courierShippingCosts(
+      Number(region.shippingCost), courierInput.courierRoute, settings.courierRoundTripMultiplier,
+    );
     shippingBaseAmount = totalShippingCost;
 
     courierPayload = {
+      ...(courierInput.courierRoute ? { route: courierInput.courierRoute } : {}),
       addressId: addressDoc._id,
       addressSnapshot: {
         title: "",
@@ -275,6 +277,7 @@ export async function createAppointment(userId: string, input: CreateAppointment
   };
   if (fulfillment === "courier") {
     const c = input as Extract<CreateAppointmentInput, { fulfillment: "courier" }>;
+    if (c.courierRoute) hashPayload.courierRoute = c.courierRoute;
     hashPayload.addressId = c.addressId;
     hashPayload.pickupDate = c.pickupDate;
     hashPayload.pickupWindow = c.pickupWindow;

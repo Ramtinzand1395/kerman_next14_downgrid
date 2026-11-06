@@ -215,22 +215,7 @@ export default function CourierSettings({
               onChange({ ...settings, courierCapacityPerWindow })
             }
           />
-          <label className="text-sm font-bold text-slate-700">
-            نوع مسیر
-            <select
-              value={settings.courierRoundTripMultiplier ?? 2}
-              onChange={(event) =>
-                onChange({
-                  ...settings,
-                  courierRoundTripMultiplier: Number(event.target.value),
-                })
-              }
-              className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 font-normal outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-            >
-              <option value={2}>دریافت و بازگشت دستگاه</option>
-              <option value={1}>فقط دریافت دستگاه</option>
-            </select>
-          </label>
+
         </div>
 
         <div className="mt-5">

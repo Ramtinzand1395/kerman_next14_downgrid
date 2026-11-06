@@ -65,3 +65,26 @@ test('completed legacy requests can return without replaying pickup or overwriti
   assert.equal((await h.patch({courierStatus:'returning'})).status,200);
   assert.equal(h.current.courier.status,'returning');
 });
+
+
+test('pickup-only completes without creating a return task or allowing return dispatch', async () => {
+  const h=harness();h.current.courier.route='pickup';
+  assert.equal((await h.patch({status:'confirmed',baseAmount:700000})).status,200);
+  assert.equal((await h.patch({courierStatus:'assigned'})).status,200);
+  assert.equal((await h.patch({courierStatus:'picked_up'})).status,200);
+  assert.equal((await h.patch({status:'completed',baseAmount:800000})).status,200);
+  assert.equal(h.current.courier.status,'picked_up');
+  assert.equal((await h.patch({courierStatus:'returning'})).status,409);
+  assert.ok(!h.notices.some(n=>n.message.includes('آماده ارسال با پیک')));
+});
+
+test('return-only skips pickup actions, completes after store service, then permits return', async () => {
+  const h=harness();h.current.courier.route='return';
+  assert.equal((await h.patch({status:'confirmed',baseAmount:700000})).status,200);
+  assert.equal((await h.patch({courierStatus:'assigned'})).status,409);
+  assert.equal((await h.patch({courierStatus:'picked_up'})).status,409);
+  assert.equal((await h.patch({courierStatus:'returning'})).status,409);
+  assert.equal((await h.patch({status:'completed',baseAmount:800000})).status,200);
+  assert.equal(h.current.courier.status,'return_ready');
+  assert.equal((await h.patch({courierStatus:'returning'})).status,200);
+});

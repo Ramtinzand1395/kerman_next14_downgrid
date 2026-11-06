@@ -563,7 +563,7 @@ function AppointmentsAdminContent() {
           }
           void updateStatus(
             settlement,
-            settlement.courier && ["pending", "scheduled"].includes(settlement.courier.status) ? "confirmed" : "completed",
+            settlement.courier && ["pending", "scheduled"].includes(settlement.courier.status) && !(settlement.courier.route === "return" && settlement.status === "confirmed") ? "confirmed" : "completed",
             Number(completionAmounts[settlement._id]),
           );
         }}

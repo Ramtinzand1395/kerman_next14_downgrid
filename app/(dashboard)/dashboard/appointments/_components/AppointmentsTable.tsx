@@ -1,5 +1,7 @@
 "use client";
 
+import { courierNextStatuses, courierRouteLabel, courierStages, courierStageProgress } from "@/lib/appointments/courier-policy";
+
 import {
   ChevronLeft,
   ChevronRight,
@@ -13,7 +15,6 @@ import type {
   CourierStatus,
 } from "@/types/appointments";
 import {
-  courierNext,
   courierLabel,
   courierTone,
   formatTehranDate,
@@ -168,11 +169,11 @@ export default function AppointmentsTable({
               {courier && !["cancelled", "rejected", "no_show"].includes(item.status) && (
                 <div className="mt-3 rounded-2xl border border-blue-100 bg-blue-50/40 p-3">
                   <p className="mb-2 text-xs font-black text-slate-700">مسیر سفارش</p>
-                  <ol className="grid grid-cols-4 gap-1.5 text-center text-[10px] leading-5 sm:text-xs">
-                    {["دریافت اطلاعات", "حرکت پیک", "نصب و پرداخت", "بازگشت مشتری"].map((label, index) => {
-                      const progressed = index === 0 || (index === 1 && !["pending", "scheduled"].includes(courier.status)) ||
-                        (index === 2 && item.status === "completed") || (index === 3 && ["returning", "delivered"].includes(courier.status));
-                      return <li key={label} className={`rounded-xl p-2 ${progressed ? "bg-emerald-100 font-black text-emerald-900" : "bg-white text-slate-500"}`}>{label}</li>;
+                  <p className="mb-2 text-xs text-slate-600">{courierRouteLabel(courier.route)}</p>
+                  <ol className="grid gap-1.5 text-center text-[10px] leading-5 sm:grid-cols-3 sm:text-xs">
+                    {courierStages(courier.route).map((stage, index) => {
+                      const progressed = index < courierStageProgress(courier.status, courier.route);
+                      return <li key={stage.status} className={`rounded-xl p-2 ${progressed ? "bg-emerald-100 font-black text-emerald-900" : "bg-white text-slate-500"}`}>{stage.label}</li>;
                     })}
                   </ol>
                 </div>
@@ -183,10 +184,10 @@ export default function AppointmentsTable({
                     {courier ? "تأیید و ثبت مبلغ اولیه" : "تأیید درخواست"}
                   </button>
                 )}
-                {item.status === "confirmed" && (!courier || ["picked_up", "at_store"].includes(courier.status)) && (
+                {item.status === "confirmed" && (!courier || courier.route === "return" || ["picked_up", "at_store"].includes(courier.status)) && (
                   <button type="button" disabled={workingId === item._id} onClick={() => onOpenSettlement(item)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">ثبت مبلغ نهایی و ارسال لینک پرداخت</button>
                 )}
-                {courier && !["cancelled", "rejected", "no_show"].includes(item.status) && (courierNext[courier.status] || []).filter((status) => status !== "cancelled" && status !== "return_ready" && !(status === "assigned" && (item.status !== "confirmed" || !item.pricing?.known))).map((status) => (
+                {courier && !["cancelled", "rejected", "no_show"].includes(item.status) && courierNextStatuses(courier.status, courier.route).filter((status) => status !== "cancelled" && status !== "return_ready" && !(status === "assigned" && (item.status !== "confirmed" || !item.pricing?.known))).map((status) => (
                   <button key={status} type="button" disabled={workingId === item._id} onClick={() => onRequestCourier(item, status)} className="rounded-xl bg-blue-900 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">
                     {status === "assigned" ? "حرکت پیک برای دریافت" : status === "picked_up" ? "تحویل دستگاه به پیک" : status === "returning" ? "حرکت پیک برای برگشت" : courierLabel[status]}
                   </button>

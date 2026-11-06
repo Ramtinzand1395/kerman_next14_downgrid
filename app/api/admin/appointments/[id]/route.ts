@@ -102,7 +102,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const effectiveServiceStatus = nextStatus || current.status;
   const automaticCourierStatus = current.courier
-    ? courierStatusAfterService(current.courier.status as CourierStatus, effectiveServiceStatus)
+    ? courierStatusAfterService(current.courier.status as CourierStatus, effectiveServiceStatus, current.courier.route)
     : undefined;
   const nextCourierStatus = parsed.data.courierStatus ||
     (automaticCourierStatus !== current.courier?.status ? automaticCourierStatus : undefined);
@@ -119,7 +119,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return fail("این نوبت فاقد پیک است و نمی‌توان وضعیت پیک را تغییر داد.", 422);
     }
     const currentCourierStatus = (effectiveServiceStatus === "completed" ? automaticCourierStatus : current.courier.status || "pending") as CourierStatus;
-    if (parsed.data.courierStatus && !canCourierTransition(currentCourierStatus, nextCourierStatus as CourierStatus)) {
+    if (parsed.data.courierStatus && !canCourierTransition(currentCourierStatus, nextCourierStatus as CourierStatus, current.courier.route)) {
       return fail("این انتقال وضعیت پیک مجاز نیست.", 409);
     }
     if (
@@ -134,7 +134,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       (effectiveServiceStatus !== "confirmed" || !current.pricing?.known)) {
     return fail("ابتدا درخواست را تأیید و مبلغ اولیه خدمت را ثبت کنید.", 409);
   }
-  if (nextStatus === "completed" && current.fulfillment === "courier" &&
+  if (nextStatus === "completed" && current.fulfillment === "courier" && current.courier?.route !== "return" &&
       ["pending", "scheduled", "assigned"].includes(current.courier?.status)) {
     return fail("ابتدا تحویل دستگاه به پیک را ثبت کنید.", 409);
   }

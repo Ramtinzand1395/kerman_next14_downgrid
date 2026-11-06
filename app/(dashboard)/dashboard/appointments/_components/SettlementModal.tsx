@@ -28,7 +28,7 @@ export default function SettlementModal({
 }: Props) {
   if (!item) return null;
   const courier = getCourierView(item);
-  const initialPricing = courier && ["pending", "scheduled"].includes(courier.status);
+  const initialPricing = courier && ["pending", "scheduled"].includes(courier.status) && !(courier.route === "return" && item.status === "confirmed");
   const reward = selectedRewardLabel(item);
 
   return (

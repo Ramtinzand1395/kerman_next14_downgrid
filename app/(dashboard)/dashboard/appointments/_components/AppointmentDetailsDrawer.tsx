@@ -1,5 +1,7 @@
 "use client";
 
+import { courierStages, courierStageProgress, courierRouteLabel } from "@/lib/appointments/courier-policy";
+
 import { useEffect } from "react";
 import {
   Check,
@@ -14,7 +16,6 @@ import InstallationGameSummary from "@/app/components/games/InstallationGameSumm
 import type { AppointmentItem } from "@/types/appointments";
 import {
   courierLabel,
-  courierTimeline,
   courierTone,
   discountToman,
   formatTehranDate,
@@ -43,9 +44,8 @@ export default function AppointmentDetailsDrawer({ item, onClose }: Props) {
   if (!item) return null;
 
   const courier = getCourierView(item);
-  const activeCourierIndex = courier
-    ? courierTimeline.indexOf(courier.status)
-    : -1;
+  const stages = courierStages(courier?.route);
+  const activeCourierIndex = courier ? courierStageProgress(courier.status, courier.route) - 1 : -1;
   const selectedReward =
     item.rewardSummary?.selectedReward || item.selectedReward;
 
@@ -104,7 +104,7 @@ export default function AppointmentDetailsDrawer({ item, onClose }: Props) {
                   <span
                     className={`rounded-full px-2.5 py-1 text-[11px] font-bold ring-1 ring-inset ${courierTone[courier.status]}`}
                   >
-                    پیک: {courierLabel[courier.status]}
+                    پیک: {courierLabel[courier.status]} · {courierRouteLabel(courier.route)}
                   </span>
                 ) : null}
               </div>
@@ -201,11 +201,11 @@ export default function AppointmentDetailsDrawer({ item, onClose }: Props) {
                 </p>
               ) : (
                 <ol className="mt-5 space-y-0" aria-label="خط زمانی پیک">
-                  {courierTimeline.map((status, index) => {
+                  {stages.map(({status}, index) => {
                     const completed = index <= activeCourierIndex;
                     return (
                       <li key={status} className="relative flex gap-3 pb-4 last:pb-0">
-                        {index < courierTimeline.length - 1 ? (
+                        {index < stages.length - 1 ? (
                           <span
                             className={`absolute right-[9px] top-5 h-full w-0.5 ${
                               index < activeCourierIndex

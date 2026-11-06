@@ -25,10 +25,10 @@ test('Persian and Arabic account mobile digits normalize without discarding inva
 test('both delivery modes preserve selections through a login round trip', () => {
   const values = new Map(); const storage = { getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,value),removeItem:key=>values.delete(key) };
   for (const fulfillment of ['courier','in_store']) {
-    const input={...valid,step:5,fulfillment,selectedGames:[{gameId:'a'.repeat(24),platform:'ps5'}],selectedSlot:{startsAt:'2026-11-05T10:00:00Z'},selectedCourierWindow:{start:'10:00',end:'12:00'},selectedAddressId:'a'.repeat(24),selectedRewardId:'',customerName:'',phone:'',idempotencyKey:'request-1'};
+    const input={...valid,courierRoute:"return",step:5,fulfillment,selectedGames:[{gameId:'a'.repeat(24),platform:'ps5'}],selectedSlot:{startsAt:'2026-11-05T10:00:00Z'},selectedCourierWindow:{start:'10:00',end:'12:00'},selectedAddressId:'a'.repeat(24),selectedRewardId:'',customerName:'',phone:'',idempotencyKey:'request-1'};
     saveAppointmentDraft(storage,input);
     const restored=readAppointmentDraft(storage);
-    assert.equal(restored.step,5); assert.equal(restored.fulfillment,fulfillment);
+    assert.equal(restored.step,5); assert.equal(restored.fulfillment,fulfillment); assert.equal(restored.courierRoute,"return");
     assert.deepEqual(restored.selectedGames,input.selectedGames);
   }
 });

@@ -169,6 +169,7 @@ export async function GET(req: Request) {
     let courierSummary: Record<string, unknown> | null = null;
     if (item.fulfillment === "courier" && item.courier) {
       courierSummary = {
+        route: item.courier.route,
         status: item.courier.status,
         pickupDate: item.courier.pickupDate,
         pickupWindow: item.courier.pickupWindow,

@@ -1,12 +1,10 @@
 "use client";
 
+import { courierNextStatuses, courierStages, courierStageProgress, courierRouteLabel } from "@/lib/appointments/courier-policy";
 import { MapPin, Phone, Truck } from "lucide-react";
 import type { AppointmentItem, CourierStatus } from "@/types/appointments";
 import {
   courierLabel,
-  courierNext,
-  courierReturnProgress,
-  courierReturnTimeline,
   courierTone,
   formatTehranDate,
   getCourierView,
@@ -58,8 +56,9 @@ export default function CourierQueue({
   return (
     <section className="grid gap-4 xl:grid-cols-2">
       {courierItems.map(({ item, courier }) => {
-        const returnProgress = courierReturnProgress(courier.status);
-        const nextStatuses = (courierNext[courier.status] || []).filter(
+        const returnProgress = courierStageProgress(courier.status, courier.route);
+        const stages = courierStages(courier.route);
+        const nextStatuses = courierNextStatuses(courier.status, courier.route).filter(
           (status) => !["cancelled", "rejected", "no_show"].includes(item.status) && !(status === "return_ready" && item.status !== "completed") &&
             !(status === "assigned" && (item.status !== "confirmed" || !item.pricing?.known)),
         );
@@ -126,9 +125,9 @@ export default function CourierQueue({
 
             {courier.status !== "cancelled" ? (
               <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                <p className="mb-3 text-xs font-black text-slate-700">مسیر رفت‌وبرگشت پیک</p>
-                <ol className="grid grid-cols-3 gap-2" aria-label="پیشرفت سه‌مرحله‌ای تحویل به مشتری">
-                  {courierReturnTimeline.map((stage, index) => {
+                <p className="mb-3 text-xs font-black text-slate-700">{courierRouteLabel(courier.route)}</p>
+                <ol className="grid grid-cols-2 gap-2 sm:grid-cols-3" aria-label="پیشرفت مسیر انتخابی پیک">
+                  {stages.map((stage, index) => {
                     const completed = index < returnProgress;
                     return (
                       <li key={stage.status} className="min-w-0">
@@ -142,7 +141,7 @@ export default function CourierQueue({
                 </ol>
                 {returnProgress === 0 && item.status !== "completed" && (
                   <p className="mt-3 rounded-xl bg-amber-50 p-2 text-xs leading-5 text-amber-800">
-                    ابتدا درخواست را تأیید و قیمت‌گذاری کنید؛ سپس پیک برای دریافت دستگاه اعزام می‌شود.
+                    {courier.route === "return" ? "دستگاه حضوری به فروشگاه تحویل داده می‌شود؛ پس از پایان خدمات، پیک برای برگشت اعزام می‌شود." : "ابتدا درخواست را تأیید و قیمت‌گذاری کنید؛ سپس پیک برای دریافت دستگاه اعزام می‌شود."}
                   </p>
                 )}
               </div>
@@ -151,7 +150,7 @@ export default function CourierQueue({
             <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
               {["pending", "confirmed"].includes(item.status) && ["pending", "scheduled", "picked_up", "at_store"].includes(courier.status) && (
                 <button type="button" disabled={workingId === item._id} onClick={() => onOpenSettlement(item)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">
-                  {["picked_up", "at_store"].includes(courier.status) ? "پایان خدمات و قیمت‌گذاری نهایی" : "قیمت‌گذاری اولیه"}
+                  {(["picked_up", "at_store"].includes(courier.status) || (courier.route === "return" && item.status === "confirmed")) ? "پایان خدمات و قیمت‌گذاری نهایی" : "قیمت‌گذاری اولیه"}
                 </button>
               )}
               {nextStatuses.map((status) => (

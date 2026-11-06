@@ -68,6 +68,7 @@ test('appointment validation accepts references only and discards client metadat
 
 function serviceHarness({ docs = fixtures } = {}) {
   const writes = [], notifications = [];
+  const courierTime = Date.now() + 86400_000;
   let saved;
   const Appointment = {
     init: async () => {}, findOne: async () => saved || null, countDocuments: async () => 0,
@@ -93,7 +94,7 @@ function serviceHarness({ docs = fixtures } = {}) {
       tehranDateKey: () => '2026-11-03', slotIsConfigured: () => true,
       findCourierRegion: () => ({id:'kerman', title:'Kerman', shippingCost:50000}),
       courierWindowIsConfigured: () => true, isWindowInPast: () => false,
-      tehranDateTime: () => new Date(Date.now()+86400_000),
+      tehranDateTime: () => new Date(courierTime),
     },
     './rewards.service': {reserveVisitReward:async()=>null,releaseVisitReward:async()=>{}},
   };
@@ -234,4 +235,22 @@ test('combined catalog pagination and search exclude blank imported rows before 
   assert.ok(first.data.games[0].name.trim());
   assert.ok(second.data.games[0].name.trim());
   assert.equal((await route.GET({url:url+'&search=Same'})).data.total,2);
+});
+
+
+test('courier selections persist route, charge selected legs only and bind route into idempotency', async () => {
+  for (const [courierRoute,pickup,back] of [['pickup',50000,0],['return',0,50000],['round_trip',50000,50000]]) {
+    const {service,writes}=serviceHarness();
+    const input={...base(),fulfillment:'courier',courierRoute,addressId:idX,pickupDate:'2026-11-03',pickupWindow:{start:'10:00',end:'12:00'}};
+    assert.equal(validation.appointmentCreateSchema.safeParse(input).success,true);
+    const result=await service.createAppointment(idX,input);
+    assert.ok(result.appointment);
+    assert.equal(writes[0].courier.route,courierRoute);
+    assert.equal(writes[0].courier.pickupShippingCost,pickup);
+    assert.equal(writes[0].courier.returnShippingCost,back);
+    assert.equal(writes[0].pricing.shippingBaseAmount,pickup+back);
+    assert.equal((await service.createAppointment(idX,input)).reused,true);
+    assert.equal((await service.createAppointment(idX,{...input,courierRoute:courierRoute==='pickup'?'return':'pickup'})).status,409);
+  }
+  assert.equal(validation.appointmentCreateSchema.safeParse({...base(),fulfillment:'courier',courierRoute:'invalid',addressId:idX,pickupDate:'2026-11-03',pickupWindow:{start:'10:00',end:'12:00'}}).success,false);
 });
