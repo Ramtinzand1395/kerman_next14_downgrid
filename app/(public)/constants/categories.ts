@@ -5,6 +5,10 @@ export interface CategoryItem {
   subcategories: { name: string; slug: string }[];
 }
 
+export function categoryMenuHref(slug: string) {
+  return slug === "services" ? "/services" : `/category/${encodeURIComponent(slug)}`;
+}
+
 export const categories: CategoryItem[] = [
   {
     name: "کنسول‌ها",

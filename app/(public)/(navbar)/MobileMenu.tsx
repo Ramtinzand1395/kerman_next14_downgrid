@@ -6,6 +6,7 @@ import { X, ChevronDown, User, Sparkles, Search } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { FormEvent, useState } from "react";
 import { useRouter } from "@/app/components/navigation/NavigationFeedback";
+import { categoryMenuHref } from "../constants/categories";
 
 interface Category {
   name: string;
@@ -121,7 +122,7 @@ export default function MobileMenu({
                     {quickLinks.slice(0, 6).map((link) => (
                       <Link
                         key={link.slug}
-                        href={`/category/${encodeURIComponent(link.slug)}`}
+                        href={categoryMenuHref(link.slug)}
                         onClick={onClose}
                         className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700"
                       >
@@ -168,7 +169,7 @@ export default function MobileMenu({
                             {categories.map((cat) => (
                               <li key={cat.slug} className="space-y-1">
                                 <Link
-                                  href={`/category/${encodeURIComponent(cat.slug)}`}
+                                  href={categoryMenuHref(cat.slug)}
                                   onClick={onClose}
                                   className="flex items-center gap-1 font-bold text-[#001A6E]"
                                 >
@@ -180,10 +181,10 @@ export default function MobileMenu({
 
                                 <ul className="space-y-1 pr-2">
                                   {cat.subcategories.map((sub) => (
-                                    <li key={sub.slug}>
+                                    <li key={sub.name}>
                                       <Link
                                         aria-label={`رفتن به ${sub.name}`}
-                                        href={`/category/${encodeURIComponent(sub.slug)}`}
+                                        href={categoryMenuHref(sub.slug)}
                                         onClick={onClose}
                                         className="block text-sm text-gray-600 transition hover:text-blue-600"
                                       >

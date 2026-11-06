@@ -22,7 +22,7 @@ import { usePathname } from "next/navigation";
 import { useRouter } from "@/app/components/navigation/NavigationFeedback";
 import CartDropdown from "./CartDropdown";
 import UserBtn from "./UserBtn";
-import { categories } from "../constants/categories";
+import { categories, categoryMenuHref } from "../constants/categories";
 import { useSession } from "next-auth/react";
 import NotificationBell from "@/app/components/notifications/NotificationBell";
 
@@ -178,14 +178,14 @@ export default function Navbar() {
                           key={cat.name}
                           className="rounded-xl border border-slate-100 bg-slate-50/60 p-3"
                         >
-                          <Link href={`/category/${encodeURIComponent(cat.slug)}`} className="mb-2 block text-sm font-bold text-slate-800">
+                          <Link href={categoryMenuHref(cat.slug)} className="mb-2 block text-sm font-bold text-slate-800">
                             {cat.name}
                           </Link>
                           <div className="flex flex-col gap-1">
                             {cat.subcategories.slice(0, 5).map((sub) => (
                               <Link
                                 key={sub.name}
-                               href={`/category/${encodeURIComponent(sub.slug)}`}
+                                href={categoryMenuHref(sub.slug)}
                                 className="rounded-lg px-2 py-1 text-xs text-slate-700 transition hover:bg-white hover:text-blue-600"
                               >
                                 {sub.name}

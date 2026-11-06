@@ -22,6 +22,11 @@ const nextConfig = {
         destination: "https://kermanatari.ir/:path*",
         permanent: true,
       },
+      {
+        source: "/category/services",
+        destination: "/services",
+        permanent: true,
+      },
     ];
   },
   images: {
