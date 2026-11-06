@@ -85,7 +85,7 @@ const UpdateStoreOrder = ({
 
           {isEditingOrder ? (
             <select
-              title="consoleType"
+              title="نوع دستگاه" aria-label="نوع دستگاه"
               value={userOrder?.consoleType || ""}
               onChange={(e) => handleOrderChange(e, "consoleType")}
               className="w-full rounded-lg border p-2"
@@ -109,7 +109,7 @@ const UpdateStoreOrder = ({
 
           {isEditingOrder ? (
             <input
-              title="price"
+              title="مبلغ سفارش" aria-label="مبلغ سفارش"
               type="number"
               value={userOrder?.price || 0}
               onChange={(e) => handleOrderChange(e, "price")}
@@ -125,7 +125,7 @@ const UpdateStoreOrder = ({
           <label className="text-sm">توضیحات</label>
 
           <textarea
-            title="caption"
+            title="توضیحات سفارش" aria-label="توضیحات سفارش"
             value={userOrder?.description || ""}
             readOnly={!isEditingOrder}
             onChange={(e) => handleOrderChange(e, "description")}
@@ -157,7 +157,7 @@ const UpdateStoreOrder = ({
 
                 {isEditingOrder && (
                   <button
-                    title="close"
+                    title="بستن جزئیات سفارش" aria-label="بستن جزئیات سفارش"
                     onClick={() =>
                       setUserOrder((prev) =>
                         prev

@@ -208,11 +208,12 @@ export default function UsersPage() {
               setQuery(event.target.value);
               setPage(1);
             }}
+            aria-label="جستجوی کاربران با نام، شماره موبایل یا ایمیل"
             placeholder="جستجو با نام، شماره موبایل یا ایمیل"
             className="h-11 rounded-xl border border-slate-200 px-4 text-sm outline-none transition focus:border-indigo-400"
           />
           <select
-            title="role"
+            title="فیلتر نقش کاربر" aria-label="فیلتر نقش کاربر"
             value={roleFilter}
             onChange={(event) => {
               setRoleFilter(event.target.value as "all" | User["role"]);

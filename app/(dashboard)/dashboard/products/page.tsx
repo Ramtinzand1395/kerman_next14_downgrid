@@ -245,13 +245,14 @@ export default function ProductsPage() {
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
+                  aria-label="جستجوی محصولات با نام، شناسه کالا یا دسته‌بندی"
                   placeholder="جستجو با نام، SKU یا دسته‌بندی"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pr-10 pl-3 text-sm text-slate-700 outline-none ring-indigo-200 transition focus:border-indigo-400 focus:ring"
                 />
               </label>
 
               <select
-                title="stockFilter"
+                title="فیلتر موجودی" aria-label="فیلتر موجودی"
                 value={stockFilter}
                 onChange={(e) => setStockFilter(e.target.value as StockFilter)}
                 className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none ring-indigo-200 transition focus:border-indigo-400 focus:ring"
@@ -262,7 +263,7 @@ export default function ProductsPage() {
               </select>
 
               <select
-                title="statusFilter"
+                title="فیلتر وضعیت محصول" aria-label="فیلتر وضعیت محصول"
                 value={statusFilter}
                 onChange={(e) =>
                   setStatusFilter(e.target.value as StatusFilter)

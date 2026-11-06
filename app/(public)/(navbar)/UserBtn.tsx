@@ -36,7 +36,7 @@ export default function UserBtn({
           onMouseLeave={() => setActiveDropdown(null)}
         >
           <button
-            title="account"
+            title="منوی حساب کاربری" aria-label="منوی حساب کاربری"
             type="button"
             onClick={() =>
               setActiveDropdown(isUserDropdownOpen ? null : "user")

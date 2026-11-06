@@ -52,13 +52,14 @@ const FaqEditor = ({ form, updateField }: FaqEditorProps) => {
             <div className="mb-3 flex items-center gap-2">
               <input
                 type="text"
+                aria-label={`متن سوال ${index + 1}`}
                 placeholder="مثلاً: آیا این محصول گارانتی دارد؟"
                 className="w-full rounded-lg border border-white/40 bg-white/10 p-2 text-sm outline-none placeholder:text-white/70 focus:border-blue-300"
                 value={faq.question}
                 onChange={(e) => updateFaq(index, "question", e.target.value)}
               />
               <button
-                title="remove"
+                title="حذف سوال" aria-label={`حذف سوال ${index + 1}`}
                 type="button"
                 onClick={() => removeFaq(index)}
                 className="rounded-lg bg-red-500/90 p-2 text-white transition hover:bg-red-600"
@@ -69,6 +70,7 @@ const FaqEditor = ({ form, updateField }: FaqEditorProps) => {
 
             <textarea
               rows={3}
+              aria-label={`پاسخ سوال ${index + 1}`}
               placeholder="پاسخ سوال را اینجا بنویسید..."
               className="w-full rounded-lg border border-white/40 bg-white/10 p-2 text-sm outline-none placeholder:text-white/70 focus:border-blue-300"
               value={faq.answer}

@@ -50,6 +50,7 @@ export default function ProductComments({ productId }: ProductCommentsProps) {
         rows={4}
         value={text}
         onChange={(e) => setText(e.target.value)}
+        aria-label="متن دیدگاه"
         placeholder="نظر خود را بنویسید..."
       />
 
@@ -60,7 +61,7 @@ export default function ProductComments({ productId }: ProductCommentsProps) {
 
         <select
           id="rating"
-          title="rating"
+          title="امتیاز محصول"
           className="border border-zinc-200 bg-white p-2 rounded-lg text-sm"
           value={rating}
           onChange={(e) => setRating(+e.target.value)}

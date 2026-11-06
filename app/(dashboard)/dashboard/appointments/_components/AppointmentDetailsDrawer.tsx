@@ -19,6 +19,8 @@ import {
   discountToman,
   formatTehranDate,
   getCourierView,
+  historyStatusLabel,
+  rewardStatusLabel,
   selectedRewardLabel,
   statusLabel,
   statusTone,
@@ -304,9 +306,7 @@ export default function AppointmentDetailsDrawer({ item: initialItem, onClose }:
                 </p>
                 <p className="mt-1 text-xs text-amber-700">
                   وضعیت:{" "}
-                  {selectedReward.status === "reserved"
-                    ? "رزرو شده"
-                    : selectedReward.status || "اعلام نشده"}
+                  {selectedReward.status ? rewardStatusLabel[selectedReward.status] || "اعلام نشده" : "اعلام نشده"}
                 </p>
               </div>
             ) : (
@@ -420,7 +420,7 @@ export default function AppointmentDetailsDrawer({ item: initialItem, onClose }:
                     className="border-r-2 border-blue-100 pr-3"
                   >
                     <p className="text-sm font-bold">
-                      {statusLabel[entry.to] || entry.to}
+                      {historyStatusLabel(entry)}
                     </p>
                     <p className="text-xs text-slate-500">
                       {formatTehranDate(entry.at)}

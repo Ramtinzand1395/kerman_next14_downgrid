@@ -14,6 +14,7 @@ function load(path,deps={},globals={}) {
   return module.exports;
 }
 const topics=load('./lib/contact-topics.ts');
+const storeContact=load('./lib/store-contact.ts',{'@/lib/storeIdentity':load('./lib/storeIdentity.ts')}).STORE_CONTACT;
 function elements(node) {
   if(Array.isArray(node))return node.flatMap(elements);
   return React.isValidElement(node)?[node,...elements(node.props.children)]:[];
@@ -51,6 +52,7 @@ function formHarness(savedDraft, status='authenticated') {
   },'next-auth/react':{useSession:()=>({status})},'react-toastify':{toast:{success(){},error(){}}},
     '@/validations/contactValidation':load('./validations/contactValidation.ts'),
     '@/app/components/loading/LoadingSystem':{ButtonLoading:()=>null},
+    '@/lib/store-contact':load('./lib/store-contact.ts',{'@/lib/storeIdentity':load('./lib/storeIdentity.ts')}),
   };
   const form=load('./app/(public)/contact-us/ContactForm.tsx',deps,{
     sessionStorage:{getItem:key=>storage.get(key),setItem:(key,value)=>storage.set(key,value),removeItem:key=>storage.delete(key)},
@@ -89,4 +91,18 @@ test('context survives login redirect and never leaks draft metadata into the st
   assert.equal(new URL(guest.redirect,'https://example.test').searchParams.get('callbackUrl'),'/contact-us?topic=after-sales#contact-form');
   const signedIn=formHarness(guest.draft);signedIn.render('پشتیبانی پس از خرید');await signedIn.submit();
   assert.deepEqual(signedIn.submitted,draft);assert.equal(signedIn.data.subject,'پشتیبانی پس از خرید');assert.equal(signedIn.data.message,'');
+});
+
+test('contact card uses the full store address for maps and the same hours as the public schedule',()=>{
+  const nodes=elements(formHarness().render());
+  const map=nodes.find(node=>node.props.href?.startsWith('https://www.google.com/maps/'));
+  assert.ok(map);
+  const query=new URL(map.props.href).searchParams.get('query');
+  assert.ok(query.includes(storeContact.address));
+  assert.ok(query.includes('کرمان آتاری'));
+  assert.notEqual(query,'Kerman');
+  assert.ok(nodes.some(node=>node.props.children===storeContact.hoursText));
+  assert.ok(storeContact.hoursText.includes('۱۲:۳۰'));
+  assert.ok(storeContact.openingHours.includes('Mo-Su 09:00-12:30'));
+  assert.ok(storeContact.openingHours.includes('Mo-Su 16:00-20:00'));
 });

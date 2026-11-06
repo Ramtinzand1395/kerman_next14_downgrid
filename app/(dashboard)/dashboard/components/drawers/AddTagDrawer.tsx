@@ -182,7 +182,7 @@ export default function AddTagDrawer({ onClose }: AddTagDrawerProps) {
                       <span className="text-[10px] text-slate-400">/{tag.slug}</span>
                     </div>
                     <button
-                    title="delete"
+                    title="حذف برچسب" aria-label={`حذف برچسب ${tag.name}`}
                       onClick={() => handleDelete(tag._id)}
                       className="rounded-md bg-rose-600/90 p-1.5 transition hover:bg-rose-500"
                     >

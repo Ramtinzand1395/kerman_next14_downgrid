@@ -35,14 +35,11 @@ import HomeHeroSlider from "./HomeHeroSlider";
 import { HOME_HERO_SLIDES } from "./home-hero-slides";
 import LandingCatalog from "./LandingCatalog";
 import ServiceOrderSection from "./ServiceOrderSection";
+import { STORE_CONTACT } from "@/lib/store-contact";
 
 const REQUEST_URL = "/my-profile?step=6";
 const INSTAGRAM_URL =
   "https://www.instagram.com/kermanatari.ir?igsh=MTh4cmd3NnNib2N5dw==";
-const MAP_URL =
-  "https://maps.google.com/?q=%DA%A9%D8%B1%D9%85%D8%A7%D9%86%D8%8C%20%D8%AE%DB%8C%D8%A7%D8%A8%D8%A7%D9%86%20%D9%86%D8%A7%D8%B5%D8%B1%DB%8C%D9%87%D8%8C%20%D8%A8%DB%8C%D9%86%20%DA%A9%D9%88%DA%86%D9%87%20%DB%B2%20%D9%88%20%DB%B4%D8%8C%20%D9%86%D8%A8%D8%B4%20%D8%AF%D8%A7%D8%B1%D9%88%D8%AE%D8%A7%D9%86%D9%87%20%D9%85%D8%A7%D8%AF%D8%B1";
-const MAP_EMBED_URL =
-  "https://www.google.com/maps?q=%DA%A9%D8%B1%D9%85%D8%A7%D9%86%D8%8C%20%D8%AE%DB%8C%D8%A7%D8%A8%D8%A7%D9%86%20%D9%86%D8%A7%D8%B5%D8%B1%DB%8C%D9%87%D8%8C%20%D8%A8%DB%8C%D9%86%20%DA%A9%D9%88%DA%86%D9%87%20%DB%B2%20%D9%88%20%DB%B4%D8%8C%20%D9%86%D8%A8%D8%B4%20%D8%AF%D8%A7%D8%B1%D9%88%D8%AE%D8%A7%D9%86%D9%87%20%D9%85%D8%A7%D8%AF%D8%B1&output=embed";
 
 const quickAccess = [
   {
@@ -664,7 +661,7 @@ export default function LandingHome({
         >
           <iframe
             title="نقشه فروشگاه کرمان آتاری"
-            src={MAP_EMBED_URL}
+            src={STORE_CONTACT.mapEmbedUrl}
             loading="eager"
             referrerPolicy="no-referrer-when-downgrade"
             className="min-h-[260px] w-full border-0 sm:min-h-full"
@@ -674,14 +671,14 @@ export default function LandingHome({
               حضوری منتظرتیم
             </h2>
             <p className="mt-2 text-sm font-bold leading-6 text-slate-600 sm:text-base">
-              کرمان، خیابان ناصریه، بین کوچه ۲ و ۴، نبش داروخانه مادر
+              {STORE_CONTACT.address}
             </p>
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-500 sm:text-sm">
               <span className="inline-flex items-center gap-1">
-                <Clock3 className="h-3.5 w-3.5 text-[#1469f5]" /> صبح ۹ تا ۱۲
+                <Clock3 className="h-3.5 w-3.5 text-[#1469f5]" /> {STORE_CONTACT.morningHours}
               </span>
               <span className="inline-flex items-center gap-1">
-                <Clock3 className="h-3.5 w-3.5 text-[#1469f5]" /> عصر ۴ تا ۸
+                <Clock3 className="h-3.5 w-3.5 text-[#1469f5]" /> {STORE_CONTACT.afternoonHours}
               </span>
             </div>
             <div className="mt-4 flex flex-col gap-2 min-[440px]:flex-row">
@@ -689,7 +686,7 @@ export default function LandingHome({
                 ثبت درخواست خدمات
               </Link>
               <a
-                href={MAP_URL}
+                href={STORE_CONTACT.mapUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="landing-secondary flex-1 text-sm"

@@ -242,7 +242,7 @@ export default function Navbar() {
             className="rounded-xl border border-slate-200 bg-white p-2 text-black shadow-sm xl:hidden"
             aria-label="باز کردن منو"
             onClick={() => setMobileMenuOpen(true)}
-            title="Open_Menu"
+            title="باز کردن منو"
           >
             <Menu className="h-5 w-5" />
           </button>

@@ -5,6 +5,7 @@ import { Iran } from "provinces-and-cities";
 import { Loader2, Save, Truck } from "lucide-react";
 import { toast } from "react-toastify";
 import type { StoreShippingSettings } from "@/lib/shipping";
+import { PageLoading } from "@/app/components/loading/LoadingSystem";
 
 export default function ShippingSettingsPage() {
   const [settings, setSettings] = useState<StoreShippingSettings | null>(null);
@@ -45,7 +46,7 @@ export default function ShippingSettingsPage() {
   };
 
   if (!settings) {
-    return <div className="flex min-h-72 items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-blue-700" /></div>;
+    return <PageLoading />;
   }
 
   return (

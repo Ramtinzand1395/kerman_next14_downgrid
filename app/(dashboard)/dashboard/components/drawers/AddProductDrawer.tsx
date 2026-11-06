@@ -323,7 +323,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
             type="button"
             onClick={onClose}
             className="rounded-lg p-2 hover:bg-slate-800"
-            aria-label="Close"
+            aria-label="بستن فرم محصول"
           >
             <X className="h-5 w-5" />
           </button>

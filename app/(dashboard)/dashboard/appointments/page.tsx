@@ -16,7 +16,6 @@ import {
   CalendarClock,
   ChevronLeft,
   ChevronRight,
-  Loader2,
   Settings2,
   Sparkles,
 } from "lucide-react";
@@ -647,14 +646,7 @@ function PaginationBar({
 
 export default function AppointmentsAdminPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-64 items-center justify-center gap-2 text-slate-500">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          در حال آماده‌سازی پنل نوبت‌ها…
-        </div>
-      }
-    >
+    <Suspense fallback={<PageLoading />}>
       <AppointmentsAdminContent />
     </Suspense>
   );

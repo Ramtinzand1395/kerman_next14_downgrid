@@ -390,7 +390,7 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
                     <button
-                      title="delete"
+                      title="حذف دسته‌بندی" aria-label={`حذف دسته‌بندی ${cat.name}`}
                       onClick={() => handleDelete(cat._id)}
                       className="rounded-md bg-rose-600/90 p-1.5 transition hover:bg-rose-500"
                     >

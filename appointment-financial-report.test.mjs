@@ -67,6 +67,20 @@ test('admin details distinguish all five payment states and legacy missing payme
   assert.ok(legacy.includes('کد پیگیری پرداخت'));
 });
 
+test('admin history translates courier and service states, including legacy and unknown entries', () => {
+  for (const [to, expected] of Object.entries(ui.courierLabel)) {
+    assert.equal(ui.historyStatusLabel({to, note:'تغییر وضعیت پیک: ثبت‌شده'}), expected);
+  }
+  for (const [to, expected] of Object.entries(ui.statusLabel)) assert.equal(ui.historyStatusLabel({to}), expected);
+  assert.equal(ui.historyStatusLabel({to:'assigned'}), ui.courierLabel.assigned);
+  for (const to of ['unknown_legacy_state', 'constructor', '__proto__']) assert.equal(ui.historyStatusLabel({to}), 'وضعیت نامشخص');
+  const html = renderToStaticMarkup(React.createElement(Drawer, {item: {...item,
+    selectedReward:{_id:'reward',status:'redeemed'},
+    history:['assigned','picked_up','returning','delivered'].map(to=>({to,actorType:'admin',at:'2026-11-06T08:00:00Z'}))}, onClose() {}}));
+  for (const status of ['assigned','picked_up','returning','delivered','redeemed']) assert.ok(!html.includes(status), status);
+  for (const label of [ui.courierLabel.assigned,ui.courierLabel.picked_up,ui.rewardStatusLabel.redeemed]) assert.ok(html.includes(label),label);
+});
+
 // Only synthetic data on an ephemeral loopback MongoDB; never reads MONGODB_URI.
 test('real MongoDB service payment report reconciles payment evidence across dates and states', {
   skip: process.env.APPOINTMENT_LOCAL_REPORT_TESTS !== 'true', timeout: 180000,

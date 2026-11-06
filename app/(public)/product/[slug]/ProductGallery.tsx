@@ -134,7 +134,8 @@ export const ProductGallery = ({
     <div className="relative">
       <div className="absolute top-2 right-2 z-10 flex flex-col gap-2">
         <button
-          aria-label="Toggle Favorite"
+          aria-label={isFavorite ? "حذف محصول از علاقه‌مندی‌ها" : "افزودن محصول به علاقه‌مندی‌ها"}
+          aria-pressed={isFavorite}
           className="bg-white p-2 rounded-full shadow cursor-pointer"
           onClick={handleToggleFavorite}
         >

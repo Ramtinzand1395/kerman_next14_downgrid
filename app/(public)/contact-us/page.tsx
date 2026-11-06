@@ -3,6 +3,7 @@ import Script from "next/script";
 import ContactForm from "./ContactForm";
 import { toAbsoluteUrl } from "@/lib/site";
 import { contactTopicSubject } from "@/lib/contact-topics";
+import { STORE_CONTACT } from "@/lib/store-contact";
 
 const faqItems = [
   {
@@ -96,10 +97,11 @@ export default function ContactUsPage({
     address: {
       "@type": "PostalAddress",
       addressLocality: "کرمان",
-      streetAddress: " کرمان - خیابان باهنر (ناصریه) - بین کوچه 2 و 4 - جنب داروخانه مادر",
+      streetAddress: STORE_CONTACT.address,
       addressCountry: "IR",
     },
-    openingHours: "Sa-Th 10:00-22:00",
+    openingHours: STORE_CONTACT.openingHours,
+    hasMap: STORE_CONTACT.mapUrl,
     priceRange: "$$",
     sameAs: ["https://www.instagram.com/kermanatari.ir?igsh=MTh4cmd3NnNib2N5dw=="],
   };

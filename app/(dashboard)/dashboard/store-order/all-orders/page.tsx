@@ -1,9 +1,10 @@
 import { Suspense } from "react";
+import { PageLoading } from "@/app/components/loading/LoadingSystem";
 import AllStoreOrders from "./All";
 
 export default function Page() {
   return (
-    <Suspense fallback={<div>در حال بارگذاری...</div>}>
+    <Suspense fallback={<PageLoading />}>
       <AllStoreOrders />
     </Suspense>
   );

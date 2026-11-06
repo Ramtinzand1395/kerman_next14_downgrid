@@ -304,7 +304,7 @@ export default async function ProductPage({
       ) : null}
 
       <section className="mb-5 rounded-2xl border border-zinc-200 bg-white p-4 md:p-5">
-        <nav aria-label="breadcrumb" className="text-sm text-zinc-500">
+        <nav aria-label="مسیر راهنمای محصول" className="text-sm text-zinc-500">
           <ol className="flex flex-wrap items-center gap-2">
             <li>
               <Link href="/" className="hover:text-zinc-800 transition-colors">

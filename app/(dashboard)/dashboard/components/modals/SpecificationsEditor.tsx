@@ -102,13 +102,13 @@ const SpecificationsEditor = ({
             <div className="mb-3 flex items-center gap-2">
               <input
                 type="text"
-                placeholder="مثلاً: مشخصات نمایشگر"
+                aria-label={`عنوان گروه مشخصات ${sIndex + 1}`} placeholder="مثلاً: مشخصات نمایشگر"
                 className="w-full rounded-lg border border-white/40 bg-white/10 p-2 text-sm outline-none placeholder:text-white/70 focus:border-blue-300"
                 value={spec.title}
                 onChange={(e) => updateSpecTitle(sIndex, e.target.value)}
               />
               <button
-                title="remove"
+                title="حذف گروه مشخصات" aria-label={`حذف گروه مشخصات ${sIndex + 1}`}
                 type="button"
                 onClick={() => removeSpec(sIndex)}
                 className="rounded-lg bg-red-500/90 p-2 text-white transition hover:bg-red-600"
@@ -125,7 +125,7 @@ const SpecificationsEditor = ({
                 >
                   <input
                     type="text"
-                    placeholder="کلید (مثلاً: اندازه)"
+                    aria-label={`نام ویژگی ${iIndex + 1} در گروه ${sIndex + 1}`} placeholder="کلید (مثلاً: اندازه)"
                     className="rounded-lg border border-white/40 bg-white/10 p-2 text-sm outline-none placeholder:text-white/70 focus:border-blue-300"
                     value={item.key}
                     onChange={(e) =>
@@ -134,7 +134,7 @@ const SpecificationsEditor = ({
                   />
                   <input
                     type="text"
-                    placeholder="مقدار (مثلاً: ۶.۷ اینچ)"
+                    aria-label={`مقدار ویژگی ${iIndex + 1} در گروه ${sIndex + 1}`} placeholder="مقدار (مثلاً: ۶.۷ اینچ)"
                     className="rounded-lg border border-white/40 bg-white/10 p-2 text-sm outline-none placeholder:text-white/70 focus:border-blue-300"
                     value={item.value}
                     onChange={(e) =>
@@ -142,7 +142,7 @@ const SpecificationsEditor = ({
                     }
                   />
                   <button
-                    title="remove"
+                    title="حذف ویژگی" aria-label={`حذف ویژگی ${iIndex + 1} از گروه ${sIndex + 1}`}
                     type="button"
                     onClick={() => removeSpecItem(sIndex, iIndex)}
                     className="rounded-lg bg-red-500/90 p-2 text-white transition hover:bg-red-600"

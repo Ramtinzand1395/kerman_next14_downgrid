@@ -1,6 +1,7 @@
 import { courierStatusAfterService } from "@/lib/appointments/courier-policy";
 import type {
   AppointmentItem,
+  AppointmentHistoryItem,
   AppointmentStatus,
   CourierStatus,
   RewardSummary,
@@ -52,6 +53,23 @@ export const courierLabel: Record<CourierStatus, string> = {
   returning: "حرکت به سمت مشتری پس از خدمات",
   delivered: "تحویل به مشتری",
   cancelled: "لغو شد",
+};
+
+const historyLabels: Record<string, string> = { ...courierLabel, ...statusLabel };
+
+export function historyStatusLabel(entry: Pick<AppointmentHistoryItem, "to" | "note">) {
+  if (entry.note?.startsWith("تغییر وضعیت پیک:")) {
+    return Object.hasOwn(courierLabel, entry.to) ? courierLabel[entry.to as CourierStatus] : "وضعیت نامشخص";
+  }
+  return Object.hasOwn(historyLabels, entry.to) ? historyLabels[entry.to] : "وضعیت نامشخص";
+}
+
+export const rewardStatusLabel = {
+  available: "قابل استفاده",
+  reserved: "رزرو شده",
+  redeemed: "استفاده‌شده",
+  expired: "منقضی‌شده",
+  revoked: "لغوشده",
 };
 
 export const courierTone: Record<CourierStatus, string> = {

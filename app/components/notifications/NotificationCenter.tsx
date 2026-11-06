@@ -256,15 +256,15 @@ export default function NotificationCenter({ title = "مرکز اعلان‌ها
         <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:grid-cols-3 xl:grid-cols-6">
           <label className="relative md:col-span-1">
             <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="جستجو در عنوان و متن" className="h-11 w-full rounded-xl border border-slate-200 pr-10 pl-3 text-sm" />
+            <input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} aria-label="جستجوی اعلان‌ها در عنوان و متن" placeholder="جستجو در عنوان و متن" className="h-11 w-full rounded-xl border border-slate-200 pr-10 pl-3 text-sm" />
           </label>
-          <select value={category} onChange={(event) => { setCategory(event.target.value); setPage(1); }} className="h-11 rounded-xl border border-slate-200 px-3 text-sm">
+          <select aria-label="فیلتر نوع اعلان" value={category} onChange={(event) => { setCategory(event.target.value); setPage(1); }} className="h-11 rounded-xl border border-slate-200 px-3 text-sm">
             <option value="">همه نوع‌ها</option><option value="order">سفارش</option><option value="payment">پرداخت</option><option value="support">پشتیبانی</option><option value="inventory">موجودی</option><option value="system">سایر</option>
           </select>
-          <select value={priority} onChange={(event) => { setPriority(event.target.value); setPage(1); }} className="h-11 rounded-xl border border-slate-200 px-3 text-sm">
+          <select aria-label="فیلتر اولویت اعلان" value={priority} onChange={(event) => { setPriority(event.target.value); setPage(1); }} className="h-11 rounded-xl border border-slate-200 px-3 text-sm">
             <option value="">همه اولویت‌ها</option><option value="urgent">فوری</option><option value="high">مهم</option><option value="normal">عادی</option><option value="low">کم</option>
           </select>
-          <select value={handled} onChange={(event) => { setHandled(event.target.value); setPage(1); }} className="h-11 rounded-xl border border-slate-200 px-3 text-sm">
+          <select aria-label="فیلتر وضعیت رسیدگی اعلان" value={handled} onChange={(event) => { setHandled(event.target.value); setPage(1); }} className="h-11 rounded-xl border border-slate-200 px-3 text-sm">
             <option value="">همه وضعیت‌های رسیدگی</option><option value="pending">نیازمند رسیدگی</option><option value="handled">رسیدگی‌شده</option>
           </select>
           <label className="text-xs text-slate-500">از تاریخ<input type="date" value={fromDate} onChange={(event) => { setFromDate(event.target.value); setPage(1); }} className="mt-1 h-8 w-full rounded-lg border border-slate-200 px-2" /></label>

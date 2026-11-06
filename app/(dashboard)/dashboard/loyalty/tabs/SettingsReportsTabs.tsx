@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Save } from "lucide-react";
+import { PageLoading } from "@/app/components/loading/LoadingSystem";
 import { apiFetch, faNum, toman } from "@/lib/loyalty/ui";
 import { AdminTable, Field, inputCls, Td, Toggle } from "../components";
 
@@ -52,7 +53,7 @@ export function SettingsTab() {
     load();
   }, [load]);
 
-  if (!settings) return <p className="py-10 text-center text-slate-500">در حال بارگذاری…</p>;
+  if (!settings) return <PageLoading />;
 
   const setXp = (k: keyof Settings["xp"], v: number) =>
     setSettings({ ...settings, xp: { ...settings.xp, [k]: v } });

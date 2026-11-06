@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "@/app/components/navigation/NavigationFeedback";
+import { STORE_CONTACT } from "@/lib/store-contact";
 
 const quickLinks = [
   { name: "خانه", href: "/", icon: Home },
@@ -42,8 +43,9 @@ export default function Footer() {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     name: "Kerman Atari",
-    address:
-      " کرمان - خیابان باهنر (ناصریه) - بین کوچه 2 و 4 - جنب داروخانه مادر",
+    address: STORE_CONTACT.address,
+    openingHours: STORE_CONTACT.openingHours,
+    hasMap: STORE_CONTACT.mapUrl,
     telephone: "09383077225 - 09044754897",
     image: "/atari-seeklogo.svg",
     url: "https://kermanatari.ir",
@@ -165,7 +167,7 @@ export default function Footer() {
 
             <p className="flex items-start gap-2 leading-7">
               <MapPin className="mt-1 h-4 w-4 shrink-0 text-[#001A6E]" />
-              کرمان - خیابان باهنر (ناصریه) - بین کوچه 2 و 4 - جنب داروخانه مادر
+              {STORE_CONTACT.address}
             </p>
 
             <p className="flex items-center gap-2">
@@ -181,7 +183,7 @@ export default function Footer() {
 
             <p className="flex items-center gap-2">
               <Clock3 className="h-4 w-4 text-[#001A6E]" />
-              همه‌روزه صبح‌ها از ساعت ۹ تا ۱۲:۳۰ و عصرها از ساعت ۴ تا ۸.{" "}
+              {STORE_CONTACT.hoursText}
             </p>
 
             <a

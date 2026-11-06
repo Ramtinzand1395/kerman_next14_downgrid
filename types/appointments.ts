@@ -136,8 +136,8 @@ export type AdminRewardSummary = {
 };
 
 export type AppointmentHistoryItem = {
-  from?: AppointmentStatus;
-  to: AppointmentStatus;
+  from?: AppointmentStatus | CourierStatus;
+  to: AppointmentStatus | CourierStatus;
   actorType: "user" | "admin" | "system";
   note?: string;
   at: string;

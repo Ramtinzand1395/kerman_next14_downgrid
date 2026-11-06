@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { toast } from "react-toastify";
 import { CONTACT_LIMITS } from "@/validations/contactValidation";
 import { ButtonLoading } from "@/app/components/loading/LoadingSystem";
+import { STORE_CONTACT } from "@/lib/store-contact";
 
 type FormData = {
   name: string;
@@ -43,14 +44,14 @@ const contactChannels = [
   {
     icon: MapPin,
     title: "آدرس فروشگاه",
-    value: " کرمان - خیابان باهنر (ناصریه) - بین کوچه 2 و 4 - جنب داروخانه مادر",
-    href: "https://maps.google.com/?q=Kerman",
+    value: STORE_CONTACT.address,
+    href: STORE_CONTACT.mapUrl,
     description: "مراجعه حضوری برای تحویل سریع و دریافت مشاوره تخصصی.",
   },
   {
     icon: Clock3,
     title: "ساعات پاسخ‌گویی",
-    value: "شنبه تا پنجشنبه | ۱۰ تا ۲۲",
+    value: STORE_CONTACT.hoursText,
     href: "#",
     description: "پیام‌های خارج از ساعات کاری در اولین فرصت بررسی می‌شوند.",
   },
