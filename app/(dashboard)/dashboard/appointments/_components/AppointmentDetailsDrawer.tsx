@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Check,
   Clipboard,
@@ -30,15 +30,63 @@ type Props = {
   onClose: () => void;
 };
 
-export default function AppointmentDetailsDrawer({ item, onClose }: Props) {
+const paymentLabels = {
+  unpaid: "پرداخت‌نشده",
+  initiating: "در حال آماده‌سازی پرداخت",
+  pending: "در انتظار پرداخت مشتری",
+  paid: "پرداخت موفق",
+  failed: "ناموفق، قابل تلاش مجدد",
+};
+
+export default function AppointmentDetailsDrawer({ item: initialItem, onClose }: Props) {
+  const [latest, setLatest] = useState<AppointmentItem | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const appointmentId = initialItem?._id;
+
   useEffect(() => {
-    if (!item) return;
+    if (!appointmentId) return;
+    const controller = new AbortController();
+    setLoading(true);
+    setError("");
+    void (async () => {
+      try {
+        const response = await fetch(`/api/admin/appointments/${appointmentId}`, {
+          cache: "no-store", signal: controller.signal,
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.data || payload.data._id !== appointmentId) {
+          throw new Error(payload.error || "دریافت وضعیت جدید درخواست انجام نشد.");
+        }
+        if (!controller.signal.aborted) setLatest({ ...payload.data, courierSummary: null });
+      } catch (reason) {
+        if (!controller.signal.aborted) {
+          setError(reason instanceof Error ? reason.message : "دریافت وضعیت جدید درخواست انجام نشد.");
+        }
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    })();
+    const refresh = () => setRefreshKey((key) => key + 1);
+    window.addEventListener("focus", refresh);
+    return () => {
+      controller.abort();
+      window.removeEventListener("focus", refresh);
+    };
+  }, [appointmentId, refreshKey]);
+
+  const item = initialItem
+    ? { ...initialItem, ...(latest?._id === appointmentId ? latest : {}) }
+    : null;
+  useEffect(() => {
+    if (!appointmentId) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [item, onClose]);
+  }, [appointmentId, onClose]);
 
   if (!item) return null;
 
@@ -294,7 +342,21 @@ export default function AppointmentDetailsDrawer({ item, onClose }: Props) {
 
           <section className="rounded-2xl border border-slate-200 p-4">
             <h3 className="font-black text-slate-900">جزئیات مالی</h3>
-            <p className="mt-2 rounded-xl bg-slate-50 p-3 text-xs font-bold text-slate-700">وضعیت پرداخت زرین‌پال: {item.payment?.status === "paid" ? "موفق" : item.payment?.status === "pending" ? "در انتظار پرداخت مشتری" : item.payment?.status === "failed" ? "ناموفق، قابل تلاش مجدد" : "پرداخت‌نشده"}{item.payment?.refId ? ` · کد پیگیری: ${item.payment.refId}` : ""}</p>
+            <button type="button" disabled={loading} onClick={() => setRefreshKey((key) => key + 1)} className="mt-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold disabled:opacity-50">
+              {loading ? "در حال دریافت وضعیت…" : "به‌روزرسانی وضعیت"}
+            </button>
+            {error && <p role="alert" className="mt-2 text-xs text-rose-700">{error} اطلاعات نمایش‌داده‌شده ممکن است قدیمی باشد.</p>}
+            <dl className="mt-3 space-y-2 rounded-xl bg-slate-50 p-3 text-sm" aria-live="polite" aria-busy={loading}>
+              <PriceRow label="وضعیت پرداخت زرین‌پال" value={paymentLabels[item.payment?.status || "unpaid"] || "نامشخص"} />
+              <div className="flex flex-wrap justify-between gap-3">
+                <dt className="text-slate-500">کد پیگیری پرداخت</dt>
+                <dd className="break-all font-mono font-bold" dir="ltr">{item.payment?.refId || "—"}</dd>
+              </div>
+              {item.payment?.status === "paid" && <>
+                <PriceRow label="مبلغ پرداخت‌شده" value={item.payment.amount == null ? "ثبت نشده" : toman(item.payment.amount)} />
+                <PriceRow label="زمان پرداخت" value={item.payment.paidAt ? formatTehranDate(item.payment.paidAt) : "ثبت نشده"} />
+              </>}
+            </dl>
             {item.pricing ? (
               <dl className="mt-3 space-y-2 text-sm">
                 <PriceRow

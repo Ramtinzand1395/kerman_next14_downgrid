@@ -55,6 +55,8 @@ type Point = {
   manualOrdersCount: number;
   gameInstallAppointments: number;
   repairAppointments: number;
+  servicePaidAmount: number;
+  paidAppointments: number;
 };
 
 type DashboardReport = {
@@ -117,6 +119,8 @@ type DashboardReport = {
         unknownAmountCount: number;
         serviceDiscountAmount: number;
         shippingAmount: number;
+        servicePaidAmount: number;
+        paidAppointments: number;
       };
       distributions: {
         appointmentStatus: Distribution;
@@ -337,7 +341,7 @@ function MetricCard({
   );
 }
 
-function ChartTable({ points }: { points: Point[] }) {
+function ChartTable({ points, services = false }: { points: Point[]; services?: boolean }) {
   return (
     <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50">
       <summary className="cursor-pointer px-4 py-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-400">
@@ -348,22 +352,32 @@ function ChartTable({ points }: { points: Point[] }) {
           <thead className="sticky top-0 bg-slate-100 text-slate-600">
             <tr>
               <th className="p-3">بازه</th>
-              <th className="p-3">پرداخت ناخالص</th>
+              {services ? <>
+                <th className="p-3">دریافتی خدمات و پیک</th>
+                <th className="p-3">پرداخت خدمات</th>
+              </> : <>
+              <th className="p-3">پرداخت ناخالص محصولات</th>
               <th className="p-3">بازپرداخت</th>
               <th className="p-3">خالص</th>
               <th className="p-3">سفارش</th>
+              </>}
             </tr>
           </thead>
           <tbody>
             {points.map((point) => (
               <tr key={point.key} className="border-t border-slate-200">
                 <td className="p-3 font-bold">{point.label}</td>
+                {services ? <>
+                  <td className="p-3">{toman(point.servicePaidAmount)}</td>
+                  <td className="p-3">{point.paidAppointments.toLocaleString("fa-IR")}</td>
+                </> : <>
                 <td className="p-3">{toman(point.grossPaidAmount)}</td>
                 <td className="p-3">{toman(point.refundedAmount)}</td>
                 <td className="p-3">{toman(point.netPaidAmount)}</td>
                 <td className="p-3">
                   {point.ordersCreated.toLocaleString("fa-IR")}
                 </td>
+                </>}
               </tr>
             ))}
           </tbody>
@@ -578,6 +592,8 @@ export default function DashboardPage() {
       gameInstallAppointments:
         appointments?.points[index]?.gameInstallAppointments || 0,
       repairAppointments: appointments?.points[index]?.repairAppointments || 0,
+      servicePaidAmount: appointments?.points[index]?.servicePaidAmount || 0,
+      paidAppointments: appointments?.points[index]?.paidAppointments || 0,
     }));
   }, [appointments, commerce, manualOrders]);
 
@@ -1113,23 +1129,30 @@ export default function DashboardPage() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 className="text-lg font-black text-slate-900">
-                مبلغ ثبت‌شده خدمات تکمیل‌شده
+                پرداخت خدمات و پیک
               </h2>
               <p className="mt-1 text-sm text-slate-500">
-                این مبلغ از pricing.serviceFinalAmount می‌آید و چون مدل نوبت سند
-                پرداخت ندارد، «وجه دریافت‌شده» نیست؛ ارسال جدا نمایش داده
-                می‌شود.
+                وجه دریافت‌شده بر اساس پرداخت موفق و تاریخ پرداخت است و هزینه پیک را هم شامل می‌شود.
+                مبالغ قیمت‌گذاری‌شده بر اساس تاریخ تکمیل خدمت جدا نمایش داده می‌شوند.
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div className="rounded-xl bg-emerald-50 p-3">
+                <p className="text-xs text-emerald-700">وجه دریافت‌شده خدمات و پیک</p>
+                <p className="mt-1 font-black text-emerald-900">{toman(appointments.totals.servicePaidAmount)}</p>
+              </div>
+              <div className="rounded-xl bg-emerald-50 p-3">
+                <p className="text-xs text-emerald-700">پرداخت موفق خدمات</p>
+                <p className="mt-1 font-black text-emerald-900">{appointments.totals.paidAppointments.toLocaleString("fa-IR")}</p>
+              </div>
               <div className="rounded-xl bg-slate-50 p-3">
-                <p className="text-xs text-slate-500">مبلغ ثبت‌شده</p>
+                <p className="text-xs text-slate-500">خدمت قیمت‌گذاری‌شده</p>
                 <p className="mt-1 font-black text-slate-800">
                   {toman(appointments.totals.documentedServiceAmount)}
                 </p>
               </div>
               <div className="rounded-xl bg-slate-50 p-3">
-                <p className="text-xs text-slate-500">هزینه ارسال</p>
+                <p className="text-xs text-slate-500">پیک قیمت‌گذاری‌شده</p>
                 <p className="mt-1 font-black text-slate-800">
                   {toman(appointments.totals.shippingAmount)}
                 </p>
@@ -1151,6 +1174,18 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+          <div className="mt-5 h-56 w-full" aria-label="روند وجه دریافت‌شده خدمات و پیک">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={appointments.points}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={24} />
+                <YAxis tickFormatter={compactAmount} tick={{ fontSize: 11 }} width={62} />
+                <Tooltip formatter={(value: any) => [toman(Number(value || 0)), "وجه دریافت‌شده خدمات و پیک"]} />
+                <Bar dataKey="servicePaidAmount" fill="#059669" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <ChartTable points={appointments.points} services />
         </section>
       )}
 

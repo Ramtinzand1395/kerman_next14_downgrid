@@ -39,6 +39,8 @@ export type ReportPoint = {
   manualOrdersCount: number;
   gameInstallAppointments: number;
   repairAppointments: number;
+  servicePaidAmount: number;
+  paidAppointments: number;
 };
 
 function dateFormat(range: ReportRange) {
@@ -82,6 +84,8 @@ export function createEmptyReportPoints(range: ReportRange): ReportPoint[] {
     manualOrdersCount: 0,
     gameInstallAppointments: 0,
     repairAppointments: 0,
+    servicePaidAmount: 0,
+    paidAppointments: 0,
   }));
 }
 
@@ -321,7 +325,7 @@ export async function loadManualOrdersSection(range: ReportRange) {
 }
 
 export async function loadAppointmentsSection(range: ReportRange) {
-  const [rows, status, courierStatus, pricing] = await Promise.all([
+  const [rows, status, courierStatus, pricing, payments] = await Promise.all([
     Appointment.aggregate<AggregateRow & { serviceType?: string }>([
       { $match: { startsAt: { $gte: range.startInclusive, $lt: range.endExclusive } } },
       {
@@ -371,12 +375,33 @@ export async function loadAppointmentsSection(range: ReportRange) {
         },
       },
     ]),
+    Appointment.aggregate<AggregateRow>([
+      {
+        $match: {
+          "payment.status": "paid",
+          "payment.paidAt": { $gte: range.startInclusive, $lt: range.endExclusive },
+          "payment.amount": { $type: "number", $gte: 0 },
+        },
+      },
+      {
+        $group: {
+          _id: dateGroupExpression("$payment.paidAt", range),
+          amount: { $sum: "$payment.amount" },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]),
   ]);
   const points = createEmptyReportPoints(range);
   mergeRowsIntoPoints(points, range, rows, (point, row) => {
     const serviceType = (row as AggregateRow & { serviceType?: string }).serviceType;
     if (serviceType === "game_install") point.gameInstallAppointments += Number(row.count || 0);
     if (serviceType === "repair") point.repairAppointments += Number(row.count || 0);
+  });
+  mergeRowsIntoPoints(points, range, payments, (point, row) => {
+    point.servicePaidAmount += Number(row.amount || 0);
+    point.paidAppointments += Number(row.count || 0);
   });
   const appointmentCount = points.reduce(
     (sum, point) => sum + point.gameInstallAppointments + point.repairAppointments,
@@ -386,6 +411,8 @@ export async function loadAppointmentsSection(range: ReportRange) {
     points,
     totals: {
       appointmentCount,
+      servicePaidAmount: points.reduce((sum, point) => sum + point.servicePaidAmount, 0),
+      paidAppointments: points.reduce((sum, point) => sum + point.paidAppointments, 0),
       gameInstallAppointments: points.reduce((sum, point) => sum + point.gameInstallAppointments, 0),
       repairAppointments: points.reduce((sum, point) => sum + point.repairAppointments, 0),
       documentedServiceAmount: Number(pricing[0]?.documentedServiceAmount || 0),
@@ -398,7 +425,7 @@ export async function loadAppointmentsSection(range: ReportRange) {
       appointmentStatus: status.map((item) => ({ key: String(item._id), count: Number(item.count) })),
       courierStatus: courierStatus.map((item) => ({ key: String(item._id), count: Number(item.count) })),
     },
-    definition: "تعداد نوبت بر اساس startsAt است. مبلغ خدمت فقط pricing.serviceFinalAmount نوبت تکمیل‌شده و دارای pricing.known=true است و به‌عنوان مبلغ ثبت‌شده، نه وجه دریافت‌شده، نمایش داده می‌شود؛ ارسال جداگانه گزارش می‌شود.",
+    definition: "تعداد نوبت بر اساس startsAt است. وجه دریافت‌شده از payment.amount با وضعیت paid و تاریخ payment.paidAt محاسبه می‌شود و هزینه پیک را هم شامل می‌شود؛ هر درخواست یک بار شمرده می‌شود. مبالغ قیمت‌گذاری‌شده و تخفیف‌ها جداگانه بر اساس completedAt گزارش می‌شوند و وجه دریافت‌شده نیستند.",
   };
 }
 

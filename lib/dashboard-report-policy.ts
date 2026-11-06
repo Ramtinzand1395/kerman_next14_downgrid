@@ -1,5 +1,5 @@
 export const MANUAL_ORDER_AMOUNT_LABEL = "مبلغ سفارش‌های دستی ثبت‌شده";
-export const DOCUMENTED_SERVICE_AMOUNT_LABEL = "مبلغ ثبت‌شده خدمات تکمیل‌شده (فاقد سند پرداخت)";
+export const DOCUMENTED_SERVICE_AMOUNT_LABEL = "مبلغ قیمت‌گذاری‌شده خدمات تکمیل‌شده";
 
 export type PaidOrderEvidence = {
   id: string;
