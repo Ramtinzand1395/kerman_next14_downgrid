@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import ContactForm from "./ContactForm";
 import { toAbsoluteUrl } from "@/lib/site";
+import { contactTopicSubject } from "@/lib/contact-topics";
 
 const faqItems = [
   {
@@ -65,7 +66,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ContactUsPage() {
+export default function ContactUsPage({
+  searchParams,
+}: {
+  searchParams: { topic?: string | string[] };
+}) {
+  const initialSubject = contactTopicSubject(searchParams.topic);
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -127,7 +133,7 @@ export default function ContactUsPage() {
         </p>
       </header>
 
-      <ContactForm />
+      <ContactForm initialSubject={initialSubject} />
 
       <section className="mt-12 grid gap-6 rounded-3xl bg-blue-900 p-6 text-white md:grid-cols-3 md:p-8">
         <article>

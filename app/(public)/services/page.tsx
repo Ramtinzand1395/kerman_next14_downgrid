@@ -2,6 +2,7 @@ import { CheckCircle2 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "@/app/components/navigation/NavigationFeedback";
 import { SITE_URL } from "@/lib/site";
+import { contactTopicHref } from "@/lib/contact-topics";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -24,6 +25,7 @@ const services = [
       "پیشنهاد بازی متناسب با سبک و بودجه شما",
     ],
     cta: "مشاهده بازی‌های اکانتی",
+    href: "/category/account-games",
   },
   {
     title: "مشاوره خرید",
@@ -35,6 +37,7 @@ const services = [
       "پاسخ‌گویی صادقانه و بدون پیشنهاد اضافی",
     ],
     cta: "دریافت مشاوره خرید",
+    href: contactTopicHref("buying-advice"),
   },
   {
     title: "خرید و فروش کنسول کارکرده",
@@ -45,7 +48,8 @@ const services = [
       "قیمت‌گذاری منصفانه مطابق بازار روز",
       "اطمینان از سلامت دستگاه و لوازم همراه",
     ],
-    cta: "ثبت درخواست کنسول کارکرده",
+    cta: "ارسال درخواست ارزیابی کنسول",
+    href: contactTopicHref("used-console"),
   },
   {
     title: "ارسال شهری و سراسری",
@@ -57,6 +61,7 @@ const services = [
       "امکان پیگیری وضعیت مرسوله تا تحویل",
     ],
     cta: "بررسی شرایط ارسال",
+    href: "/terms#shipping",
   },
   {
     title: "پشتیبانی بعد از خرید",
@@ -68,6 +73,7 @@ const services = [
       "پیگیری مسئولانه تا حل کامل مسئله",
     ],
     cta: "ارتباط با پشتیبانی",
+    href: contactTopicHref("after-sales"),
   },
 ];
 
@@ -183,7 +189,7 @@ export default function ServicesPage() {
                 ))}
               </ul>
               <a
-                href="/contact-us"
+                href={service.href}
                 className="mt-5 inline-flex w-fit rounded-xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-800"
               >
                 {service.cta}
@@ -272,7 +278,7 @@ export default function ServicesPage() {
 
         <div className="mt-6">
           <Link
-            href="/contact-us"
+            href={contactTopicHref("service-advice")}
             className="inline-flex rounded-xl bg-blue-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-900"
           >
             دریافت مشاوره خدمات

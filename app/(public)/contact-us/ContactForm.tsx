@@ -56,23 +56,35 @@ const contactChannels = [
   },
 ];
 
-export default function ContactForm() {
+export default function ContactForm({ initialSubject = "" }: { initialSubject?: string }) {
   const { status } = useSession();
-  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [formData, setFormData] = useState<FormData>(() => ({ ...initialFormData, subject: initialSubject }));
+  const previousSubject = React.useRef(initialSubject);
   const [submitting, setSubmitting] = useState(false);
 
   React.useEffect(() => {
+    if (previousSubject.current !== initialSubject) {
+      previousSubject.current = initialSubject;
+      setFormData((previous) => ({ ...previous, subject: initialSubject || previous.subject }));
+      return;
+    }
     const savedDraft = sessionStorage.getItem(CONTACT_DRAFT_KEY);
     if (!savedDraft) return;
     try {
-      setFormData(JSON.parse(savedDraft) as FormData);
+      const saved = JSON.parse(savedDraft);
+      if (!saved || typeof saved !== "object" || Array.isArray(saved)) throw new Error("Invalid draft");
+      const restored = Object.fromEntries(
+        Object.keys(initialFormData).map((key) => [key, typeof saved[key] === "string" ? saved[key] : ""]),
+      ) as FormData;
+      if (initialSubject && saved.contactTopic !== initialSubject) restored.subject = initialSubject;
+      setFormData(restored);
     } catch {
       sessionStorage.removeItem(CONTACT_DRAFT_KEY);
     }
-  }, []);
+  }, [initialSubject]);
 
   const redirectToRegistration = () => {
-    sessionStorage.setItem(CONTACT_DRAFT_KEY, JSON.stringify(formData));
+    sessionStorage.setItem(CONTACT_DRAFT_KEY, JSON.stringify({ ...formData, contactTopic: initialSubject }));
     const returnPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     window.location.assign(`/auth/login?callbackUrl=${encodeURIComponent(returnPath)}`);
   };
@@ -110,7 +122,7 @@ export default function ContactForm() {
       }
 
       toast.success("پیام شما ارسال شد؛ برای پاسخ‌گویی با شما تماس می‌گیریم.");
-      setFormData(initialFormData);
+      setFormData({ ...initialFormData, subject: initialSubject });
       sessionStorage.removeItem(CONTACT_DRAFT_KEY);
     } catch (error) {
       const message =
@@ -126,12 +138,13 @@ export default function ContactForm() {
   return (
     <section className="grid grid-cols-1 gap-8 lg:grid-cols-[1.2fr_0.8fr]">
       <form
+        id="contact-form"
         onSubmit={handleSubmit}
-        className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-10"
+        className="scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-10"
       >
         <div className="mb-8 space-y-3">
           <h2 className="text-2xl font-bold text-slate-900">
-            ارسال پیام به تیم کرمان آتاری
+            {initialSubject || "ارسال پیام به تیم کرمان آتاری"}
           </h2>
           <p className="text-sm leading-7 text-slate-600">
             برای مشاوره خرید بازی و کنسول، استعلام موجودی، پیگیری سفارش یا
