@@ -8,6 +8,7 @@ import {
   CalendarDays,
   CheckCircle2,
   MapPin,
+  Phone,
   ShoppingCart,
   Truck,
   UsersRound,
@@ -217,8 +218,7 @@ export default function ServiceOrderSection({
                     <Zap className="h-5 w-5 text-[#1269f5]" /> ثبت سریع سفارش
                   </li>
                   <li className="flex items-center gap-2">
-                    <ShoppingCart className="h-5 w-5 text-[#1269f5]" /> مناسب
-                    برای سفارش آنلاین
+                    <Phone className="h-5 w-5 text-[#1269f5]" /> امکان تماس با کارشناسان و مشاوره قبل از ثبت سفارش
                   </li>
                 </ul>
                 {courierEnabled ? (

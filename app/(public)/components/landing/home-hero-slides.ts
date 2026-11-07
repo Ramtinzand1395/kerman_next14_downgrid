@@ -24,8 +24,8 @@ export const HOME_HERO_SLIDES: HeroSlide[] = [
     id: "game-installation",
     image: "/hero/photo_2026-10-28_16-36-59.webp",
     imageAlt: "کنسول پلی استیشن ۵ و دنیاهای مختلف بازی",
-    title: "بازی بعدی‌ات رو انتخاب کن",
-    description: "بازی‌های دلخواهت رو انتخاب کن و درخواست نصب بده",
+    title: "بازی های جدید در انتظار تو",
+    description: "لیست بازی هات رو انتخاب کن و درخواست نصب بده",
     primaryCta: {
       label: "انتخاب بازی و ثبت درخواست",
       href: "/my-profile?step=6",
@@ -41,8 +41,8 @@ export const HOME_HERO_SLIDES: HeroSlide[] = [
     id: "gaming-wall-art",
     image: "/hero/inosuke-banner.webp",
     imageAlt: "تابلوی اینوسکه زیر ماه آبی برای دکور اتاق گیمینگ",
-    title: "قهرمانت، روی دیوار تو",
-    description: "از دنیای بازی و انیمه، برای اتاق تو",
+    title: "قهرمانت، روی دیوار اتاقت",
+    description: "طراحی و چاپ تابلو با هر طرحی که تو بخوای",
     primaryCta: {
       label: "دیدن تابلوها",
       href: "/products?category=gaming-wall-art&sort=newest&page=1",
@@ -59,8 +59,8 @@ export const HOME_HERO_SLIDES: HeroSlide[] = [
     id: "courier",
     image: "/hero/photo_2026-10-28_16-36-00.webp",
     imageAlt: "پیک موتوری همراه کنسول پلی استیشن برای دریافت و تحویل دستگاه",
-    title: "تو خونه بمون، کنسولت رو بسپار به ما",
-    description: "درخواست دریافت و تحویل دستگاه در کرمان",
+    title: "تو خونه بمون، کنسولتو رو بسپار به ما",
+    description: "درخواست ارسال و دریافت دستگاه در شهرستان کرمان",
     primaryCta: {
       label: "ثبت درخواست پیک",
       href: "/my-profile?step=6&fulfillment=courier",

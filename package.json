@@ -7,6 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/preflight-print-api.mjs",
     "build": "next build",
     "start": "next start",
     "worker:notifications": "node --env-file=.env workers/notification-worker.mjs",
