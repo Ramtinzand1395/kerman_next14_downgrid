@@ -1,0 +1,16 @@
+{
+  "mode": "apply",
+  "database": "kermanatari_testDB",
+  "platformDocumentId": "6a8aaa44addebdc8e64b22d3",
+  "gameCount": 148,
+  "csvAssets": 100,
+  "matchedAssets": 100,
+  "unmatchedAssets": [],
+  "validUrls": 100,
+  "invalidUrls": [],
+  "pendingUpdates": 100,
+  "appliedAt": "2026-10-31T14:40:22.017Z",
+  "modifiedCount": 100,
+  "verified": 100,
+  "backupPath": "D:\\vercel_kermanatari\\artifacts\\ps5-cloudinary-urls-2026-10-31T14-40-21-969Z\\ps5-before.json"
+}
