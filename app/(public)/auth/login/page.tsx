@@ -6,7 +6,6 @@ import Link from "@/app/components/navigation/NavigationFeedback";
 import { signIn } from "next-auth/react";
 import { toast } from "react-toastify";
 import * as yup from "yup";
-import { safeParseJSON } from "@/helpers/safeParseJSON";
 import { sendOtpToUser } from "@/helpers/sendSms";
 import {
   isValidReferralCode,

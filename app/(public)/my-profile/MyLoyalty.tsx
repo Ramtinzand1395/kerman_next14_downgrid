@@ -20,11 +20,9 @@ import { toPersianDate } from "@/helpers/toPersianDate";
 import { apiFetch, faNum, toman, Paged, XP_REASON_FA } from "@/lib/loyalty/ui";
 import {
   LevelCode,
-  LEVEL_FA,
   MissionMetric,
   MissionPeriod,
   VipTier,
-  VIP_TIER_FA,
   XpReason,
 } from "@/types/loyalty";
 import VisitRewardsPanel from "./VisitRewardsPanel";

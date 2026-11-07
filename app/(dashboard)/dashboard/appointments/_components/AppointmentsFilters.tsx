@@ -1,19 +1,17 @@
 "use client";
 
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import type { AppointmentStatus, CourierStatus } from "@/types/appointments";
+import type { AppointmentStatus } from "@/types/appointments";
 import type { AppointmentFiltersState } from "./admin-types";
-import { courierLabel, statusLabel } from "./appointment-ui";
+import { statusLabel } from "./appointment-ui";
 
 type Props = {
   filters: AppointmentFiltersState;
-  courierMode?: boolean;
   onChange: (next: AppointmentFiltersState) => void;
 };
 
 export default function AppointmentsFilters({
   filters,
-  courierMode = false,
   onChange,
 }: Props) {
   const set = (patch: Partial<AppointmentFiltersState>) =>
@@ -22,7 +20,6 @@ export default function AppointmentsFilters({
     filters.search ||
       filters.status ||
       filters.serviceType ||
-      filters.courierStatus ||
       filters.date,
   );
 
@@ -44,7 +41,6 @@ export default function AppointmentsFilters({
                 search: "",
                 status: "",
                 serviceType: "",
-                courierStatus: "",
                 date: "",
                 page: 1,
               })
@@ -57,9 +53,7 @@ export default function AppointmentsFilters({
         ) : null}
       </div>
 
-      <div
-        className={`grid gap-3 md:grid-cols-2 ${courierMode ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}
-      >
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <label className="relative md:col-span-2 xl:col-span-1">
           <span className="sr-only">جست‌وجو</span>
           <Search className="pointer-events-none absolute right-3 top-3.5 h-4 w-4 text-slate-400" />
@@ -97,24 +91,6 @@ export default function AppointmentsFilters({
             ),
           )}
         </select>
-
-        {courierMode ? (
-          <select
-            aria-label="فیلتر وضعیت پیک"
-            value={filters.courierStatus}
-            onChange={(event) => set({ courierStatus: event.target.value })}
-            className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-          >
-            <option value="">همه وضعیت‌های پیک</option>
-            {(Object.entries(courierLabel) as Array<[CourierStatus, string]>).filter(([value]) => ["pending", "assigned", "picked_up", "return_ready", "returning", "delivered", "cancelled"].includes(value)).map(
-              ([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ),
-            )}
-          </select>
-        ) : null}
 
         <input
           aria-label="فیلتر تاریخ"

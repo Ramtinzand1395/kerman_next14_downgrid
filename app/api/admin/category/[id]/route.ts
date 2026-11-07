@@ -9,7 +9,7 @@ import Coupon from "@/model/Loyalty Club/Coupon";
 import CashbackRule from "@/model/Loyalty Club/CashbackRule";
 
 export async function DELETE(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {

@@ -35,8 +35,6 @@ const SeoAnalyzer = ({ form }: SeoAnalyzerProps) => {
     metaDescription
       .toLowerCase()
       .includes(focusKeyword.toLowerCase().split(" ")[0]);
-  const keywordInSlug =
-    focusKeyword.length > 0 && slug.length > 0;
 
   const checks: SeoCheck[] = [
     {

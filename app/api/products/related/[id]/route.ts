@@ -23,7 +23,7 @@ function json(body: unknown, status = 200) {
 }
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: { id: string } },
 ) {
   const { id } = params;

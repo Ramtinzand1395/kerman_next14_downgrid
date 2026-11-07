@@ -5,7 +5,6 @@ import Profile from "./Profile";
 import FavoritesPage from "./Favorites";
 import MyAddresses from "./MyAddresses";
 import MyComments from "./MyComments";
-import MyOrders from "./MyOrders";
 import MyOrdersTabs from "./MyOrdersTabs";
 import GameOrderSelector from "./GameOrderSelector";
 import MyWallet from "./MyWallet";

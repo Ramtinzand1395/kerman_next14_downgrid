@@ -390,11 +390,9 @@ function ChartTable({ points, services = false }: { points: Point[]; services?: 
 function DistributionChart({
   title,
   data,
-  onRetry,
 }: {
   title: string;
   data: Distribution;
-  onRetry: () => void;
 }) {
   const chartData = data.map((item) => ({
     ...item,
@@ -1099,12 +1097,10 @@ export default function DashboardPage() {
             <DistributionChart
               title="وضعیت سفارش‌های محصول"
               data={commerce.distributions.orderStatus}
-              onRetry={retry}
             />
             <DistributionChart
               title="وضعیت پرداخت سفارش‌ها"
               data={commerce.distributions.paymentStatus}
-              onRetry={retry}
             />
           </>
         ) : null}
@@ -1113,12 +1109,10 @@ export default function DashboardPage() {
             <DistributionChart
               title="وضعیت نوبت‌ها"
               data={appointments.distributions.appointmentStatus}
-              onRetry={retry}
             />
             <DistributionChart
               title="وضعیت صف پیک"
               data={appointments.distributions.courierStatus}
-              onRetry={retry}
             />
           </>
         ) : null}

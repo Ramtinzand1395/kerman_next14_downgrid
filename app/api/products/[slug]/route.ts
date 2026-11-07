@@ -8,7 +8,7 @@ import "@/model/Comment";
 import "@/model/User";
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   context: { params: { slug: string } }
 ) {
   const { slug } = context.params;

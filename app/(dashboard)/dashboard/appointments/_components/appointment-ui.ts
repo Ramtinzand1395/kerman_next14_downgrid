@@ -84,7 +84,7 @@ export const courierTone: Record<CourierStatus, string> = {
   cancelled: "bg-rose-50 text-rose-800 ring-rose-200",
 };
 
-export { COURIER_TRANSITIONS as courierNext, COURIER_RETURN_DELIVERY_STAGES as courierReturnTimeline, courierReturnDeliveryProgress as courierReturnProgress } from "@/lib/appointments/courier-policy";
+export { COURIER_TRANSITIONS as courierNext } from "@/lib/appointments/courier-policy";
 
 export const courierTimeline: CourierStatus[] = ["assigned", "picked_up", "returning"];
 

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getBlogBySlug } from "@/services/blog/getBlogBySlug";
 
 export async function GET(
-  req: Request,
+  _req: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {

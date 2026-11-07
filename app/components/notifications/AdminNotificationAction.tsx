@@ -8,7 +8,6 @@ import {
   Mail,
   PackageCheck,
   Phone,
-  Save,
   Star,
   UserRound,
   X,

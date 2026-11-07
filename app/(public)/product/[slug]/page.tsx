@@ -121,7 +121,6 @@ export async function generateMetadata({
     throw error;
   }
 
-  const finalPrice = product.discountPrice ?? product.price;
   const canonicalPath = `/product/${product.slug}`;
 
   const metaDescription = (

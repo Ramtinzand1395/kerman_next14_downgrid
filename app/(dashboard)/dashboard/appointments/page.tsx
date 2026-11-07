@@ -14,8 +14,6 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useRouter } from "@/app/components/navigation/NavigationFeedback";
 import {
   CalendarClock,
-  ChevronLeft,
-  ChevronRight,
   Settings2,
   Sparkles,
 } from "lucide-react";
@@ -62,7 +60,6 @@ function AppointmentsAdminContent() {
   const [filters, setFilters] = useState<AppointmentFiltersState>({
     status: searchParams.get("status") || "",
     serviceType: searchParams.get("service") || "",
-    courierStatus: searchParams.get("courierStatus") || "",
     date: searchParams.get("date") || "",
     search: searchParams.get("search") || "",
     page: Math.max(1, Number(searchParams.get("page")) || 1),
@@ -487,7 +484,6 @@ function AppointmentsAdminContent() {
         <div className="space-y-4">
           <AppointmentsFilters
             filters={filters}
-            courierMode={false}
             onChange={setFilters}
           />
           {listError ? (
@@ -599,47 +595,6 @@ function ErrorState({
       >
         تلاش دوباره
       </button>
-    </div>
-  );
-}
-
-function PaginationBar({
-  total,
-  page,
-  pages,
-  onPageChange,
-}: {
-  total: number;
-  page: number;
-  pages: number;
-  onPageChange: (page: number) => void;
-}) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 text-sm">
-      <span className="text-slate-500">
-        {total.toLocaleString("fa-IR")} درخواست · صفحه{" "}
-        {page.toLocaleString("fa-IR")} از {pages.toLocaleString("fa-IR")}
-      </span>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          disabled={page <= 1}
-          onClick={() => onPageChange(page - 1)}
-          className="inline-flex h-10 items-center gap-1 rounded-xl border border-slate-200 px-3 font-bold disabled:opacity-40"
-        >
-          <ChevronRight className="h-4 w-4" />
-          قبلی
-        </button>
-        <button
-          type="button"
-          disabled={page >= pages}
-          onClick={() => onPageChange(page + 1)}
-          className="inline-flex h-10 items-center gap-1 rounded-xl border border-slate-200 px-3 font-bold disabled:opacity-40"
-        >
-          بعدی
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-      </div>
     </div>
   );
 }

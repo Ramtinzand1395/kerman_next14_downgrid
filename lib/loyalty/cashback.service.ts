@@ -2,7 +2,6 @@
 // !جدید با chat نوشته شده.
 import CashbackRule from "@/model/Loyalty Club/CashbackRule";
 import User from "@/model/User";
-import Order from "@/model/Order";
 
 import { credit } from "./wallet.service";
 import { getLevels, getSettings } from "./experience.service";

@@ -4,12 +4,11 @@ import type {
   CourierStatus,
 } from "@/types/appointments";
 
-export type AdminTab = "appointments" | "courier" | "settings" | "rewards";
+export type AdminTab = "appointments" | "settings" | "rewards";
 
 export type AppointmentFiltersState = {
   status: string;
   serviceType: string;
-  courierStatus: string;
   date: string;
   search: string;
   page: number;

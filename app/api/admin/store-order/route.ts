@@ -11,35 +11,6 @@ import Customer from "@/model/Customer";
 import mongoose from "mongoose";
 
 moment.loadPersian({ usePersianDigits: false });
-
-// ====================== FUNCTIONS ======================
-const normalizeOrderList = (value: unknown): string[] => {
-  if (!value) return [];
-
-  const collect = (entry: unknown): string[] => {
-    if (Array.isArray(entry)) {
-      return entry.flatMap(collect);
-    }
-
-    if (typeof entry === "string") {
-      const trimmed = entry.trim();
-      if (!trimmed) return [];
-
-      try {
-        const parsed = JSON.parse(trimmed);
-        if (Array.isArray(parsed)) return parsed.flatMap(collect);
-      } catch {
-        // noop
-      }
-
-      return [trimmed];
-    }
-
-    return [String(entry).trim()].filter(Boolean);
-  };
-
-  return collect(value);
-};
 // تبدیل اعداد
 const toPersianDigits = (str: string) =>
   str.replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[+d]);

@@ -47,7 +47,7 @@ export async function PUT(
 
 /* ===================== DELETE ===================== */
 export async function DELETE(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ orderId: string }> },
 ) {
   const session = await getServerSession(authOptions);

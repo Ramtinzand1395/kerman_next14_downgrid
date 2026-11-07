@@ -138,23 +138,6 @@ const faqItems = [
   },
 ];
 
-const articleSections = [
-  {
-    heading: "چرا صفحه خدمات برای سئو مهم است؟",
-    content:
-      "بخش خدمات یکی از صفحات کلیدی برای جذب کاربر از جستجوهای محلی و هدفمند است. وقتی کاربر عباراتی مثل «نصب بازی PS5 در کرمان» یا «تعمیر پلی‌استیشن» را جستجو می‌کند، این صفحه می‌تواند دقیقاً پاسخ نیاز او باشد و نرخ تبدیل را نسبت به صفحات عمومی بالاتر ببرد.",
-  },
-  {
-    heading: "چه خدماتی بیشتر جستجو می‌شوند؟",
-    content:
-      "کاربران معمولاً به دنبال نصب بازی، خرید اکانت قانونی، سرویس کنسول، رفع مشکل کندی یا داغی دستگاه، و مشاوره خرید تجهیزات هستند. اگر این خدمات با توضیحات شفاف، مزایا، مدت زمان انجام و شرایط پشتیبانی ارائه شوند، هم اعتماد کاربر بیشتر می‌شود و هم موتور جستجو بهتر موضوع صفحه را درک می‌کند.",
-  },
-  {
-    heading: "چطور محتوای خدمات را به لید واقعی تبدیل کنیم؟",
-    content:
-      "در هر بخش خدمات، یک فراخوان اقدام واضح قرار دهید؛ مثل «دریافت مشاوره رایگان» یا «ثبت درخواست سرویس». همچنین اضافه‌کردن سوالات متداول، نظرات مشتریان و نشانه‌های اعتماد (مثل ضمانت یا پشتیبانی) باعث می‌شود کاربر سریع‌تر تصمیم بگیرد و نرخ خروج صفحه کاهش پیدا کند.",
-  },
-];
 export default function ServicesPage() {
   return (
     <main className="container mx-auto space-y-10 px-4 py-12 md:py-16" dir="rtl">
@@ -235,28 +218,6 @@ export default function ServicesPage() {
           ))}
         </div>
       </section>
-  <section className="mt-12 rounded-2xl bg-slate-50 p-6 md:p-8">
-        <h2 className="text-2xl font-extrabold text-slate-900 md:text-3xl">
-          مقاله پیشنهادی برای سئوی بهتر صفحه خدمات
-        </h2>
-        <p className="mt-3 text-sm leading-8 text-slate-700 md:text-base">
-          اگر هدفتان رشد ورودی ارگانیک است، این ساختار مقاله می‌تواند به‌عنوان
-          محتوای پایه صفحه خدمات استفاده شود و به مرور با نمونه‌کار، سوالات
-          متداول و کلمات کلیدی محلی تکمیل گردد.
-        </p>
-
-        <div className="mt-6 space-y-6">
-          {articleSections.map((section) => (
-            <section key={section.heading} className="rounded-xl bg-white p-5">
-              <h3 className="text-lg font-bold text-slate-900">{section.heading}</h3>
-              <p className="mt-2 text-sm leading-8 text-slate-600 md:text-base">
-                {section.content}
-              </p>
-            </section>
-          ))}
-        </div>
-      </section>
-
       <section className="mt-10 rounded-2xl border border-blue-100 bg-blue-50/40 p-6">
         <h2 className="text-xl font-extrabold text-slate-900">
           مزیت انتخاب خدمات کرمان آتاری
@@ -284,14 +245,6 @@ export default function ServicesPage() {
             دریافت مشاوره خدمات
           </Link>
         </div>
-      </section>
-      <section className="rounded-2xl bg-blue-700 p-6 text-white md:p-8">
-        <p className="text-base font-semibold leading-8 md:text-lg">
-          برای دریافت بهترین پیشنهاد خرید، همین حالا با کرمان آتاری تماس بگیرید؛
-          ما کنار شما هستیم تا سریع، مطمئن و با خیال راحت سفارش‌تان را ثبت کنید.
-          <br />
-          شماره تماس: <span className="font-black">۰۳۴-XXXXXXXX</span>
-        </p>
       </section>
     </main>
   );
