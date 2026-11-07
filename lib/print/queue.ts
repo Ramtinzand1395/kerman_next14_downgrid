@@ -2,9 +2,13 @@ import dbConnect from "@/lib/mongodb";
 import PrintQueue from "@/model/PrintQueue";
 import type { PrintPayload } from "./payload";
 import {
-  acknowledgePrintJobCore,
-  type PrintAckRepository,
-} from "./queue-core";
+  acknowledgeOwnedPrintJob,
+  claimPrintJobs,
+  listPrintRecoveryCandidates,
+  resolvePrintJobRecovery,
+  type PrintRecoveryAction,
+  type PrintQueueCollection,
+} from "./queue-store";
 
 const CLAIM_BATCH_SIZE = 100;
 
@@ -18,58 +22,39 @@ export async function createPrintJob(
 
 export async function listPrintJobsForConsumer(consumerId: string) {
   await dbConnect();
-
-  const available = await PrintQueue.find({
-    assignedConsumerId: null,
-    status: { $in: [null, "pending"] },
-  })
-    .select("_id")
-    .sort({ createdAt: 1, _id: 1 })
-    .limit(CLAIM_BATCH_SIZE)
-    .lean();
-
-  if (available.length > 0) {
-    await PrintQueue.updateMany(
-      {
-        _id: { $in: available.map((job) => job._id) },
-        assignedConsumerId: null,
-        status: { $in: [null, "pending"] },
-      },
-      {
-        $set: {
-          assignedConsumerId: consumerId,
-          status: "pending",
-          assignedAt: new Date(),
-        },
-      },
-    );
-  }
-
-  return PrintQueue.find({ assignedConsumerId: consumerId, status: "pending" })
-    .select("_id payload createdAt updatedAt")
-    .sort({ createdAt: 1, _id: 1 })
-    .limit(CLAIM_BATCH_SIZE)
-    .lean();
+  return claimPrintJobs(
+    PrintQueue.collection as PrintQueueCollection,
+    consumerId,
+    CLAIM_BATCH_SIZE,
+  );
 }
-
-const mongoAckRepository: PrintAckRepository = {
-  async completePending(jobId, consumerId) {
-    return PrintQueue.findOneAndUpdate(
-      { _id: jobId, assignedConsumerId: consumerId, status: "pending" },
-      { $set: { status: "completed", completedAt: new Date() } },
-      { new: true },
-    )
-      .select("status")
-      .lean();
-  },
-  async findOwned(jobId, consumerId) {
-    return PrintQueue.findOne({ _id: jobId, assignedConsumerId: consumerId })
-      .select("status")
-      .lean();
-  },
-};
 
 export async function acknowledgePrintJob(jobId: string, consumerId: string) {
   await dbConnect();
-  return acknowledgePrintJobCore(jobId, consumerId, mongoAckRepository);
+  return acknowledgeOwnedPrintJob(
+    PrintQueue.collection as PrintQueueCollection,
+    jobId,
+    consumerId,
+  );
+}
+
+export async function getPrintRecoveryCandidates() {
+  await dbConnect();
+  return listPrintRecoveryCandidates(
+    PrintQueue.collection as PrintQueueCollection,
+  );
+}
+
+export async function recoverPrintJob(input: {
+  jobId: string;
+  expectedConsumerId: string;
+  action: PrintRecoveryAction;
+  reason: string;
+  actorUserId: string;
+}) {
+  await dbConnect();
+  return resolvePrintJobRecovery(
+    PrintQueue.collection as PrintQueueCollection,
+    input,
+  );
 }

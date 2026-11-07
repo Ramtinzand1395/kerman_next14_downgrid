@@ -212,15 +212,21 @@ test("POST requires an admin session before creating a print job", async () => {
 });
 
 test("GET keeps the Stage1 response contract and no-store policy", async () => {
-  const unauthorized = printRouteHarness(null, {
-    ok: false,
-    status: 401,
-    code: "PRINTER_UNAUTHORIZED",
-  });
-  assert.equal(
-    (await unauthorized.route.GET(new Request("https://example.test/print"))).status,
-    401,
-  );
+  for (const failure of [
+    { status: 401, code: "PRINTER_UNAUTHORIZED" },
+    { status: 403, code: "PRINTER_SCOPE_FORBIDDEN" },
+    { status: 429, code: "PRINTER_RATE_LIMITED", retryAfterSeconds: 7 },
+  ]) {
+    const denied = printRouteHarness(null, { ok: false, ...failure });
+    const response = await denied.route.GET(
+      new Request("https://example.test/print"),
+    );
+    assert.equal(response.status, failure.status);
+    assert.equal(response.headers.get("cache-control"), "no-store");
+    if (failure.status === 429) {
+      assert.equal(response.headers.get("retry-after"), "7");
+    }
+  }
 
   const jobs = [{ _id: jobId, payload: validPayload }];
   const authorized = printRouteHarness(null, {
@@ -254,16 +260,21 @@ function ackRouteHarness(authResult, ackResult) {
 }
 
 test("DELETE requires auth, validates id, and returns idempotent success", async () => {
-  const unauthorized = ackRouteHarness(
-    { ok: false, status: 401, code: "PRINTER_UNAUTHORIZED" },
-    null,
-  );
-  assert.equal(
-    (await unauthorized.DELETE(new Request("https://example.test"), {
+  for (const failure of [
+    { status: 401, code: "PRINTER_UNAUTHORIZED" },
+    { status: 403, code: "PRINTER_SCOPE_FORBIDDEN" },
+    { status: 429, code: "PRINTER_RATE_LIMITED", retryAfterSeconds: 11 },
+  ]) {
+    const denied = ackRouteHarness({ ok: false, ...failure }, null);
+    const response = await denied.DELETE(new Request("https://example.test"), {
       params: { jobId },
-    })).status,
-    401,
-  );
+    });
+    assert.equal(response.status, failure.status);
+    assert.equal(response.headers.get("cache-control"), "no-store");
+    if (failure.status === 429) {
+      assert.equal(response.headers.get("retry-after"), "11");
+    }
+  }
 
   const authResult = { ok: true, device: activeDevice, compatibilityMode: false };
   const invalid = ackRouteHarness(authResult, null);
@@ -310,4 +321,68 @@ test("ACK retry never deletes a job and another consumer cannot ACK it", async (
   assert.deepEqual(retry, { state: "completed", alreadyProcessed: true });
   assert.deepEqual(other, { state: "not-found", alreadyProcessed: false });
   assert.equal(job.status, "completed");
+});
+
+test("printer recovery administration requires a superadmin session", async () => {
+  for (const [session, expectedStatus] of [
+    [null, 401],
+    [{ user: { id: "admin-id", role: "admin" } }, 403],
+    [{ user: { id: "super-id", role: "superadmin" } }, 200],
+  ]) {
+    const admin = load("./lib/printer/admin.ts", {
+      "next-auth": { getServerSession: async () => session },
+      "@/app/api/auth/[...nextauth]/options": { authOptions: {} },
+      "./constants": printerConstants,
+    });
+    const result = await admin.requirePrinterSuperadmin();
+    assert.equal(result.ok ? 200 : result.response.status, expectedStatus);
+  }
+});
+
+test("recovery route validates ownership and records only explicit actions", async () => {
+  let recoveryInput;
+  const route = load("./app/api/admin/printer-jobs/recovery/[jobId]/route.ts", {
+    "@/lib/print/queue": {
+      recoverPrintJob: async (input) => {
+        recoveryInput = input;
+        return { _id: jobId, status: "pending" };
+      },
+    },
+    "@/lib/printer/admin": {
+      requirePrinterSuperadmin: async () => ({ ok: true, userId: "super-id" }),
+    },
+    "@/lib/printer/constants": printerConstants,
+  });
+  const response = await route.POST(
+    new Request("https://example.test/recovery", {
+      method: "POST",
+      body: JSON.stringify({
+        action: "release_not_printed",
+        expectedConsumerId: `printer:${activeDevice.deviceId}`,
+        reason: "Operator confirmed no physical print exists",
+      }),
+    }),
+    { params: { jobId } },
+  );
+  assert.equal(response.status, 200);
+  assert.deepEqual(recoveryInput, {
+    jobId,
+    action: "release_not_printed",
+    expectedConsumerId: `printer:${activeDevice.deviceId}`,
+    reason: "Operator confirmed no physical print exists",
+    actorUserId: "super-id",
+  });
+
+  const invalid = await route.POST(
+    new Request("https://example.test/recovery", {
+      method: "POST",
+      body: JSON.stringify({
+        action: "release_not_printed",
+        expectedConsumerId: `printer:${activeDevice.deviceId}`,
+        reason: "short",
+      }),
+    }),
+    { params: { jobId } },
+  );
+  assert.equal(invalid.status, 400);
 });
