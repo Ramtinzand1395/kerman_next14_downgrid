@@ -4,6 +4,10 @@ import {
   type PosScope,
 } from "./constants.ts";
 import { isValidPosTokenFormat } from "./token.ts";
+import {
+  getDeviceClientIp,
+  readBearerToken,
+} from "../device-auth/request.ts";
 
 export type PosAuthDevice = {
   deviceId: string;
@@ -53,31 +57,13 @@ const unauthorized = (): PosAuthFailure => ({
   code: "POS_UNAUTHORIZED",
 });
 
-function getClientIp(request: Request): string {
-  const forwarded =
-    request.headers.get("x-vercel-forwarded-for") ??
-    request.headers.get("x-forwarded-for") ??
-    request.headers.get("x-real-ip") ??
-    "unknown";
-
-  return forwarded.split(",", 1)[0].trim().slice(0, 128) || "unknown";
-}
-
-function readBearerToken(request: Request): string | null {
-  const authorization = request.headers.get("authorization");
-  if (!authorization) return null;
-
-  const match = /^Bearer ([^\s]+)$/.exec(authorization);
-  return match?.[1] ?? null;
-}
-
 export async function authenticatePosRequestCore(
   request: Request,
   requiredScopes: readonly PosScope[],
   dependencies: PosAuthDependencies,
 ): Promise<PosAuthResult> {
   const suppliedDeviceId = request.headers.get(POS_DEVICE_ID_HEADER)?.trim();
-  const clientIp = getClientIp(request);
+  const clientIp = getDeviceClientIp(request);
   // Key the pre-authentication limiter by source, not by attacker-controlled
   // device ids, so rotating fake ids cannot bypass brute-force protection.
   const rateLimitKey = clientIp;
