@@ -12,7 +12,7 @@ const validPayload = {
   fullName: "Test Customer",
   mobile: "09123456789",
   date: "1405/08/16",
-  games: [{ name: "Game", sizeGB: 10, price: 100, storage: 1 }],
+  games: [{ name: "Game", sizeGB: 10, price: 100, storage: "داخلی" }],
   price: 100,
   totalSizeGB: 10,
   customerDescription: "",
@@ -155,6 +155,17 @@ test("print payload parser validates schema and byte limit", async () => {
   );
   assert.equal(valid.ok, true);
 
+  const emptyStorage = await payloadParser.parsePrintPayloadRequest(
+    new Request("https://example.test/print", {
+      method: "POST",
+      body: JSON.stringify({
+        ...validPayload,
+        games: [{ ...validPayload.games[0], storage: "" }],
+      }),
+    }),
+  );
+  assert.equal(emptyStorage.ok, true);
+
   const invalid = await payloadParser.parsePrintPayloadRequest(
     new Request("https://example.test/print", {
       method: "POST",
@@ -162,6 +173,20 @@ test("print payload parser validates schema and byte limit", async () => {
     }),
   );
   assert.equal(invalid.status, 400);
+
+  for (const storage of [1, null, { label: "internal" }]) {
+    const invalidStorage = await payloadParser.parsePrintPayloadRequest(
+      new Request("https://example.test/print", {
+        method: "POST",
+        body: JSON.stringify({
+          ...validPayload,
+          games: [{ ...validPayload.games[0], storage }],
+        }),
+      }),
+    );
+    assert.equal(invalidStorage.status, 400);
+    assert.equal(invalidStorage.code, "INVALID_PRINT_PAYLOAD");
+  }
 
   const tooLarge = await payloadParser.parsePrintPayloadRequest(
     new Request("https://example.test/print", {
@@ -241,11 +266,17 @@ test("GET keeps the Stage1 response contract and no-store policy", async () => {
   );
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("cache-control"), "no-store");
-  assert.deepEqual(await response.json(), {
+  const responseBody = await response.json();
+  assert.deepEqual(responseBody, {
     success: true,
     jobExists: true,
     payload: jobs,
   });
+  assert.equal(
+    typeof responseBody.payload[0].payload.games[0].storage,
+    "string",
+    "Stage1 receives storage as JSON text",
+  );
 });
 
 function ackRouteHarness(authResult, ackResult) {
