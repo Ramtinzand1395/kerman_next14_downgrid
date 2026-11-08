@@ -10,7 +10,6 @@ interface IUser extends Document {
   newsletter: boolean;
   gender?: string;
   birthday?: Date;
-  nationalCode?: string;
   favorites: mongoose.Types.ObjectId[];
   addresses: mongoose.Types.ObjectId[];
   orders: mongoose.Types.ObjectId[];
@@ -56,7 +55,6 @@ const UserSchema = new Schema<IUser>(
     newsletter: { type: Boolean, default: false },
     gender: { type: String },
     birthday: { type: Date },
-    nationalCode: { type: String },
     favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "Favorite" }],
     addresses: [{ type: mongoose.Schema.Types.ObjectId, ref: "Address" }],
     orders: [{ type: mongoose.Schema.Types.ObjectId, ref: "Order" }],
