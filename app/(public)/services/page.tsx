@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     canonical: "/services",
   },
 };
-
+// 
 const services = [
   {
     title: "بازی‌های اکانتی",
