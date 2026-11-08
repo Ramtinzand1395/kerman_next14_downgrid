@@ -10,7 +10,7 @@ const gameSchema = z
     name: boundedText(300),
     sizeGB: boundedNumber,
     price: boundedNumber,
-    storage: boundedNumber,
+    storage: boundedText(100),
   })
   .passthrough();
 
