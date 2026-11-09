@@ -230,12 +230,12 @@ export default function LandingHome({
           >
             <div className="relative aspect-[3/1] w-full sm:aspect-auto sm:h-full">
               <Image
-                src="/White PS5 console with controller on blue-2.png"
-                alt="کنسول سفید PS5 و دسته روی پس‌زمینه آبی"
+                src="/hero/ps5-neon-showcase.webp"
+                alt="کنسول پلی‌استیشن ۵ و دسته دوال‌سنس با نورپردازی آبی"
                 fill
                 priority
-                sizes="(max-width: 639px) 100vw, 1320px"
-                className="object-cover object-[72%_center]"
+                sizes="(max-width: 639px) 100vw, (max-width: 1359px) 60vw, 792px"
+                className="object-cover object-left"
               />
             </div>
             <div
@@ -699,7 +699,13 @@ export default function LandingHome({
               rel="noopener noreferrer"
               className="flex min-h-40 flex-col justify-between rounded-xl bg-gradient-to-br from-fuchsia-600 via-rose-500 to-orange-400 p-4 text-white"
             >
-              <Instagram className="h-8 w-8" />
+              <div className="flex flex-1 items-center justify-center py-4">
+                <Instagram
+                  className="h-20 w-20 shrink-0 sm:h-24 sm:w-24"
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                />
+              </div>
               <div>
                 <h3 className="text-base font-black sm:text-lg">
                   ما را در اینستاگرام دنبال کنید
