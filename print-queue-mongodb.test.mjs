@@ -30,7 +30,7 @@ test(
     if (!testUri) {
       const { MongoMemoryServer } = await import("mongodb-memory-server");
       memoryServer = await MongoMemoryServer.create({
-        instance: { dbName: "print_queue_test" },
+        instance: { dbName: "print_queue_test", args: ["--nounixsocket"] },
       });
       testUri = memoryServer.getUri("print_queue_test");
     }

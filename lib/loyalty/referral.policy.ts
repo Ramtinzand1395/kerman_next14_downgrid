@@ -1,4 +1,4 @@
-export const REFERRAL_CODE_PATTERN = /^KA-[A-Z0-9]{6}$/;
+const REFERRAL_CODE_PATTERN = /^KA-[A-Z0-9]{6}$/;
 
 export function normalizeReferralCode(code: string): string {
   return code.trim().toUpperCase();

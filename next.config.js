@@ -1,6 +1,7 @@
 // Production deploys may avoid a second memory-heavy type check only after the
 // reusable validation job has passed for this exact Git commit. Normal builds
 // always retain Next.js type checking.
+const optimizedImages = require("./config/optimized-images.json");
 const validatedSha = process.env.NEXT_DEPLOY_VALIDATED_SHA;
 let validatedDeployment = false;
 if (validatedSha) {
@@ -27,6 +28,12 @@ const nextConfig = {
         destination: "/services",
         permanent: true,
       },
+      // Preserve image URLs already indexed by search engines or saved in content.
+      ...optimizedImages.map(({ source, destination }) => ({
+        source: encodeURI(source),
+        destination: encodeURI(destination),
+        permanent: true,
+      })),
     ];
   },
   images: {

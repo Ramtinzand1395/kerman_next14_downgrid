@@ -15,7 +15,7 @@ export function isValidPrinterTokenFormat(token: string): boolean {
   return TOKEN_PATTERN.test(token);
 }
 
-export function getPrinterTokenPepper(): string {
+function getPrinterTokenPepper(): string {
   const pepper = process.env.PRINT_TOKEN_PEPPER?.trim();
   if (!pepper || Buffer.byteLength(pepper, "utf8") < 32) {
     throw new Error("PRINT_TOKEN_PEPPER must contain at least 32 bytes");

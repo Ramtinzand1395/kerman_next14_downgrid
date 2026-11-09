@@ -14,7 +14,7 @@ export {
   computeMobileRateLimitDecision,
 };
 
-export function getClientIp(): string {
+function getClientIp(): string {
   try {
     const h = headers();
     const forwardedFor = h.get("x-forwarded-for");
@@ -158,7 +158,7 @@ export async function reserveOtpSlot(
     },
     {
       upsert: true,
-      new: true,
+      returnDocument: "after",
     },
   );
 

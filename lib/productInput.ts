@@ -44,7 +44,7 @@ export function isNonNegativeSafeInteger(value: unknown): value is number {
   );
 }
 
-export function requireNonNegativeSafeInteger(
+function requireNonNegativeSafeInteger(
   value: unknown,
   field: string,
 ): number {
@@ -58,7 +58,7 @@ export function requireNonNegativeSafeInteger(
   return value;
 }
 
-export function optionalDiscount(
+function optionalDiscount(
   value: unknown,
   price: number,
   field: string,
@@ -232,7 +232,7 @@ function normalizeVariants(
   };
 }
 
-export function calculateDerivedStock(
+function calculateDerivedStock(
   variants: readonly ProductVariantWriteInput[],
 ): number {
   let total = 0;
@@ -250,7 +250,7 @@ export function calculateDerivedStock(
   return total;
 }
 
-export function calculateDerivedPricing(
+function calculateDerivedPricing(
   variants: readonly ProductVariantWriteInput[],
 ): { price: number; discountPrice: number | null } {
   const activeVariants = variants.filter((v) => v.isActive !== false);

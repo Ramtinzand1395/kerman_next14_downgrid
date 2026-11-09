@@ -93,7 +93,7 @@ const getProductImageData = (product: {
   }
 
   return {
-    src: firstImage.url || "/placeholder.png",
+    src: firstImage.url || "",
     alt: firstImage.alt || "تصویر محصول",
   };
 };

@@ -1,6 +1,6 @@
 import { v2 as cloudinary } from "cloudinary";
 
-export function gameCloudinaryConfig() {
+function gameCloudinaryConfig() {
   const cloud_name = process.env.GAME_CLOUDINARY_CLOUD_NAME || "aeylqy7h";
   const api_key = process.env.GAME_CLOUDINARY_API_KEY;
   const api_secret = process.env.GAME_CLOUDINARY_API_SECRET;

@@ -11,10 +11,6 @@ function LoadingRegion({ label, className = "", children }: { label: string; cla
   return <div className={className} role="status" aria-busy="true" aria-label={label}><span className="sr-only">{label}</span><div aria-hidden="true">{children}</div></div>;
 }
 
-export function InlineLoading({ label = "در حال بارگذاری…", className = "" }: { label?: string; className?: string }) {
-  return <span role="status" className={`inline-flex items-center gap-2 text-sm text-slate-600 ${className}`}><LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin motion-reduce:animate-none" /><span>{label}</span></span>;
-}
-
 export function ButtonLoading({ label = "در حال ثبت…" }: { label?: string }) {
   return <span role="status" className="inline-flex items-center justify-center gap-2 whitespace-nowrap"><LoaderCircle aria-hidden="true" className="h-4 w-4 shrink-0 animate-spin motion-reduce:animate-none" /><span>{label}</span></span>;
 }

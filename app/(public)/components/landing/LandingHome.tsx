@@ -457,7 +457,7 @@ export default function LandingHome({
         >
           <div className="relative h-[260px] sm:h-full">
             <Image
-              src="/White controller on blue repair bench-3.png"
+              src="/White controller on blue repair bench-3.webp"
               alt="دسته پلی استیشن روی میز تعمیرات تخصصی"
               fill
               loading="eager"

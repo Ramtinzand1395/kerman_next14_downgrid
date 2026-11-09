@@ -43,3 +43,7 @@ next-env.d.ts
 
 
 .test/
+
+# Generated screenshots and local review output
+/artifacts/banner-qa/
+/artifacts/qa/

@@ -1,5 +1,7 @@
+const persianNumberFormatter = new Intl.NumberFormat("fa-IR");
+
 export const formatPrice = (price: number) => {
-  return new Intl.NumberFormat("fa-IR").format(price);
+  return persianNumberFormatter.format(price);
 };
 
 export const calculateDiscountPercent = (

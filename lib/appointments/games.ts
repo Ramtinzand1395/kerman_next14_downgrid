@@ -14,7 +14,7 @@ export type GameCatalogDocument = {
 export const MAX_INSTALLATION_GAMES = 100;
 export const gameKey = (game: InstallationGameRef) => `${game.platform}:${game.gameId}`;
 
-export function normalizeGamePlatform(platform: string) {
+function normalizeGamePlatform(platform: string) {
   const key = platform.trim().toLowerCase();
   if (["copy", "ps4copy"].includes(key)) return "copy";
   if (key === "ps5copy") return "ps5Copy";

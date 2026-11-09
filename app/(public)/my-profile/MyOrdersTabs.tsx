@@ -3,8 +3,12 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import { useRouter } from "@/app/components/navigation/NavigationFeedback";
 import { ShoppingBasket, Gamepad2 } from "lucide-react";
-import MyStoreOrders from "./MyStoreOrders";
-import MyGameOrders from "./MyGameOrders";
+import dynamic from "next/dynamic";
+import { PageLoading } from "@/app/components/loading/LoadingSystem";
+
+const loading = () => <PageLoading />;
+const MyStoreOrders = dynamic(() => import("./MyStoreOrders"), { loading });
+const MyGameOrders = dynamic(() => import("./MyGameOrders"), { loading });
 
 type TabKey = "products" | "games";
 

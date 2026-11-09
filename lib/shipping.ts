@@ -25,13 +25,11 @@ export class InvalidShippingDestinationError extends Error {
 export type ShippingPaymentType = "PREPAID" | "COLLECT";
 
 export const KERMAN_SHIPPING_COST = 150_000;
-export const KERMAN_LOCAL_SHIPPING_TITLE = "ارسال به شهرستان کرمان";
-export const COLLECT_SHIPPING_LABEL = "پس‌کرایه";
-export const LOCAL_SHIPPING_DESCRIPTION = formatLocalShippingPolicyText(KERMAN_SHIPPING_COST);
+const KERMAN_LOCAL_SHIPPING_TITLE = "ارسال به شهرستان کرمان";
+const COLLECT_SHIPPING_LABEL = "پس‌کرایه";
+const LOCAL_SHIPPING_DESCRIPTION = formatLocalShippingPolicyText(KERMAN_SHIPPING_COST);
 export const COLLECT_SHIPPING_NOTE =
   "هزینه حمل هنگام تحویل و طبق تعرفه شرکت حمل‌ونقل دریافت می‌شود.";
-export const CARRIER_CALCULATED_SHIPPING_NOTE =
-  COLLECT_SHIPPING_NOTE;
 
 type CarrierCollectSetting = {
   enabled: boolean;
@@ -79,12 +77,12 @@ export const DEFAULT_SHIPPING_SETTINGS: StoreShippingSettings = {
   tipax: {
     enabled: false,
     title: "ارسال با تیپاکس",
-    description: CARRIER_CALCULATED_SHIPPING_NOTE,
+    description: COLLECT_SHIPPING_NOTE,
   },
   postPishtaz: {
     enabled: false,
     title: "ارسال با پست پیشتاز",
-    description: CARRIER_CALCULATED_SHIPPING_NOTE,
+    description: COLLECT_SHIPPING_NOTE,
   },
   coverage: {
     province: "کرمان",
@@ -123,28 +121,6 @@ export function normalizeCityName(name: unknown): string {
     .replace(/[\u064B-\u065F]/g, "") // Diacritics (fatha, damma, etc.)
     .replace(/\s+/g, " ")
     .trim();
-}
-
-/**
- * Checks whether the city corresponds to Kerman city (county).
- * Note: Only Kerman city itself is PREPAID; other cities in Kerman province
- * (Rafsanjan, Sirjan, Bam, Jiroft, Zarand, etc.) are NOT Kerman city.
- */
-export function isKermanCity(city: unknown): boolean {
-  const normalized = normalizeCityName(city);
-  if (!normalized) return false;
-
-  if (normalized === "کرمان" || normalized === "kerman") {
-    return true;
-  }
-
-  // Handle prefix like "شهرستان کرمان" or "شهر کرمان"
-  const stripped = normalized.replace(/^(شهرستان|شهر)\s+/, "");
-  if (stripped === "کرمان" || stripped === "kerman") {
-    return true;
-  }
-
-  return false;
 }
 
 export interface ShippingCalculation {
@@ -196,7 +172,7 @@ export function assertValidShippingDestination(destination: ShippingDestination)
   }
 }
 
-export function isDestinationInLocalCoverage(
+function isDestinationInLocalCoverage(
   destination: ShippingDestination,
   settings: StoreShippingSettings = DEFAULT_SHIPPING_SETTINGS,
 ): boolean {
@@ -341,7 +317,7 @@ export function formatOrderShippingDisplay(order: {
     return {
       title: order.shipping.title || setting.title,
       label: "محاسبه توسط شرکت حمل‌ونقل",
-      subtext: CARRIER_CALCULATED_SHIPPING_NOTE,
+      subtext: COLLECT_SHIPPING_NOTE,
       isCollect: true,
       feeToman: null,
       trackingCode: order.shipping.trackingCode || null,

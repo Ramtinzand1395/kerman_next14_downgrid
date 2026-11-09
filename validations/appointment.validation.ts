@@ -28,12 +28,12 @@ const baseAppointmentSchema = z.object({
   selectedRewardId: z.string().regex(objectIdRegex, "شناسه پاداش نامعتبر است").nullable().optional(),
 });
 
-export const inStoreAppointmentCreateSchema = baseAppointmentSchema.extend({
+const inStoreAppointmentCreateSchema = baseAppointmentSchema.extend({
   fulfillment: z.literal("in_store").default("in_store"),
   startsAt: z.coerce.date(),
 });
 
-export const courierAppointmentCreateSchema = baseAppointmentSchema.extend({
+const courierAppointmentCreateSchema = baseAppointmentSchema.extend({
   fulfillment: z.literal("courier"),
   addressId: z.string().regex(objectIdRegex, "شناسه آدرس نامعتبر است"),
   pickupDate: z.string().regex(dateStringRegex, "فرمت تاریخ تحویل نامعتبر است"),

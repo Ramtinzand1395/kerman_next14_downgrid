@@ -1,7 +1,7 @@
 import type { CatalogSnapshotItem } from "./catalog.ts";
 
-export const CATALOG_CHANGES_DEFAULT_LIMIT = 100;
-export const CATALOG_CHANGES_MAX_LIMIT = 200;
+const CATALOG_CHANGES_DEFAULT_LIMIT = 100;
+const CATALOG_CHANGES_MAX_LIMIT = 200;
 export const POS_CATALOG_COUNTER_KEY = "pos-catalog-v1";
 
 export const CATALOG_CHANGE_KINDS = [
@@ -76,7 +76,7 @@ export function encodeCatalogChangesCursor(sequence: number): string {
   );
 }
 
-export function decodeCatalogChangesCursor(cursor: string): number {
+function decodeCatalogChangesCursor(cursor: string): number {
   if (!cursor || cursor.length > 256 || !/^[A-Za-z0-9_-]+$/.test(cursor)) {
     throw new CatalogChangesPaginationError("Cursor is invalid");
   }

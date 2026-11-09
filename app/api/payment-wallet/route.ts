@@ -622,7 +622,7 @@ export async function POST(req: NextRequest) {
                 ...identifiers,
               },
             },
-            { new: true, session: transactionSession },
+            { returnDocument: "after", session: transactionSession },
           );
           if (!paidOrder) {
             const current = await Order.findById(order._id)

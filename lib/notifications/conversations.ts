@@ -70,7 +70,7 @@ export async function upsertLegacyConversation(contactMessageId: string | mongoo
   return conversation;
 }
 
-export async function ensureLegacyConversations(customerId?: string) {
+async function ensureLegacyConversations(customerId?: string) {
   await dbConnect();
   const cursor = ContactMessage.find(customerId ? { user: oid(customerId) } : {})
     .select("_id")

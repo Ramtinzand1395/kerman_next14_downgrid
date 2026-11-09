@@ -2,6 +2,8 @@
 // app/(dashboard)/dashboard/loyalty/page.tsx
 // پنل مدیریت باشگاه مشتریان و کیف پول — همه بخش‌ها در قالب تب
 import { useState } from "react";
+import dynamic from "next/dynamic";
+import { PageLoading } from "@/app/components/loading/LoadingSystem";
 import {
   BadgeCheck,
   Crown,
@@ -17,14 +19,18 @@ import {
   Wallet,
 } from "lucide-react";
 import WalletTab from "./tabs/WalletTab";
-import CouponsTab from "./tabs/CouponsTab";
-import MissionsTab from "./tabs/MissionsTab";
-import CashbackTab from "./tabs/CashbackTab";
-import SpinTab from "./tabs/SpinTab";
-import LevelsTab from "./tabs/LevelsTab";
-import XpVipTab from "./tabs/XpVipTab";
-import { AchievementsTab, CampaignsTab } from "./tabs/MiscTabs";
-import { ReportsTab, SettingsTab } from "./tabs/SettingsReportsTabs";
+
+const loading = () => <PageLoading />;
+const CouponsTab = dynamic(() => import("./tabs/CouponsTab"), { loading });
+const MissionsTab = dynamic(() => import("./tabs/MissionsTab"), { loading });
+const CashbackTab = dynamic(() => import("./tabs/CashbackTab"), { loading });
+const SpinTab = dynamic(() => import("./tabs/SpinTab"), { loading });
+const LevelsTab = dynamic(() => import("./tabs/LevelsTab"), { loading });
+const XpVipTab = dynamic(() => import("./tabs/XpVipTab"), { loading });
+const AchievementsTab = dynamic(() => import("./tabs/MiscTabs").then((module) => module.AchievementsTab), { loading });
+const CampaignsTab = dynamic(() => import("./tabs/MiscTabs").then((module) => module.CampaignsTab), { loading });
+const ReportsTab = dynamic(() => import("./tabs/SettingsReportsTabs").then((module) => module.ReportsTab), { loading });
+const SettingsTab = dynamic(() => import("./tabs/SettingsReportsTabs").then((module) => module.SettingsTab), { loading });
 
 const TABS = [
   { key: "wallet", label: "کیف پول", icon: Wallet, component: WalletTab },

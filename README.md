@@ -1,50 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kerman Atari
 
-## Getting Started
+Persian RTL storefront and admin dashboard built with Next.js 14 App Router,
+React 18, TypeScript, Tailwind CSS 3, MongoDB and Mongoose. Production runs on
+Node.js 24 with PM2; merges to `main` trigger the validated VPS deployment.
 
-First, run the development server:
+## Local setup
+
+1. Install Node.js 24 and run `npm ci`.
+2. Copy `.env.example` to `.env.local` and supply the private values needed by
+   the features you are working on. Use an isolated database for development.
+3. Start the application with `npm run dev`.
+
+The standalone notification worker and migration commands use `.env`, not
+`.env.local`. Keep all real credentials outside Git.
+
+## Validation
+
+| Command | Purpose |
+| --- | --- |
+| `npm test` | Domain and API regression tests; optional integration suites skip by default |
+| `npm run lint` | Next.js and React lint checks |
+| `npx tsc --noEmit` | Strict types, unused locals and unused parameters |
+| `npm run audit:assets` | Local media inventory, exact duplicates and missing static image paths |
+| `npm run build` | Production build with type and lint checks |
+
+Run the isolated MongoDB integration suites with synthetic data:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+PRINT_MONGO_INTEGRATION=true POS_LOCAL_TRANSACTION_TESTS=true MONGOMS_VERSION=7.0.24 \
+  node --test print-queue-mongodb.test.mjs pos-sales-transaction.test.mjs
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+These suites start local MongoDB processes and need the MongoDB test binary.
+They do not need production database credentials.
 
-## Cloudinary configuration
+## Media maintenance
 
-Image uploads and deletions run only on the server and require these private
-environment variables:
+- Application images live in `public/`; product, game and blog uploads use
+  Cloudinary. Upload and deletion credentials are server-only.
+- `config/optimized-images.json` records the PNG/JPEG to WebP migration, byte
+  sizes and dimensions. `next.config.js` redirects old URLs to their new files.
+- `npm run audit:assets` reports unreferenced candidates for review. Constructed
+  paths and references stored in MongoDB must also be checked before deletion.
+- Put new review screenshots in the ignored `artifacts/qa/` or
+  `artifacts/banner-qa/` directories. Tests, migrations, workers and operational
+  recovery records are intentional project files.
 
-```env
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-```
-
-Set the same variables in the Vercel project settings. Never expose the API
-secret through a variable whose name starts with `NEXT_PUBLIC_`.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The full cleanup findings and validation are in
+[`docs/project-cleanup-2026-11-09.md`](docs/project-cleanup-2026-11-09.md).

@@ -38,7 +38,7 @@ async function consumeFixedWindow(
   try {
     state = await PosRateLimit.findOneAndUpdate(filter, update, {
       upsert: true,
-      new: true,
+      returnDocument: "after",
       setDefaultsOnInsert: true,
     }).lean();
   } catch (error: unknown) {
@@ -48,7 +48,7 @@ async function consumeFixedWindow(
     state = await PosRateLimit.findOneAndUpdate(
       filter,
       { $inc: { count: 1 } },
-      { new: true },
+      { returnDocument: "after" },
     ).lean();
   }
 

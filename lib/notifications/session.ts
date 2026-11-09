@@ -14,6 +14,6 @@ export async function getNotificationSession() {
   return { session, recipientRole };
 }
 
-export function isAdminRole(role?: string) {
+function isAdminRole(role?: string) {
   return role === "admin" || role === "superadmin";
 }

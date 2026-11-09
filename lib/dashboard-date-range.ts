@@ -1,9 +1,9 @@
 import moment from "moment-jalaali";
 
 export const REPORT_TIME_ZONE = "Asia/Tehran";
-export const REPORT_MAX_DAYS = 366;
+const REPORT_MAX_DAYS = 366;
 
-export const REPORT_RANGE_KEYS = [
+const REPORT_RANGE_KEYS = [
   "today",
   "last7",
   "last30",
@@ -59,7 +59,7 @@ function partNumber(parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatP
   return Number(value);
 }
 
-export function getTehranParts(date: Date): Required<DateParts> {
+function getTehranParts(date: Date): Required<DateParts> {
   const parts = gregorianFormatter.formatToParts(date);
   return {
     year: partNumber(parts, "year"),
@@ -99,7 +99,7 @@ function addGregorianDays(parts: DateParts, days: number): DateParts {
   return { year: shifted.getUTCFullYear(), month: shifted.getUTCMonth() + 1, day: shifted.getUTCDate() };
 }
 
-export function startOfTehranDay(date: Date): Date {
+function startOfTehranDay(date: Date): Date {
   return tehranDateTimeToUtc(getTehranParts(date));
 }
 
@@ -111,11 +111,11 @@ function gregorianToJalali(parts: DateParts) {
   ).format("jYYYY-jMM-jDD");
 }
 
-export function utcToJalaliDate(date: Date) {
+function utcToJalaliDate(date: Date) {
   return gregorianToJalali(getTehranParts(date));
 }
 
-export function parseJalaliDate(value: string): DateParts {
+function parseJalaliDate(value: string): DateParts {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     throw new ReportRangeError("تاریخ باید با قالب YYYY-MM-DD شمسی ارسال شود.", "INVALID_DATE");
   }
@@ -126,7 +126,7 @@ export function parseJalaliDate(value: string): DateParts {
   return { year: parsed.year(), month: parsed.month() + 1, day: parsed.date() };
 }
 
-export function jalaliDateToUtcStart(value: string) {
+function jalaliDateToUtcStart(value: string) {
   return tehranDateTimeToUtc(parseJalaliDate(value));
 }
 
@@ -175,7 +175,7 @@ function formatMonthLabel(date: Date) {
   }).format(date);
 }
 
-export function createBuckets(startInclusive: Date, endExclusive: Date, granularity: ReportGranularity): ReportBucket[] {
+function createBuckets(startInclusive: Date, endExclusive: Date, granularity: ReportGranularity): ReportBucket[] {
   const buckets: ReportBucket[] = [];
   if (granularity === "hour") {
     let cursor = startInclusive;
