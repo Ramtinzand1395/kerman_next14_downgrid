@@ -27,6 +27,7 @@ const staticRoutes: MetadataRoute.Sitemap = [
   },
   {
     url: `${SITE_URL}/about-us`,
+    lastModified: new Date("2026-11-09"),
     changeFrequency: "monthly",
     priority: 0.6,
   },

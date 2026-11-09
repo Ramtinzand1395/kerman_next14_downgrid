@@ -40,7 +40,7 @@ import { STORE_CONTACT } from "@/lib/store-contact";
 const REQUEST_URL = "/my-profile?step=6";
 const INSTAGRAM_URL =
   "https://www.instagram.com/kermanatari.ir?igsh=MTh4cmd3NnNib2N5dw==";
-const CONSOLE_URL = "/category/consoles?sort=newest&page=1";
+const CONSOLE_URL = "/category/consoles";
 
 const quickAccess = [
   {
@@ -58,7 +58,7 @@ const quickAccess = [
   {
     title: "لوازم گیمینگ",
     description: "دسته، کابل، پایه و بیشتر",
-    href: "/products?category=gaming-accessories&sort=newest&page=1",
+    href: "/category/gaming-accessories",
     icon: Headphones,
   },
   {
@@ -297,7 +297,7 @@ export default function LandingHome({
                   فروشگاه برو.
                 </p>
                 <Link
-                  href="/products?category=games&sort=newest&page=1"
+                  href="/category/games"
                   className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 text-sm font-black text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/70 focus:ring-offset-2 focus:ring-offset-[#061f4f]"
                 >
                   دیدن همه بازی‌ها
@@ -316,11 +316,7 @@ export default function LandingHome({
                   return (
                     <Link
                       key={genre.slug}
-                      href={
-                        "/products?category=games&tag=" +
-                        genre.slug +
-                        "&sort=newest&page=1"
-                      }
+                      href={`/category/games?tag=${encodeURIComponent(genre.slug)}`}
                       className="group flex min-h-[112px] flex-col rounded-2xl border border-white/10 bg-white p-3.5 text-[#0b1d48] shadow-[0_10px_24px_rgba(0,10,35,0.16)] transition duration-300 hover:-translate-y-1 hover:border-white hover:shadow-[0_16px_30px_rgba(0,10,35,0.24)] focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#061f4f] sm:min-h-[126px] sm:p-4"
                     >
                       <span
@@ -394,7 +390,7 @@ export default function LandingHome({
               </p>
             </div>
             <Link
-              href="/products?category=consoles&sort=newest&page=1"
+              href="/category/consoles"
               className="inline-flex min-h-10 items-center gap-1 text-sm font-black text-[#1469f5]"
             >
               همه کنسول‌ها <ChevronLeft className="h-3.5 w-3.5" />
@@ -816,12 +812,12 @@ export default function LandingHome({
           {[
             {
               label: "محصولات",
-              href: "/products?sort=newest&page=1",
+              href: "/products",
               icon: PackageOpen,
             },
             {
               label: "بازی‌ها",
-              href: "/products?category=games&sort=newest&page=1",
+              href: "/category/games",
               icon: Gamepad2,
             },
             { label: "درخواست", href: REQUEST_URL, icon: CalendarDays },

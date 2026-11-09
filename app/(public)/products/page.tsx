@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import Link from "@/app/components/navigation/NavigationFeedback";
 import { permanentRedirect } from "next/navigation";
 import { getCategoryCatalog } from "@/lib/catalog/category-data";
-import { categoryHref, decodeCategorySlug } from "@/lib/catalog/category-seo";
+import { categoryHref, hasCatalogFilters, parseCatalogQuery, resolveLegacyCategory } from "@/lib/catalog/category-seo";
 import { SlidersHorizontal, Tags, X } from "lucide-react";
 
 import type { Product, ProductTagFacet } from "@/types";
@@ -46,12 +46,11 @@ const baseMetadata: Metadata = {
 };
 async function redirectLegacyCategory(searchParams: ProductsSearchParams) {
   if (searchParams.category) {
-    const value = decodeCategorySlug(searchParams.category);
     const rows = await getCategoryCatalog();
-    const category = rows.find(row => row.slug === value || row.name === value || row._id === value);
+    const category = resolveLegacyCategory(searchParams.category, rows);
     if (category) {
       const query = new URLSearchParams();
-      for (const key of ["sort", "page", "q", "tag"] as const) {
+      for (const key of ["sort", "page", "q", "tag", "inStock"] as const) {
         if (typeof searchParams[key] === "string") query.set(key, searchParams[key]!);
       }
       permanentRedirect(categoryHref(category.slug) + (query.size ? `?${query}` : ""));
@@ -61,10 +60,16 @@ async function redirectLegacyCategory(searchParams: ProductsSearchParams) {
 
 export async function generateMetadata({ searchParams }: { searchParams: ProductsSearchParams }): Promise<Metadata> {
   await redirectLegacyCategory(searchParams);
-  const filtered = Boolean(searchParams.q || searchParams.tag || searchParams.category || searchParams.sort);
-  const page = /^\d+$/.test(searchParams.page || "") ? Number(searchParams.page) : 1;
+  const query = parseCatalogQuery(searchParams);
+  const filtered = Boolean(searchParams.category) || hasCatalogFilters(query);
+  const page = query.page;
   const canonical = !filtered && page > 1 ? `/products?page=${page}` : "/products";
-  return { ...baseMetadata, alternates: { canonical }, robots: { index: !filtered, follow: true } };
+  return {
+    ...baseMetadata,
+    alternates: { canonical },
+    openGraph: { ...baseMetadata.openGraph, url: canonical },
+    robots: { index: !filtered, follow: true },
+  };
 }
 
 async function getProducts(params: {
@@ -108,6 +113,7 @@ type ProductsSearchParams = {
   page?: string;
   q?: string;
   tag?: string;
+  inStock?: string;
 };
 
 function productsUrlWithout(
@@ -128,7 +134,8 @@ function productsUrlWithout(
 function categoryLabel(slug?: string) {
   if (!slug) return "";
 
-  const decoded = decodeURIComponent(slug).trim();
+  let decoded = slug.trim();
+  try { decoded = decodeURIComponent(decoded); } catch { return slug; }
   const normalized = decoded.toLowerCase().replace(/\s+/g, "-");
 
   for (const category of categories) {
@@ -190,6 +197,10 @@ export default async function ProductsPage({
   const hasActiveFilters = Boolean(
     searchParams.category || searchParams.tag || searchParams.q,
   );
+  const listingCanonical =
+    !searchParams.category && !hasCatalogFilters(parseCatalogQuery(searchParams)) && currentPage > 1
+      ? `/products?page=${currentPage}`
+      : "/products";
 
   const itemListSchema = {
     "@context": "https://schema.org",
@@ -197,13 +208,13 @@ export default async function ProductsPage({
     name: "محصولات کرمان آتاری",
     description:
       "لیست کامل محصولات کرمان آتاری شامل کنسول، بازی و لوازم جانبی با امکان فیلتر و مرتب‌سازی.",
-    url: toAbsoluteUrl("/products"),
+    url: toAbsoluteUrl(listingCanonical),
     mainEntity: {
       "@type": "ItemList",
       numberOfItems: products.length,
       itemListElement: products.map((product, index) => ({
         "@type": "ListItem",
-        position: index + 1,
+        position: (currentPage - 1) * data.limit + index + 1,
         name: product.title,
         url: toAbsoluteUrl(`/product/${product.slug}`),
       })),

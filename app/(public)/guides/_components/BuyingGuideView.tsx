@@ -185,7 +185,7 @@ export function GuideHero({ guide, readingMinutes }: { guide: BuyingGuide; readi
         <ol className="flex flex-wrap items-center gap-1.5">
           <li><Link href="/" className="rounded-md hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">خانه</Link></li>
           <li aria-hidden="true"><ChevronLeft className="h-4 w-4" /></li>
-          <li><Link href="/products?category=consoles&sort=newest&page=1" className="rounded-md hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">کنسول‌ها</Link></li>
+          <li><Link href="/category/consoles" className="rounded-md hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">کنسول‌ها</Link></li>
           <li aria-hidden="true"><ChevronLeft className="h-4 w-4" /></li>
           <li aria-current="page" className="font-bold text-slate-800">{guide.breadcrumbLabel}</li>
         </ol>

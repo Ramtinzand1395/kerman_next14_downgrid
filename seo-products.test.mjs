@@ -20,7 +20,7 @@ test("products listing keeps CollectionPage and ItemList URLs", async () => {
 
   assert.match(source, /"@type": "CollectionPage"/);
   assert.match(source, /"@type": "ItemList"/);
-  assert.match(source, /url: toAbsoluteUrl\("\/products"\)/);
+  assert.match(source, /url: toAbsoluteUrl\(listingCanonical\)/);
   assert.match(source, /url: toAbsoluteUrl\(`\/product\/\$\{product\.slug\}`\)/);
   assert.doesNotMatch(source, /"@type": "Product"/);
 });

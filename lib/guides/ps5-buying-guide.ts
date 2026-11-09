@@ -2,7 +2,7 @@ import type { BuyingGuide, GuideSection } from "./types";
 
 export const PS5_GUIDE_PATH = "/guides/ps5-buying-guide";
 export const PS5_PRODUCTS_PATH =
-  "/products?category=consoles&tag=ps5&sort=newest&page=1";
+  "/category/consoles?tag=ps5";
 export const PRODUCTION_SITE_URL = "https://kermanatari.ir";
 
 const sectionsPartOne: GuideSection[] = [

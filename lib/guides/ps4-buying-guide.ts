@@ -2,7 +2,7 @@ import type { BuyingGuide, GuideSection } from "./types";
 
 export const PS4_GUIDE_PATH = "/guides/ps4-buying-guide";
 export const PS4_PRODUCTS_PATH =
-  "/products?category=consoles&tag=ps4&sort=newest&page=1";
+  "/category/consoles?tag=ps4";
 export const PRODUCTION_SITE_URL = "https://kermanatari.ir";
 
 const sections: GuideSection[] = [

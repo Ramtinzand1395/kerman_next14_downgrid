@@ -159,18 +159,18 @@ function descendantsFor(categories: CategoryRecord[], rootSlug: string) {
 export async function getLandingData(): Promise<LandingData> {
   const empty: LandingData = {
     gameTabs: [
-      { id: "ps5", label: "PS5", href: "/products?category=games&tag=ps5&sort=newest&page=1", products: [] },
-      { id: "featured", label: "ویژه", href: "/products?category=games&sort=newest&page=1", products: [] },
-      { id: "ps4", label: "PS4", href: "/products?category=games&tag=ps4&sort=newest&page=1", products: [] },
-      { id: "latest", label: "جدیدترین", href: "/products?category=games&sort=newest&page=1", products: [] },
+      { id: "ps5", label: "PS5", href: "/category/games?tag=ps5", products: [] },
+      { id: "featured", label: "ویژه", href: "/category/games", products: [] },
+      { id: "ps4", label: "PS4", href: "/category/games?tag=ps4", products: [] },
+      { id: "latest", label: "جدیدترین", href: "/category/games", products: [] },
     ],
     equipmentTabs: [
-      { id: "gaming-wall-art", label: "تابلو گیمینگ", href: "/products?sort=newest&category=Gaming Wall Art&page=1", products: [] },
-      { id: "controllers", label: "دسته بازی", href: "/products?category=controllers&sort=newest&page=1", products: [] },
-      { id: "chargers", label: "شارژر", href: "/products?category=accessories&tag=controller-charger&sort=newest&page=1", products: [] },
-      { id: "stands", label: "پایه", href: "/products?category=stands-coolers&sort=newest&page=1", products: [] },
-      { id: "cables", label: "کابل", href: "/products?category=accessories&tag=cable&sort=newest&page=1", products: [] },
-      { id: "ps5-accessories", label: "لوازم PS5", href: "/products?category=accessories&tag=ps5&sort=newest&page=1", products: [] },
+      { id: "gaming-wall-art", label: "تابلو گیمینگ", href: "/category/gaming-wall-art", products: [] },
+      { id: "controllers", label: "دسته بازی", href: "/category/controllers", products: [] },
+      { id: "chargers", label: "شارژر", href: "/category/accessories?tag=controller-charger", products: [] },
+      { id: "stands", label: "پایه", href: "/category/stands-coolers", products: [] },
+      { id: "cables", label: "کابل", href: "/category/accessories?tag=cable", products: [] },
+      { id: "ps5-accessories", label: "لوازم PS5", href: "/category/accessories?tag=ps5", products: [] },
     ],
     consoles: [],
     genres: [],

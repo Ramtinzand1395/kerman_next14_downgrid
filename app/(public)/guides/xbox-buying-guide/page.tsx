@@ -87,7 +87,7 @@ function getStructuredData() {
             "@type": "ListItem",
             position: 2,
             name: "کنسول‌ها",
-            item: `${XBOX_PRODUCTION_SITE_URL}/products?category=consoles`,
+            item: `${XBOX_PRODUCTION_SITE_URL}/category/consoles`,
           },
           {
             "@type": "ListItem",

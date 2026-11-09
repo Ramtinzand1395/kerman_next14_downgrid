@@ -82,7 +82,7 @@ export default function Navbar() {
     event.preventDefault();
     const query = searchValue.trim();
     if (!query) {
-      router.push("/products?sort=newest&page=1");
+      router.push("/products");
       return;
     }
 
@@ -163,7 +163,7 @@ export default function Navbar() {
                       </div>
 
                       <Link
-                        href="/products?sort=newest&page=1"
+                        href="/products"
                         className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline"
                         aria-label="مشاهده همه محصولات"
                       >

@@ -50,7 +50,7 @@ test('production category HTTP serves real routes, metadata, filters and deep li
   await writeFile(path.join(dir, 'app/products/page.tsx'), `
 import { permanentRedirect } from 'next/navigation';
 import { getCategoryCatalog } from '@/lib/catalog/category-data';
-import { decodeCategorySlug, categoryHref } from '@/lib/catalog/category-seo';
+import { resolveLegacyCategory, categoryHref, parseCatalogQuery, hasCatalogFilters } from '@/lib/catalog/category-seo';
 export const dynamic = 'force-dynamic';
 type ProductsSearchParams = any; type Metadata = any; const baseMetadata = {};
 ${declaration('redirectLegacyCategory')}
@@ -111,7 +111,26 @@ export async function getCategoryProducts(id: string, rows: any, query: any) {
   assert.equal(legacyTarget.searchParams.get('tag'), 'tekken');
   assert.equal(legacyTarget.searchParams.get('q'), 'poster');
   assert.equal(legacyTarget.searchParams.has('category'), false);
+  for (const category of ['Gaming Wall Art', 'GAMING-WALL-ART', 'تابلو گیمینگ', 'art', '%47aming%20Wall%20Art']) {
+    const old = await request(port, '/products?' + new URLSearchParams({category, inStock: '1', sort: 'lowPrice', page: '2'}));
+    assert.equal(old.status, 308, category);
+    const target = new URL(old.headers.location, 'https://kermanatari.ir');
+    assert.equal(target.pathname, '/category/gaming-wall-art');
+    assert.equal(target.searchParams.get('inStock'), '1');
+    assert.equal(target.searchParams.get('sort'), 'lowPrice');
+    assert.equal(target.searchParams.get('page'), '2');
+  }
   assert.equal((await request(port, '/products')).status, 200);
+  const allProducts = await request(port, '/products?sort=newest&page=1');
+  assert.match(allProducts.body, /content="index, follow"/);
+  assert.match(allProducts.body, /rel="canonical" href="https:\/\/kermanatari.ir\/products"/);
+  const allProductsSecond = await request(port, '/products?sort=newest&page=2');
+  assert.match(allProductsSecond.body, /content="index, follow"/);
+  assert.match(allProductsSecond.body, /rel="canonical" href="https:\/\/kermanatari.ir\/products\?page=2"/);
+  assert.match((await request(port, '/products?sort=lowPrice')).body, /content="noindex, follow"/);
+  const explicitDefaults = await request(port, '/category/gaming-wall-art?sort=newest&page=1');
+  assert.match(explicitDefaults.body, /content="index, follow"/);
+  assert.match(explicitDefaults.body, /rel="canonical" href="https:\/\/kermanatari.ir\/category\/gaming-wall-art"/);
   assert.equal((await request(port, '/products?category=unknown')).status, 200);
   const redirect = await request(port, '/category/gaming-wall-art?category=accessories');
   assert.equal(redirect.status, 308); assert.equal(redirect.headers.location, '/category/gaming-wall-art');

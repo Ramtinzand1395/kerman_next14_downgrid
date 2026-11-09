@@ -2,7 +2,7 @@ import type { BuyingGuide, GuideSection } from "./types";
 
 export const XBOX_GUIDE_PATH = "/guides/xbox-buying-guide";
 export const XBOX_PRODUCTS_PATH =
-  "/products?category=consoles&tag=xbox&sort=newest&page=1";
+  "/category/consoles?tag=xbox";
 export const XBOX_PRODUCTION_SITE_URL = "https://kermanatari.ir";
 
 const sections: GuideSection[] = [
