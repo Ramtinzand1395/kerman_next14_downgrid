@@ -18,31 +18,30 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@v4
+      - name: Record runner source address for VPS packet capture
+        run: |
+          date -u
+          echo 'Runner public IPv4 (match this source in VPS tcpdump):'
+          curl -4 --fail --silent --show-error --max-time 10 https://checkip.amazonaws.com || true
+      - name: Compare origin web-port reachability
+        env:
+          SSH_HOST: ${{ secrets.SERVER_HOST }}
+        run: |
+          python3 -u - <<'PY'
+          import os, socket
+          host = os.environ['SSH_HOST'].strip()
+          if not host:
+              raise SystemExit('SERVER_HOST is missing')
+          for port in (80, 443):
+              try:
+                  with socket.create_connection((host, port), timeout=5):
+                      print(f'Origin TCP port {port}: connected')
+              except OSError as error:
+                  print(f'Origin TCP port {port}: {type(error).__name__}')
+          PY
       - name: Test TCP and SSH banner without deployment
         env:
           SSH_HOST: ${{ secrets.SERVER_HOST }}
           SSH_PORT: ${{ secrets.SERVER_PORT || '22' }}
-        run: |
-          python3 - <<'PY'
-          import os, socket, sys, time
-          host = os.environ['SSH_HOST'].strip()
-          if not host:
-              sys.exit('SERVER_HOST is missing')
-          port = int(os.environ['SSH_PORT'])
-          for attempt in range(1, 4):
-              try:
-                  with socket.create_connection((host, port), timeout=10) as connection:
-                      connection.settimeout(10)
-                      banner = connection.recv(255).decode('ascii', 'replace').strip()
-                      if not banner.startswith('SSH-'):
-                          raise RuntimeError('The port did not return an SSH banner')
-                      print(f'Attempt {attempt}: TCP connected; SSH banner received.')
-                      with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
-                          summary.write('SSH network connection: **passed**. No deployment commands executed.\n')
-                      sys.exit(0)
-              except (OSError, RuntimeError) as error:
-                  print(f'Attempt {attempt}/3: {type(error).__name__}: {error}')
-                  if attempt < 3:
-                      time.sleep(5)
-          sys.exit('SSH network connection failed before authentication or deployment.')
-          PY
+        run: node scripts/check-deploy-ssh.mjs

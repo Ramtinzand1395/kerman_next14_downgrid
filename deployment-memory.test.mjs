@@ -30,10 +30,17 @@ test('production waits for the full validation job and builds only its validated
   assert.ok(validate.jobs.validate.steps.some(step => step.run === 'npx tsc --noEmit'));
   assert.ok(validate.jobs.validate.steps.some(step => step.run === 'npm run build'));
   assert.ok(validate.jobs.validate.steps.some(step => step.run === 'npm test'));
-  const ssh = deploy.jobs.deploy.steps[0];
+  const ssh = deploy.jobs.deploy.steps.find(step => step.uses?.startsWith('appleboy/ssh-action@'));
   assert.equal(ssh.env.DEPLOY_COMMIT, '${{ github.sha }}');
   assert.equal(ssh.with.envs, 'DEPLOY_COMMIT');
   assert.ok(ssh.with.script.includes('git reset --hard "$DEPLOY_COMMIT"'));
   assert.ok(ssh.with.script.includes('NEXT_DEPLOY_VALIDATED_SHA="$DEPLOY_COMMIT" npm run build'));
   assert.equal(deploy.concurrency['cancel-in-progress'], false);
+  const probeIndex = deploy.jobs.deploy.steps.findIndex(step => step.run === 'node scripts/check-deploy-ssh.mjs');
+  const sshIndex = deploy.jobs.deploy.steps.indexOf(ssh);
+  assert.ok(probeIndex >= 0 && probeIndex < sshIndex);
+  assert.equal(deploy.jobs.deploy.steps[probeIndex].env.SSH_PORT, ssh.with.port);
+  assert.equal(ssh.with.timeout, '90s');
+  assert.deepEqual(deploy.on.push.branches, ['main']);
+  assert.equal(deploy.on.pull_request, undefined);
 });

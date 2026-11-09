@@ -18,9 +18,17 @@ jobs:
 
   deploy:
     needs: validate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
 
     steps:
+      - uses: actions/checkout@v4
+      - name: Check SSH network before deployment
+        env:
+          SSH_HOST: ${{ secrets.SERVER_HOST }}
+          SSH_PORT: ${{ secrets.SERVER_PORT || '22' }}
+        run: node scripts/check-deploy-ssh.mjs
+
       - name: Deploy to production server
         uses: appleboy/ssh-action@v1.2.3
         env:
@@ -28,8 +36,10 @@ jobs:
         with:
           envs: DEPLOY_COMMIT
           host: ${{ secrets.SERVER_HOST }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
           username: ${{ secrets.SERVER_USERS }}
           key: ${{ secrets.PRIVATE_KEY }}
+          timeout: 90s
           command_timeout: 15m
           script: |
             set -e
