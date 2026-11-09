@@ -85,7 +85,6 @@ export type ProfileFormPayload = {
   username: string;
   gender?: string;
   birthday?: string;
-  nationalCode?: string;
   email: string;
   mobile: string;
   newsletter: boolean;
@@ -102,7 +101,6 @@ interface User {
   newsletter: boolean;
   gender?: string;
   birthday?: string;
-  nationalCode?: number;
   createdAt: string | Date;
   updatedAt: string | Date;
   addresses: Address;

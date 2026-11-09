@@ -26,7 +26,9 @@ export async function GET() {
     if (!session?.user?.mobile) {
       return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
     }
-    const user = await User.findOne({ mobile: session.user.mobile });
+    const user = await User.findOne({ mobile: session.user.mobile }).select(
+      "_id username email mobile role newsletter gender birthday createdAt updatedAt",
+    );
 
     if (!user) {
       return NextResponse.json(
@@ -81,10 +83,15 @@ export async function PUT(req: NextRequest) {
         email: data.email,
         gender: data.gender,
         birthday: birthdayGregorian,
-        nationalCode: data.nationalCode,
         newsletter: data.newsletter,
       },
-    { returnDocument: 'after' },
+      {
+        returnDocument: "after",
+        projection: {
+          _id: 1, username: 1, email: 1, mobile: 1, role: 1, newsletter: 1,
+          gender: 1, birthday: 1, createdAt: 1, updatedAt: 1,
+        },
+      },
     );
 
     if (!updatedUser) {
