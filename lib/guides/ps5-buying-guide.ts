@@ -1,7 +1,7 @@
 import type { BuyingGuide, GuideSection } from "./types";
 
 export const PS5_GUIDE_PATH = "/guides/ps5-buying-guide";
-export const PS5_PRODUCTS_PATH =
+const PS5_PRODUCTS_PATH =
   "/category/consoles?tag=ps5";
 export const PRODUCTION_SITE_URL = "https://kermanatari.ir";
 
@@ -73,7 +73,7 @@ const sectionsPartOne: GuideSection[] = [
       {
         type: "figure",
         image: {
-          src: "/White PS5 console with controller on blue-2.png",
+          src: "/White PS5 console with controller on blue-2.webp",
           alt: "کنسول سفید PS5 و دسته DualSense",
           caption:
             "تصویر، فرم کلی PS5 را نشان می‌دهد؛ برای تشخیص استاندارد، Slim یا Pro به شماره مدل روی دستگاه و جعبه تکیه کنید.",
@@ -164,7 +164,7 @@ const sectionsPartTwo: GuideSection[] = [
       {
         type: "figure",
         image: {
-          src: "/White controller on blue repair bench-3.png",
+          src: "/White controller on blue repair bench-3.webp",
           alt: "دسته سفید پلی استیشن روی میز فنی",
           caption:
             "در خرید کارکرده، سلامت آنالوگ‌ها، تریگرها، باتری و درگاه USB دسته را جداگانه آزمایش کنید.",
@@ -297,7 +297,7 @@ export const ps5BuyingGuide: BuyingGuide = {
   productsEmptyMessage: "در حال حاضر کنسول PS5 منتشرشده‌ای در این فیلتر پیدا نشد.",
   faqTitle: "پرسش‌های متداول راهنمای خرید PS5",
   heroImage: {
-    src: "/PS5 Hero Banner with Game Cases-1.png",
+    src: "/PS5 Hero Banner with Game Cases-1.webp",
     alt: "کنسول PS5 کنار دسته و بازی‌ها",
     caption:
       "نوع خرید بازی و نمایشگر شما، بیشتر از ظاهر بدنه در انتخاب مدل PS5 اثر دارد.",

@@ -93,7 +93,7 @@ export async function PUT(
     const category = await Category.findByIdAndUpdate(
       params.id,
       { $set: parsed.data },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     ).lean();
     if (!category)
       return NextResponse.json(

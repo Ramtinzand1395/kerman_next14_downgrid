@@ -95,7 +95,7 @@ const VariantSelectorSchema = new Schema(
   { _id: false },
 );
 
-export const VariantSchema = new Schema({
+const VariantSchema = new Schema({
   title: { type: String, required: true, trim: true },
   sku: { type: String, default: null, trim: true },
   barcode: { type: String, default: null, trim: true },

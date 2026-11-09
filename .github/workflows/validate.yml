@@ -20,6 +20,7 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - run: npm run audit:assets
       - run: npm test
       - run: npx tsc --noEmit
       - run: npm run build

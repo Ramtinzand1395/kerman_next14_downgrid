@@ -47,9 +47,9 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/banner_1.webp",
-        width: 1200,
-        height: 630,
+        url: "/about-us.webp",
+        width: 1536,
+        height: 1024,
         alt: "ارتباط با فروشگاه کرمان آتاری",
       },
     ],
@@ -59,7 +59,7 @@ export const metadata: Metadata = {
     title: "تماس با ما | کرمان آتاری",
     description:
       "ارتباط سریع با پشتیبانی کرمان آتاری برای خرید بازی، کنسول و لوازم جانبی گیمینگ.",
-    images: ["/banner_1.webp"],
+    images: ["/about-us.webp"],
   },
   robots: {
     index: true,
@@ -91,7 +91,7 @@ export default function ContactUsPage({
     "@type": "Store",
     name: "کرمان آتاری",
     url: toAbsoluteUrl("/contact-us"),
-    image: toAbsoluteUrl("/banner_1.webp"),
+    image: toAbsoluteUrl("/about-us.webp"),
     telephone: "+989383077225",
     email: "info@kermanatari.ir",
     address: {

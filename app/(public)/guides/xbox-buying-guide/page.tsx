@@ -17,7 +17,7 @@ import { getGuideReadingMinutes } from "@/lib/guides/reading-time";
 export const dynamic = "force-dynamic";
 
 const canonicalUrl = `${XBOX_PRODUCTION_SITE_URL}${XBOX_GUIDE_PATH}`;
-const socialImage = `${XBOX_PRODUCTION_SITE_URL}/guides/xbox/series-x-and-s.jpg`;
+const socialImage = `${XBOX_PRODUCTION_SITE_URL}/guides/xbox/series-x-and-s.webp`;
 
 export const metadata: Metadata = {
   title: xboxBuyingGuide.seoTitle,

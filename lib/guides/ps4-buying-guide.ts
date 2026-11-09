@@ -1,7 +1,7 @@
 import type { BuyingGuide, GuideSection } from "./types";
 
 export const PS4_GUIDE_PATH = "/guides/ps4-buying-guide";
-export const PS4_PRODUCTS_PATH =
+const PS4_PRODUCTS_PATH =
   "/category/consoles?tag=ps4";
 export const PRODUCTION_SITE_URL = "https://kermanatari.ir";
 
@@ -73,7 +73,7 @@ const sections: GuideSection[] = [
       {
         type: "figure",
         image: {
-          src: "/guides/ps4/ps4-slim.jpg",
+          src: "/guides/ps4/ps4-slim.webp",
           alt: "کنسول PS4 Slim مشکی همراه دسته DualShock 4",
           caption: "PS4 Slim با طراحی دوطبقه و گوشه‌های گرد؛ عکس Kskhh در Wikimedia Commons، بدون تغییر، با مجوز CC BY-SA 4.0؛ لینک مجوز در منابع آمده است.",
           aspect: "4/3",
@@ -83,7 +83,7 @@ const sections: GuideSection[] = [
       {
         type: "figure",
         image: {
-          src: "/guides/ps4/ps4-pro.png",
+          src: "/guides/ps4/ps4-pro.webp",
           alt: "کنسول سه‌طبقه PS4 Pro مشکی",
           caption: "PS4 Pro با طراحی سه‌طبقه قابل‌تشخیص است؛ عکس Evan-Amos در Wikimedia Commons و منتشرشده در مالکیت عمومی.",
           aspect: "16/9",
@@ -333,7 +333,7 @@ export const ps4BuyingGuide: BuyingGuide = {
   productsEmptyMessage: "در حال حاضر کنسول PS4 منتشرشده‌ای در این فیلتر پیدا نشد؛ لوازم جانبی به‌جای کنسول نمایش داده نمی‌شوند.",
   faqTitle: "پرسش‌های متداول راهنمای خرید PS4",
   heroImage: {
-    src: "/guides/ps4/ps4-fat-dualshock.jpg",
+    src: "/guides/ps4/ps4-fat-dualshock.webp",
     alt: "کنسول اصلی PS4 مدل Fat همراه دسته DualShock 4",
     caption: "PS4 اصلی یا Fat همراه DualShock 4؛ عکس Evan-Amos در Wikimedia Commons و منتشرشده در مالکیت عمومی.",
     aspect: "4/3",

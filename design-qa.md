@@ -9,21 +9,15 @@
 
 ## States and evidence
 
-Landing slider:
+The original desktop and mobile review screenshots were removed from the working
+source tree during the 2026-11-09 cleanup. They remain available in Git history
+before this cleanup; new captures belong in the ignored `artifacts/banner-qa/`.
 
-- Desktop game-install state: `artifacts/banner-qa/landing-desktop-game-final.png`
-- Desktop Inosuke state: `artifacts/banner-qa/landing-desktop-inosuke-final.png`
-- Mobile game-install state: `artifacts/banner-qa/landing-mobile-game.png`
-- Verified all five slide images, CTA labels and destinations, 6-second autoplay, pause/resume, reduced-motion behavior, swipe, keyboard controls, and no horizontal overflow.
-
-Product-art slider:
-
-- Desktop Ezio state: `artifacts/banner-qa/products-desktop-ezio-final.png`
-- Mobile Ezio: `artifacts/banner-qa/products-mobile-ezio-final.png`
-- Mobile anime: `artifacts/banner-qa/products-mobile-anime-final.png`
-- Mobile Devil Jin: `artifacts/banner-qa/products-mobile-devil-jin-final.png`
-- Mobile skull soldier: `artifacts/banner-qa/products-mobile-skull-final.png`
-- Verified all four states, arrow keys, previous/next buttons, indicators, swipe, no autoplay, no links/CTAs, preserved product search/filter/sort/pagination behavior, and no horizontal overflow.
+- Landing: all five slides, CTA labels and destinations, 6-second autoplay,
+  pause/resume, reduced motion, swipe, keyboard controls and horizontal overflow
+  were checked in the original review.
+- Product art: all four slides, arrow keys, navigation buttons, indicators, swipe,
+  preserved search/filter/sort/pagination and horizontal overflow were checked.
 
 ## Accessibility and runtime checks
 

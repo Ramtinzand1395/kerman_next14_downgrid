@@ -174,7 +174,7 @@ export async function createCampaign(input: {
   return NotificationCampaign.findById(campaign._id).lean();
 }
 
-export async function campaignStats(campaignIds: mongoose.Types.ObjectId[]) {
+async function campaignStats(campaignIds: mongoose.Types.ObjectId[]) {
   if (!campaignIds.length) return new Map<string, Record<string, number>>();
   const rows = await NotificationDelivery.aggregate([
     { $match: { campaignId: { $in: campaignIds } } },

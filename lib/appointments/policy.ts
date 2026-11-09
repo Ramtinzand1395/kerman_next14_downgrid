@@ -12,8 +12,8 @@ export const APPOINTMENT_STATUSES = [
 export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
 export type ServiceType = "game_install" | "repair";
 
-export const GAME_INSTALL_DEVICE_IDS = ["ps5", "ps4", "xbox"] as const;
-export const LEGACY_REPAIR_DEVICE_IDS = ["ps2", "ps1"] as const;
+const GAME_INSTALL_DEVICE_IDS = ["ps5", "ps4", "xbox"] as const;
+const LEGACY_REPAIR_DEVICE_IDS = ["ps2", "ps1"] as const;
 
 export function supportedDevicesForService(
   serviceType: ServiceType,

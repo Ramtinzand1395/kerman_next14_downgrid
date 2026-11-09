@@ -68,7 +68,7 @@ function aggregateKeyToDate(key: string) {
   });
 }
 
-export function createEmptyReportPoints(range: ReportRange): ReportPoint[] {
+function createEmptyReportPoints(range: ReportRange): ReportPoint[] {
   return range.buckets.map((bucket) => ({
     key: bucket.key,
     label: bucket.label,

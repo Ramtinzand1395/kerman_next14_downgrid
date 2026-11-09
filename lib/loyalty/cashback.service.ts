@@ -29,7 +29,7 @@ export interface CashbackResult {
 // Calculate Cashback
 // ============================
 
-export async function calculateCashback(
+async function calculateCashback(
   input: CashbackCalcInput,
 ): Promise<CashbackResult> {
   const settings = await getSettings();

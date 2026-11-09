@@ -22,7 +22,7 @@ import {
 const REWARD_LOCK_MS = 2 * 60_000;
 
 /** ساخت کد دعوت خوانا و یکتا: KA-XXXXXX */
-export function generateReferralCode(): string {
+function generateReferralCode(): string {
   return `KA-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
 }
 

@@ -15,7 +15,7 @@ export function isValidPosTokenFormat(token: string): boolean {
   return TOKEN_PATTERN.test(token);
 }
 
-export function getPosTokenPepper(): string {
+function getPosTokenPepper(): string {
   const pepper = process.env.POS_TOKEN_PEPPER?.trim();
   if (!pepper || Buffer.byteLength(pepper, "utf8") < 32) {
     throw new Error("POS_TOKEN_PEPPER must contain at least 32 bytes");

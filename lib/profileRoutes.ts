@@ -1,4 +1,4 @@
-export const PROFILE_STEPS = {
+const PROFILE_STEPS = {
   profile: 1,
   favorites: 2,
   addresses: 3,

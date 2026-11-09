@@ -34,14 +34,14 @@ async function consumeFixedWindow(
     state = await PrinterRateLimit.findOneAndUpdate(
       filter,
       { $inc: { count: 1 }, $setOnInsert: { expiresAt } },
-      { upsert: true, new: true, setDefaultsOnInsert: true },
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
     ).lean();
   } catch (error: unknown) {
     if ((error as { code?: number })?.code !== 11000) throw error;
     state = await PrinterRateLimit.findOneAndUpdate(
       filter,
       { $inc: { count: 1 } },
-      { new: true },
+      { returnDocument: "after" },
     ).lean();
   }
 

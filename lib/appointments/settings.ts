@@ -27,7 +27,7 @@ export function tehranDateKey(date: Date) {
   return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
-export function weekdayForTehranDate(date: string) {
+function weekdayForTehranDate(date: string) {
   return new Date(`${date}T12:00:00+03:30`).getUTCDay();
 }
 

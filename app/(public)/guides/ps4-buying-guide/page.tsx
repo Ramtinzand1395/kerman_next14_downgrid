@@ -17,7 +17,7 @@ import { getGuideReadingMinutes } from "@/lib/guides/reading-time";
 export const dynamic = "force-dynamic";
 
 const canonicalUrl = `${PRODUCTION_SITE_URL}${PS4_GUIDE_PATH}`;
-const socialImage = `${PRODUCTION_SITE_URL}/guides/ps4/ps4-fat-dualshock.jpg`;
+const socialImage = `${PRODUCTION_SITE_URL}/guides/ps4/ps4-fat-dualshock.webp`;
 
 export const metadata: Metadata = {
   title: ps4BuyingGuide.seoTitle,

@@ -210,8 +210,11 @@ export default function Footer() {
               <a
                 referrerPolicy="origin"
                 target="_blank"
+                rel="noopener noreferrer"
                 href="https://trustseal.enamad.ir/?id=548723&Code=UJmsLirlKx1oaaJJZOS0H4Gcbq9qPU8Q"
               >
+                {/* The trust seal provider requires a direct request with the site's referrer. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   referrerPolicy="origin"
                   src="https://trustseal.enamad.ir/logo.aspx?id=548723&Code=UJmsLirlKx1oaaJJZOS0H4Gcbq9qPU8Q"

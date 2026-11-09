@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { ObjectId, type Collection, type Filter } from "mongodb";
+import { acknowledgePrintJobCore, type PrintAckResult } from "./queue-core.ts";
 
 export type PrintRecoveryAction = "release_not_printed" | "mark_printed";
 
@@ -28,11 +29,6 @@ export type PrintQueueRecord = {
 };
 
 export type PrintQueueCollection = Collection<PrintQueueRecord>;
-
-export type PrintAckResult =
-  | { state: "completed"; alreadyProcessed: false }
-  | { state: "completed"; alreadyProcessed: true }
-  | { state: "not-found"; alreadyProcessed: false };
 
 const safelyQueuedFilter: Filter<PrintQueueRecord> = {
   assignedConsumerId: null,
@@ -85,31 +81,27 @@ export async function acknowledgeOwnedPrintJob(
   consumerId: string,
 ): Promise<PrintAckResult> {
   const _id = new ObjectId(jobId);
-  const completed = await collection.findOneAndUpdate(
-    {
-      _id,
-      assignedConsumerId: consumerId,
-      status: { $in: ["delivered", "pending"] },
-    },
-    {
-      $set: {
-        status: "completed",
-        completedAt: new Date(),
-        updatedAt: new Date(),
+  return acknowledgePrintJobCore(jobId, consumerId, {
+    completePending: () => collection.findOneAndUpdate(
+      {
+        _id,
+        assignedConsumerId: consumerId,
+        status: { $in: ["delivered", "pending"] },
       },
-    },
-    { returnDocument: "after", projection: { status: 1 } },
-  );
-  if (completed) return { state: "completed", alreadyProcessed: false };
-
-  const existing = await collection.findOne(
-    { _id, assignedConsumerId: consumerId },
-    { projection: { status: 1 } },
-  );
-  if (existing?.status === "completed") {
-    return { state: "completed", alreadyProcessed: true };
-  }
-  return { state: "not-found", alreadyProcessed: false };
+      {
+        $set: {
+          status: "completed",
+          completedAt: new Date(),
+          updatedAt: new Date(),
+        },
+      },
+      { returnDocument: "after", projection: { status: 1 } },
+    ),
+    findOwned: () => collection.findOne(
+      { _id, assignedConsumerId: consumerId },
+      { projection: { status: 1 } },
+    ),
+  });
 }
 
 export async function listPrintRecoveryCandidates(

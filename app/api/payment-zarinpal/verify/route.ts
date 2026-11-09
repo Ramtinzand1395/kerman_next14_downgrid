@@ -242,7 +242,7 @@ export async function GET(req: NextRequest) {
                   "gateway.refId": result?.data?.ref_id ?? null,
                 },
               },
-              { new: true, session: transactionSession },
+              { returnDocument: "after", session: transactionSession },
             );
             if (!transaction) {
               throw new Error("WALLET_CHARGE_STATE_CONFLICT");
@@ -251,7 +251,7 @@ export async function GET(req: NextRequest) {
             const updatedWallet = await Wallet.findOneAndUpdate(
               { user: temp.userId, isActive: { $ne: false } },
               { $inc: { balance: transaction.amount, version: 1 } },
-              { new: true, session: transactionSession },
+              { returnDocument: "after", session: transactionSession },
             );
             if (!updatedWallet) {
               throw new Error("WALLET_CHARGE_WALLET_UNAVAILABLE");

@@ -1,5 +1,5 @@
-export const NOTIFICATION_MAX_PAGE_SIZE = 50;
-export const NOTIFICATION_DEFAULT_PAGE_SIZE = 12;
+const NOTIFICATION_MAX_PAGE_SIZE = 50;
+const NOTIFICATION_DEFAULT_PAGE_SIZE = 12;
 
 export function normalizePage(value: unknown) {
   const parsed = Number(value);

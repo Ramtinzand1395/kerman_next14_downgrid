@@ -1,17 +1,8 @@
 import type { Metadata } from "next";
 import Sidebar from "./Sidebar";
 import Stepper from "./Stepper";
-import Profile from "./Profile";
-import FavoritesPage from "./Favorites";
-import MyAddresses from "./MyAddresses";
-import MyComments from "./MyComments";
-import MyOrdersTabs from "./MyOrdersTabs";
-import GameOrderSelector from "./GameOrderSelector";
-import MyWallet from "./MyWallet";
-import MyLoyalty from "./MyLoyalty";
-import SpinWheel from "./SpinWheel";
+import ProfileContent from "./ProfileContent";
 import { redirect } from "next/navigation";
-import ConversationCenter from "@/app/components/notifications/ConversationCenter";
 
 export const metadata: Metadata = {
   alternates: {
@@ -51,16 +42,7 @@ export default async function MyProfile({ searchParams }: MyProfilePageProps) {
           </div>
 
           <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50 p-3 md:p-5 shadow-sm min-h-[520px]">
-            {activeStep === 1 && <Profile />}
-            {activeStep === 2 && <FavoritesPage />}
-            {activeStep === 3 && <MyAddresses />}
-            {activeStep === 4 && <MyComments />}
-            {activeStep === 5 && <MyOrdersTabs />}
-            {activeStep === 6 && <GameOrderSelector initialFulfillment={initialFulfillment} />}
-            {activeStep === 8 && <MyWallet />}
-            {activeStep === 9 && <MyLoyalty />}
-            {activeStep === 10 && <SpinWheel />}
-            {activeStep === 11 && <ConversationCenter />}
+            <ProfileContent activeStep={activeStep} initialFulfillment={initialFulfillment} />
           </div>
         </section>
       </div>

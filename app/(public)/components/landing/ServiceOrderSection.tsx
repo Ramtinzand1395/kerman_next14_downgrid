@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   MapPin,
   Phone,
-  ShoppingCart,
   Truck,
   UsersRound,
   Zap,
@@ -23,19 +22,19 @@ const steps = [
     number: "۱",
     title: "انتخاب خدمت",
     description: "نصب بازی یا تعمیرات را مشخص کن",
-    image: ASSET_ROOT + "/Royal Blue Document Cursor Icon-3.png",
+    image: ASSET_ROOT + "/Royal Blue Document Cursor Icon-3.webp",
   },
   {
     number: "۲",
     title: "انتخاب روش دریافت",
     description: "روش دریافت خدمات را انتخاب کن",
-    image: ASSET_ROOT + "/Cobalt blue arrow signpost icon-4.png",
+    image: ASSET_ROOT + "/Cobalt blue arrow signpost icon-4.webp",
   },
   {
     number: "۳",
     title: "ثبت اطلاعات و زمان",
     description: "اطلاعات لازم را کامل کن و زمان را ثبت کن",
-    image: ASSET_ROOT + "/Cobalt calendar and clock icon-5.png",
+    image: ASSET_ROOT + "/Cobalt calendar and clock icon-5.webp",
   },
 ];
 const cardVariants = {
@@ -94,7 +93,7 @@ export default function ServiceOrderSection({
       />
       <div className="pointer-events-none absolute -left-10 -top-4 -z-10 hidden h-48 w-64 sm:block lg:h-60 lg:w-80">
         <Image
-          src={ASSET_ROOT + "/Cobalt blue DualSense controller cutout-6.png"}
+          src={ASSET_ROOT + "/Cobalt blue DualSense controller cutout-6.webp"}
           alt=""
           fill
           sizes="320px"
@@ -103,7 +102,7 @@ export default function ServiceOrderSection({
       </div>
       <div className="pointer-events-none absolute -right-8 -top-8 -z-10 hidden h-52 w-40 sm:block lg:h-64 lg:w-52">
         <Image
-          src={ASSET_ROOT + "/White PlayStation 5 with blue glow-7.png"}
+          src={ASSET_ROOT + "/White PlayStation 5 with blue glow-7.webp"}
           alt=""
           fill
           sizes="208px"
@@ -247,7 +246,7 @@ export default function ServiceOrderSection({
                 )}
               </div>
               <CardImage
-                src={ASSET_ROOT + "/Blue courier with gamepad box-2.png"}
+                src={ASSET_ROOT + "/Blue courier with gamepad box-2.webp"}
                 alt="پیک موتوری برای جابه‌جایی کنسول و لوازم"
                 position="object-[43%_center]"
               />
@@ -298,7 +297,7 @@ export default function ServiceOrderSection({
                 </Link>
               </div>
               <CardImage
-                src={ASSET_ROOT + "/Cobalt Gaming Storefront in Daylight-1.png"}
+                src={ASSET_ROOT + "/Cobalt Gaming Storefront in Daylight-1.webp"}
                 alt="نمای تزئینی فروشگاه تجهیزات گیمینگ"
                 position="object-center"
               />
@@ -319,7 +318,7 @@ function TitleOrnament() {
       <span className="h-px w-20 bg-gradient-to-l from-[#1269f5] to-transparent" />
       <span className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50">
         <Image
-          src={ASSET_ROOT + "/Cobalt blue DualSense controller cutout-6.png"}
+          src={ASSET_ROOT + "/Cobalt blue DualSense controller cutout-6.webp"}
           alt=""
           width={28}
           height={28}

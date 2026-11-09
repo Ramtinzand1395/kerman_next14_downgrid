@@ -19,7 +19,7 @@ export const NOTIFICATION_CATEGORIES = [
 ] as const;
 export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number];
 
-export const NOTIFICATION_TYPES = {
+const NOTIFICATION_TYPES = {
   ORDER_CREATED: "ORDER_CREATED",
   ORDER_CONFIRMED: "ORDER_CONFIRMED",
   ORDER_PROCESSING: "ORDER_PROCESSING",
@@ -49,5 +49,3 @@ export const NOTIFICATION_TYPES = {
 } as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[keyof typeof NOTIFICATION_TYPES];
-
-export const ADMIN_DATABASE_ROLES = ["admin", "superadmin"] as const;

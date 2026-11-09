@@ -1,5 +1,5 @@
-export const CATALOG_SNAPSHOT_DEFAULT_LIMIT = 100;
-export const CATALOG_SNAPSHOT_MAX_LIMIT = 200;
+const CATALOG_SNAPSHOT_DEFAULT_LIMIT = 100;
+const CATALOG_SNAPSHOT_MAX_LIMIT = 200;
 export const CATALOG_VISIBLE_MATCH = Object.freeze({
   status: "published" as const,
   deletedAt: null,
@@ -272,7 +272,7 @@ export function mapCatalogProduct(
   };
 }
 
-export function encodeCatalogCursor(productId: string): string {
+function encodeCatalogCursor(productId: string): string {
   if (!OBJECT_ID_PATTERN.test(productId)) {
     throw new CatalogPaginationError("Cursor product id is invalid");
   }
@@ -282,7 +282,7 @@ export function encodeCatalogCursor(productId: string): string {
   ).toString("base64url");
 }
 
-export function decodeCatalogCursor(cursor: string): string {
+function decodeCatalogCursor(cursor: string): string {
   if (!cursor || cursor.length > 256 || !/^[A-Za-z0-9_-]+$/.test(cursor)) {
     throw new CatalogPaginationError("Cursor is invalid");
   }
@@ -312,7 +312,7 @@ export function parseCatalogPagination(requestUrl: string): CatalogPagination {
       throw new CatalogPaginationError("Limit must be an integer");
     }
     limit = Number(rawLimit);
-    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 200) {
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > CATALOG_SNAPSHOT_MAX_LIMIT) {
       throw new CatalogPaginationError("Limit must be between 1 and 200");
     }
   }

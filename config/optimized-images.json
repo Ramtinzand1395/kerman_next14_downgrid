@@ -1,0 +1,146 @@
+[
+  {
+    "source": "/PS5 Hero Banner with Game Cases-1.png",
+    "destination": "/PS5 Hero Banner with Game Cases-1.webp",
+    "beforeBytes": 1514627,
+    "afterBytes": 95972,
+    "width": 2172,
+    "height": 724,
+    "alpha": false
+  },
+  {
+    "source": "/White PS5 console with controller on blue-2.png",
+    "destination": "/White PS5 console with controller on blue-2.webp",
+    "beforeBytes": 1502048,
+    "afterBytes": 81130,
+    "width": 2172,
+    "height": 724,
+    "alpha": false
+  },
+  {
+    "source": "/White controller on blue repair bench-3.png",
+    "destination": "/White controller on blue repair bench-3.webp",
+    "beforeBytes": 2109831,
+    "afterBytes": 174856,
+    "width": 1862,
+    "height": 845,
+    "alpha": false
+  },
+  {
+    "source": "/guides/ps4/ps4-fat-dualshock.jpg",
+    "destination": "/guides/ps4/ps4-fat-dualshock.webp",
+    "beforeBytes": 152224,
+    "afterBytes": 105646,
+    "width": 1920,
+    "height": 960,
+    "alpha": false
+  },
+  {
+    "source": "/guides/ps4/ps4-pro.png",
+    "destination": "/guides/ps4/ps4-pro.webp",
+    "beforeBytes": 893441,
+    "afterBytes": 58874,
+    "width": 1920,
+    "height": 1170,
+    "alpha": true
+  },
+  {
+    "source": "/guides/ps4/ps4-slim.jpg",
+    "destination": "/guides/ps4/ps4-slim.webp",
+    "beforeBytes": 458304,
+    "afterBytes": 346688,
+    "width": 1920,
+    "height": 1440,
+    "alpha": false
+  },
+  {
+    "source": "/guides/xbox/series-s-with-controller.jpg",
+    "destination": "/guides/xbox/series-s-with-controller.webp",
+    "beforeBytes": 291875,
+    "afterBytes": 250812,
+    "width": 1280,
+    "height": 1280,
+    "alpha": false
+  },
+  {
+    "source": "/guides/xbox/series-x-and-s.jpg",
+    "destination": "/guides/xbox/series-x-and-s.webp",
+    "beforeBytes": 312320,
+    "afterBytes": 102204,
+    "width": 1920,
+    "height": 1254,
+    "alpha": false
+  },
+  {
+    "source": "/guides/xbox/series-x-with-controller.jpg",
+    "destination": "/guides/xbox/series-x-with-controller.webp",
+    "beforeBytes": 607044,
+    "afterBytes": 402472,
+    "width": 1920,
+    "height": 2253,
+    "alpha": false
+  },
+  {
+    "source": "/service-order/Blue courier with gamepad box-2.png",
+    "destination": "/service-order/Blue courier with gamepad box-2.webp",
+    "beforeBytes": 2052374,
+    "afterBytes": 190554,
+    "width": 1536,
+    "height": 1024,
+    "alpha": false
+  },
+  {
+    "source": "/service-order/Cobalt Gaming Storefront in Daylight-1.png",
+    "destination": "/service-order/Cobalt Gaming Storefront in Daylight-1.webp",
+    "beforeBytes": 2488995,
+    "afterBytes": 307106,
+    "width": 1536,
+    "height": 1024,
+    "alpha": false
+  },
+  {
+    "source": "/service-order/Cobalt blue DualSense controller cutout-6.png",
+    "destination": "/service-order/Cobalt blue DualSense controller cutout-6.webp",
+    "beforeBytes": 1840529,
+    "afterBytes": 129134,
+    "width": 1536,
+    "height": 1024,
+    "alpha": true
+  },
+  {
+    "source": "/service-order/Cobalt blue arrow signpost icon-4.png",
+    "destination": "/service-order/Cobalt blue arrow signpost icon-4.webp",
+    "beforeBytes": 372794,
+    "afterBytes": 49758,
+    "width": 1254,
+    "height": 1254,
+    "alpha": true
+  },
+  {
+    "source": "/service-order/Cobalt calendar and clock icon-5.png",
+    "destination": "/service-order/Cobalt calendar and clock icon-5.webp",
+    "beforeBytes": 599386,
+    "afterBytes": 62410,
+    "width": 1254,
+    "height": 1254,
+    "alpha": true
+  },
+  {
+    "source": "/service-order/Royal Blue Document Cursor Icon-3.png",
+    "destination": "/service-order/Royal Blue Document Cursor Icon-3.webp",
+    "beforeBytes": 626382,
+    "afterBytes": 60582,
+    "width": 1254,
+    "height": 1254,
+    "alpha": true
+  },
+  {
+    "source": "/service-order/White PlayStation 5 with blue glow-7.png",
+    "destination": "/service-order/White PlayStation 5 with blue glow-7.webp",
+    "beforeBytes": 598728,
+    "afterBytes": 64924,
+    "width": 1378,
+    "height": 1142,
+    "alpha": true
+  }
+]

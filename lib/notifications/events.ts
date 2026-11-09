@@ -101,33 +101,6 @@ export async function notifyPaymentFailed(input: {
   ]);
 }
 
-export async function notifyPaymentReviewRequired(input: {
-  userId: string | mongoose.Types.ObjectId;
-  paymentId: string;
-}) {
-  await Promise.all([
-    notifyUser({
-      userId: input.userId,
-      title: "پرداخت در حال بررسی است",
-      message: "نتیجه پرداخت شما قطعی نشده است. پشتیبانی وضعیت تراکنش را بررسی می‌کند.",
-      type: "PAYMENT_REVIEW_REQUIRED",
-      category: "payment",
-      link: "/payment-pending",
-      priority: "high",
-      eventKey: `PAYMENT_REVIEW_REQUIRED:${input.paymentId}`,
-    }),
-    notifyAdmins({
-      title: "پرداخت نیازمند بررسی",
-      message: `پرداخت با شناسه ${input.paymentId} در وضعیت نامشخص قرار دارد.`,
-      type: "PAYMENT_REVIEW_REQUIRED",
-      category: "payment",
-      link: "/dashboard/orders",
-      priority: "urgent",
-      eventKey: `ADMIN_PAYMENT_REVIEW_REQUIRED:${input.paymentId}`,
-    }),
-  ]);
-}
-
 export async function notifyLowInventory(productIds: Array<string | mongoose.Types.ObjectId>) {
   const ids = [...new Set(productIds.map(String))];
   if (!ids.length) return;

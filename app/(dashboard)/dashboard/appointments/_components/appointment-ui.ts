@@ -35,14 +35,6 @@ export const statusTone: Record<AppointmentStatus, string> = {
   rejected: "bg-rose-50 text-rose-800 ring-rose-200",
 };
 
-export const appointmentTransitions: Partial<
-  Record<AppointmentStatus, AppointmentStatus[]>
-> = {
-  pending: ["confirmed", "rejected", "cancelled"],
-  confirmed: ["completed", "cancelled", "no_show", "rejected"],
-  completed: ["confirmed"],
-};
-
 export const courierLabel: Record<CourierStatus, string> = {
   pending: "در انتظار قیمت‌گذاری و اعزام",
   scheduled: "زمان‌بندی شد",

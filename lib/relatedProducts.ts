@@ -28,7 +28,7 @@ function isNonNegativeSafeInteger(value: unknown): value is number {
   );
 }
 
-export function isRelatedProduct(value: unknown): value is RelatedProduct {
+function isRelatedProduct(value: unknown): value is RelatedProduct {
   if (typeof value !== "object" || value === null) return false;
 
   const product = value as Record<string, unknown>;

@@ -46,7 +46,7 @@ function objectId(value?: string | mongoose.Types.ObjectId | null) {
   return typeof value === "string" ? new mongoose.Types.ObjectId(value) : value;
 }
 
-export function recipientQuery(recipientId: string, recipientRole: NotificationRecipientRole) {
+function recipientQuery(recipientId: string, recipientRole: NotificationRecipientRole) {
   const id = objectId(recipientId);
   const canonical = {
     recipientRole,
@@ -171,7 +171,7 @@ function buildOptionFilters(options: NotificationListOptions) {
   return filters;
 }
 
-export async function createNotification(input: CreateNotificationInput) {
+async function createNotification(input: CreateNotificationInput) {
   await dbConnect();
   const recipientId = objectId(input.recipientId);
   if (input.recipientRole === "USER" && !recipientId) {
@@ -215,22 +215,11 @@ export function notifyUser(input: Omit<CreateNotificationInput, "recipientRole" 
   return createNotification({ ...input, recipientRole: "USER", recipientId: input.userId });
 }
 
-export function notifyAdmin(input: Omit<CreateNotificationInput, "recipientRole" | "recipientId"> & { adminId: string | mongoose.Types.ObjectId }) {
-  return createNotification({ ...input, recipientRole: "ADMIN", recipientId: input.adminId });
-}
-
 export async function notifyAdmins(input: Omit<CreateNotificationInput, "recipientRole" | "recipientId">) {
   // اعلان مدیریتی یک رویداد مشترک است و فقط یک بار ذخیره می‌شود.
   // همه مدیران آن را از طریق recipientRole می‌بینند.
   return createNotification({ ...input, recipientRole: "ADMIN", recipientId: null });
 }
-
-export const notify = {
-  create: createNotification,
-  user: notifyUser,
-  admin: notifyAdmin,
-  allAdmins: notifyAdmins,
-};
 
 export async function getNotifications(recipientId: string, recipientRole: NotificationRecipientRole, options: NotificationListOptions = {}) {
   await dbConnect();
@@ -310,7 +299,7 @@ export async function getOwnedNotification(notificationId: string, recipientId: 
   return Notification.findOne(ownershipQuery(notificationId, recipientId, recipientRole));
 }
 
-export async function archiveNotification(notificationId: string, recipientId: string, recipientRole: NotificationRecipientRole) {
+export async function deleteNotification(notificationId: string, recipientId: string, recipientRole: NotificationRecipientRole) {
   const notification = await getOwnedNotification(notificationId, recipientId, recipientRole);
   if (!notification) return null;
   const receipt = await NotificationReceipt.findOneAndUpdate(
@@ -320,8 +309,6 @@ export async function archiveNotification(notificationId: string, recipientId: s
   );
   return { ...notification.toObject(), archivedAt: receipt.archivedAt };
 }
-
-export const deleteNotification = archiveNotification;
 
 export async function setNotificationHandled(notificationId: string, recipientId: string, handled: boolean) {
   const notification = await getOwnedNotification(notificationId, recipientId, "ADMIN");

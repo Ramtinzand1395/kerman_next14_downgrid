@@ -6,8 +6,8 @@ import type {
   ServiceType,
 } from "@/types/appointments";
 
-export const APPOINTMENT_DRAFT_KEY = "appointment-wizard-draft:v2";
-export const APPOINTMENT_DRAFT_VERSION = 2;
+const APPOINTMENT_DRAFT_KEY = "appointment-wizard-draft:v2";
+const APPOINTMENT_DRAFT_VERSION = 2;
 const MAX_DRAFT_AGE_MS = 2 * 60 * 60 * 1000;
 
 export type AppointmentWizardDraft = {

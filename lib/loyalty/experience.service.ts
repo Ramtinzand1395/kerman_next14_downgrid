@@ -64,7 +64,7 @@ export function invalidateLevelsCache() {
 }
 
 /** سطح متناظر با یک مقدار XP */
-export function levelForXp(
+function levelForXp(
   xp: number,
   levels: { code: LevelCode; minXp: number }[],
 ): LevelCode {
@@ -74,7 +74,7 @@ export function levelForXp(
 }
 
 /** VIP متناظر با مجموع خرید — null یعنی هنوز VIP نیست */
-export function vipForPurchase(
+function vipForPurchase(
   totalPurchase: number,
   tiers: { code: VipTier; minTotalPurchase: number }[],
 ): VipTier | null {

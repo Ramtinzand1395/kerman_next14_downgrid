@@ -1,7 +1,7 @@
 import type { BuyingGuide, GuideSection } from "./types";
 
 export const XBOX_GUIDE_PATH = "/guides/xbox-buying-guide";
-export const XBOX_PRODUCTS_PATH =
+const XBOX_PRODUCTS_PATH =
   "/category/consoles?tag=xbox";
 export const XBOX_PRODUCTION_SITE_URL = "https://kermanatari.ir";
 
@@ -110,7 +110,7 @@ const sections: GuideSection[] = [
       {
         type: "figure",
         image: {
-          src: "/guides/xbox/series-x-and-s.jpg",
+          src: "/guides/xbox/series-x-and-s.webp",
           alt: "کنسول مشکی Xbox Series X و کنسول سفید Xbox Series S همراه کنترلرها",
           caption: "Series X در سمت چپ و Series S در سمت راست؛ تصویر ترکیبی از Ian Hughes و AsmodeanUnderscore با مجوز CC BY-SA 4.0.",
           aspect: "16/9",
@@ -189,7 +189,7 @@ const sections: GuideSection[] = [
       {
         type: "figure",
         image: {
-          src: "/guides/xbox/series-s-with-controller.jpg",
+          src: "/guides/xbox/series-s-with-controller.webp",
           alt: "کنسول سفید Xbox Series S ایستاده همراه کنترلر سفید",
           caption: "Xbox Series S بدون دیسک‌درایو است؛ تصویر AsmodeanUnderscore با مجوز CC BY-SA 4.0.",
           aspect: "4/3",
@@ -277,7 +277,7 @@ const sections: GuideSection[] = [
       {
         type: "figure",
         image: {
-          src: "/guides/xbox/series-x-with-controller.jpg",
+          src: "/guides/xbox/series-x-with-controller.webp",
           alt: "کنسول مشکی Xbox Series X دارای شکاف دیسک همراه کنترلر مشکی",
           caption: "نمونه Xbox Series X مشکی دارای درایو؛ همه نسخه‌های Series X دیسک‌خور نیستند. تصویر Der. Bellemer با مجوز CC BY-SA 4.0.",
           aspect: "4/3",
@@ -359,7 +359,7 @@ export const xboxBuyingGuide: BuyingGuide = {
     "در حال حاضر کنسول Xbox منتشرشده‌ای در این فیلتر پیدا نشد؛ کنترلر و لوازم جانبی به‌جای کنسول نمایش داده نمی‌شوند.",
   faqTitle: "پرسش‌های متداول راهنمای خرید Xbox",
   heroImage: {
-    src: "/guides/xbox/series-x-and-s.jpg",
+    src: "/guides/xbox/series-x-and-s.webp",
     alt: "مقایسه ظاهری Xbox Series X مشکی و Xbox Series S سفید همراه کنترلرها",
     caption:
       "Series X و Series S برای نیازهای متفاوت ساخته شده‌اند؛ دیسک، نمایشگر و فضای ذخیره‌سازی را پیش از قیمت مقایسه کنید.",

@@ -85,7 +85,7 @@ async function nextSequence(session: ClientSession) {
       $inc: { value: 1 },
       $setOnInsert: { key: POS_CATALOG_COUNTER_KEY },
     },
-    { upsert: true, new: true, session, setDefaultsOnInsert: false },
+    { upsert: true, returnDocument: "after", session, setDefaultsOnInsert: false },
   ).lean();
   const sequence = Number(counter?.value);
   if (!Number.isSafeInteger(sequence) || sequence < 1) {
@@ -325,7 +325,7 @@ export async function adjustProductInventoriesWithCatalogChange(
         const product = (await Product.findOneAndUpdate(
           filter,
           { $inc: increment },
-          { new: true, session, runValidators: true },
+          { returnDocument: "after", session, runValidators: true },
         )) as ProductDocument | null;
         if (!product) throw new InventoryAdjustmentUnavailableError();
 
@@ -368,11 +368,4 @@ export async function adjustProductInventoriesWithCatalogChange(
     }
     throw error;
   }
-}
-
-export async function adjustProductInventoryWithCatalogChange(
-  input: InventoryAdjustmentInput,
-) {
-  const products = await adjustProductInventoriesWithCatalogChange([input]);
-  return products?.[0] ?? null;
 }
