@@ -1,6 +1,6 @@
 # Catalog route and About-page SEO review — 9 November 2026
 
-Base: `origin/main` at `8e0498e`. Changes are isolated in `fix/catalog-routes-about-seo`.
+Started from `origin/main` at `8e0498e`; synchronized with `29e1be7` after PR #57 merged, preserving the new homepage banner, Instagram card, shipping copy and national-code removal. Changes are isolated in `fix/catalog-routes-about-seo`.
 
 ## Route contract
 
@@ -62,7 +62,7 @@ For a previously published product that is only temporarily unavailable, prefer 
 
 ## Verification
 
-- Full test suite: 256 passed, 3 intentionally skipped, 0 failed (259 total).
+- Full test suite: 260 passed, 3 intentionally skipped, 0 failed (263 total), after synchronizing main.
 - Category HTTP regression includes slug/ID/Persian/old-English redirects, encoded labels, filter preservation, default-sort indexing, pagination canonicals and real 404/500 responses, using controlled data.
 - TypeScript and production build passed; only the pre-existing footer `no-img-element` warning was observed.
 - Live route audit results are recorded below after completion. Live observations describe the deployed main version; branch corrections are verified locally and are not yet deployed.

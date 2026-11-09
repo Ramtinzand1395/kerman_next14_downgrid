@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
   CalendarDays,
-  CheckCircle2,
   CircleDashed,
   Mail,
   Phone,
@@ -28,7 +27,6 @@ export default function Profile() {
     username: "",
     gender: "",
     birthday: "",
-    nationalCode: "",
     email: "",
     mobile: "",
     newsletter: true,
@@ -50,7 +48,6 @@ export default function Profile() {
           username: user.username || "",
           gender: user.gender || "",
           birthday: user.birthday || "",
-          nationalCode: user.nationalCode || "",
           email: user.email || "",
           mobile: user.mobile || "",
           newsletter: user.newsletter ?? true,
@@ -70,7 +67,6 @@ export default function Profile() {
     { key: "mobile", label: "شماره موبایل", icon: Phone },
     { key: "gender", label: "جنسیت", icon: CircleDashed },
     { key: "birthday", label: "تاریخ تولد", icon: CalendarDays },
-    { key: "nationalCode", label: "کد ملی", icon: CheckCircle2 },
     { key: "newsletter", label: "خبرنامه", icon: Mail },
   ] as const;
 
@@ -208,8 +204,8 @@ export default function Profile() {
                 پیشنهاد سریع
               </h3>
               <p className="text-xs leading-6 text-slate-600">
-                برای تجربه بهتر خرید، ایمیل و کد ملی خود را تکمیل کنید تا فرآیند
-                پیگیری سفارش‌ها سریع‌تر انجام شود.
+                برای تکمیل اطلاعات حساب، نام کاربری و ایمیل خود را بررسی و
+                در صورت نیاز ویرایش کنید.
               </p>
             </>
           ) : (
