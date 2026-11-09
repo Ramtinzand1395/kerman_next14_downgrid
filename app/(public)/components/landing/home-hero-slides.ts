@@ -45,7 +45,7 @@ export const HOME_HERO_SLIDES: HeroSlide[] = [
     description: "طراحی و چاپ تابلو با هر طرحی که تو بخوای",
     primaryCta: {
       label: "دیدن تابلوها",
-      href: "/products?category=gaming-wall-art&sort=newest&page=1",
+      href: "/category/gaming-wall-art",
     },
     accent: "#4ad8ff",
     panel: "#071827",
@@ -96,7 +96,7 @@ export const HOME_HERO_SLIDES: HeroSlide[] = [
     description: "لوازم موردنیازت رو برای تجربه بهتر پیدا کن",
     primaryCta: {
       label: "دیدن لوازم جانبی",
-      href: "/products?category=gaming-accessories&sort=newest&page=1",
+      href: "/category/gaming-accessories",
     },
     accent: "#62e4ff",
     panel: "#061b44",

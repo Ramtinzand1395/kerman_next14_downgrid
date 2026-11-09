@@ -10,7 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { categories } from "../../constants/categories";
+import { categories, categoryMenuHref } from "../../constants/categories";
 import type { ProductTagFacet } from "@/types";
 import { useProductNavigation } from "./ProductNavigation";
 
@@ -134,7 +134,7 @@ export default function FilterProducts({ tags }: FilterProductsProps) {
               >
                 <div className="flex items-center gap-2">
                   <Link
-                    href={`/category/${encodeURIComponent(cat.slug)}`}
+                    href={categoryMenuHref(cat.slug)}
                     className={`block flex-1 rounded-lg px-3 py-2 text-right text-sm font-semibold transition-colors ${
                       isActiveParent
                         ? "bg-blue-600 text-white"
@@ -163,9 +163,9 @@ export default function FilterProducts({ tags }: FilterProductsProps) {
                     {cat.subcategories.map((sub) => {
                       const isActive = isCatActive(sub.slug);
                       return (
-                        <li key={sub.slug}>
+                        <li key={`${sub.slug}-${sub.name}`}>
                           <Link
-                            href={`/category/${encodeURIComponent(sub.slug)}`}
+                            href={categoryMenuHref(sub.slug)}
                             className={`block w-full rounded-lg px-3 py-2 text-right text-sm transition-colors ${
                               isActive
                                 ? "bg-blue-100 font-semibold text-blue-700"

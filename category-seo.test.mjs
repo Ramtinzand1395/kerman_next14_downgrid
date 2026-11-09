@@ -40,6 +40,14 @@ test('filters cannot override category; pagination has its own canonical and fil
   assert.equal(seo.parseCatalogQuery({ page: '999999999999999999999' }).page, 1);
   assert.equal(seo.catalogQueryString({ ...q, q: 'قاب & طرح' }), 'q=%D9%82%D8%A7%D8%A8+%26+%D8%B7%D8%B1%D8%AD&page=2');
 });
+test('legacy category names, encoded labels and IDs resolve to one current slug without accepting paths', () => {
+  for (const value of ['Gaming Wall Art', 'GAMING-WALL-ART', 'تابلو گیمینگ', rows[1]._id, 'Gaming%20Wall%20Art', 'Gaming%2520Wall%2520Art']) {
+    assert.equal(seo.resolveLegacyCategory(value, rows)?.slug, 'gaming-wall-art', value);
+  }
+  for (const value of ['../gaming-wall-art', 'https://example.com', '%ZZ', '%2Fgaming-wall-art', ['gaming-wall-art'], null]) {
+    assert.equal(seo.resolveLegacyCategory(value, rows), null);
+  }
+});
 test('SEO overrides are optional and Persian family-specific guides are available', () => {
   assert.match(seo.categoryContent(rows[1], [rows[0]]).guide, /شاسی/);
   const custom = seo.categoryContent({ ...rows[1], seoTitle: 'عنوان دلخواه', introduction: 'معرفی' }, [rows[0]]);

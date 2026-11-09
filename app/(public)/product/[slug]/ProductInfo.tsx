@@ -49,7 +49,7 @@ export const ProductInfo = ({ product: propProduct }: ProductInfoProps) => {
         <span className="text-gray-300">/</span>
         {product.category?._id && (
           <Link
-            href={`/products?category=${product.category._id}`}
+            href={`/category/${encodeURIComponent(product.category.slug)}`}
             className="hover:underline"
           >
             {product.category.name}

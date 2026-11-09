@@ -38,6 +38,26 @@ export function decodeCategorySlug(value: string): string | null {
 export function categoryHref(slug: string) {
   return `/category/${encodeURIComponent(slug)}`;
 }
+// Legacy links used database IDs, Persian names and English labels with spaces.
+// Resolve those against the current catalog without relaxing route-slug rules.
+export function resolveLegacyCategory(value: unknown, rows: CategoryRow[]) {
+  if (typeof value !== "string" || value.length > 300) return null;
+  let decoded = value.trim();
+  try {
+    for (let pass = 0; pass < 3 && /%[0-9a-f]{2}/i.test(decoded); pass++)
+      decoded = decodeURIComponent(decoded);
+  } catch {
+    return null;
+  }
+  if (!decoded || /[\/\\?#%\u0000-\u001f]/.test(decoded)) return null;
+  const exact = rows.find(
+    (row) => row._id === decoded || row.slug === decoded || row.name === decoded,
+  );
+  if (exact) return exact;
+  const normalized = decoded.toLowerCase().replace(/\s+/g, "-");
+  const matches = rows.filter((row) => row.slug.toLowerCase() === normalized);
+  return matches.length === 1 ? matches[0] : null;
+}
 export function categoryAncestors(
   category: CategoryRow,
   rows: CategoryRow[],
