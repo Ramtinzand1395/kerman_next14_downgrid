@@ -83,6 +83,15 @@ test('Persian and encoded legacy slugs deduplicate with accurate lastmod and val
   assert.ok(!xml.includes('Invalid Date'));
 });
 
+test('sitemap encodes legacy product slugs as single URL segments', async () => {
+  const sitemap = loadSitemap({ products: [
+    { slug: 'Dragon Katana & Red Moon', status: 'published' },
+  ] });
+  const entries = await sitemap.default();
+  const xml = resolveRouteData(entries, 'sitemap');
+  assert.ok(xml.includes('<loc>https://kermanatari.ir/product/Dragon%20Katana%20%26%20Red%20Moon</loc>'));
+});
+
 test('a new request reflects publishing, unpublishing and physical deletion', async () => {
   const blogs = [{ slug: 'first', published: true }, { slug: 'second', published: false }];
   const sitemap = loadSitemap({ blogs });

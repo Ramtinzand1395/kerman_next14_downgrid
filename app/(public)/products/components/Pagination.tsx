@@ -2,52 +2,46 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useProductNavigation } from "./ProductNavigation";
+import { ProductNavigationLink } from "./ProductNavigation";
 
 interface PaginationProps {
   totalPages: number;
   currentPage: number;
 }
 
+const directionClass =
+  "inline-flex items-center gap-1 rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 transition";
+
 export default function Pagination({ totalPages, currentPage }: PaginationProps) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const { isPending, navigate } = useProductNavigation();
 
-  if (totalPages <= 1) {
-    return null;
-  }
+  if (totalPages <= 1) return null;
 
-  const handlePage = (page: number) => {
-    if (page < 1 || page > totalPages) {
-      return;
-    }
-
+  const pageHref = (page: number) => {
     const params = new URLSearchParams(searchParams.toString());
-    params.set("page", page.toString());
-    navigate(`${pathname}?${params.toString()}`, "page");
+    if (page === 1) params.delete("page");
+    else params.set("page", page.toString());
 
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.scrollTo({
-      top: 0,
-      behavior: reducedMotion ? "instant" : "smooth",
-    });
+    const query = params.toString();
+    return query ? `${pathname}?${query}` : pathname;
   };
 
   const visiblePages = Array.from({ length: totalPages }, (_, i) => i + 1).filter(
-    (page) => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1
+    (page) => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1,
   );
+  const previousLabel = <><ChevronRight size={16} aria-hidden="true" /> قبلی</>;
+  const nextLabel = <>بعدی <ChevronLeft size={16} aria-hidden="true" /></>;
 
   return (
-    <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
-      <button
-        type="button"
-        onClick={() => handlePage(currentPage - 1)}
-        disabled={currentPage === 1 || isPending}
-        className="inline-flex items-center gap-1 rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 transition disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        <ChevronRight size={16} /> قبلی
-      </button>
+    <nav aria-label="صفحه‌بندی محصولات" className="mt-8 flex flex-wrap items-center justify-center gap-2">
+      {currentPage > 1 ? (
+        <ProductNavigationLink href={pageHref(currentPage - 1)} navigationKind="page" className={directionClass}>
+          {previousLabel}
+        </ProductNavigationLink>
+      ) : (
+        <span aria-disabled="true" className={`${directionClass} opacity-40`}>{previousLabel}</span>
+      )}
 
       {visiblePages.map((page, index) => {
         const prevPage = visiblePages[index - 1];
@@ -55,31 +49,31 @@ export default function Pagination({ totalPages, currentPage }: PaginationProps)
 
         return (
           <div key={page} className="flex items-center gap-2">
-            {showDots && <span className="text-sm text-gray-400">...</span>}
-            <button
-              type="button"
-              onClick={() => handlePage(page)}
-              disabled={isPending}
-              className={`min-w-10 rounded-xl border px-3 py-2 text-sm transition ${
-                page === currentPage
-                  ? "border-blue-600 bg-blue-600 text-white"
-                  : "border-gray-200 bg-white text-gray-700 hover:border-blue-200 hover:text-blue-700"
-              }`}
-            >
-              {page.toLocaleString("fa-IR")}
-            </button>
+            {showDots && <span aria-hidden="true" className="text-sm text-gray-400">...</span>}
+            {page === currentPage ? (
+              <span aria-current="page" className="min-w-10 rounded-xl border border-blue-600 bg-blue-600 px-3 py-2 text-sm text-white">
+                {page.toLocaleString("fa-IR")}
+              </span>
+            ) : (
+              <ProductNavigationLink
+                href={pageHref(page)}
+                navigationKind="page"
+                className="min-w-10 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 transition hover:border-blue-200 hover:text-blue-700"
+              >
+                {page.toLocaleString("fa-IR")}
+              </ProductNavigationLink>
+            )}
           </div>
         );
       })}
 
-      <button
-        type="button"
-        onClick={() => handlePage(currentPage + 1)}
-        disabled={currentPage === totalPages || isPending}
-        className="inline-flex items-center gap-1 rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-700 transition disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        بعدی <ChevronLeft size={16} />
-      </button>
-    </div>
+      {currentPage < totalPages ? (
+        <ProductNavigationLink href={pageHref(currentPage + 1)} navigationKind="page" className={directionClass}>
+          {nextLabel}
+        </ProductNavigationLink>
+      ) : (
+        <span aria-disabled="true" className={`${directionClass} opacity-40`}>{nextLabel}</span>
+      )}
+    </nav>
   );
 }

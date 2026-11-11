@@ -26,7 +26,7 @@ test('production category HTTP serves real routes, metadata, filters and deep li
     if (server && server.exitCode === null) { const exit = once(server, 'exit'); server.kill('SIGTERM'); await exit; }
     await rm(dir, { recursive: true, force: true });
   });
-  for (const part of ['app/category/[slug]', 'app/categories', 'app/products', 'app/components', 'lib/catalog']) await mkdir(path.join(dir, part), { recursive: true });
+  for (const part of ['app/category/[slug]', 'app/categories', 'app/products/components', 'app/components/loading', 'lib/catalog']) await mkdir(path.join(dir, part), { recursive: true });
   await symlink(path.join(root, 'node_modules'), path.join(dir, 'node_modules'), 'dir');
   await writeFile(path.join(dir, 'package.json'), '{"private":true}');
   await writeFile(path.join(dir, 'tsconfig.json'), JSON.stringify({ compilerOptions: { baseUrl: '.', paths: { '@/*': ['./*'] }, jsx: 'preserve' } }));
@@ -37,6 +37,8 @@ test('production category HTTP serves real routes, metadata, filters and deep li
     ['app/(public)/category/[slug]/page.tsx','app/category/[slug]/page.tsx'],
     ['app/(public)/categories/page.tsx','app/categories/page.tsx'],
     ['lib/catalog/category-seo.ts','lib/catalog/category-seo.ts'], ['lib/site.ts','lib/site.ts'],
+    ['app/(public)/products/components/Pagination.tsx','app/products/components/Pagination.tsx'],
+    ['app/(public)/products/components/ProductNavigation.tsx','app/products/components/ProductNavigation.tsx'],
   ]) await copyFile(path.join(root, from), path.join(dir,to));
   // Use the actual legacy redirect helper and metadata function, and mirror
   // the route loading boundary so reintroducing streaming makes this fail.
@@ -49,19 +51,22 @@ test('production category HTTP serves real routes, metadata, filters and deep li
   };
   await writeFile(path.join(dir, 'app/products/page.tsx'), `
 import { permanentRedirect } from 'next/navigation';
+import Pagination from './components/Pagination';
+import { ProductNavigationProvider } from './components/ProductNavigation';
 import { getCategoryCatalog } from '@/lib/catalog/category-data';
 import { resolveLegacyCategory, categoryHref, parseCatalogQuery, hasCatalogFilters } from '@/lib/catalog/category-seo';
 export const dynamic = 'force-dynamic';
 type ProductsSearchParams = any; type Metadata = any; const baseMetadata = {};
 ${declaration('redirectLegacyCategory')}
 ${declaration('generateMetadata')}
-export default async function Page({searchParams}: any) { await redirectLegacyCategory(searchParams); return <h1>Products</h1>; }
+export default async function Page({searchParams}: any) { await redirectLegacyCategory(searchParams); return <ProductNavigationProvider><h1>Products</h1><Pagination currentPage={Number(searchParams.page || 1)} totalPages={3}/></ProductNavigationProvider>; }
 `);
   try {
     await readFile(path.join(root, 'app/(public)/products/loading.tsx'));
     await writeFile(path.join(dir, 'app/products/loading.tsx'), 'export default function Loading() { return <p>Loading</p>; }');
   } catch (error) { if (error.code !== 'ENOENT') throw error; }
   await mkdir(path.join(dir, 'app/components/navigation'), { recursive: true });
+  await writeFile(path.join(dir, 'app/components/loading/LoadingSystem.tsx'), 'export function ProductGridSkeleton() { return <p>Loading</p>; }');
   await writeFile(path.join(dir, 'app/components/navigation/NavigationFeedback.tsx'), 'export { default } from "next/link";');
   await writeFile(path.join(dir, 'app/components/Cart.tsx'), 'import Link from "next/link"; export default function Card({game}: any) { return <article><h2><Link href={`/product/${game.slug}`}>{game.title}</Link></h2></article>; }');
   await writeFile(path.join(dir, 'lib/catalog/category-data.ts'), `
@@ -120,7 +125,15 @@ export async function getCategoryProducts(id: string, rows: any, query: any) {
     assert.equal(target.searchParams.get('sort'), 'lowPrice');
     assert.equal(target.searchParams.get('page'), '2');
   }
-  assert.equal((await request(port, '/products')).status, 200);
+  const unfilteredProducts = await request(port, '/products');
+  assert.equal(unfilteredProducts.status, 200);
+  assert.ok(unfilteredProducts.body.includes('href="/products?page=2"'));
+  const productsPageTwo = await request(port, '/products?page=2');
+  assert.ok(productsPageTwo.body.includes('href="/products"'));
+  assert.ok(productsPageTwo.body.includes('href="/products?page=3"'));
+  assert.ok(!productsPageTwo.body.includes('href="/products?page=1"'));
+  const filteredProducts = await request(port, '/products?q=poster&sort=lowPrice');
+  assert.ok(filteredProducts.body.includes('href="/products?q=poster&amp;sort=lowPrice&amp;page=2"'));
   const allProducts = await request(port, '/products?sort=newest&page=1');
   assert.match(allProducts.body, /content="index, follow"/);
   assert.match(allProducts.body, /rel="canonical" href="https:\/\/kermanatari.ir\/products"/);

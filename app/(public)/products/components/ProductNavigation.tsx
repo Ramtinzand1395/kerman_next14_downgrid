@@ -42,6 +42,10 @@ export function ProductNavigationProvider({ children }: { children: React.ReactN
       startNavigation(() => {
         router.push(href, { scroll: false });
       });
+      if (kind === "page") {
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        window.scrollTo({ top: 0, behavior: reducedMotion ? "instant" : "smooth" });
+      }
     },
     [isPending, router],
   );
