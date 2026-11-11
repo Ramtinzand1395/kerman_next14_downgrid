@@ -21,6 +21,7 @@ import { WALLET_TX_TYPES, WalletTxStatus, WalletTxType } from "@/types/loyalty";
 interface WalletSummary {
   balance: number;
   expiringSoon: number;
+  nextExpiryAt?: string | null;
   isActive: boolean;
 }
 
@@ -41,6 +42,16 @@ export default function MyWallet() {
   const [loadingSummary, setLoadingSummary] = useState(true);
 
   const [amount, setAmount] = useState<number>(100_000);
+  const [returnToCheckout, setReturnToCheckout] = useState(false);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const suggested = Number(params.get("charge"));
+    if (Number.isInteger(suggested) && suggested >= 10_000 && suggested <= 50_000_000) {
+      setAmount(suggested);
+    }
+    setReturnToCheckout(params.get("from") === "checkout");
+  }, []);
+
   const [charging, setCharging] = useState(false);
 
   const [txs, setTxs] = useState<Paged<WalletTx> | null>(null);
@@ -113,7 +124,15 @@ export default function MyWallet() {
           <p className="mt-3 text-xl font-bold text-amber-600">
             {loadingSummary ? <Skeleton width={100} height={24} /> : toman(summary?.expiringSoon ?? 0)}
           </p>
-          <p className="mt-1 text-xs text-slate-400">اعتبارات هدیه دارای تاریخ انقضا هستند</p>
+          <p className="mt-1 text-xs text-slate-400">
+            {summary?.nextExpiryAt
+              ? `نزدیک‌ترین انقضا: ${new Intl.DateTimeFormat("fa-IR", {
+                  dateStyle: "short",
+                  timeStyle: "short",
+                  timeZone: "Asia/Tehran",
+                }).format(new Date(summary.nextExpiryAt))}`
+              : "اعتبارات هدیه دارای تاریخ انقضا هستند"}
+          </p>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -174,6 +193,11 @@ export default function MyWallet() {
             {charging ? "در حال اتصال به درگاه…" : "پرداخت و شارژ"}
           </button>
         </div>
+        {returnToCheckout && (
+          <a href="/checkout" className="mt-3 inline-block text-sm font-semibold text-indigo-700 underline">
+            بازگشت به مرحله پرداخت سفارش
+          </a>
+        )}
         <p className="mt-2 text-xs text-slate-400">
           حداقل مبلغ شارژ {toman(10_000)} — پرداخت از طریق درگاه امن زرین‌پال انجام می‌شود.
         </p>

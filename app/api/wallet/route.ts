@@ -2,6 +2,7 @@
 // GET: موجودی + خلاصه کیف پول کاربر
 import { ok, requireUser } from "@/lib/loyalty/api";
 import Wallet from "@/model/Loyalty Club/Wallet";
+import { expireWalletCreditsForUser } from "@/lib/loyalty/wallet.service";
 export interface IExpiringCredit {
   amount: number;
   expiresAt: Date;
@@ -20,6 +21,8 @@ export async function GET() {
   const auth = await requireUser();
   if ("error" in auth) return auth.error;
 
+  await expireWalletCreditsForUser(auth.userId);
+
   const wallet = await Wallet.findOneAndUpdate(
     { user: auth.userId },
     { $setOnInsert: { balance: 0 } },
@@ -31,9 +34,15 @@ export async function GET() {
     .filter((c) => c.amount > 0 && c.expiresAt > now)
     .reduce((s, c) => s + c.amount, 0);
 
+  const nextExpiryAt = (wallet?.expiringCredits ?? [])
+    .filter((c) => c.amount > 0 && c.expiresAt > now)
+    .map((c) => c.expiresAt.getTime())
+    .sort((a, b) => a - b)[0];
+
   return ok({
-    balance: wallet?.balance,
+    balance: wallet?.balance ?? 0,
     expiringSoon,
+    nextExpiryAt: nextExpiryAt ? new Date(nextExpiryAt).toISOString() : null,
     isActive: wallet?.isActive,
   });
 }
