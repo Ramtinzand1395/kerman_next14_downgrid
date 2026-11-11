@@ -135,7 +135,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       (product) => typeof product.slug === "string" && product.slug.length > 0,
     )
     .map((product) => ({
-      url: `${SITE_URL}/product/${product.slug}`,
+      url: `${SITE_URL}/product/${encodeURIComponent(product.slug)}`,
       lastModified: product.updatedAt ? new Date(product.updatedAt) : undefined,
       changeFrequency: "weekly",
       priority: 0.8,
