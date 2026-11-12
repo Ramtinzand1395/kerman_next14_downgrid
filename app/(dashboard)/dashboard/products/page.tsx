@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import Skeleton from "react-loading-skeleton";
 import ProductImage from "@/app/components/ProductImage";
@@ -64,8 +64,11 @@ export default function ProductsPage() {
   });
 
   const requestSequence = useRef(0);
+  const invalidateProductRequests = useCallback(() => {
+    requestSequence.current++;
+  }, []);
 
-  const fetchProducts = async (targetPage: number) => {
+  const fetchProducts = useCallback(async (targetPage: number) => {
     const sequence = ++requestSequence.current;
     try {
       setLoading(true);
@@ -90,12 +93,12 @@ export default function ProductsPage() {
     } finally {
       if (sequence === requestSequence.current) setLoading(false);
     }
-  };
+  }, [missingPurchasePrice]);
 
   useEffect(() => {
-    fetchProducts(page);
-    return () => { requestSequence.current++; };
-  }, [page, missingPurchasePrice]);
+    void fetchProducts(page);
+    return invalidateProductRequests;
+  }, [page, fetchProducts, invalidateProductRequests]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
