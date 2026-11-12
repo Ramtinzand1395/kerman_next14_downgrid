@@ -80,6 +80,24 @@ export async function POST(req: Request) {
     }
   }
 
+  if (user?.storeOrderPendingSignup === true) {
+    const claimed = await User.findOneAndUpdate(
+      { _id: user._id, storeOrderPendingSignup: true },
+      {
+        $set: {
+          phoneVerifiedAt: now,
+          registrationCompletedAt: now,
+          ...(pendingReferralCode ? { pendingReferralCode } : {}),
+          ...(otpSignupIntentId ? { signupIntentId: otpSignupIntentId } : {}),
+        },
+        $unset: { storeOrderPendingSignup: 1 },
+      },
+      { returnDocument: "after" },
+    );
+    user = claimed ?? await User.findOne({ mobile });
+    isNewUser = Boolean(claimed);
+  }
+
   if (!user) {
     console.error(`[auth] signup recovery failed operationId=${operationId}`);
     return new Response(

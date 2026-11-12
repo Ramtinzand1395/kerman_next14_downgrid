@@ -4,6 +4,9 @@ import { VIP_TIERS, VipTier } from "@/types/loyalty";
 // تعریف interface TypeScript
 interface IUser extends Document {
   username?: string;
+  firstName?: string;
+  lastName?: string;
+  storeOrderPendingSignup?: boolean;
   email?: string;
   mobile: string;
   role: string;
@@ -45,6 +48,9 @@ interface IUser extends Document {
 const UserSchema = new Schema<IUser>(
   {
     username: { type: String, default: "کاربر", required: true },
+    firstName: { type: String, trim: true },
+    lastName: { type: String, trim: true },
+    storeOrderPendingSignup: Boolean,
     email: { type: String, sparse: true },
     mobile: { type: String, unique: true, required: true },
     role: {

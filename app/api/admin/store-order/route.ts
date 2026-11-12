@@ -8,7 +8,9 @@ import StoreOrder from "@/model/StoreOrder";
 import { sendStoreOrderReceiptSms } from "@/lib/sms/store-order";
 import { storeOrder } from "@/types";
 import Customer from "@/model/Customer";
-import mongoose from "mongoose";
+import mongoose, { type ClientSession } from "mongoose";
+import User from "@/model/User";
+import { provisionStoreCustomerAccount } from "@/lib/store-customer-account";
 
 /* ================= GET ================= */
 export async function GET() {
@@ -126,15 +128,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "مشتری معتبر پیدا نشد" }, { status: 404 });
     }
 
-    const order = await StoreOrder.create({
-      list,
-      price,
-      customer: customerId,
-      description,
-      consoleType,
-      deliveryStatus: deliveryStatus || "دریافت از مشتری",
-      clientRequestKey,
+    // The mobile index is required to arbitrate concurrent orders and first sign-ins.
+    await User.init();
+    const saveOrder = async (dbSession: ClientSession) => {
+      await provisionStoreCustomerAccount(customer, dbSession);
+      return new StoreOrder({
+        list,
+        price,
+        customer: customerId,
+        description,
+        consoleType,
+        deliveryStatus: deliveryStatus || "دریافت از مشتری",
+        clientRequestKey,
+      }).save({ session: dbSession });
+    };
+    const order = await mongoose.connection.transaction(saveOrder).catch((error: {
+      code?: number;
+      keyPattern?: { mobile?: number };
+    }) => {
+      // If OTP registration or another order inserted the same mobile, retry on the existing account.
+      if (error?.code === 11000 && error.keyPattern?.mobile) {
+        return mongoose.connection.transaction(saveOrder);
+      }
+      throw error;
     });
+    order.$session(null);
     await order.populate("customer");
     // سفارش در این نقطه با موفقیت نهایی شده است؛ خطای پیامک آن را برنمی‌گرداند.
     const sms = await sendStoreOrderReceiptSms({

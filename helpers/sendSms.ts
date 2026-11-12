@@ -91,13 +91,13 @@ export async function sendOtpToUser(
     const normalizedReferralCode = normalizeReferralCode(referralCode ?? "");
     const existingUser = await User.findOne({ mobile })
       .select(
-        "pendingReferralCode signupIntentId loyaltySignupCompletedAt",
+        "pendingReferralCode signupIntentId loyaltySignupCompletedAt storeOrderPendingSignup",
       )
       .lean();
     let signupIntentId: string | undefined;
 
-    if (!existingUser) {
-      // نبودن کاربر در زمان درخواست OTP، مدرک سمت سرور برای ثبت نام جدید است.
+    const pendingStoreSignup = existingUser?.storeOrderPendingSignup === true;
+    if (!existingUser || pendingStoreSignup) {
       signupIntentId = randomUUID();
     } else if (!existingUser.loyaltySignupCompletedAt) {
       if (existingUser.signupIntentId) {
@@ -125,7 +125,7 @@ export async function sendOtpToUser(
     const referralCodeForOtp = referralCodeForSignupOtp({
       requestedCode: normalizedReferralCode,
       pendingCode: existingUser?.pendingReferralCode,
-      isResumingSignup: Boolean(existingUser && signupIntentId),
+      isResumingSignup: Boolean(existingUser && signupIntentId && !pendingStoreSignup),
     });
 
     // پاک کردن OTP قبلی شماره موبایل فقط پس از عبور موفقیت‌آمیز از Rate Limit
