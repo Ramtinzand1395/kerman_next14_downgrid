@@ -6,6 +6,8 @@ interface IOtp extends Document {
   referralCode?: string;
   signupIntentId?: string;
   verifiedAt?: Date;
+  registrationTokenHash?: string;
+  registrationTokenExpiresAt?: Date;
   loginTokenHash?: string;
   loginTokenExpiresAt?: Date;
   createdAt: Date;
@@ -17,6 +19,8 @@ const OtpSchema = new Schema<IOtp>({
   referralCode: { type: String, maxlength: 32 },
   signupIntentId: { type: String, maxlength: 64 },
   verifiedAt: Date,
+  registrationTokenHash: String,
+  registrationTokenExpiresAt: Date,
   loginTokenHash: { type: String, index: true, sparse: true },
   loginTokenExpiresAt: Date,
   createdAt: { type: Date, default: Date.now },

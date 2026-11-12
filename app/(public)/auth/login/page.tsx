@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "@/app/components/navigation/NavigationFeedback";
 import { signIn } from "next-auth/react";
@@ -65,7 +65,16 @@ export default function LoginWithOtp() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [timer, setTimer] = useState(0);
 
-  const formRef = useRef<HTMLFormElement | null>(null);
+  const [registration, setRegistration] = useState<{
+    otpId: string;
+    token: string;
+    expiresInMs: number;
+  } | null>(null);
+  const [registrationExpired, setRegistrationExpired] = useState(false);
+  const [registrationError, setRegistrationError] = useState("");
+
+  const firstNameInputRef = useRef<HTMLInputElement | null>(null);
+  const isRegisteringRef = useRef(false);
   const otpInputRef = useRef<HTMLInputElement | null>(null);
   const isVerifyingRef = useRef(false);
   const verificationAbortRef = useRef<AbortController | null>(null);
@@ -76,7 +85,55 @@ export default function LoginWithOtp() {
     return `${m}:${s < 10 ? "0" : ""}${s}`;
   };
 
-  const currentStep = useMemo(() => (otpSent ? "otp" : "mobile"), [otpSent]);
+  const currentStep = registration ? "registration" : otpSent ? "otp" : "mobile";
+
+  const resetOtp = useCallback(() => {
+    clearOtpStorage();
+    setOtpSent(false);
+    setEnteredOtp("");
+    setOtpId(null);
+    setTimer(0);
+  }, []);
+
+  const finishSignIn = useCallback(async (data: {
+    verificationToken?: string;
+    referral?: { ok: boolean; error?: string };
+  }) => {
+    if (!data.verificationToken) {
+      throw new Error("ورود تکمیل نشد؛ لطفاً کد جدید دریافت و دوباره تلاش کنید.");
+    }
+
+    const result = await signIn("credentials", {
+      verificationToken: data.verificationToken,
+      callbackUrl,
+      redirect: false,
+    });
+    if (!result?.ok) {
+      resetOtp();
+      setRegistration(null);
+      throw new Error("ورود انجام نشد؛ لطفاً کد جدید دریافت و دوباره تلاش کنید.");
+    }
+
+    toast.success("با موفقیت وارد حساب شدید.");
+    if (data.referral?.ok) {
+      toast.success("کد دعوت ثبت شد و پاداش آن پس از احراز شرایط اعمال می‌شود.");
+    } else if (data.referral?.error) {
+      toast.warning(data.referral.error);
+    }
+
+    clearOtpStorage();
+    window.location.assign(callbackUrl);
+  }, [callbackUrl, resetOtp]);
+
+  useEffect(() => {
+    if (!registration) return;
+    firstNameInputRef.current?.focus();
+    const timeout = setTimeout(
+      () => setRegistrationExpired(true),
+      registration.expiresInMs,
+    );
+    return () => clearTimeout(timeout);
+  }, [registration]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -159,13 +216,10 @@ export default function LoginWithOtp() {
 
   // پس از منقضی شدن کد (OTP_TOTAL_TIME)، فرم به‌صورت خودکار به مرحله شماره موبایل بازگردانده می‌شود
   useEffect(() => {
-    if (!otpSent || timer > 0) return;
-    clearOtpStorage();
-    setOtpSent(false);
-    setEnteredOtp("");
-    setOtpId(null);
+    if (!otpSent || timer > 0 || isVerifying) return;
+    resetOtp();
     toast.info("کد تأیید منقضی شد؛ برای ورود، کد جدید دریافت کنید.");
-  }, [otpSent, timer]);
+  }, [isVerifying, otpSent, resetOtp, timer]);
 
   useEffect(
     () => () => {
@@ -184,7 +238,7 @@ export default function LoginWithOtp() {
     }
 
     try {
-      await otpSchema.validate(code);
+      otpSchema.validateSync(code);
     } catch (err) {
       toast.error(
         err instanceof yup.ValidationError
@@ -212,32 +266,21 @@ export default function LoginWithOtp() {
       if (!res.ok || !data.success) {
         throw new Error(data.message || "کد واردشده درست نیست؛ دوباره بررسی کنید.");
       }
-      if (!data.verificationToken) {
-        throw new Error("ورود تکمیل نشد؛ لطفاً کد جدید دریافت و دوباره تلاش کنید.");
+      if (data.requiresRegistration && data.registrationToken) {
+        resetOtp();
+        setRegistrationExpired(false);
+        setRegistrationError("");
+        setRegistration({
+          otpId,
+          token: data.registrationToken,
+          expiresInMs: data.registrationExpiresInMs,
+        });
+        isVerifyingRef.current = false;
+        setIsVerifying(false);
+        return;
       }
 
-      const signInResult = await signIn("credentials", {
-        verificationToken: data.verificationToken,
-        callbackUrl,
-        redirect: false,
-      });
-      if (!signInResult?.ok) {
-        clearOtpStorage();
-        setOtpSent(false);
-        setEnteredOtp("");
-        setOtpId(null);
-        throw new Error("ورود انجام نشد؛ لطفاً کد جدید دریافت و دوباره تلاش کنید.");
-      }
-
-      toast.success("با موفقیت وارد حساب شدید.");
-      if (data.referral?.ok) {
-        toast.success("کد دعوت ثبت شد و پاداش آن پس از احراز شرایط اعمال می‌شود.");
-      } else if (data.referral?.error) {
-        toast.warning(data.referral.error);
-      }
-
-      clearOtpStorage();
-      window.location.assign(callbackUrl);
+      await finishSignIn(data);
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") return;
       toast.error(
@@ -248,7 +291,7 @@ export default function LoginWithOtp() {
       isVerifyingRef.current = false;
       setIsVerifying(false);
     }
-  }, [callbackUrl, otpId]);
+  }, [finishSignIn, otpId, resetOtp]);
 
   useEffect(() => {
     if (
@@ -380,6 +423,47 @@ export default function LoginWithOtp() {
     await verifyOtpCode(enteredOtp);
   };
 
+  const handleRegistration = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!registration || registrationExpired || isRegisteringRef.current) return;
+
+    const fields = new FormData(event.currentTarget);
+    isRegisteringRef.current = true;
+    setIsSubmitting(true);
+    setRegistrationError("");
+
+    try {
+      const response = await fetch("/api/verifyOtp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          otpId: registration.otpId,
+          registrationToken: registration.token,
+          firstName: fields.get("firstName"),
+          lastName: fields.get("lastName"),
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (data.code === "REGISTRATION_EXPIRED") {
+        setRegistrationExpired(true);
+        return;
+      }
+      if (!response.ok || !data.success) {
+        setRegistrationError(data.message || "ثبت‌نام انجام نشد؛ دوباره تلاش کنید.");
+        return;
+      }
+
+      await finishSignIn(data);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "ثبت‌نام انجام نشد؛ دوباره تلاش کنید.";
+      setRegistrationError(message);
+      toast.error(message);
+    } finally {
+      isRegisteringRef.current = false;
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-100 via-slate-50 to-white px-4 py-8 sm:py-12">
       <section className="mx-auto grid w-full max-w-4xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl md:grid-cols-2">
@@ -396,7 +480,7 @@ export default function LoginWithOtp() {
             </div>
             <h1 className="text-2xl font-bold leading-9">ورود سریع و امن</h1>
             <p className="mt-3 text-sm leading-7 text-slate-200">
-              برای ورود فقط شماره موبایل خود را وارد کنید. کد تایید برای شما
+              برای شروع شماره موبایل خود را وارد کنید. کد تایید برای شما
               ارسال می‌شود و در موبایل‌های سازگار به‌صورت خودکار در فرم قرار
               می‌گیرد.
             </p>
@@ -444,9 +528,77 @@ export default function LoginWithOtp() {
             >
               ۲) کد تایید
             </div>
+            {registration && (
+              <div
+                aria-current="step"
+                className="flex-1 rounded-lg bg-white px-3 py-2 text-center font-semibold text-slate-900 shadow"
+              >
+                ۳) مشخصات
+              </div>
+            )}
           </div>
 
-          {!otpSent ? (
+          {registration ? (
+            <form onSubmit={handleRegistration} className="space-y-4">
+              <p className="text-sm leading-7 text-slate-600">
+                شماره موبایل تأیید شد. برای ساخت حساب، نام و نام خانوادگی را وارد کنید.
+              </p>
+              <fieldset disabled={isSubmitting || registrationExpired} className="space-y-4">
+                <div>
+                  <label htmlFor="registration-first-name" className="mb-2 block text-sm font-medium text-slate-700">
+                    نام
+                  </label>
+                  <input
+                    ref={firstNameInputRef}
+                    id="registration-first-name"
+                    name="firstName"
+                    type="text"
+                    autoComplete="given-name"
+                    dir="auto"
+                    required
+                    maxLength={80}
+                    className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="registration-last-name" className="mb-2 block text-sm font-medium text-slate-700">
+                    نام خانوادگی
+                  </label>
+                  <input
+                    id="registration-last-name"
+                    name="lastName"
+                    type="text"
+                    autoComplete="family-name"
+                    dir="auto"
+                    required
+                    maxLength={80}
+                    className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                >
+                  {isSubmitting ? <ButtonLoading label="در حال ثبت‌نام…" /> : "تکمیل ثبت‌نام و ورود"}
+                </button>
+              </fieldset>
+              {registrationExpired ? (
+                <p role="alert" className="text-sm text-red-700">
+                  مهلت تکمیل ثبت‌نام به پایان رسید. لطفاً دوباره کد تأیید بگیرید.
+                </p>
+              ) : registrationError && (
+                <p role="alert" className="text-sm text-red-700">{registrationError}</p>
+              )}
+              <button
+                type="button"
+                disabled={isSubmitting}
+                onClick={() => setRegistration(null)}
+                className="w-full rounded-xl bg-slate-100 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200 disabled:opacity-60"
+              >
+                بازگشت به شماره موبایل
+              </button>
+            </form>
+          ) : !otpSent ? (
             <form onSubmit={handleSendOtp} className="space-y-4">
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
@@ -523,11 +675,7 @@ export default function LoginWithOtp() {
               )}
             </form>
           ) : (
-            <form
-              ref={formRef}
-              onSubmit={handleVerifyOtp}
-              className="space-y-4"
-            >
+            <form onSubmit={handleVerifyOtp} className="space-y-4">
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
                   کد تایید پیامک‌ شده
