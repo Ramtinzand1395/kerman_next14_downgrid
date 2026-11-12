@@ -10,7 +10,7 @@ test('pickup, receipt and return are the three courier actions in order', () => 
   assert.equal(canCourierTransition('picked_up', 'returning'), false);
   assert.equal(courierStatusAfterService('picked_up', 'completed'), 'return_ready');
   assert.equal(canCourierTransition('return_ready', 'returning'), true);
-  assert.equal(canCourierTransition('returning', 'delivered'), false);
+  assert.equal(canCourierTransition('returning', 'delivered'), true);
   assert.equal(canCourierTransition('returning', 'assigned'), false);
   for (const [state, progress] of [['pending',0],['assigned',1],['picked_up',1],['at_store',2],['return_ready',2],['returning',3],['delivered',3]]) {
     assert.equal(courierReturnDeliveryProgress(state), progress);

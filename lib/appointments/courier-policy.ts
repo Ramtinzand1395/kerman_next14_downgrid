@@ -1,6 +1,6 @@
 import type { CourierStatus } from "../../types/appointments.ts";
 
-export const COURIER_ACTION_STATUSES = ["assigned", "at_store", "returning", "cancelled"] as const;
+export const COURIER_ACTION_STATUSES = ["assigned", "at_store", "returning", "delivered", "cancelled"] as const;
 
 export const COURIER_TRANSITIONS: Record<CourierStatus, CourierStatus[]> = {
   pending: ["assigned", "cancelled"],
@@ -9,7 +9,7 @@ export const COURIER_TRANSITIONS: Record<CourierStatus, CourierStatus[]> = {
   picked_up: ["at_store", "cancelled"],
   at_store: ["return_ready", "cancelled"],
   return_ready: ["returning"],
-  returning: [],
+  returning: ["delivered"],
   delivered: [],
   cancelled: [],
 };

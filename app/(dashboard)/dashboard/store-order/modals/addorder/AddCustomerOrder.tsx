@@ -10,7 +10,8 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 
-import { ConsoleType, Customer, GameItem, storeOrder } from "@/types";
+import { ConsoleType, Customer, GameItem, storeOrder, OrdersByConsole } from "@/types";
+import type { AppointmentItem } from "@/types/appointments";
 import GameDropdown from "./GameDropdown";
 import {
   clearStoreOrderDraft,
@@ -18,16 +19,10 @@ import {
   writeStoreOrderDraft,
 } from "./draft";
 
-type OrdersByConsole = {
-  ps5: storeOrder[];
-  ps4: storeOrder[];
-  xbox: storeOrder[];
-  copy: storeOrder[];
-  ps5Copy: storeOrder[];
-};
-
 interface AddCustomerOrderProps {
   customerData: Customer;
+  appointment?: AppointmentItem;
+  onWebsiteOrderSaved?: () => void;
   closeModal: () => void;
   setOrders: React.Dispatch<React.SetStateAction<OrdersByConsole>>;
   onBack: () => void;
@@ -45,13 +40,15 @@ const calcTotals = (list: GameItem[]) => {
 
 const AddCustomerOrder = ({
   customerData,
+  appointment,
+  onWebsiteOrderSaved,
   closeModal,
   setOrders,
   onBack,
 }: AddCustomerOrderProps) => {
   const [loading, setLoading] = useState(false);
   const [requestKey] = useState(
-    () => readStoreOrderDraft()?.requestKey || crypto.randomUUID(),
+    () => appointment ? "" : readStoreOrderDraft()?.requestKey || crypto.randomUUID(),
   );
 
   const [order, setOrder] = useState<storeOrder | null>(() => {
@@ -71,6 +68,28 @@ const AddCustomerOrder = ({
       deliveryDate: "",
     };
 
+    if (appointment) {
+      const device = appointment.device;
+      const consoleType = appointment.installationType === "copy"
+        ? device === "ps5" ? "ps5Copy" : "copy"
+        : ["ps4", "ps5", "xbox"].includes(device) ? device as ConsoleType : "";
+      return {
+        ...baseOrder,
+        consoleType,
+        description: appointment.description || "",
+        totalSize: appointment.totalSizeGB ?? 0,
+        price: appointment.pricing?.serviceBaseAmount ?? appointment.pricing?.baseAmount ?? null,
+        list: (appointment.selectedGames || []).map((game) => ({
+          _id: `${game.platform}:${game.gameId}`,
+          name: game.name,
+          size: game.sizeGB ?? undefined,
+          imageUrl: game.imageUrl,
+          imageAlt: game.imageAlt,
+          appointmentGame: { platform: game.platform, gameId: game.gameId },
+        })),
+      };
+    }
+
     // بازیابی پیش‌نویس سفارش تا بعد از خطا اطلاعات از دست نرود
     const draft = readStoreOrderDraft();
     if (draft?.order) {
@@ -87,8 +106,8 @@ const AddCustomerOrder = ({
 
   // ذخیره خودکار پیش‌نویس سفارش هنگام هر تغییر
   useEffect(() => {
-    if (order) writeStoreOrderDraft({ order, requestKey });
-  }, [order, requestKey]);
+    if (order && !appointment) writeStoreOrderDraft({ order, requestKey });
+  }, [appointment, order, requestKey]);
 
   const handleSubmit = async () => {
     if (!customerData._id) {
@@ -96,7 +115,9 @@ const AddCustomerOrder = ({
       return;
     }
 
-    if (!order?.consoleType || !order.price || order.list.length === 0) {
+    const repair = appointment?.serviceType === "repair";
+    if (!order || (!repair && (!order.consoleType || !order.list.length)) ||
+        order.price === null || !Number.isSafeInteger(order.price) || order.price < 0 || (!appointment && order.price === 0)) {
       toast.warning("برای ثبت سفارش، نوع دستگاه، قیمت و حداقل یک بازی را مشخص کنید.");
       return;
     }
@@ -104,6 +125,28 @@ const AddCustomerOrder = ({
     setLoading(true);
 
     try {
+      if (appointment) {
+        const response = await fetch(`/api/admin/appointments/${appointment._id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            registerStoreOrder: true,
+            storeOrderCustomerId: customerData._id,
+            storeOrderDescription: order.description,
+            baseAmount: order.price,
+            ...(!repair && { selectedGames: order.list.map((game) => game.appointmentGame) }),
+            expectedUpdatedAt: appointment.updatedAt,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "ثبت سفارش سایت انجام نشد.");
+        toast.success("سفارش سایت در فهرست سفارش‌ها ذخیره شد.");
+        if (payload.data?.gamesNotificationStatus === "failed") toast.warning("ارسال اعلان تغییر بازی‌ها ناموفق بود.");
+        onWebsiteOrderSaved?.();
+        closeModal();
+        return;
+      }
+
       const res = await fetch("/api/admin/store-order", {
         method: "POST",
         headers: {
@@ -143,7 +186,7 @@ const AddCustomerOrder = ({
           ? err.message
           : "سفارش ثبت نشد؛ دوباره تلاش کنید.",
       );
-      toast.info("اطلاعات فرم ذخیره شد و پس از رفع مشکل می‌توانید دوباره ثبت کنید.");
+      if (!appointment) toast.info("اطلاعات فرم ذخیره شد و پس از رفع مشکل می‌توانید دوباره ثبت کنید.");
     } finally {
       setLoading(false);
     }
@@ -191,19 +234,19 @@ const AddCustomerOrder = ({
         list: newList,
         totalSize,
         totalPrice,
-        price: totalPrice === 0 ? null : totalPrice,
+        price: appointment ? prev.price : totalPrice === 0 ? null : totalPrice,
       };
     });
   };
 
   const formatNumber = (value: number | null | undefined) =>
-    value ? value.toLocaleString("en-US") : "";
+    value == null ? "" : value.toLocaleString("en-US");
 
   return (
     <div className="space-y-4">
       <div className="grid gap-3 md:grid-cols-3">
         <label className="space-y-1 text-sm text-slate-600">
-          <span>قیمت نهایی سفارش (تومان)</span>
+          <span>{appointment ? "مبلغ خدمت (تومان)" : "قیمت نهایی سفارش (تومان)"}</span>
 
           <div className="relative">
             <input
@@ -222,7 +265,10 @@ const AddCustomerOrder = ({
           <span>نوع دستگاه</span>
 
           <div className="relative">
-            <select
+            {appointment?.serviceType === "repair" && !order?.consoleType ? (
+              <input readOnly value={appointment.device} className="h-10 w-full rounded-xl border border-slate-300 px-3" />
+            ) : <select
+              disabled={Boolean(appointment)}
               title="نوع دستگاه"
               name="consoleType"
               value={order?.consoleType || ""}
@@ -235,19 +281,29 @@ const AddCustomerOrder = ({
               <option value="ps4">PS4</option>
               <option value="copy"> ps4-copy</option>
               <option value="xbox">Xbox</option>
-            </select>
+            </select>}
 
             <Monitor className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
           </div>
         </label>
 
-        <div className="space-y-1 text-sm text-slate-600">
-          <span>افزودن بازی</span>
-          <GameDropdown Selectedgames={order} setSelectedgames={setOrder} />
-        </div>
+        {appointment?.serviceType !== "repair" && (
+          <div className="space-y-1 text-sm text-slate-600">
+            <span>افزودن بازی</span>
+            <GameDropdown Selectedgames={order} setSelectedgames={setOrder} appointment={appointment} />
+          </div>
+        )}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+      {appointment && (
+        <div className="flex flex-wrap gap-4 rounded-xl bg-indigo-50 p-3 text-sm text-indigo-900">
+          <span>کد پیگیری: {appointment.trackingCode}</span>
+          {appointment.fulfillment === "courier" && <span>هزینه نهایی پیک: {formatNumber(appointment.pricing?.shippingFinalAmount ?? appointment.courier?.finalShippingCost ?? 0)} تومان</span>}
+          {appointment.pricing?.finalAmount != null && <span>مبلغ قابل پرداخت ثبت‌شده: {formatNumber(appointment.pricing.finalAmount)} تومان</span>}
+        </div>
+      )}
+
+      {appointment?.serviceType !== "repair" && <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
         <h3 className="mb-2 flex items-center gap-1 text-sm font-semibold text-slate-700">
           <Gamepad2 className="h-4 w-4" />
           بازی‌های انتخاب‌شده
@@ -271,9 +327,7 @@ const AddCustomerOrder = ({
 
                   <div className="mt-1 flex items-center gap-3 text-xs text-slate-500">
                     <span>{(game.size || 0).toLocaleString("en-US")} GB</span>
-                    <span>
-                      {(game.price || 0).toLocaleString("en-US")} تومان
-                    </span>
+                    {!appointment && <span>{(game.price || 0).toLocaleString("en-US")} تومان</span>}
                   </div>
                 </div>
 
@@ -305,14 +359,14 @@ const AddCustomerOrder = ({
             </p>
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+          {!appointment && <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
             <p className="text-xs text-slate-500">مجموع قیمت بازی‌ها</p>
             <p className="text-sm font-semibold text-slate-700">
               {(order?.totalPrice ?? 0).toLocaleString("en-US")} تومان
             </p>
-          </div>
+          </div>}
         </div>
-      </div>
+      </div>}
 
       <label className="block space-y-1 text-sm text-slate-600">
         <span>توضیحات</span>

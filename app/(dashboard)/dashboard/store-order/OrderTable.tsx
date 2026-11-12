@@ -1,27 +1,23 @@
 "use client";
 
+import Link from "next/link";
+import { websiteOrderUrl } from "@/lib/appointments/store-order";
+import { sendAppointmentPaymentLink } from "../appointments/_components/send-payment-link";
 import { useMemo, useState } from "react";
 import { toast } from "react-toastify";
 
-import { storeOrder } from "@/types";
+import { storeOrder, OrdersByConsole } from "@/types";
 import OrderSkeleton from "./modals/OrderSkeleton";
 import UserInfoModal from "./modals/updateModal/UserInfoModal";
 
 const statusOrder = ["دریافت از مشتری", "آماده", "تحویل به مشتری"] as const;
 
-type OrdersByConsole = {
-  ps5: storeOrder[];
-  ps4: storeOrder[];
-  xbox: storeOrder[];
-  copy: storeOrder[];
-  ps5Copy: storeOrder[];
-};
-
 interface OrderTableProps {
   header: string;
   Orders: storeOrder[];
   setOrders: React.Dispatch<React.SetStateAction<OrdersByConsole>>;
-  consoleKey: "ps5" | "ps4" | "xbox" | "copy"|"ps5Copy";
+  consoleKey: keyof OrdersByConsole;
+  onWebsiteOrderChanged: () => void;
   isLoading: boolean;
   setloadingSms: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -39,8 +35,11 @@ const OrderTable = ({
   consoleKey,
   isLoading,
   setloadingSms,
+  onWebsiteOrderChanged,
 }: OrderTableProps) => {
   const [selectedOrder, setSelectedOrder] = useState<storeOrder | null>(null);
+
+  const [workingId, setWorkingId] = useState("");
 
   const countLabel = useMemo(
     () => `${Orders.length.toLocaleString("fa-IR")} سفارش`,
@@ -72,7 +71,33 @@ const OrderTable = ({
     if (!confirmChange) return;
 
     setloadingSms(true);
+    setWorkingId(orderId);
     try {
+      if (order.appointmentId) {
+        if (newStatus !== "آماده" || order.serviceBaseAmount == null) {
+          throw new Error("مبلغ خدمت را از فرم سفارش تکمیل کنید.");
+        }
+        const response = await fetch(`/api/admin/appointments/${order.appointmentId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "completed", baseAmount: order.serviceBaseAmount, expectedUpdatedAt: order.updatedAt }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          if (response.status === 409) onWebsiteOrderChanged();
+          throw new Error(payload.error || "سفارش آماده نشد.");
+        }
+        toast.success("سفارش آماده شد.");
+        if (Number(payload.data?.pricing?.finalAmount) > 0) {
+          try {
+            toast.info(await sendAppointmentPaymentLink(order.appointmentId));
+          } catch (reason) {
+            toast.warning(reason instanceof Error ? `سفارش آماده شد. ${reason.message}` : "ارسال لینک پرداخت ناموفق بود.");
+          }
+        }
+        onWebsiteOrderChanged();
+        return;
+      }
       const res = await fetch(
         `/api/admin/store-order/changestatus/${orderId}`,
         {
@@ -99,9 +124,10 @@ const OrderTable = ({
       }
     } catch (err) {
       console.error("Error updating status:", err);
-      toast.error("وضعیت سفارش تغییر نکرد؛ دوباره تلاش کنید.");
+      toast.error(err instanceof Error ? err.message : "وضعیت سفارش تغییر نکرد؛ دوباره تلاش کنید.");
     } finally {
       setloadingSms(false);
+      setWorkingId("");
     }
   };
 
@@ -130,6 +156,7 @@ const OrderTable = ({
                 <th className="px-2 py-2 text-right">مشتری</th>
                 <th className="px-2 py-2 text-right">وضعیت سفارش</th>
                 <th className="px-2 py-2 text-right">کد دریافت</th>
+                <th className="px-2 py-2 text-right">مبلغ (تومان)</th>
                 <th className="px-2 py-2 text-right">توضیحات</th>
               </tr>
             </thead>
@@ -137,24 +164,34 @@ const OrderTable = ({
               {Orders.map((order) => (
                 <tr key={order._id} className="rounded-xl bg-slate-50">
                   <td className="rounded-r-xl px-2 py-3 text-slate-900">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedOrder(order)}
-                      className="font-medium text-indigo-700 hover:text-indigo-900"
-                    >
-                      {typeof order.customer === "string"
-                        ? order.customer
-                        : order.customer?.lastName || "بدون نام"}
-                    </button>
-                    <span className="mr-2 rounded-full bg-slate-200 px-2 py-1 text-xs font-bold text-slate-700">مغازه</span>
+                    {order.appointmentId ? (
+                      <Link href={order.deliveryStatus === "آماده"
+                        ? websiteOrderUrl({ _id: order.appointmentId, fulfillment: order.fulfillment })
+                        : `/dashboard/store-order?appointment=${order.appointmentId}`}
+                        className="font-medium text-indigo-700 hover:text-indigo-900">
+                        {typeof order.customer === "object" ? order.customer.lastName : "مشاهده سفارش"}
+                      </Link>
+                    ) : (
+                      <button type="button" onClick={() => setSelectedOrder(order)}
+                        className="font-medium text-indigo-700 hover:text-indigo-900">
+                        {typeof order.customer === "string" ? order.customer : order.customer?.lastName || "بدون نام"}
+                      </button>
+                    )}
+                    <span className="mr-2 rounded-full bg-slate-200 px-2 py-1 text-xs font-bold text-slate-700">{order.appointmentId ? "سایت" : "مغازه"}</span>
                   </td>
 
                   <td className="px-2 py-3">
                     <div className="flex flex-wrap gap-1.5">
-                      {statusOrder.map((status) => (
+                      {statusOrder.map((status) => order.appointmentId && status === "تحویل به مشتری" ? (
+                        <Link key={status} href={websiteOrderUrl({ _id: order.appointmentId, fulfillment: order.fulfillment })}
+                          className="rounded-lg border border-indigo-200 px-2 py-1 text-xs font-bold text-indigo-800">
+                          ادامه عملیات پیک
+                        </Link>
+                      ) : (
                         <button
                           key={status}
                           type="button"
+                          disabled={Boolean(workingId)}
                           onClick={() =>
                             changeStatus(
                               order._id,
@@ -176,6 +213,7 @@ const OrderTable = ({
                   <td className="px-2 py-3 text-slate-900">
                     {order.deliveryCode || "---"}
                   </td>
+                  <td className="px-2 py-3">{order.price?.toLocaleString("fa-IR") ?? "—"}</td>
                   <td className="rounded-l-xl px-2 py-3 text-xs text-slate-700">
                     {order.description?.length > 30
                       ? `${order.description.slice(0, 30)}...`

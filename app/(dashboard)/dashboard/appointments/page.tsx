@@ -212,6 +212,27 @@ function AppointmentsAdminContent() {
     await Promise.all([loadAppointments(), loadConfiguration()]);
   };
 
+  const deliverStoreOrder = async (item: AppointmentItem) => {
+    if (!window.confirm("تحویل دستگاه به مشتری ثبت شود؟")) return;
+    setWorkingId(item._id);
+    setNotice("");
+    try {
+      const response = await fetch(`/api/admin/appointments/${item._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deliverStoreOrder: true, expectedUpdatedAt: item.updatedAt }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "تحویل ثبت نشد.");
+      setNotice("تحویل حضوری ثبت شد.");
+      await loadAppointments();
+    } catch (reason) {
+      setNotice(reason instanceof Error ? reason.message : "تحویل ثبت نشد.");
+    } finally {
+      setWorkingId("");
+    }
+  };
+
   const requestPaymentLink = async (item: AppointmentItem) => {
     setWorkingId(item._id);
     setNotice("");
@@ -489,7 +510,7 @@ function AppointmentsAdminContent() {
         <div className="space-y-4">
           {focusedId && (
             <button type="button" onClick={() => setFocusedId("")} className="rounded-xl border bg-white px-3 py-2 text-sm font-bold">
-              نمایش همه درخواست‌های پیک
+              نمایش همه درخواست‌ها
             </button>
           )}
           <AppointmentsFilters
@@ -509,6 +530,7 @@ function AppointmentsAdminContent() {
               workingId={workingId}
               onPageChange={(page) => setFilters((value) => ({ ...value, page }))}
               onOpenDetails={setDetail}
+              onDeliverStoreOrder={deliverStoreOrder}
               onOpenSettlement={(item) => {
                 setCompletionAmounts((value) => ({
                   ...value,

@@ -100,6 +100,9 @@ export const appointmentAdminUpdateSchema = z
     baseAmount: z.number().int().min(0).max(1_000_000_000).optional(),
     selectedGames: z.array(installationGameRefSchema).min(1).max(100).optional(),
     registerStoreOrder: z.literal(true).optional(),
+    storeOrderCustomerId: z.string().regex(objectIdRegex).optional(),
+    storeOrderDescription: z.string().trim().max(1000).optional(),
+    deliverStoreOrder: z.literal(true).optional(),
     expectedUpdatedAt: z.iso.datetime().optional(),
     note: z.string().trim().max(500).optional(),
   })

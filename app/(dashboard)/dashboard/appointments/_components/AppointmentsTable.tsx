@@ -32,6 +32,7 @@ type Props = {
   pages: number;
   workingId: string;
   onPageChange: (page: number) => void;
+  onDeliverStoreOrder: (item: AppointmentItem) => void;
   onOpenDetails: (item: AppointmentItem) => void;
   onEditGames: (item: AppointmentItem) => void;
   onOpenSettlement: (item: AppointmentItem) => void;
@@ -51,6 +52,7 @@ export default function AppointmentsTable({
   workingId,
   onPageChange,
   onOpenDetails,
+  onDeliverStoreOrder,
   onOpenSettlement,
   onEditGames,
   onRequestPayment,
@@ -192,17 +194,19 @@ export default function AppointmentsTable({
                     {courier ? "تأیید و ثبت مبلغ اولیه" : "تأیید درخواست"}
                   </button>
                 )}
-                {item.status === "confirmed" && !courier && (
-                  <button type="button" disabled={workingId === item._id} onClick={() => onOpenSettlement(item)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">ثبت مبلغ نهایی و ارسال لینک پرداخت</button>
+                {!courier && item.status === "completed" && item.storeOrderRegisteredAt && !item.storeOrderDeliveredAt && (
+                  <button type="button" disabled={workingId === item._id} onClick={() => onDeliverStoreOrder(item)}
+                    className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">ثبت تحویل حضوری</button>
                 )}
+                {item.storeOrderDeliveredAt && <span className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800">تحویل حضوری ثبت شد</span>}
                 {courier && !["cancelled", "rejected", "no_show"].includes(item.status) && (courierNext[courier.status] || []).filter((status) => status !== "cancelled" && status !== "return_ready" && !(status === "assigned" && (item.status !== "confirmed" || !item.pricing?.known))).map((status) => (
                   <button key={status} type="button" disabled={workingId === item._id} onClick={() => onRequestCourier(item, status)} className="rounded-xl bg-blue-900 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">
                     {status === "assigned" ? "حرکت پیک برای دریافت" : status === "at_store" ? "تحویل دستگاه به مغازه" : status === "returning" ? "حرکت پیک برای برگشت" : courierLabel[status]}
                   </button>
                 ))}
-                {courier && (courier.status === "at_store" || item.storeOrderRegisteredAt) && (
+                {item.status === "confirmed" && (!courier || courier.status === "at_store") && (
                   <Link href={`/dashboard/store-order?appointment=${item._id}`} className="rounded-xl bg-indigo-700 px-3 py-2 text-xs font-bold text-white">
-                    {item.storeOrderRegisteredAt ? "ادامه در سفارش دستی" : "ثبت سفارش دستی"}
+                    {item.storeOrderRegisteredAt ? "ویرایش سفارش دستی" : courier ? "ثبت سفارش دستی" : "تحویل دستگاه به مغازه و ثبت سفارش"}
                   </Link>
                 )}
                 {courier && item.serviceType === "game_install" && ["pending", "confirmed"].includes(item.status) &&

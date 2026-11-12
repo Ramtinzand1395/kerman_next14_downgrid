@@ -2,6 +2,8 @@ import dbConnect from "@/lib/mongodb";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "../../auth/[...nextauth]/options";
+import Appointment from "@/model/Appointment";
+import { websiteStoreOrders } from "@/lib/appointments/store-order";
 import StoreOrder from "@/model/StoreOrder";
 import moment from "moment-jalaali";
 import "@/model/Customer";
@@ -36,11 +38,10 @@ export async function GET() {
 
   await dbConnect();
 
-  const orders = await StoreOrder.find({
-    deliveryStatus: { $ne: "تحویل به مشتری" },
-  })
-    .populate("customer")
-    .lean();
+  const [orders, websiteOrders] = await Promise.all([
+    StoreOrder.find({ deliveryStatus: { $ne: "تحویل به مشتری" } }).populate("customer").lean(),
+    Appointment.aggregate<storeOrder>(websiteStoreOrders(true)),
+  ]);
 
   const parsedOrders: storeOrder[] = orders.map((o: any) => ({
     ...o,
@@ -50,8 +51,8 @@ export async function GET() {
 
   const groupedOrders: Record<string, storeOrder[]> = {};
 
-  parsedOrders.forEach((order) => {
-    const key = order.consoleType;
+  [...parsedOrders, ...websiteOrders].sort((a, b) => Number(new Date(b.createdAt)) - Number(new Date(a.createdAt))).forEach((order) => {
+    const key = ["ps5", "ps4", "copy", "ps5Copy", "xbox"].includes(order.consoleType) ? order.consoleType : "other";
     if (!groupedOrders[key]) groupedOrders[key] = [];
     groupedOrders[key].push(order);
   });

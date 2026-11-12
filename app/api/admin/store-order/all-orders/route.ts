@@ -1,5 +1,7 @@
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/mongodb";
+import Appointment from "@/model/Appointment";
+import { websiteStoreOrders } from "@/lib/appointments/store-order";
 import StoreOrder from "@/model/StoreOrder";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
@@ -87,6 +89,10 @@ export async function GET(req: Request) {
       },
     },
     { $unwind: "$customer" },
+    { $unionWith: {
+      coll: Appointment.collection.name,
+      pipeline: [...websiteStoreOrders(false), { $match: matchOrder }],
+    } },
 
     Object.keys(matchCustomer).length ? { $match: matchCustomer } : null,
 

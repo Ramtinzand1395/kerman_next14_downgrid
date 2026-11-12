@@ -184,6 +184,7 @@ export type AppointmentItem = {
   payment?: { status: "unpaid" | "initiating" | "pending" | "paid" | "failed"; amount?: number; refId?: string; paidAt?: string };
   completedAt?: string | null;
   storeOrderRegisteredAt?: string | null;
+  storeOrderDeliveredAt?: string | null;
   updatedAt?: string;
 };
 

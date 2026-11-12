@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { websiteOrderUrl } from "@/lib/appointments/store-order";
+
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
@@ -116,7 +119,7 @@ export default function AllStoreOrders() {
                       {typeof order.customer === "object"
                         ? order.customer.lastName
                         : "نامشخص"}
-                      <span className="mr-2 rounded-full bg-slate-200 px-2 py-1 text-xs font-bold text-slate-700">مغازه</span>
+                      <span className="mr-2 rounded-full bg-slate-200 px-2 py-1 text-xs font-bold text-slate-700">{order.appointmentId ? "سایت" : "مغازه"}</span>
                   </td>
 
                     {/* MOBILE */}
@@ -155,7 +158,13 @@ export default function AllStoreOrders() {
                     <td className="p-3">{toPersianDate(order.createdAt)}</td>
 
                     {/* DELIVERY */}
-                    <td className="p-3">{order.deliveryDate}</td>
+                    <td className="p-3">
+                      {order.appointmentId ? (
+                        <Link className="text-indigo-700" href={websiteOrderUrl({ _id: order.appointmentId, fulfillment: order.fulfillment })}>
+                          {order.deliveryDate ? toPersianDate(order.deliveryDate) : "ادامه عملیات پیک"}
+                        </Link>
+                      ) : order.deliveryDate}
+                    </td>
 
                     {/* PRICE */}
                     <td className="p-3 font-medium">

@@ -1,4 +1,5 @@
 import mongoose, { type ClientSession } from "mongoose";
+import Customer from "@/model/Customer";
 import GameList from "@/model/GameList";
 import {
   catalogPlatformAliases, gameKey, installationCatalog, installationPlatforms,
@@ -79,19 +80,53 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   let current = await Appointment.findById(id);
   if (!current) return fail("نوبت پیدا نشد", 404);
 
-  const { selectedGames, registerStoreOrder, expectedUpdatedAt } = parsed.data;
+  const {
+    selectedGames, registerStoreOrder, expectedUpdatedAt,
+    storeOrderCustomerId, storeOrderDescription, deliverStoreOrder,
+  } = parsed.data;
+  const isCourier = current.fulfillment === "courier";
   if (expectedUpdatedAt && current.updatedAt?.toISOString() !== expectedUpdatedAt) {
     return fail("این سفارش تغییر کرده است؛ اطلاعات را دوباره دریافت کنید.", 409);
   }
-  const editingCourierOrder = Boolean(selectedGames || registerStoreOrder);
-  if (editingCourierOrder && (
-    current.fulfillment !== "courier" || !["pending", "confirmed"].includes(current.status) ||
-    (registerStoreOrder && (current.courier?.status !== "at_store" || current.status !== "confirmed")) ||
+  const editingOrder = Boolean(selectedGames || registerStoreOrder);
+  if ((storeOrderCustomerId || storeOrderDescription !== undefined) && !registerStoreOrder) {
+    return fail("تغییر اطلاعات فرم فقط هنگام ثبت سفارش مجاز است.", 422);
+  }
+  if (deliverStoreOrder) {
+    if (isCourier || current.status !== "completed" || !current.storeOrderRegisteredAt ||
+        Object.keys(parsed.data).some((key) => !["deliverStoreOrder", "expectedUpdatedAt"].includes(key))) {
+      return fail("این سفارش برای تحویل حضوری آماده نیست.", 409);
+    }
+    if (current.storeOrderDeliveredAt) return ok(current);
+    const delivered = await Appointment.findOneAndUpdate(
+      { _id: current._id, status: "completed", updatedAt: current.updatedAt, storeOrderDeliveredAt: null },
+      { $set: { storeOrderDeliveredAt: new Date() } },
+      { returnDocument: "after" },
+    );
+    if (!delivered) return fail("سفارش هم‌زمان تغییر کرده است.", 409);
+    await notifyUser({
+      userId: current.user,
+      title: "دستگاه تحویل داده شد",
+      message: `تحویل حضوری دستگاه سفارش ${current.trackingCode} ثبت شد.`,
+      type: "REQUEST_STATUS_CHANGED",
+      category: "request",
+      entityType: "Appointment",
+      entityId: current._id,
+      link: `/my-profile?step=5&ordersTab=games#appointment-${current._id}`,
+      senderType: "admin",
+      senderId: auth.userId,
+      eventKey: `APPOINTMENT_STORE_DELIVERED:${current._id}`,
+    }).catch((error) => console.error("[appointments] store delivery notification failed", error));
+    return ok(delivered);
+  }
+  if (editingOrder && (
+    !["pending", "confirmed"].includes(current.status) ||
+    (registerStoreOrder && (current.status !== "confirmed" || (isCourier && current.courier?.status !== "at_store"))) ||
     (selectedGames && current.serviceType !== "game_install") ||
     parsed.data.status || parsed.data.courierStatus || parsed.data.startsAt ||
     parsed.data.pickupDate || parsed.data.pickupWindow
   )) {
-    return fail("در این مرحله امکان ویرایش یا ثبت سفارش پیک وجود ندارد.", 409);
+    return fail("در این مرحله امکان ویرایش یا ثبت سفارش وجود ندارد.", 409);
   }
 
   // Reschedule if requested
@@ -113,7 +148,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const nextStatus = parsed.data.status;
   if (nextStatus === "completed" && current.status === "completed") return ok(current);
-  if ((editingCourierOrder || parsed.data.baseAmount !== undefined || nextStatus === "confirmed") &&
+  if ((editingOrder || parsed.data.baseAmount !== undefined || nextStatus === "confirmed") &&
       ["initiating", "pending", "paid"].includes(current.payment?.status)) {
     return fail("درخواست در حال پرداخت یا پرداخت‌شده است؛ تغییر مبلغ و بازگشایی مجاز نیست.", 409);
   }
@@ -155,9 +190,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       (effectiveServiceStatus !== "confirmed" || !current.pricing?.known)) {
     return fail("ابتدا درخواست را تأیید و مبلغ اولیه خدمت را ثبت کنید.", 409);
   }
-  if (nextStatus === "completed" && current.fulfillment === "courier" &&
-      (current.courier?.status !== "at_store" || !current.storeOrderRegisteredAt)) {
-    return fail("ابتدا تحویل دستگاه به مغازه و ثبت سفارش دستی را انجام دهید.", 409);
+  if (nextStatus === "completed" && (!current.storeOrderRegisteredAt || (isCourier && current.courier?.status !== "at_store"))) {
+    return fail("ابتدا دریافت دستگاه و ثبت سفارش دستی را انجام دهید.", 409);
   }
   if (registerStoreOrder && !current.pricing?.known && parsed.data.baseAmount === undefined) {
     return fail("مبلغ خدمت را وارد کنید.", 422);
@@ -167,6 +201,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const correctingCompletion = current.status === "completed" && nextStatus === "confirmed";
+  if (correctingCompletion && current.storeOrderDeliveredAt) {
+    return fail("سفارش تحویل داده شده است.", 409);
+  }
   if (correctingCompletion) {
     const issuedRewards = await VisitReward.find({ sourceAppointment: current._id })
       .select("status")
@@ -194,6 +231,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const set: Record<string, unknown> = {};
+  if (storeOrderCustomerId) {
+    const customer = await Customer.exists({ _id: storeOrderCustomerId, mobile: current.phone });
+    if (!customer) return fail("شماره مشتری سفارش با شماره ثبت‌شده در سایت مطابقت ندارد.", 422);
+    set.storeOrderCustomer = storeOrderCustomerId;
+  }
+  if (storeOrderDescription !== undefined) set.description = storeOrderDescription;
   let gamesChanged = false;
   if (selectedGames) {
     const platforms = installationPlatforms(current.device, current.installationType);

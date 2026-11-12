@@ -1,8 +1,11 @@
 import GameCover from "@/app/components/games/GameCover";
 import { GameItem, storeOrder } from "@/types";
+import type { AppointmentItem } from "@/types/appointments";
+import { gameKey, type InstallationGame } from "@/lib/appointments/games";
 import { useEffect, useMemo, useState } from "react";
 
 interface GameDropdownProps {
+  appointment?: AppointmentItem;
   Selectedgames: storeOrder | null;
   setSelectedgames: React.Dispatch<React.SetStateAction<storeOrder | null>>;
 }
@@ -24,6 +27,7 @@ const calcTotals = (list: GameItem[]) => {
 };
 
 const GameDropdown: React.FC<GameDropdownProps> = ({
+  appointment,
   Selectedgames,
   setSelectedgames,
 }) => {
@@ -32,7 +36,7 @@ const GameDropdown: React.FC<GameDropdownProps> = ({
   const [games, setGames] = useState<GameItem[]>([]);
 
   useEffect(() => {
-    if (!Selectedgames?.consoleType) {
+    if (!Selectedgames?.consoleType || (appointment && !search.trim())) {
       setGames([]);
       return;
     }
@@ -54,12 +58,15 @@ const GameDropdown: React.FC<GameDropdownProps> = ({
           params.set("limit", "5000");
         }
 
-        const res = await fetch(
-          `/api/admin/store-order/game-list?${params.toString()}`,
-          {
-            signal: controller.signal,
-          },
-        );
+        const catalogUrl = appointment
+          ? `/api/profile/appointments/games?${new URLSearchParams({
+            device: appointment.device,
+            installationType: appointment.installationType || "",
+            search: search.trim(),
+            limit: "48",
+          })}`
+          : `/api/admin/store-order/game-list?${params}`;
+        const res = await fetch(catalogUrl, { signal: controller.signal });
 
         if (!res.ok) {
           setGames([]);
@@ -67,10 +74,15 @@ const GameDropdown: React.FC<GameDropdownProps> = ({
         }
 
         const data = await res.json();
-// !تغییر با chat
         const gameList = data.gameList as GameData | undefined;
-
-        const allGames = gameList?.items ?? [];
+        const allGames = appointment ? (data.games as InstallationGame[]).map((game) => ({
+          _id: gameKey(game),
+          name: game.name,
+          size: game.sizeGB ?? undefined,
+          imageUrl: game.imageUrl,
+          imageAlt: game.imageAlt,
+          appointmentGame: { platform: game.platform, gameId: game.gameId },
+        })) : gameList?.items ?? [];
         const uniqueGames = Array.from(
           new Map(
             allGames.map((game) => [game._id ?? normalize(game.name), game]),
@@ -84,14 +96,14 @@ const GameDropdown: React.FC<GameDropdownProps> = ({
           setGames([]);
         }
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
 
     getData();
 
     return () => controller.abort();
-  }, [search, Selectedgames?.consoleType]);
+  }, [appointment, search, Selectedgames?.consoleType]);
 
   const filteredGames = useMemo(() => {
     if (!search.trim()) return games;
@@ -125,7 +137,7 @@ const GameDropdown: React.FC<GameDropdownProps> = ({
                   const exists = prev.list.some(
                     (item) =>
                       (item._id && game._id && item._id === game._id) ||
-                      normalize(item.name) === normalize(game.name),
+                      (!appointment && normalize(item.name) === normalize(game.name)),
                   );
 
                   if (exists) return prev;
@@ -138,7 +150,7 @@ const GameDropdown: React.FC<GameDropdownProps> = ({
                     list: newList,
                     totalPrice,
                     totalSize,
-                    price: totalPrice,
+                    price: appointment ? prev.price : totalPrice,
                   };
                 });
 
@@ -147,7 +159,7 @@ const GameDropdown: React.FC<GameDropdownProps> = ({
               className="flex w-full items-center gap-2 px-3 py-2 text-right hover:bg-slate-50"
             >
               <GameCover game={game} />
-              <span dir="auto">{game.name}</span>
+              <span dir="auto">{game.name}{game.appointmentGame && ` · ${game.appointmentGame.platform}`}</span>
               <span className="mr-2 text-xs text-gray-500">
                 ({game.size} GB)
               </span>

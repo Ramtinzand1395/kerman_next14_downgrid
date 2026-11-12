@@ -6,17 +6,9 @@ import { toast } from "react-toastify";
 
 import { toPersianDate } from "@/helpers/toPersianDate";
 import { sendPdfToBackend } from "@/helpers/sendPdfToBackend";
-import { ConsoleType, storeOrder } from "@/types";
+import { ConsoleType, storeOrder, OrdersByConsole } from "@/types";
 
 import UpdateStoreOrder from "./UpdateStoreOrder";
-
-type OrdersByConsole = {
-  ps5: storeOrder[];
-  ps4: storeOrder[];
-  xbox: storeOrder[];
-  copy: storeOrder[];
-  ps5Copy: storeOrder[];
-};
 
 interface UserInfoModalProps {
   closeModal: () => void;

@@ -162,6 +162,10 @@ export interface Customer {
 }
 export type ConsoleType = "ps5" | "ps4" | "xbox" | "copy" | "ps5Copy";
 interface StoreOrder {
+  appointmentId?: string;
+  fulfillment?: import("./appointments").Fulfillment;
+  serviceBaseAmount?: number | null;
+  serviceType?: import("./appointments").ServiceType;
   _id: string;
   list: GameItem[];
   totalSize?: number;
@@ -179,6 +183,7 @@ interface StoreOrder {
 }
 
 export type storeOrder = StoreOrder;
+export type OrdersByConsole = Record<ConsoleType | "other", storeOrder[]>;
 
 // export interface GameItem {
 //   _id?: string;
@@ -195,6 +200,7 @@ export type storeOrder = StoreOrder;
 // !این دو مورد به جای بالا اضافه شد
 export interface GameItem {
   _id: string;
+  appointmentGame?: { platform: string; gameId: string };
 
   name: string;
   imageUrl?: string;

@@ -129,6 +129,8 @@ const AppointmentSchema = new Schema(
       startedAt: { type: Date },
       paidAt: { type: Date },
     },
+    storeOrderCustomer: { type: Schema.Types.ObjectId, ref: "Customer", default: null },
+    storeOrderDeliveredAt: { type: Date, default: null },
     storeOrderRegisteredAt: { type: Date, default: null },
     completedAt: { type: Date, default: null },
     visitCountedAt: { type: Date, default: null },

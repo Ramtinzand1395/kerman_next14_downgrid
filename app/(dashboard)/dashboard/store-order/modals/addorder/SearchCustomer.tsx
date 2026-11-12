@@ -16,6 +16,7 @@ interface SearchCustomerProps {
   setCustomerData: React.Dispatch<React.SetStateAction<Customer>>;
   onNext: () => void;
   barcode: string;
+  lockedMobile?: boolean;
   setBarcode: (value: string) => void;
 }
 
@@ -25,6 +26,7 @@ const SearchCustomer = ({
   onNext,
   barcode,
   setBarcode,
+  lockedMobile,
 }: SearchCustomerProps) => {
   const [searching, setSearching] = useState(false);
 
@@ -52,7 +54,7 @@ const SearchCustomer = ({
       const data = await res.json();
 
       if (res.status === 400 && data?.message === "خریدار پیدا نشد.") {
-        setCustomerData({
+        if (!lockedMobile) setCustomerData({
           _id: "",
           name: "",
           mobile,
@@ -90,6 +92,7 @@ const SearchCustomer = ({
         <input
           aria-label="شماره موبایل"
           disabled={searching}
+          readOnly={lockedMobile}
           dir="ltr"
           type="tel"
           value={customerData.mobile}

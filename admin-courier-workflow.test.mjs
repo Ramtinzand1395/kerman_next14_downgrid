@@ -27,6 +27,7 @@ function harness(){
     '@/lib/appointments/service':{rescheduleAppointment:async()=>{}},
     '@/lib/appointments/rewards.service':{issueVisitRewards:async()=>{},redeemVisitReward:async()=>{redeemed++;return {discount:0,shippingDiscount:0};},releaseVisitReward:async()=>{}},
     '@/lib/appointments/games':games,
+    '@/model/Customer':{default:{exists:async({mobile})=>mobile==='09123456789'}},
     '@/model/GameList':{default:{
       find:()=>({select:()=>({lean:async()=>[{platform:'ps5',items:[{_id:id,name:'Test Game',size:27.5}]}]})}),
     }},
@@ -72,6 +73,8 @@ test('admin request pricing, pickup, completion and return match customer five-s
   assert.ok(h.notices.some(n=>n.message.includes('۹۲۰٬۰۰۰')&&n.link.includes('ordersTab=games#appointment-')));
   assert.equal((await h.patch({courierStatus:'returning'})).status,200);
   assert.equal(h.current.courier.status,'returning');
+  assert.equal((await h.patch({courierStatus:'delivered'})).status,200);
+  assert.ok(h.current.courier.deliveredAt);
 });
 
 test('completed legacy requests can return without replaying pickup or overwriting history',async()=>{
@@ -110,4 +113,25 @@ test('legacy picked-up orders can be received and registered at the shop', async
   assert.equal((await h.patch({ registerStoreOrder: true, baseAmount: 810000 })).status, 200);
   assert.equal(h.current.storeOrderRegisteredAt.getTime(), firstRegistration);
   assert.equal(h.current.pricing.finalAmount, 930000);
+});
+
+test('website in-store orders register and complete through the manual stages with the original customer', async () => {
+  const h = harness();
+  h.current.fulfillment = 'in_store';
+  h.current.courier = null;
+  h.current.pricing = {known:false, shippingBaseAmount:0};
+  assert.equal((await h.patch({registerStoreOrder:true,baseAmount:500000})).status,409);
+  assert.equal((await h.patch({status:'confirmed'})).status,200);
+  assert.equal((await h.patch({status:'completed',baseAmount:500000})).status,409);
+  assert.equal((await h.patch({registerStoreOrder:true,storeOrderCustomerId:id,baseAmount:500000,
+    storeOrderDescription:'اطلاعات سفارش', selectedGames:[{platform:'ps5',gameId:id}]})).status,200);
+  assert.equal(h.current.storeOrderCustomer,id);
+  assert.equal(h.current.description,'اطلاعات سفارش');
+  assert.equal(h.current.pricing.finalAmount,500000);
+  assert.equal((await h.patch({deliverStoreOrder:true})).status,409);
+  assert.equal((await h.patch({status:'completed',baseAmount:500000})).status,200);
+  assert.equal((await h.patch({deliverStoreOrder:true})).status,200);
+  assert.ok(h.current.storeOrderDeliveredAt);
+  assert.equal((await h.patch({deliverStoreOrder:true})).status,200);
+  assert.equal(h.notices.filter(n=>n.eventKey.startsWith('APPOINTMENT_STORE_DELIVERED:')).length,1);
 });

@@ -48,23 +48,6 @@ export async function GET(req: Request) {
     };
   }
 
-  if (url.searchParams.get("storeOrders") === "1") {
-    filter.fulfillment = "courier";
-    filter.$and = [{ $or: [
-      { "courier.status": "at_store" },
-      { "courier.arrivedAtStoreAt": { $ne: null } },
-      { storeOrderRegisteredAt: { $ne: null } },
-    ] }];
-    const [items, total] = await Promise.all([
-      Appointment.find(filter)
-        .select("trackingCode serviceType device customerName phone status pricing courier.status storeOrderRegisteredAt")
-        .sort({ "courier.arrivedAtStoreAt": -1, _id: -1 })
-        .skip((page - 1) * limit).limit(limit).lean(),
-      Appointment.countDocuments(filter),
-    ]);
-    return ok({ items, total, page, pages: Math.max(1, Math.ceil(total / limit)) });
-  }
-
   if (search) {
     const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const regex = new RegExp(escaped, "i");

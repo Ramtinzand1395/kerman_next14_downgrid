@@ -10,19 +10,11 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 
-import { storeOrder } from "@/types";
+import { OrdersByConsole } from "@/types";
 import AddOrderModal from "./modals/addorder/AddOrderModal";
-import WebsiteOrders from "./WebsiteOrders";
+import WebsiteOrderModal from "./WebsiteOrderModal";
 import OrderTable from "./OrderTable";
 import StoreOrderCart from "./modals/StoreOrderCart";
-
-type OrdersByConsole = {
-  ps5: storeOrder[];
-  ps4: storeOrder[];
-  xbox: storeOrder[];
-  copy: storeOrder[];
-  ps5Copy: storeOrder[];
-};
 
 const initialOrders: OrdersByConsole = {
   ps5: [],
@@ -30,6 +22,7 @@ const initialOrders: OrdersByConsole = {
   xbox: [],
   copy: [],
   ps5Copy: [],
+  other: [],
 };
 
 const consoleSections: Array<{
@@ -46,6 +39,7 @@ const consoleSections: Array<{
   { key: "ps4", title: "پلی‌استیشن 4", accent: "border-sky-200" },
   { key: "copy", title: "پلی استیشن 4 کپی خور", accent: "border-amber-200" },
   { key: "xbox", title: "Xbox", accent: "border-emerald-200" },
+  { key: "other", title: "سایر دستگاه‌ها", accent: "border-slate-200" },
 ];
 
 export default function StoreOrder() {
@@ -54,11 +48,15 @@ export default function StoreOrder() {
   const [isSendingSms, setIsSendingSms] = useState(false);
   const [orders, setOrders] = useState<OrdersByConsole>(initialOrders);
 
+  const [revision, setRevision] = useState(0);
+  const refreshOrders = () => setRevision((value) => value + 1);
+
   useEffect(() => {
+    const controller = new AbortController();
     const fetchOrders = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch("/api/admin/store-order");
+        const res = await fetch("/api/admin/store-order", { signal: controller.signal, cache: "no-store" });
         const data = await res.json();
 
         if (!res.ok) {
@@ -71,17 +69,20 @@ export default function StoreOrder() {
           xbox: data.xbox || [],
           copy: data.copy || [],
           ps5Copy: data.ps5Copy || [],
+          other: data.other || [],
         });
       } catch (err) {
+        if (controller.signal.aborted) return;
         console.error(err);
         toast.error("فهرست سفارش‌ها دریافت نشد؛ صفحه را تازه‌سازی کنید.");
       } finally {
-        setIsLoading(false);
+        if (!controller.signal.aborted) setIsLoading(false);
       }
     };
 
-    fetchOrders();
-  }, []);
+    void fetchOrders();
+    return () => controller.abort();
+  }, [revision]);
 
   const totalOrders = useMemo(
     () => Object.values(orders).reduce((sum, list) => sum + list.length, 0),
@@ -124,10 +125,6 @@ export default function StoreOrder() {
           )}
         </section>
 
-        <Suspense fallback={<p className="text-sm">در حال دریافت سفارش‌های سایت…</p>}>
-          <WebsiteOrders />
-        </Suspense>
-
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <StoreOrderCart
             title="کل سفارش‌ها"
@@ -150,7 +147,7 @@ export default function StoreOrder() {
         </section>
 
         <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          {consoleSections.map((section) => (
+          {consoleSections.filter(({ key }) => key !== "other" || orders.other.length).map((section) => (
             <div
               key={section.key}
               className={`rounded-2xl border ${section.accent} bg-white p-4 shadow-sm md:p-5`}
@@ -162,10 +159,15 @@ export default function StoreOrder() {
                 consoleKey={section.key}
                 isLoading={isLoading}
                 setloadingSms={setIsSendingSms}
+                onWebsiteOrderChanged={refreshOrders}
               />
             </div>
           ))}
         </section>
+
+        <Suspense fallback={null}>
+          <WebsiteOrderModal setOrders={setOrders} onSaved={refreshOrders} />
+        </Suspense>
 
         {isAddModalOpen && (
           <AddOrderModal
