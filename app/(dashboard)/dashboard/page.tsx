@@ -98,6 +98,13 @@ type DashboardReport = {
       distributions: { orderStatus: Distribution; paymentStatus: Distribution };
       definitions: Record<string, string>;
     }>;
+    productProfit: Section<{
+      knownInventoryProfit: number;
+      missingPurchasePriceProducts: number;
+      knownSalesProfit: number;
+      website: { knownProfit: number; unknownSales: number };
+      pos: { knownProfit: number; estimatedProfit: number; estimatedSales: number; unknownSales: number };
+    }>;
     manualOrders: Section<{
       points: Point[];
       totals: {
@@ -561,6 +568,7 @@ export default function DashboardPage() {
   const commerce = visibleReport
     ? sectionData(visibleReport.sections.commerce)
     : null;
+  const productProfit = visibleReport ? sectionData(visibleReport.sections.productProfit) : null;
   const manualOrders = visibleReport
     ? sectionData(visibleReport.sections.manualOrders)
     : null;
@@ -740,6 +748,50 @@ export default function DashboardPage() {
           </button>
         </div>
       )}
+
+      <section aria-labelledby="product-profit">
+        <h2 id="product-profit" className="mb-3 text-lg font-black text-slate-900">سود محصولات</h2>
+        {productProfit ? (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <MetricCard
+                title="سود ناخالص قطعی فروش در بازه"
+                value={toman(productProfit.knownSalesProfit)}
+                note={`سایت ${toman(productProfit.website.knownProfit)} · صندوق ${toman(productProfit.pos.knownProfit)}`}
+                icon={CircleDollarSign}
+                tone="emerald"
+                href="/dashboard/orders"
+              />
+              <MetricCard
+                title="سود بالقوه موجودی فعلی"
+                value={toman(productProfit.knownInventoryProfit)}
+                note={`${productProfit.missingPurchasePriceProducts.toLocaleString("fa-IR")} محصول بدون قیمت خرید کامل`}
+                icon={PackageCheck}
+                href="/dashboard/products"
+              />
+              <MetricCard
+                title="سود نامشخص فروش"
+                value={`${(productProfit.website.unknownSales + productProfit.pos.unknownSales).toLocaleString("fa-IR")} فروش`}
+                note={`سایت ${productProfit.website.unknownSales.toLocaleString("fa-IR")} · صندوق ${productProfit.pos.unknownSales.toLocaleString("fa-IR")}`}
+                icon={ShoppingCart}
+                tone="amber"
+              />
+              <MetricCard
+                title="سود تخمینی فروش صندوق"
+                value={productProfit.pos.estimatedSales ? toman(productProfit.pos.estimatedProfit) : "—"}
+                note={`${productProfit.pos.estimatedSales.toLocaleString("fa-IR")} فروش با قیمت خرید زمان همگام‌سازی`}
+                icon={Clock3}
+                tone="amber"
+              />
+            </div>
+            <p className="mt-2 text-xs text-slate-500">
+              سود فروش بر اساس مبلغ کالا پس از تخفیف و کوپن، منهای قیمت خرید ثبت‌شده محاسبه می‌شود. مبلغ ارسال و سفارش‌های لغوشده از محاسبه کنار گذاشته می‌شوند.
+            </p>
+          </>
+        ) : (
+          <SectionError message="گزارش سود محصولات در دسترس نیست." onRetry={retry} />
+        )}
+      </section>
 
       <section aria-labelledby="primary-metrics">
         <h2 id="primary-metrics" className="sr-only">

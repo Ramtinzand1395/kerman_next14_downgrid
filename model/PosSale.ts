@@ -35,6 +35,8 @@ const PosSaleSchema = new mongoose.Schema(
     },
     soldAtUtc: { type: Date, required: true, immutable: true },
     syncedAtUtc: { type: Date, required: true, immutable: true },
+    salePurchasePrices: { type: [Number], select: false, default: undefined, immutable: true },
+    purchasePricesEstimated: { type: Boolean, select: false, immutable: true },
     items: { type: [PosSaleItemSchema], required: true },
     finalAmountToman: nonNegativeSafeInteger(),
     paymentMethods: { type: [PaymentMethodSchema], required: true },

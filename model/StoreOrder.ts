@@ -36,6 +36,7 @@ const storeOrderSchema = new mongoose.Schema(
     },
     deliveryDate: { type: String, default: "تحویل داده نشده", required: true },
     deliveryCode: { type: String, unique: true },
+    websiteAccountSyncPending: Boolean,
     clientRequestKey: { type: String, trim: true, maxlength: 128, default: null },
   },
   {

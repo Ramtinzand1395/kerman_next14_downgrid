@@ -111,6 +111,9 @@ const OrderSchema = new mongoose.Schema(
       },
     ],
 
+    // Same order as items, written only when the payment and inventory commit.
+    salePurchasePrices: { type: [Number], select: false, default: undefined },
+
     buyerSnapshot: {
       name: { type: String, default: "" },
       mobile: { type: String, default: "" },
@@ -247,7 +250,14 @@ const OrderSchema = new mongoose.Schema(
 
     description: String,
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    toJSON: {
+      transform(_doc, value) {
+        delete value.salePurchasePrices;
+      },
+    },
+  },
 );
 
 OrderSchema.index({ paymentStatus: 1, paymentVerifiedAt: 1, createdAt: 1 });

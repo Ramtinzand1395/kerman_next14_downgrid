@@ -6,6 +6,7 @@ interface IUser extends Document {
   username?: string;
   firstName?: string;
   lastName?: string;
+  storeOrderPendingSignup?: boolean;
   email?: string;
   mobile: string;
   role: string;
@@ -49,6 +50,7 @@ const UserSchema = new Schema<IUser>(
     username: { type: String, default: "کاربر", required: true },
     firstName: { type: String, trim: true, maxlength: 80 },
     lastName: { type: String, trim: true, maxlength: 80 },
+    storeOrderPendingSignup: Boolean,
     email: { type: String, sparse: true },
     mobile: { type: String, unique: true, required: true },
     role: {
@@ -93,7 +95,8 @@ UserSchema.index({ createdAt: 1 });
 
 // Reload an older development model so new accounts keep both name fields.
 if (mongoose.models.User && process.env.NODE_ENV === "development" &&
-    !mongoose.models.User.schema.path("firstName")) {
+    (!mongoose.models.User.schema.path("firstName") ||
+     !mongoose.models.User.schema.path("storeOrderPendingSignup"))) {
   mongoose.deleteModel("User");
 }
 

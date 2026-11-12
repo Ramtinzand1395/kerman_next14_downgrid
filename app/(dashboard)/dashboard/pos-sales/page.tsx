@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requirePosSuperadmin } from "@/lib/pos/admin";
 import dbConnect from "@/lib/mongodb";
+import { calculateSaleProfit } from "@/lib/product-profit";
 import PosSale from "@/model/PosSale";
 import PosDevice from "@/model/PosDevice";
 import PosInventoryMovement from "@/model/PosInventoryMovement";
@@ -32,7 +33,7 @@ export default async function PosSalesPage({ searchParams }: {
     ? searchParams.status! : "";
   await dbConnect();
   const rows = await PosSale.find(status ? { syncStatus: status } : {})
-    .select("saleId siteSaleId invoiceNumber deviceId soldAtUtc syncedAtUtc finalAmountToman cashier items syncStatus reviewReasons")
+    .select("saleId siteSaleId invoiceNumber deviceId soldAtUtc syncedAtUtc finalAmountToman cashier items syncStatus reviewReasons salePurchasePrices purchasePricesEstimated")
     .sort({ soldAtUtc: -1, _id: -1 }).skip((page - 1) * 20).limit(21).lean();
   const sales = rows.slice(0, 20);
   const [devices, movements] = sales.length ? await Promise.all([
@@ -61,10 +62,14 @@ export default async function PosSalesPage({ searchParams }: {
       </select></label><button className="rounded bg-blue-600 px-4" type="submit">نمایش</button>
     </form>
     {!sales.length && <p>فاکتوری در این صفحه وجود ندارد.</p>}
-    {sales.map((sale) => <article key={String(sale._id)} className="space-y-3 rounded-xl border border-slate-700 p-4">
+    {sales.map((sale) => {
+      const profit = calculateSaleProfit(sale.items, sale.salePurchasePrices, sale.finalAmountToman);
+      const profitLabel = profit === null ? "نامشخص" : sale.purchasePricesEstimated === false ? "قطعی" : "تخمینی";
+      return <article key={String(sale._id)} className="space-y-3 rounded-xl border border-slate-700 p-4">
       <h2 className="font-bold break-all" dir="ltr">{sale.invoiceNumber}</h2>
       <p>شناسه صندوق: <bdi>{sale.saleId}</bdi> | شناسه سایت: <bdi>{sale.siteSaleId}</bdi></p>
       <p>فروش: {date(sale.soldAtUtc)} | ثبت در سایت: {date(sale.syncedAtUtc)} | {money(sale.finalAmountToman)}</p>
+      <p>سود ناخالص {profitLabel}{profit === null ? "" : ` · ${money(profit)}`}</p>
       <p>دستگاه: {deviceNames.get(sale.deviceId) ?? sale.deviceId} (<bdi>{sale.deviceId}</bdi>) | صندوقدار: {sale.cashier?.name} (<bdi>{sale.cashier?.cashierId}</bdi>)</p>
       <p>وضعیت: {sale.syncStatus === "synced" ? "همگام‌شده (synced)" : "نیازمند بررسی (review_required)"}</p>
       {sale.reviewReasons?.length > 0 && <p>{sale.reviewReasons.map((reason: string) => reasons[reason] ?? reason).join("، ")}</p>}
@@ -80,7 +85,8 @@ export default async function PosSalesPage({ searchParams }: {
           ردیف {movement.itemIndex + 1}: تغییر {movement.quantityDelta}؛ موجودی مدل {movement.itemStockBefore} ← {movement.itemStockAfter}؛ موجودی محصول {movement.parentStockBefore} ← {movement.parentStockAfter}؛ نسخه {movement.inventoryVersionBefore} ← {movement.inventoryVersionAfter}؛ {date(movement.recordedAtUtc)}
         </p>)}
       </details>
-    </article>)}
+    </article>;
+    })}
     <nav className="flex gap-5" aria-label="صفحه‌بندی فروش‌های صندوق">
       {page > 1 && <Link href={href(page - 1)}>صفحه قبل</Link>}<span>صفحه {page}</span>
       {rows.length > 20 && page < 10000 && <Link href={href(page + 1)}>صفحه بعد</Link>}

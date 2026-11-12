@@ -13,6 +13,7 @@ export default function CustomersPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
     null,
   );
+  const [syncingAccount, setSyncingAccount] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -72,6 +73,20 @@ export default function CustomersPage() {
       customers.find((customer) => customer._id === selectedCustomerId) ?? null,
     [customers, selectedCustomerId],
   );
+  const syncWebsiteAccount = async (customerId: string) => {
+    setSyncingAccount(true);
+    try {
+      const response = await fetch(`/api/admin/store-order/customer/${customerId}/website-account`, { method: "POST" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message);
+      toast.success(result.message);
+    } catch (error) {
+      toast.error(error instanceof Error && error.message ? error.message : "حساب سایت ذخیره نشد.");
+    } finally {
+      setSyncingAccount(false);
+    }
+  };
+
   const from = total === 0 ? 0 : (page - 1) * ITEMS_PER_PAGE + 1;
   const to = Math.min(page * ITEMS_PER_PAGE, total);
 
@@ -159,21 +174,31 @@ export default function CustomersPage() {
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
             {selectedCustomer ? (
-              <UpdateUser
-                key={selectedCustomer._id}
-                customer={selectedCustomer}
-                setCustomer={(updater) => {
-                  setCustomers((prev) =>
-                    prev.map((item) =>
-                      item._id === selectedCustomer._id
-                        ? typeof updater === "function"
-                          ? (updater(item) as Customer)
-                          : updater || item
-                        : item,
-                    ),
-                  );
-                }}
-              />
+              <>
+                <UpdateUser
+                  key={selectedCustomer._id}
+                  customer={selectedCustomer}
+                  setCustomer={(updater) => {
+                    setCustomers((prev) =>
+                      prev.map((item) =>
+                        item._id === selectedCustomer._id
+                          ? typeof updater === "function"
+                            ? (updater(item) as Customer)
+                            : updater || item
+                          : item,
+                      ),
+                    );
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={syncingAccount}
+                  onClick={() => void syncWebsiteAccount(selectedCustomer._id)}
+                  className="mt-4 rounded-xl border border-indigo-300 px-4 py-2 text-sm font-bold text-indigo-700 disabled:opacity-50"
+                >
+                  {syncingAccount ? "در حال ثبت حساب…" : "ثبت یا تکمیل حساب سایت"}
+                </button>
+              </>
             ) : (
               <p className="text-sm text-slate-500">
                 برای ویرایش، یک مشتری را از لیست انتخاب کنید.

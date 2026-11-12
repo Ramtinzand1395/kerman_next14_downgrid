@@ -76,6 +76,12 @@ function setup(user) {
         user = { _id: "new-user", ...fields };
         return { ...user };
       },
+      async findOneAndUpdate(filter, update) {
+        if (filter._id !== user?._id || !user.storeOrderPendingSignup) return null;
+        Object.assign(user, update.$set);
+        if (update.$unset?.storeOrderPendingSignup) delete user.storeOrderPendingSignup;
+        return { ...user };
+      },
       async updateOne(filter, update) {
         assert.equal(filter._id, user._id);
         Object.assign(user, update.$set);
@@ -102,6 +108,19 @@ function setup(user) {
     notifications,
   };
 }
+
+test("a store-created account with incomplete names can complete registration on the same user", async () => {
+  const flow = setup({ _id: "store-user", mobile: "09123456789", firstName: "رامتین", storeOrderPendingSignup: true });
+  const challenge = await (await flow.verify()).json();
+  assert.equal(challenge.requiresRegistration, true);
+  assert.equal(flow.getUser().phoneVerifiedAt, undefined);
+  const completed = await flow.complete(challenge.registrationToken, "رامتین", "زند خاوری");
+  assert.equal(completed.status, 200);
+  assert.equal(flow.getUser()._id, "store-user");
+  assert.equal(flow.getUser().lastName, "زند خاوری");
+  assert.equal(flow.getUser().storeOrderPendingSignup, undefined);
+  assert.equal(flow.signups.length, 1);
+});
 
 test("a new mobile must finish the name form before account creation and login", async () => {
   const flow = setup();

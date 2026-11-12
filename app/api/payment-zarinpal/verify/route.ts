@@ -1,4 +1,5 @@
 
+import { snapshotOrderPurchasePrices } from "@/lib/order-purchase-prices";
 import dbConnect from "@/lib/mongodb";
 import Order from "@/model/Order";
 import Product from "@/model/Product";
@@ -343,6 +344,7 @@ export async function GET(req: NextRequest) {
                 buyerSnapshot: temp.buyerSnapshot,
                 sellerSnapshot: temp.sellerSnapshot,
                 items: temp.items,
+                salePurchasePrices: await snapshotOrderPurchasePrices(temp.items, transactionSession),
                 totalPrice: temp.totalPrice,
                 shippingCost: temp.shippingCost,
                 shippingPaymentType:

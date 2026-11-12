@@ -214,6 +214,7 @@ export async function GET(req: Request) {
         { $sort: { averageRating: -1, createdAt: -1 } },
         { $skip: skip },
         { $limit: limit },
+        { $unset: ["purchasePrices", "purchasePricesUpdatedAt"] },
       ]);
 
       return NextResponse.json({

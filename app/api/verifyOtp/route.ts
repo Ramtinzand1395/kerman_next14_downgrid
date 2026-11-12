@@ -87,7 +87,7 @@ export async function POST(req: Request) {
   }
 
   const user = await User.findOne({ mobile: otpDoc.mobile });
-  if (user) {
+  if (user && (!user.storeOrderPendingSignup || (normalizeName(user.firstName) && normalizeName(user.lastName)))) {
     const loginToken = randomBytes(32).toString("base64url");
     return finishLogin(otpDoc, user, loginToken, false);
   }
@@ -155,7 +155,7 @@ async function completeRegistration(body: {
   }
 
   if (!user) return authError(loginRetryMessage, 500);
-  return finishLogin(ticket, user, registrationToken, isNewUser);
+  return finishLogin(ticket, user, registrationToken, isNewUser, { firstName, lastName });
 }
 
 async function finishLogin(
@@ -163,11 +163,33 @@ async function finishLogin(
   user: NonNullable<Awaited<ReturnType<typeof User.findOne>>>,
   token: string,
   isNewUser: boolean,
+  profile?: { firstName: string; lastName: string },
 ) {
   const operationId = randomUUID();
   const mobile = otpDoc.mobile;
   const pendingReferralCode = otpDoc.referralCode?.trim().toUpperCase();
   const otpSignupIntentId = otpDoc.signupIntentId;
+  if (user.storeOrderPendingSignup === true) {
+    const claimed = await User.findOneAndUpdate(
+      { _id: user._id, storeOrderPendingSignup: true },
+      {
+        $set: {
+          phoneVerifiedAt: otpDoc.verifiedAt,
+          registrationCompletedAt: new Date(),
+          ...(profile ? { ...profile, username: `${profile.firstName} ${profile.lastName}` } : {}),
+          ...(pendingReferralCode ? { pendingReferralCode } : {}),
+          ...(otpSignupIntentId ? { signupIntentId: otpSignupIntentId } : {}),
+        },
+        $unset: { storeOrderPendingSignup: 1 },
+      },
+      { returnDocument: "after" },
+    );
+    const current = claimed ?? await User.findOne({ mobile });
+    if (!current) return authError(loginRetryMessage, 500);
+    user = current;
+    isNewUser = Boolean(claimed);
+  }
+
   let referral:
     | { ok: boolean; error?: string; retryable?: boolean }
     | undefined;

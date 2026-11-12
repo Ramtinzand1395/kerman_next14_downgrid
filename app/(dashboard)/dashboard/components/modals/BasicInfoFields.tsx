@@ -8,6 +8,8 @@ import { Plus, Trash2 } from "lucide-react";
 
 interface BasicInfoFieldsProps {
   form: ProductForm;
+  purchasePriceRequired: boolean;
+  variantPurchasePriceRequired: (variant: ProductVariant) => boolean;
   updateField: <K extends keyof ProductForm>(
     key: K,
     value: ProductForm[K],
@@ -27,7 +29,38 @@ const fieldLabels: Record<string, string> = {
   shortDesc: "توضیح کوتاه",
 };
 
-const BasicInfoFields = ({ form, updateField }: BasicInfoFieldsProps) => {
+function PurchasePriceField({
+  value,
+  required,
+  onChange,
+}: {
+  value?: number | null;
+  required: boolean;
+  onChange: (value: number | null) => void;
+}) {
+  return (
+    <label className="block text-xs text-slate-300">
+      <span className="mb-1 block">قیمت خرید (تومان){required ? " *" : ""}</span>
+      <input
+        type="number"
+        min="0"
+        max={Number.MAX_SAFE_INTEGER}
+        step="1"
+        aria-required={required}
+        value={value ?? ""}
+        onChange={(event) => onChange(event.target.value === "" ? null : Number(event.target.value))}
+        className="w-full rounded-lg border border-slate-600 bg-slate-800 px-2.5 py-1.5 text-sm text-slate-100 outline-none focus:border-indigo-500"
+      />
+    </label>
+  );
+}
+
+const BasicInfoFields = ({
+  form,
+  updateField,
+  purchasePriceRequired,
+  variantPurchasePriceRequired,
+}: BasicInfoFieldsProps) => {
   const [isSingleDiscountEnabled, setIsSingleDiscountEnabled] = useState(
     form.discountPrice !== null && form.discountPrice !== undefined,
   );
@@ -285,6 +318,14 @@ const BasicInfoFields = ({ form, updateField }: BasicInfoFieldsProps) => {
             />
           </div>
 
+          <div className="col-span-2 sm:col-span-1">
+            <PurchasePriceField
+              value={form.purchasePrice}
+              required={purchasePriceRequired}
+              onChange={(value) => updateField("purchasePrice", value)}
+            />
+          </div>
+
           {/* Stock */}
           <div className="col-span-2 sm:col-span-1 relative my-2 w-full">
             <label
@@ -488,6 +529,12 @@ const BasicInfoFields = ({ form, updateField }: BasicInfoFieldsProps) => {
                         className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 outline-none focus:border-indigo-500"
                       />
                     </div>
+
+                    <PurchasePriceField
+                      value={variant.purchasePrice}
+                      required={variantPurchasePriceRequired(variant)}
+                      onChange={(value) => handleUpdateVariant(index, "purchasePrice", value)}
+                    />
 
                     {/* Discount Price */}
                     <div>

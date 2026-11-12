@@ -166,7 +166,7 @@ const AddCustomerOrder = ({
 
       setOrders((prev) => ({
         ...prev,
-        [consoleType]: [data.order, ...(prev[consoleType] || [])],
+        [consoleType]: [data.order, ...prev[consoleType].filter((item) => item._id !== data.order._id)],
       }));
 
       toast.success(data.message || "سفارش ثبت شد و به ابتدای فهرست اضافه شد.");

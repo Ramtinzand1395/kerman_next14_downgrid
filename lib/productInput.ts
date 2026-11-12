@@ -13,6 +13,7 @@ export type BuildProductInputOptions = {
   productId?: string;
   existingVariantIds?: readonly string[];
   existingDefaultVariantId?: string | null;
+  existingPurchasePrices?: ReadonlyMap<string, number>;
 };
 
 export type ProductVariantWriteInput = {
@@ -58,6 +59,25 @@ function requireNonNegativeSafeInteger(
   return value;
 }
 
+function resolvePurchasePrice(
+  value: unknown,
+  existing: number | undefined,
+  required: boolean,
+  field: string,
+) {
+  if (value === undefined) value = existing;
+  if (value === undefined || value === null || value === "") {
+    if (required || existing !== undefined) {
+      throw new ProductInputValidationError(field, "وارد کردن قیمت خرید الزامی است.");
+    }
+    return undefined;
+  }
+  if (!isNonNegativeSafeInteger(value)) {
+    throw new ProductInputValidationError(field, "قیمت خرید باید عدد صحیح نامنفی به تومان باشد.");
+  }
+  return value;
+}
+
 function optionalDiscount(
   value: unknown,
   price: number,
@@ -95,7 +115,14 @@ function normalizeVariants(
   productType: "single" | "multi",
   status: "draft" | "published",
   options: BuildProductInputOptions,
-): { variants: ProductVariantWriteInput[]; removedVariantIds: string[] } {
+): {
+  variants: ProductVariantWriteInput[];
+  removedVariantIds: string[];
+  purchasePrices: Record<string, number>;
+  newVariantIds: Map<string, string>;
+} {
+  const purchasePrices: Record<string, number> = {};
+  const newVariantIds = new Map<string, string>();
   if (productType === "single") {
     const existingVariantIds = (options.existingVariantIds ?? []).map((id) =>
       id.toLowerCase(),
@@ -103,6 +130,8 @@ function normalizeVariants(
     return {
       variants: [],
       removedVariantIds: existingVariantIds,
+      purchasePrices,
+      newVariantIds,
     };
   }
 
@@ -160,7 +189,26 @@ function normalizeVariants(
     } else {
       variantId = new mongoose.Types.ObjectId().toString();
       acceptedVariantIds.add(variantId);
+      const clientId = variant.clientVariantId;
+      if (clientId !== undefined) {
+        if (typeof clientId !== "string" || !OBJECT_ID_PATTERN.test(clientId)) {
+          throw new ProductInputValidationError("variants.clientVariantId", "شناسه موقت مدل نامعتبر است.");
+        }
+        const key = clientId.toLowerCase();
+        if (newVariantIds.has(key) || existingVariantIds.has(key)) {
+          throw new ProductInputValidationError("variants.clientVariantId", "شناسه موقت مدل تکراری است.");
+        }
+        newVariantIds.set(key, variantId);
+      }
     }
+
+    const purchasePrice = resolvePurchasePrice(
+      variant.purchasePrice,
+      options.existingPurchasePrices?.get(variantId),
+      options.mode === "create" || !existingVariantIds.has(variantId),
+      `variants.${index}.purchasePrice`,
+    );
+    if (purchasePrice !== undefined) purchasePrices[variantId] = purchasePrice;
 
     const title = requiredString(variant.title, `variants.${index}.title`);
     const price = requireNonNegativeSafeInteger(
@@ -229,6 +277,8 @@ function normalizeVariants(
   return {
     variants: normalized,
     removedVariantIds,
+    purchasePrices,
+    newVariantIds,
   };
 }
 
@@ -332,7 +382,7 @@ export function buildProductWriteInput(
   const productType: "single" | "multi" =
     body.productType === "multi" ? "multi" : "single";
 
-  const { variants, removedVariantIds } = normalizeVariants(
+  const { variants, removedVariantIds, purchasePrices, newVariantIds } = normalizeVariants(
     body.variants,
     productType,
     status,
@@ -352,6 +402,13 @@ export function buildProductWriteInput(
     price = requireNonNegativeSafeInteger(body.price, "price");
     discountPrice = optionalDiscount(body.discountPrice, price, "discountPrice");
     stock = requireNonNegativeSafeInteger(body.stock, "stock");
+    const purchasePrice = resolvePurchasePrice(
+      body.purchasePrice,
+      options.existingPurchasePrices?.get("single"),
+      options.mode === "create" || Boolean(options.existingVariantIds?.length),
+      "purchasePrice",
+    );
+    if (purchasePrice !== undefined) purchasePrices.single = purchasePrice;
   }
 
   let defaultVariantId: string | null = null;
@@ -375,7 +432,8 @@ export function buildProductWriteInput(
           "شناسه مدل پیش‌فرض نامعتبر است.",
         );
       }
-      requestedDefaultVariantId = rawDefaultVariantId.toLowerCase();
+      const id = rawDefaultVariantId.toLowerCase();
+      requestedDefaultVariantId = newVariantIds.get(id) ?? id;
     }
 
     const activeVariantIds = new Set(
@@ -417,11 +475,26 @@ export function buildProductWriteInput(
     );
   }
 
+  let selectorInput = body.variantSelector;
+  if (newVariantIds.size && selectorInput && typeof selectorInput === "object") {
+    const selector = selectorInput as Record<string, unknown>;
+    if (Array.isArray(selector.mappings)) {
+      selectorInput = {
+        ...selector,
+        mappings: selector.mappings.map((mapping) => {
+          if (typeof mapping?.variantId !== "string") return mapping;
+          const id = newVariantIds.get(mapping.variantId.toLowerCase());
+          return id ? { ...mapping, variantId: id } : mapping;
+        }),
+      };
+    }
+  }
+
   let variantSelector;
   try {
     variantSelector =
       productType === "multi"
-        ? normalizeVariantSelector(body.variantSelector, variants, status)
+        ? normalizeVariantSelector(selectorInput, variants, status)
         : undefined;
   } catch (error) {
     if (error instanceof VariantSelectorValidationError) {
@@ -457,5 +530,5 @@ export function buildProductWriteInput(
     faqs: normalizeFaqs(body.faqs),
   };
 
-  return { productData, removedVariantIds };
+  return { productData, removedVariantIds, purchasePrices };
 }

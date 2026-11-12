@@ -1,6 +1,7 @@
 import mongoose, { type ClientSession } from "mongoose";
 import dbConnect from "../mongodb.ts";
 import Product from "../../model/Product.ts";
+import { posPurchasePriceSnapshot } from "../product-profit.ts";
 import PosInventoryMovement from "../../model/PosInventoryMovement.ts";
 import PosSale from "../../model/PosSale.ts";
 import { appendCatalogChange, runCatalogTransaction } from "./catalog-outbox.ts";
@@ -195,6 +196,7 @@ async function createSaleInTransaction(input: {
   const productIds = [...new Set(input.request.items.map(productKey))];
   const products = await Product.find({ _id: { $in: productIds } })
     .select(PRODUCT_FIELDS)
+    .select("purchasePrices purchasePricesUpdatedAt")
     .session(input.session);
   const productsById = new Map(products.map((product: any) => [String(product._id), product]));
 
@@ -340,6 +342,10 @@ async function createSaleInTransaction(input: {
     };
   });
 
+  const soldAt = new Date(input.request.soldAtUtc);
+  const purchasePrices = lineStates.map(({ product, item }) =>
+    posPurchasePriceSnapshot(product, item.variantId, soldAt),
+  );
   const [sale] = await PosSale.create(
     [
       {
@@ -349,7 +355,9 @@ async function createSaleInTransaction(input: {
         siteSaleId,
         invoiceNumber,
         requestHash: input.requestHash,
-        soldAtUtc: new Date(input.request.soldAtUtc),
+        soldAtUtc: soldAt,
+        salePurchasePrices: purchasePrices.map(({ price }) => price),
+        purchasePricesEstimated: purchasePrices.some(({ estimated }) => estimated),
         syncedAtUtc: input.syncedAt,
         items: saleItems,
         finalAmountToman: input.request.finalAmountToman,

@@ -104,7 +104,7 @@ function mergeRowsIntoPoints(
   }
 }
 
-function paidDateFilter(range: ReportRange) {
+export function paidDateFilter(range: ReportRange) {
   const exact = {
     paymentVerifiedAt: {
       $gte: range.startInclusive,

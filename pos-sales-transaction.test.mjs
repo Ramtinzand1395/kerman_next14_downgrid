@@ -25,8 +25,14 @@ test('POS local replica-set integration', { skip: process.env.POS_LOCAL_TRANSACT
     const { generatePosDeviceId, generatePosToken, hashPosToken } = await import('./lib/pos/token.ts');
     await Promise.all([Product, Category, Sale, Movement, Change, Counter].map(model => model.init()));
     const category = await Category.create({ name: 'Synthetic', slug: 'synthetic' });
-    const makeProduct = (slug, extra = {}) => Product.create({ title: slug, slug, price: 100, stock: 10,
-      mainImage: '/synthetic.webp', category: category._id, status: 'published', productType: 'single', ...extra });
+    const makeProduct = async (slug, extra = {}) => {
+      const product = new Product({ title: slug, slug, price: 100, stock: 10,
+        mainImage: '/synthetic.webp', category: category._id, status: 'published', productType: 'single', ...extra });
+      product.purchasePrices = product.productType === 'multi'
+        ? Object.fromEntries(product.variants.map(variant => [String(variant._id), 60]))
+        : { single: 60 };
+      return product.save();
+    };
     const single = await makeProduct('single');
     const multi = await makeProduct('multi', { productType: 'multi', variants: [
       { title: 'A', sku: 'synthetic-a', price: 100, stock: 8, isActive: true },
@@ -45,6 +51,10 @@ test('POS local replica-set integration', { skip: process.env.POS_LOCAL_TRANSACT
       const body = payload('single-1', [line(single, 2)]);
       first = { body, result: await registerPosSale(body, context) };
       assert.equal(first.result.replayed, false);
+      const stored = await Sale.findOne({ saleId: 'single-1' }).select('+salePurchasePrices +purchasePricesEstimated');
+      assert.deepEqual(Array.from(stored.salePurchasePrices), [60]);
+      assert.equal(stored.purchasePricesEstimated, false);
+      assert.equal(JSON.stringify(first.result).includes('salePurchasePrices'), false);
       const product = await Product.findById(single._id);
       assert.equal(product.stock, 8); assert.equal(product.inventoryVersion, single.inventoryVersion + 1);
       assert.deepEqual(await counts(), [1, 1, 1]);
