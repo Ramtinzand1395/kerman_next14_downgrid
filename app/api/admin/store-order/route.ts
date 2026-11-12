@@ -45,6 +45,66 @@ export async function GET() {
   return NextResponse.json(groupedOrders);
 }
 
+type MongoWriteError = {
+  code?: number;
+  message?: string;
+  keyPattern?: { mobile?: number };
+  cause?: MongoWriteError;
+  originalError?: MongoWriteError;
+};
+
+function transactionsUnavailable(error: MongoWriteError) {
+  return [error, error?.cause, error?.originalError].some((failure) =>
+    failure?.code === 20 &&
+    failure.message?.includes("Transaction numbers are only allowed on a replica set member or mongos"),
+  );
+}
+
+type SavedOrder = InstanceType<typeof StoreOrder>;
+type OrderCustomer = { mobile: string; name?: string; lastName: string; sex?: string };
+
+async function respondToSavedOrder(order: SavedOrder, customer: OrderCustomer | null, replayed = false) {
+  const response = {
+    message: replayed ? "سفارش قبلاً ثبت شده است." : "سفارش ایجاد شد.",
+    order,
+    ...(replayed ? { replayed: true } : {}),
+  };
+  if (replayed && !order.websiteAccountSyncPending) {
+    return NextResponse.json({ ...response, sms: null });
+  }
+
+  const syncPending = order.websiteAccountSyncPending === true;
+  try {
+    if (syncPending) {
+      if (!customer?.mobile) throw new Error("Store customer missing during account sync");
+      await User.init();
+      await provisionStoreCustomerAccount(customer);
+    }
+
+    const sms = customer ? await sendStoreOrderReceiptSms({
+      entityType: "StoreOrder",
+      id: order._id.toString(),
+      mobile: customer.mobile,
+      lastName: customer.lastName,
+      sex: customer.sex,
+      consoleType: order.consoleType,
+      registeredAt: order.createdAt,
+    }) : null;
+
+    if (syncPending) {
+      await StoreOrder.updateOne({ _id: order._id }, { $unset: { websiteAccountSyncPending: 1 } });
+      order.websiteAccountSyncPending = undefined;
+    }
+    return NextResponse.json({ ...response, sms }, { status: replayed ? 200 : 201 });
+  } catch (error) {
+    if (!syncPending) throw error;
+    console.error("[store-order] could not finish website account sync", error);
+    return NextResponse.json({
+      error: "سفارش ذخیره شد. برای تکمیل ثبت حساب مشتری، دوباره روی «ثبت سفارش» بزنید.",
+    }, { status: 503 });
+  }
+}
+
 /* ================= POST ================= */
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -68,14 +128,7 @@ export async function POST(req: Request) {
     }
 
     const replay = await StoreOrder.findOne({ clientRequestKey }).populate("customer");
-    if (replay) {
-      return NextResponse.json({
-        message: "سفارش قبلاً ثبت شده است.",
-        order: replay,
-        replayed: true,
-        sms: null,
-      });
-    }
+    if (replay) return respondToSavedOrder(replay, replay.customer, true);
 
     if (!Array.isArray(list) || list.length === 0) {
       return NextResponse.json(
@@ -130,56 +183,40 @@ export async function POST(req: Request) {
 
     // The mobile index is required to arbitrate concurrent orders and first sign-ins.
     await User.init();
+    await StoreOrder.init();
+    const orderData = {
+      list,
+      price,
+      customer: customerId,
+      description,
+      consoleType,
+      deliveryStatus: deliveryStatus || "دریافت از مشتری",
+      clientRequestKey,
+    };
     const saveOrder = async (dbSession: ClientSession) => {
       await provisionStoreCustomerAccount(customer, dbSession);
-      return new StoreOrder({
-        list,
-        price,
-        customer: customerId,
-        description,
-        consoleType,
-        deliveryStatus: deliveryStatus || "دریافت از مشتری",
-        clientRequestKey,
-      }).save({ session: dbSession });
+      return new StoreOrder(orderData).save({ session: dbSession });
     };
-    const order = await mongoose.connection.transaction(saveOrder).catch((error: {
-      code?: number;
-      keyPattern?: { mobile?: number };
-    }) => {
-      // If OTP registration or another order inserted the same mobile, retry on the existing account.
-      if (error?.code === 11000 && error.keyPattern?.mobile) {
-        return mongoose.connection.transaction(saveOrder);
-      }
-      throw error;
-    });
+    const writeWithTransaction = () => mongoose.connection.transaction(saveOrder);
+    const order = await writeWithTransaction()
+      .catch((error: MongoWriteError) => {
+        if (error?.code === 11000 && error.keyPattern?.mobile) return writeWithTransaction();
+        throw error;
+      })
+      .catch((error: MongoWriteError) => {
+        if (!transactionsUnavailable(error)) throw error;
+        // Persist the order before provisioning so a rejected order cannot leave an orphan account.
+        // The order's idempotency key can resume provisioning if a subsequent write fails.
+        return new StoreOrder({ ...orderData, websiteAccountSyncPending: true }).save();
+      });
+
     order.$session(null);
     await order.populate("customer");
-    // سفارش در این نقطه با موفقیت نهایی شده است؛ خطای پیامک آن را برنمی‌گرداند.
-    const sms = await sendStoreOrderReceiptSms({
-      entityType: "StoreOrder",
-      id: order._id.toString(),
-      mobile: customer.mobile,
-      lastName: customer.lastName,
-      sex: customer.sex,
-      consoleType,
-      registeredAt: order.createdAt,
-    });
-
-    return NextResponse.json(
-      { message: "سفارش ایجاد شد.", order, sms },
-      { status: 201 },
-    );
+    return await respondToSavedOrder(order, customer);
   } catch (err) {
     if ((err as { code?: number })?.code === 11000 && clientRequestKey) {
       const replay = await StoreOrder.findOne({ clientRequestKey }).populate("customer");
-      if (replay) {
-        return NextResponse.json({
-          message: "سفارش قبلاً ثبت شده است.",
-          order: replay,
-          replayed: true,
-          sms: null,
-        });
-      }
+      if (replay) return respondToSavedOrder(replay, replay.customer, true);
     }
     console.error("POST /api/admin/store-order error:", err);
     return NextResponse.json(

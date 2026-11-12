@@ -7,7 +7,7 @@ type StoreCustomer = {
   lastName?: string;
 };
 
-export async function provisionStoreCustomerAccount(customer: StoreCustomer, session: ClientSession) {
+export async function provisionStoreCustomerAccount(customer: StoreCustomer, session?: ClientSession) {
   const mobile = customer.mobile.trim();
   if (!/^09\d{9}$/.test(mobile)) return;
 
