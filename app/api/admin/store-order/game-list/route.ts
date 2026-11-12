@@ -4,6 +4,17 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import GameList from "@/model/GameList";
 import dbConnect from "@/lib/mongodb";
 import { gameInput, gameUpdateInput, gameItemId, gamePlatform } from "@/lib/game-list-validation";
+import {
+  catalogPlatformAliases,
+  installationCatalogPage,
+  installationPlatforms,
+  mapInstallationCatalog,
+  type GameCatalogDocument,
+  type GameCatalogItem,
+} from "@/lib/appointments/games";
+import type { GameItem } from "@/types";
+
+type StoreOrderCatalogItem = GameCatalogItem & { price?: number | null; storage?: string };
 
 async function authorized() {
   const session = await getServerSession(authOptions);
@@ -12,9 +23,44 @@ async function authorized() {
 const forbidden = () => NextResponse.json({ message: "دسترسی غیرمجاز" }, { status: 403 });
 const invalid = (message = "اطلاعات بازی معتبر نیست") => NextResponse.json({ message }, { status: 400 });
 
+async function getInstallationGames(params: URLSearchParams) {
+  const platforms = installationPlatforms(params.get("device") || "", params.get("installationType"));
+  if (!platforms.length) return invalid("دستگاه یا نوع نصب نامعتبر است.");
+
+  try {
+    await dbConnect();
+    const docs = await GameList.find({ platform: { $in: catalogPlatformAliases(platforms) } })
+      .select("platform items._id items.name items.size items.imageUrl items.imageAlt items.price items.storage")
+      .lean() as GameCatalogDocument<StoreOrderCatalogItem>[];
+    const catalog = mapInstallationCatalog(docs, platforms, (game, item) => ({
+      ...game,
+      item: {
+        _id: game.gameId,
+        name: game.name,
+        size: game.sizeGB ?? 0,
+        imageUrl: game.imageUrl,
+        imageAlt: game.imageAlt,
+        price: item.price ?? 0,
+        storage: item.storage,
+      } satisfies GameItem,
+    }));
+    const page = installationCatalogPage(catalog, params);
+
+    return NextResponse.json({
+      ...page,
+      games: page.games.map(({ version, sizeGB, item }) => ({ version, sizeGB, item })),
+    });
+  } catch (error) {
+    console.error("Store order installation catalog failed", error);
+    return NextResponse.json({ message: "فهرست بازی‌ها دریافت نشد" }, { status: 500 });
+  }
+}
+
 export async function GET(req: NextRequest) {
   if (!(await authorized())) return forbidden();
   const params = req.nextUrl.searchParams;
+  if (params.get("catalog") === "installation") return getInstallationGames(params);
+
   const platform = gamePlatform.safeParse(params.get("platform"));
   if (!platform.success) return invalid("پلتفرم معتبر انتخاب کنید");
   const page = Number(params.get("page") || 1);

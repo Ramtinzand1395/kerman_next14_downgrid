@@ -6,9 +6,10 @@ export type InstallationGame = InstallationGameRef & {
   imageUrl: string;
   imageAlt: string;
 };
-export type GameCatalogDocument = {
+export type GameCatalogItem = { _id: unknown; name: string; size?: number | null; imageUrl?: string; imageAlt?: string };
+export type GameCatalogDocument<Item extends GameCatalogItem = GameCatalogItem> = {
   platform: string;
-  items?: Array<{ _id: unknown; name: string; size?: number | null; imageUrl?: string; imageAlt?: string }>;
+  items?: Item[];
 };
 
 export const MAX_INSTALLATION_GAMES = 100;
@@ -35,7 +36,15 @@ export function catalogPlatformAliases(platforms: string[]) {
 }
 
 export function installationCatalog(docs: GameCatalogDocument[], platforms: string[]): InstallationGame[] {
-  const games = new Map<string, InstallationGame>();
+  return mapInstallationCatalog(docs, platforms, (game) => game);
+}
+
+export function mapInstallationCatalog<Item extends GameCatalogItem, Game extends InstallationGame>(
+  docs: GameCatalogDocument<Item>[],
+  platforms: string[],
+  project: (game: InstallationGame, item: Item) => Game,
+): Game[] {
+  const games = new Map<string, Game>();
   for (const doc of docs) {
     const platform = normalizeGamePlatform(doc.platform);
     if (!platforms.includes(platform)) continue;
@@ -48,10 +57,28 @@ export function installationCatalog(docs: GameCatalogDocument[], platforms: stri
         sizeGB: typeof item.size === "number" && Number.isFinite(item.size) && item.size >= 0 ? item.size : null,
         imageUrl: item.imageUrl || "", imageAlt: item.imageAlt || "",
       };
-      games.set(gameKey(game), game);
+      games.set(gameKey(game), project(game, item));
     }
   }
   return [...games.values()].sort((a, b) => a.name.localeCompare(b.name) || gameKey(a).localeCompare(gameKey(b)));
+}
+
+export function installationCatalogPage<Game extends InstallationGame>(catalog: Game[], params: URLSearchParams) {
+  const integer = (key: string, fallback: number, max: number) => {
+    const value = Number(params.get(key));
+    return Number.isSafeInteger(value) && value > 0 ? Math.min(value, max) : fallback;
+  };
+  const page = integer("page", 1, 10000);
+  const limit = integer("limit", 24, 48);
+  const search = (params.get("search") || "").trim().slice(0, 250).toLocaleLowerCase();
+  const games = catalog.filter((game) => !search || game.name.toLocaleLowerCase().includes(search));
+
+  return {
+    games: games.slice((page - 1) * limit, page * limit),
+    total: games.length,
+    pages: Math.max(1, Math.ceil(games.length / limit)),
+    page,
+  };
 }
 
 export function resolveInstallationGames(refs: InstallationGameRef[], catalog: InstallationGame[]) {

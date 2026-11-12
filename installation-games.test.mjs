@@ -235,3 +235,70 @@ test('combined catalog pagination and search exclude blank imported rows before 
   assert.ok(second.data.games[0].name.trim());
   assert.equal((await route.GET({url:url+'&search=Same'})).data.total,2);
 });
+
+test('manual order search matches appointment results and returns each version’s own price only to admins', async () => {
+  const docs = [
+    ...fixtures.map((doc, index) => ({
+      ...doc,
+      items: doc.items.map((item) => ({ ...item, price: 100_000 * (index + 1) })),
+    })),
+    { platform: 'ps5', items: [{ _id: 'b'.repeat(24), name: 'Another Game', size: 15, price: 50_000 }] },
+    { platform: 'ps4copy', items: [{ _id: 'c'.repeat(24), name: 'Legacy Copy', size: null, price: 20_000 }] },
+  ];
+  const model = {
+    default: {
+      find: ({ platform }) => ({
+        select: () => ({ lean: async () => docs.filter((doc) => platform.$in.includes(doc.platform)) }),
+      }),
+      findOne: ({ platform }) => ({ lean: async () => docs.find((doc) => doc.platform === platform) }),
+    },
+  };
+  const adminDeps = {
+    ...routeDeps,
+    'next-auth': { getServerSession: async () => ({ user: { role: 'admin' } }) },
+    '@/app/api/auth/[...nextauth]/options': { authOptions: {} },
+    '@/model/GameList': model,
+    '@/lib/mongodb': { default: async () => {} },
+    '@/lib/game-list-validation': { gamePlatform: { safeParse: (data) => ({ success: true, data }) } },
+  };
+  const manual = loadModule('./app/api/admin/store-order/game-list/route.ts', adminDeps);
+  const appointment = loadModule('./app/api/profile/appointments/games/route.ts', {
+    ...routeDeps,
+    '@/model/GameList': model,
+  });
+  const manualSearch = (params) => manual.GET({ nextUrl: { searchParams: params } });
+  const orderPrices = new Map(docs.flatMap((doc) => doc.items.map((item) => [`${doc.platform}:${item._id}`, item.price])));
+
+  for (const query of [
+    'device=ps5&installationType=account&search=+sAME+&limit=1',
+    'device=ps5&installationType=account&search=+sAME+&limit=1&page=2',
+    'device=ps5&installationType=account&search=game',
+    'device=ps5&installationType=account&search=missing',
+    'device=ps4&installationType=account&search=same',
+    'device=ps5&installationType=copy&search=copy',
+    'device=xbox&search=xbox',
+  ]) {
+    const expected = (await appointment.GET({ url: `https://example.test/?${query}` })).data;
+    const actual = await manualSearch(new URLSearchParams(`catalog=installation&${query}`));
+    assert.equal(actual.status, 200);
+    assert.deepEqual(
+      actual.data.games.map(({ item, sizeGB, version }) => [item._id, item.name, version, sizeGB]),
+      expected.games.map(({ gameId, name, version, sizeGB }) => [gameId, name, version, sizeGB]),
+    );
+    assert.deepEqual([actual.data.page, actual.data.pages, actual.data.total], [expected.page, expected.pages, expected.total]);
+    expected.games.forEach((game, index) => {
+      const platform = game.gameId === 'c'.repeat(24) ? 'ps4copy' : game.platform;
+      assert.equal(actual.data.games[index].item.price, orderPrices.get(`${platform}:${game.gameId}`));
+      assert.equal('price' in game, false);
+    });
+  }
+
+  const legacy = await manualSearch(new URLSearchParams('platform=ps5&search=same'));
+  assert.deepEqual(legacy.data.gameList.items.map((item) => item._id), [id5]);
+  const denied = loadModule('./app/api/admin/store-order/game-list/route.ts', {
+    ...adminDeps,
+    'next-auth': { getServerSession: async () => ({ user: { role: 'user' } }) },
+  });
+  const deniedParams = new URLSearchParams('catalog=installation&device=ps5&installationType=account');
+  assert.equal((await denied.GET({ nextUrl: { searchParams: deniedParams } })).status, 403);
+});

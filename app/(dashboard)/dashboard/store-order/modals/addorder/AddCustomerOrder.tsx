@@ -291,7 +291,13 @@ const AddCustomerOrder = ({
         {appointment?.serviceType !== "repair" && (
           <div className="space-y-1 text-sm text-slate-600">
             <span>افزودن بازی</span>
-            <GameDropdown Selectedgames={order} setSelectedgames={setOrder} appointment={appointment} />
+            <GameDropdown
+              key={order?.consoleType}
+              Selectedgames={order}
+              setSelectedgames={setOrder}
+              appointment={appointment}
+              useInstallationCatalog={!appointment}
+            />
           </div>
         )}
       </div>
