@@ -4,6 +4,8 @@ import { VIP_TIERS, VipTier } from "@/types/loyalty";
 // تعریف interface TypeScript
 interface IUser extends Document {
   username?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   mobile: string;
   role: string;
@@ -45,6 +47,8 @@ interface IUser extends Document {
 const UserSchema = new Schema<IUser>(
   {
     username: { type: String, default: "کاربر", required: true },
+    firstName: { type: String, trim: true, maxlength: 80 },
+    lastName: { type: String, trim: true, maxlength: 80 },
     email: { type: String, sparse: true },
     mobile: { type: String, unique: true, required: true },
     role: {
@@ -87,6 +91,11 @@ const UserSchema = new Schema<IUser>(
 
 UserSchema.index({ createdAt: 1 });
 
-// Export مدل
+// Reload an older development model so new accounts keep both name fields.
+if (mongoose.models.User && process.env.NODE_ENV === "development" &&
+    !mongoose.models.User.schema.path("firstName")) {
+  mongoose.deleteModel("User");
+}
+
 const User = mongoose.models.User || model<IUser>("User", UserSchema);
 export default User;
