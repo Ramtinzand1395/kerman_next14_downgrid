@@ -212,7 +212,7 @@ const GameDropdown: React.FC<GameDropdownProps> = ({
                   <GameCover game={game} />
                   <span dir="auto">{game.name}{game.appointmentGame && ` · ${game.appointmentGame.platform}`}</span>
                   {version && <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-xs font-bold">{version}</span>}
-                  <span className="mr-2 text-xs text-gray-500">
+                  <span dir={sizeGB === null ? "rtl" : "ltr"} className="shrink-0 whitespace-nowrap text-xs text-gray-500">
                     {sizeGB === null ? "حجم نامشخص" : `(${game.size} GB)`}
                   </span>
                 </button>
