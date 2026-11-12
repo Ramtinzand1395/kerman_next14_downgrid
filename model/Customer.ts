@@ -11,6 +11,7 @@ const customerSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    barcodes: { type: [String], default: undefined },
     lastName: {
       type: String,
       required: true,
@@ -27,6 +28,11 @@ const customerSchema = new mongoose.Schema(
   {
     timestamps: true,
   }
+);
+
+customerSchema.index(
+  { barcodes: 1 },
+  { unique: true, partialFilterExpression: { "barcodes.0": { $exists: true } } },
 );
 
 export default mongoose.models.Customer ||

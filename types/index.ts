@@ -149,6 +149,7 @@ export interface ProductForm {
 }
 
 export interface Customer {
+  barcodes?: string[];
   _id: string;
   name: string;
   mobile: string;

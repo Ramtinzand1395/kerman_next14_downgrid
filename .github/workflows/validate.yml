@@ -22,5 +22,7 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run audit:assets
       - run: npm test
+        env:
+          STORE_CUSTOMER_LOCAL_MONGO_TESTS: 'true'
       - run: npx tsc --noEmit
       - run: npm run build

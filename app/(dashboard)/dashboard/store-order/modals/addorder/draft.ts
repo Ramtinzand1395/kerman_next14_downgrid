@@ -4,6 +4,7 @@ const STORE_ORDER_DRAFT_KEY = "store-order-draft";
 
 export type StoreOrderDraft = {
   activeStep?: number;
+  barcode?: string;
   customerData?: Partial<Customer>;
   order?: Partial<storeOrder>;
   requestKey?: string;

@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import DatePicker from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
 import { ArrowLeft, ArrowRight, Smartphone, User } from "lucide-react";
 import { toast } from "react-toastify";
 
+import { MAX_CUSTOMER_BARCODE_LENGTH } from "@/lib/store-customer-barcodes";
+import { mobileSchema } from "@/validations/validation";
 import { Customer } from "@/types";
 
 interface RegisterCustomerProps {
@@ -13,6 +16,8 @@ interface RegisterCustomerProps {
   setCustomerData: React.Dispatch<React.SetStateAction<Customer>>;
   onBack: () => void;
   onNext: () => void;
+  barcode: string;
+  setBarcode: (value: string) => void;
 }
 
 const RegisterCustomer = ({
@@ -20,7 +25,12 @@ const RegisterCustomer = ({
   customerData,
   onBack,
   onNext,
+  barcode,
+  setBarcode,
 }: RegisterCustomerProps) => {
+  const [saving, setSaving] = useState(false);
+  const [canEnterMobile] = useState(() => !customerData.mobile);
+
   const handleUserChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -31,21 +41,23 @@ const RegisterCustomer = ({
   };
 
   const handleSubmitCustomer = async () => {
-    if (!customerData.lastName || !customerData.mobile) {
-      toast.warning("نام، نام خانوادگی و شماره موبایل مشتری را کامل کنید.");
+    if (saving) return;
+    const mobile = customerData.mobile.trim();
+    if (!mobileSchema.isValidSync(mobile)) {
+      toast.warning("شماره موبایل معتبر الزامی است.");
+      return;
+    }
+    if (!customerData._id && (!customerData.lastName.trim() || !customerData.sex)) {
+      toast.warning("نام خانوادگی و جنسیت مشتری را کامل کنید.");
       return;
     }
 
-    if (customerData._id) {
-      onNext();
-      return;
-    }
-
+    setSaving(true);
     try {
       const res = await fetch("/api/admin/store-order/customer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(customerData),
+        body: JSON.stringify({ ...customerData, mobile, barcode }),
       });
       const data = await res.json();
 
@@ -53,12 +65,13 @@ const RegisterCustomer = ({
         throw new Error(data?.message || "خطا در ثبت مشتری");
       }
 
-      setCustomerData((prev) => ({ ...prev, _id: data.data._id }));
+      setCustomerData(data.data);
       toast.success(data.message || "مشتری ثبت شد و می‌توانید سفارش را ادامه دهید.");
       onNext();
     } catch (err) {
-      console.error(err);
-      toast.error("مشتری ثبت نشد؛ اطلاعات را بررسی و دوباره تلاش کنید.");
+      toast.error(err instanceof Error ? err.message : "مشتری ثبت نشد.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -111,17 +124,31 @@ const RegisterCustomer = ({
         </label>
 
         <label className="space-y-1 text-sm text-slate-600">
-          <span>شماره تماس</span>
+          <span>شماره تماس (الزامی)</span>
           <div className="relative">
             <input
               type="text"
               name="mobile"
               value={customerData.mobile}
-              disabled
+              onChange={handleUserChange}
+              inputMode="tel"
+              disabled={!canEnterMobile || saving}
               className="h-10 w-full rounded-xl border border-slate-300 bg-slate-50 pr-9 pl-3"
             />
             <Smartphone className="absolute right-3 top-2.5 h-4 w-4 text-slate-400" />
           </div>
+        </label>
+
+        <label className="space-y-1 text-sm text-slate-600">
+          <span>بارکد (اختیاری)</span>
+          <input
+            dir="ltr"
+            value={barcode}
+            onChange={(event) => setBarcode(event.target.value)}
+            maxLength={MAX_CUSTOMER_BARCODE_LENGTH}
+            disabled={saving}
+            className="h-10 w-full rounded-xl border border-slate-300 px-3 outline-none ring-indigo-100 focus:ring-4"
+          />
         </label>
 
         <label className="space-y-1 text-sm text-slate-600">
@@ -154,6 +181,7 @@ const RegisterCustomer = ({
 
       <div className="flex items-center justify-between border-t border-slate-200 pt-4">
         <button
+          disabled={saving}
           onClick={onBack}
           className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600"
         >
@@ -162,6 +190,7 @@ const RegisterCustomer = ({
         </button>
 
         <button
+          disabled={saving}
           onClick={handleSubmitCustomer}
           className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
         >
