@@ -183,6 +183,8 @@ export type AppointmentItem = {
   history?: AppointmentHistoryItem[];
   payment?: { status: "unpaid" | "initiating" | "pending" | "paid" | "failed"; amount?: number; refId?: string; paidAt?: string };
   completedAt?: string | null;
+  storeOrderRegisteredAt?: string | null;
+  updatedAt?: string;
 };
 
 export type AppointmentSettings = {

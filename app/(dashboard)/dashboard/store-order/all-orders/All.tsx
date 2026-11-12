@@ -116,7 +116,8 @@ export default function AllStoreOrders() {
                       {typeof order.customer === "object"
                         ? order.customer.lastName
                         : "نامشخص"}
-                    </td>
+                      <span className="mr-2 rounded-full bg-slate-200 px-2 py-1 text-xs font-bold text-slate-700">مغازه</span>
+                  </td>
 
                     {/* MOBILE */}
                     <td className="p-3">

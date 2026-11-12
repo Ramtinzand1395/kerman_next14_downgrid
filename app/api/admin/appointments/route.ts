@@ -1,4 +1,5 @@
-import { requireAdmin, ok } from "@/lib/loyalty/api";
+import mongoose from "mongoose";
+import { requireAppointmentOperator, ok, fail } from "@/lib/loyalty/api";
 import Appointment from "@/model/Appointment";
 import VisitReward from "@/model/VisitReward";
 import VisitRewardRule from "@/model/VisitRewardRule";
@@ -8,7 +9,7 @@ import { tehranDateKey } from "@/lib/appointments/settings";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  const auth = await requireAdmin();
+  const auth = await requireAppointmentOperator();
   if ("error" in auth) return auth.error;
 
   const url = new URL(req.url);
@@ -16,6 +17,11 @@ export async function GET(req: Request) {
   const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit")) || 25));
 
   const filter: Record<string, unknown> = {};
+  const appointmentId = url.searchParams.get("appointment");
+  if (appointmentId) {
+    if (!mongoose.isValidObjectId(appointmentId)) return fail("شناسه نامعتبر است", 422);
+    filter._id = appointmentId;
+  }
   const status = url.searchParams.get("status");
   const serviceType = url.searchParams.get("serviceType");
   const fulfillment = url.searchParams.get("fulfillment");
@@ -40,6 +46,23 @@ export async function GET(req: Request) {
       $gte: new Date(`${date}T00:00:00+03:30`),
       $lt: new Date(`${date}T23:59:59.999+03:30`),
     };
+  }
+
+  if (url.searchParams.get("storeOrders") === "1") {
+    filter.fulfillment = "courier";
+    filter.$and = [{ $or: [
+      { "courier.status": "at_store" },
+      { "courier.arrivedAtStoreAt": { $ne: null } },
+      { storeOrderRegisteredAt: { $ne: null } },
+    ] }];
+    const [items, total] = await Promise.all([
+      Appointment.find(filter)
+        .select("trackingCode serviceType device customerName phone status pricing courier.status storeOrderRegisteredAt")
+        .sort({ "courier.arrivedAtStoreAt": -1, _id: -1 })
+        .skip((page - 1) * limit).limit(limit).lean(),
+      Appointment.countDocuments(filter),
+    ]);
+    return ok({ items, total, page, pages: Math.max(1, Math.ceil(total / limit)) });
   }
 
   if (search) {

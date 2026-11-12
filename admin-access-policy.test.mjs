@@ -103,12 +103,14 @@ test("staff online-order access is restricted to their own orders", async () => 
 });
 
 const managementRoutes = filesUnder("./app/api/admin").filter((path) =>
-  path.endsWith("/route.ts") && /\brequireAdmin\(/.test(readFileSync(new URL(path, import.meta.url), "utf8")),
+  path.endsWith("/route.ts") && /\b(?:requireAdmin|requireAppointmentOperator)\(/.test(readFileSync(new URL(path, import.meta.url), "utf8")),
 );
 
 for (const path of managementRoutes) {
   test(`all exported methods reject unauthorized sessions before I/O: ${path}`, async () => {
-    for (const role of [null, "user", "admin", "courier", "unknown", undefined]) {
+    const allowedStaff = path.startsWith("./app/api/admin/appointments/");
+    const deniedRoles = [null, "user", "courier", "unknown", undefined, ...(allowedStaff ? [] : ["admin"])];
+    for (const role of deniedRoles) {
       const h = authHarness(sessionFor(role));
       const route = load(path, h.deps);
       const methods = Object.keys(route).filter((method) => /^(GET|POST|PUT|PATCH|DELETE)$/.test(method));
@@ -137,6 +139,21 @@ test("management auth accepts only identified superadmins", async () => {
   }
 });
 
+test("appointment operations admit staff while settings and reward rules stay owner-only", async () => {
+  for (const role of [null, "user", "courier", "admin", "superadmin"]) {
+    const h = authHarness(sessionFor(role));
+    const operations = await h.api.requireAppointmentOperator();
+    if (role === "admin" || role === "superadmin") assert.equal(operations.userId, id);
+    else assert.equal(operations.error.status, role === null ? 401 : 403);
+    if (role === "admin") {
+      for (const path of ["appointment-settings", "visit-reward-rules"]) {
+        const route = load(`./app/api/admin/${path}/route.ts`, h.deps);
+        assert.equal((await route.GET()).status, 403);
+      }
+    }
+  }
+});
+
 test("middleware enforces the role matrix on every dashboard page and exact path boundaries", () => {
   const middleware = load("./middleware.ts", {
     "next-auth/middleware": { withAuth: (handler, options) => {
@@ -152,6 +169,7 @@ test("middleware enforces the role matrix on every dashboard page and exact path
     for (const pathname of pages) {
       const allowed = role === "superadmin" || (role === "admin" && (
         pathname === "/dashboard/notifications" || pathname === "/dashboard/store-order" ||
+        pathname === "/dashboard/appointments" ||
         pathname.startsWith("/dashboard/store-order/")
       ));
       const response = middleware({ nextauth: { token: { role } }, nextUrl: { pathname }, url: `https://example.test${pathname}` });

@@ -146,6 +146,7 @@ const OrderTable = ({
                         ? order.customer
                         : order.customer?.lastName || "بدون نام"}
                     </button>
+                    <span className="mr-2 rounded-full bg-slate-200 px-2 py-1 text-xs font-bold text-slate-700">مغازه</span>
                   </td>
 
                   <td className="px-2 py-3">

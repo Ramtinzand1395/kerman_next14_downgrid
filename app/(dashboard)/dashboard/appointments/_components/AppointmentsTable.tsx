@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import {
   ChevronLeft,
   ChevronRight,
@@ -31,6 +33,7 @@ type Props = {
   workingId: string;
   onPageChange: (page: number) => void;
   onOpenDetails: (item: AppointmentItem) => void;
+  onEditGames: (item: AppointmentItem) => void;
   onOpenSettlement: (item: AppointmentItem) => void;
   onRequestPayment: (item: AppointmentItem) => void;
   onRequestCourier: (item: AppointmentItem, status: CourierStatus) => void;
@@ -49,6 +52,7 @@ export default function AppointmentsTable({
   onPageChange,
   onOpenDetails,
   onOpenSettlement,
+  onEditGames,
   onRequestPayment,
   onRequestCourier,
   onRequestStatus,
@@ -98,6 +102,7 @@ export default function AppointmentsTable({
                   >
                     خدمت: {statusLabel[item.status]}
                   </span>
+                  <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[11px] font-bold text-indigo-800">سایت</span>
                   <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-700">
                     {item.fulfillment === "courier" ? (
                       <Truck className="h-3.5 w-3.5" />
@@ -159,6 +164,10 @@ export default function AppointmentsTable({
                 ) : null}
               </dl>
 
+              {item.pricing?.known && (
+                <p className="mt-3 text-sm font-bold text-slate-800">مبلغ قابل پرداخت: {toman(item.pricing.finalAmount)}</p>
+              )}
+
               {item.description ? (
                 <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600">
                   {item.description}
@@ -183,14 +192,25 @@ export default function AppointmentsTable({
                     {courier ? "تأیید و ثبت مبلغ اولیه" : "تأیید درخواست"}
                   </button>
                 )}
-                {item.status === "confirmed" && (!courier || ["picked_up", "at_store"].includes(courier.status)) && (
+                {item.status === "confirmed" && !courier && (
                   <button type="button" disabled={workingId === item._id} onClick={() => onOpenSettlement(item)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">ثبت مبلغ نهایی و ارسال لینک پرداخت</button>
                 )}
                 {courier && !["cancelled", "rejected", "no_show"].includes(item.status) && (courierNext[courier.status] || []).filter((status) => status !== "cancelled" && status !== "return_ready" && !(status === "assigned" && (item.status !== "confirmed" || !item.pricing?.known))).map((status) => (
                   <button key={status} type="button" disabled={workingId === item._id} onClick={() => onRequestCourier(item, status)} className="rounded-xl bg-blue-900 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">
-                    {status === "assigned" ? "حرکت پیک برای دریافت" : status === "picked_up" ? "تحویل دستگاه به پیک" : status === "returning" ? "حرکت پیک برای برگشت" : courierLabel[status]}
+                    {status === "assigned" ? "حرکت پیک برای دریافت" : status === "at_store" ? "تحویل دستگاه به مغازه" : status === "returning" ? "حرکت پیک برای برگشت" : courierLabel[status]}
                   </button>
                 ))}
+                {courier && (courier.status === "at_store" || item.storeOrderRegisteredAt) && (
+                  <Link href={`/dashboard/store-order?appointment=${item._id}`} className="rounded-xl bg-indigo-700 px-3 py-2 text-xs font-bold text-white">
+                    {item.storeOrderRegisteredAt ? "ادامه در سفارش دستی" : "ثبت سفارش دستی"}
+                  </Link>
+                )}
+                {courier && item.serviceType === "game_install" && ["pending", "confirmed"].includes(item.status) &&
+                  !["initiating", "pending", "paid"].includes(item.payment?.status || "") && (
+                  <button type="button" onClick={() => onEditGames(item)} className="rounded-xl border border-indigo-200 px-3 py-2 text-xs font-bold text-indigo-800">
+                    ویرایش بازی‌ها
+                  </button>
+                )}
                 {item.status === "completed" && item.payment?.status !== "paid" && Number(item.pricing?.finalAmount) > 0 && (
                   <button type="button" disabled={workingId === item._id} onClick={() => onRequestPayment(item)} className="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">ساخت / کپی / ارسال لینک پرداخت</button>
                 )}

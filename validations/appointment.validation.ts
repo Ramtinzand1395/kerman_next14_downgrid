@@ -12,15 +12,17 @@ const objectIdRegex = /^[a-f\d]{24}$/i;
 const phoneRegex = /^09\d{9}$/;
 const dateStringRegex = /^\d{4}-\d{2}-\d{2}$/;
 
+const installationGameRefSchema = z.object({
+  platform: z.enum(["ps4", "ps5", "copy", "ps5Copy", "xbox"]),
+  gameId: z.string().regex(objectIdRegex, "شناسه بازی نامعتبر است"),
+});
+
 const baseAppointmentSchema = z.object({
   clientRequestKey: z.string().trim().min(8).max(128),
   serviceType: z.enum(["game_install", "repair"]),
   device: z.string().trim().min(2).max(60),
   installationType: z.enum(["account", "copy"]).nullable().optional(),
-  selectedGames: z.array(z.object({
-    platform: z.enum(["ps4", "ps5", "copy", "ps5Copy", "xbox"]),
-    gameId: z.string().regex(objectIdRegex, "شناسه بازی نامعتبر است"),
-  })).max(100).default([]),
+  selectedGames: z.array(installationGameRefSchema).max(100).default([]),
   repairIssue: z.enum(["power", "display", "controller", "sound", "overheating", "other"]).nullable().optional(),
   description: z.string().trim().max(1000).default(""),
   customerName: z.string().trim().min(2).max(100),
@@ -96,9 +98,12 @@ export const appointmentAdminUpdateSchema = z
       })
       .optional(),
     baseAmount: z.number().int().min(0).max(1_000_000_000).optional(),
+    selectedGames: z.array(installationGameRefSchema).min(1).max(100).optional(),
+    registerStoreOrder: z.literal(true).optional(),
+    expectedUpdatedAt: z.iso.datetime().optional(),
     note: z.string().trim().max(500).optional(),
   })
-  .refine((value) => Object.keys(value).length > 0, "حداقل یک تغییر لازم است");
+  .refine((value) => Object.keys(value).some((key) => key !== "expectedUpdatedAt"), "حداقل یک تغییر لازم است");
 
 export const visitRewardRuleSchema = z
   .object({

@@ -15,6 +15,7 @@ import type { AppointmentItem } from "@/types/appointments";
 import {
   courierLabel,
   courierTimeline,
+  courierReturnDeliveryProgress,
   courierTone,
   discountToman,
   formatTehranDate,
@@ -94,7 +95,7 @@ export default function AppointmentDetailsDrawer({ item: initialItem, onClose }:
 
   const courier = getCourierView(item);
   const activeCourierIndex = courier
-    ? courierTimeline.indexOf(courier.status)
+    ? courierReturnDeliveryProgress(courier.status) - 1
     : -1;
   const selectedReward =
     item.rewardSummary?.selectedReward || item.selectedReward;

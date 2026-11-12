@@ -1,8 +1,13 @@
-import mongoose from "mongoose";
+import mongoose, { type ClientSession } from "mongoose";
+import GameList from "@/model/GameList";
+import {
+  catalogPlatformAliases, gameKey, installationCatalog, installationPlatforms,
+  installationSize, resolveInstallationGames, type GameCatalogDocument, type InstallationGame,
+} from "@/lib/appointments/games";
 import Appointment from "@/model/Appointment";
 import AppointmentReservation from "@/model/AppointmentReservation";
 import VisitReward from "@/model/VisitReward";
-import { requireAdmin, ok, fail } from "@/lib/loyalty/api";
+import { requireAppointmentOperator, ok, fail } from "@/lib/loyalty/api";
 import { appointmentAdminUpdateSchema } from "@/validations/appointment.validation";
 import {
   canAdminTransition,
@@ -34,7 +39,7 @@ const courierLabels: Record<string, string> = {
   scheduled: "برنامه‌ریزی‌شده",
   assigned: "حرکت از فروشگاه به سمت مشتری",
   picked_up: "تحویل دستگاه به پیک",
-  at_store: "رسیده به فروشگاه",
+  at_store: "تحویل دستگاه به مغازه",
   return_ready: "تکمیل خدمات و آماده ارسال",
   returning: "حرکت به سمت مشتری پس از خدمات",
   delivered: "تحویل به مشتری",
@@ -53,7 +58,7 @@ const courierMessages: Record<string, string> = {
 };
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireAdmin();
+  const auth = await requireAppointmentOperator();
   if ("error" in auth) return auth.error;
   const { id } = await params;
   if (!mongoose.isValidObjectId(id)) return fail("شناسه نامعتبر است", 422);
@@ -65,7 +70,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireAdmin();
+  const auth = await requireAppointmentOperator();
   if ("error" in auth) return auth.error;
   const { id } = await params;
   if (!mongoose.isValidObjectId(id)) return fail("شناسه نامعتبر است", 422);
@@ -73,6 +78,21 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!parsed.success) return fail(parsed.error.issues[0]?.message || "درخواست نامعتبر است", 422);
   let current = await Appointment.findById(id);
   if (!current) return fail("نوبت پیدا نشد", 404);
+
+  const { selectedGames, registerStoreOrder, expectedUpdatedAt } = parsed.data;
+  if (expectedUpdatedAt && current.updatedAt?.toISOString() !== expectedUpdatedAt) {
+    return fail("این سفارش تغییر کرده است؛ اطلاعات را دوباره دریافت کنید.", 409);
+  }
+  const editingCourierOrder = Boolean(selectedGames || registerStoreOrder);
+  if (editingCourierOrder && (
+    current.fulfillment !== "courier" || !["pending", "confirmed"].includes(current.status) ||
+    (registerStoreOrder && (current.courier?.status !== "at_store" || current.status !== "confirmed")) ||
+    (selectedGames && current.serviceType !== "game_install") ||
+    parsed.data.status || parsed.data.courierStatus || parsed.data.startsAt ||
+    parsed.data.pickupDate || parsed.data.pickupWindow
+  )) {
+    return fail("در این مرحله امکان ویرایش یا ثبت سفارش پیک وجود ندارد.", 409);
+  }
 
   // Reschedule if requested
   if (parsed.data.startsAt || (parsed.data.pickupDate && parsed.data.pickupWindow)) {
@@ -92,7 +112,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const nextStatus = parsed.data.status;
-  if ((parsed.data.baseAmount !== undefined || nextStatus === "confirmed") &&
+  if (nextStatus === "completed" && current.status === "completed") return ok(current);
+  if ((editingCourierOrder || parsed.data.baseAmount !== undefined || nextStatus === "confirmed") &&
       ["initiating", "pending", "paid"].includes(current.payment?.status)) {
     return fail("درخواست در حال پرداخت یا پرداخت‌شده است؛ تغییر مبلغ و بازگشایی مجاز نیست.", 409);
   }
@@ -135,8 +156,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return fail("ابتدا درخواست را تأیید و مبلغ اولیه خدمت را ثبت کنید.", 409);
   }
   if (nextStatus === "completed" && current.fulfillment === "courier" &&
-      ["pending", "scheduled", "assigned"].includes(current.courier?.status)) {
-    return fail("ابتدا تحویل دستگاه به پیک را ثبت کنید.", 409);
+      (current.courier?.status !== "at_store" || !current.storeOrderRegisteredAt)) {
+    return fail("ابتدا تحویل دستگاه به مغازه و ثبت سفارش دستی را انجام دهید.", 409);
+  }
+  if (registerStoreOrder && !current.pricing?.known && parsed.data.baseAmount === undefined) {
+    return fail("مبلغ خدمت را وارد کنید.", 422);
+  }
+  if (parsed.data.baseAmount !== undefined && current.status === "completed" && nextStatus !== "confirmed") {
+    return fail("برای تغییر مبلغ، ابتدا سفارش را بازگشایی کنید.", 409);
   }
 
   const correctingCompletion = current.status === "completed" && nextStatus === "confirmed";
@@ -167,15 +194,38 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const set: Record<string, unknown> = {};
+  let gamesChanged = false;
+  if (selectedGames) {
+    const platforms = installationPlatforms(current.device, current.installationType);
+    const docs = await GameList.find({ platform: { $in: catalogPlatformAliases(platforms) } })
+      .select("platform items._id items.name items.size items.imageUrl items.imageAlt").lean() as GameCatalogDocument[];
+    const previous = (current.selectedGames || []) as InstallationGame[];
+    const catalog = installationCatalog(docs, platforms);
+    const byKey = new Map([...catalog, ...previous.filter((game) => platforms.includes(game.platform))]
+      .map((game) => [gameKey(game), game]));
+    try {
+      const games = resolveInstallationGames(selectedGames, [...byKey.values()]);
+      gamesChanged = games.length !== previous.length || games.some((game, index) =>
+        !previous[index] || gameKey(game) !== gameKey(previous[index]),
+      );
+      if (gamesChanged) {
+        set.selectedGames = games;
+        set.totalSizeGB = installationSize(games).totalSizeGB;
+      }
+    } catch (error) {
+      return fail((error as Error).message, 422);
+    }
+  }
+
+  if (registerStoreOrder && !current.storeOrderRegisteredAt) {
+    set.storeOrderRegisteredAt = new Date();
+  }
 
   // Handle courier status transition timestamps
   if (nextCourierStatus && current.courier) {
     set["courier.status"] = nextCourierStatus;
     if (nextCourierStatus === "pending") set["courier.returnReadyAt"] = null;
     const now = new Date();
-    if (nextCourierStatus === "picked_up" && !current.courier.pickupAt) {
-      set["courier.pickupAt"] = now;
-    }
     if (nextCourierStatus === "at_store" && !current.courier.arrivedAtStoreAt) {
       set["courier.arrivedAtStoreAt"] = now;
     }
@@ -187,53 +237,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
     if (nextCourierStatus === "delivered" && !current.courier.deliveredAt) {
       set["courier.deliveredAt"] = now;
-    }
-  }
-
-  // Pricing calculation
-  if (parsed.data.baseAmount !== undefined) {
-    const serviceBaseAmount = Math.round(parsed.data.baseAmount);
-    const shippingBaseAmount =
-      current.pricing?.shippingBaseAmount ?? (current.courier?.totalShippingCost || 0);
-    const deliveryCity = current.courier?.addressSnapshot?.city || "";
-
-    const applied = nextStatus === "completed" ? await redeemVisitReward(
-      {
-        _id: current._id,
-        user: current.user,
-        serviceType: current.serviceType,
-        fulfillment: current.fulfillment,
-        selectedReward: current.selectedReward,
-      },
-      serviceBaseAmount,
-      shippingBaseAmount,
-      deliveryCity,
-    ) : { discount: 0, shippingDiscount: current.pricing?.shippingDiscountAmount || 0 };
-
-    const serviceDiscount = applied.discount;
-    const shippingDiscount = applied.shippingDiscount;
-    const serviceFinalAmount = Math.max(0, serviceBaseAmount - serviceDiscount);
-    const shippingFinalAmount = Math.max(0, shippingBaseAmount - shippingDiscount);
-    const totalDiscountAmount = serviceDiscount + shippingDiscount;
-    const finalAmount = serviceFinalAmount + shippingFinalAmount;
-
-    set.pricing = {
-      known: true,
-      serviceBaseAmount,
-      serviceDiscountAmount: serviceDiscount,
-      serviceFinalAmount,
-      shippingBaseAmount,
-      shippingDiscountAmount: shippingDiscount,
-      shippingFinalAmount,
-      totalDiscountAmount,
-      finalAmount,
-      baseAmount: serviceBaseAmount,
-      discountAmount: totalDiscountAmount,
-    };
-
-    if (current.courier) {
-      set["courier.freeShippingDiscount"] = shippingDiscount;
-      set["courier.finalShippingCost"] = shippingFinalAmount;
     }
   }
 
@@ -275,6 +278,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     });
   }
 
+  if (gamesChanged || set.storeOrderRegisteredAt) {
+    historyEntries.push({
+      from: current.status,
+      to: current.status,
+      actorType: "admin",
+      actor: auth.userId,
+      note: [
+        gamesChanged ? "فهرست بازی‌ها ویرایش شد" : "",
+        set.storeOrderRegisteredAt ? "سفارش در ثبت دستی ثبت شد" : "",
+      ].filter(Boolean).join(" · "),
+      at: new Date(),
+    });
+  }
+
   if (historyEntries.length > 0) {
     update.$push = {
       history: { $each: historyEntries },
@@ -286,12 +303,94 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (current.courier) {
     updateFilter["courier.status"] = current.courier?.status || "pending";
   }
-  const updated = await Appointment.findOneAndUpdate(
-    updateFilter,
-    update,
-    { returnDocument: "after", runValidators: true },
-  );
+  if (current.updatedAt) updateFilter.updatedAt = current.updatedAt;
+  if (!Object.keys(set).length && parsed.data.baseAmount === undefined) return ok(current);
+
+  const persist = async (dbSession?: ClientSession) => {
+    // Pricing calculation
+    if (parsed.data.baseAmount !== undefined) {
+      const serviceBaseAmount = Math.round(parsed.data.baseAmount);
+      const shippingBaseAmount =
+        current.pricing?.shippingBaseAmount ?? (current.courier?.totalShippingCost || 0);
+      const deliveryCity = current.courier?.addressSnapshot?.city || "";
+
+      const applied = nextStatus === "completed" ? await redeemVisitReward(
+        {
+          _id: current._id,
+          user: current.user,
+          serviceType: current.serviceType,
+          fulfillment: current.fulfillment,
+          selectedReward: current.selectedReward,
+        },
+        serviceBaseAmount,
+        shippingBaseAmount,
+        deliveryCity,
+        dbSession,
+      ) : { discount: 0, shippingDiscount: current.pricing?.shippingDiscountAmount || 0 };
+
+      const serviceDiscount = applied.discount;
+      const shippingDiscount = applied.shippingDiscount;
+      const serviceFinalAmount = Math.max(0, serviceBaseAmount - serviceDiscount);
+      const shippingFinalAmount = Math.max(0, shippingBaseAmount - shippingDiscount);
+      const totalDiscountAmount = serviceDiscount + shippingDiscount;
+      const finalAmount = serviceFinalAmount + shippingFinalAmount;
+
+      set.pricing = {
+        known: true,
+        serviceBaseAmount,
+        serviceDiscountAmount: serviceDiscount,
+        serviceFinalAmount,
+        shippingBaseAmount,
+        shippingDiscountAmount: shippingDiscount,
+        shippingFinalAmount,
+        totalDiscountAmount,
+        finalAmount,
+        baseAmount: serviceBaseAmount,
+        discountAmount: totalDiscountAmount,
+      };
+
+      if (current.courier) {
+        set["courier.freeShippingDiscount"] = shippingDiscount;
+        set["courier.finalShippingCost"] = shippingFinalAmount;
+      }
+    }
+
+    return Appointment.findOneAndUpdate(
+      updateFilter,
+      update,
+      { returnDocument: "after", runValidators: true, session: dbSession },
+    );
+  };
+
+  const conflict = new Error("Appointment changed");
+  const updated = nextStatus === "completed" && current.selectedReward
+    ? await mongoose.connection.transaction(async (session) => {
+        const result = await persist(session);
+        if (!result) throw conflict;
+        return result;
+      }).catch((error) => {
+        if (error === conflict) return null;
+        throw error;
+      })
+    : await persist();
   if (!updated) return fail("وضعیت نوبت هم‌زمان تغییر کرده است.", 409);
+
+  let gamesNotificationStatus: "sent" | "failed" | undefined;
+  if (gamesChanged) {
+    gamesNotificationStatus = await notifyUser({
+      userId: current.user,
+      title: "بازی‌های سفارش شما به‌روزرسانی شد",
+      message: `فهرست بازی‌های درخواست ${current.trackingCode} تغییر کرد. برای مشاهده بازی‌ها و مبلغ سفارش، جزئیات درخواست را باز کنید.`,
+      type: "REQUEST_STATUS_CHANGED",
+      category: "request",
+      entityType: "Appointment",
+      entityId: current._id,
+      link: `/my-profile?step=5&ordersTab=games#appointment-${current._id}`,
+      senderType: "admin",
+      senderId: auth.userId,
+      eventKey: `APPOINTMENT_GAMES:${current._id}:${new Date(updated.updatedAt).toISOString()}`,
+    }).then(() => "sent" as const).catch(() => "failed" as const);
+  }
 
   if (nextStatus && ["cancelled", "rejected", "no_show"].includes(nextStatus)) {
     await Promise.all([
@@ -377,5 +476,5 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
   }
 
-  return ok(updated);
+  return ok(gamesNotificationStatus ? { ...updated.toObject(), gamesNotificationStatus } : updated);
 }

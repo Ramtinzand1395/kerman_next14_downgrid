@@ -1,12 +1,12 @@
 import Appointment from "@/model/Appointment";
-import { requireAdmin, fail, ok, withRateLimit } from "@/lib/loyalty/api";
+import { requireAppointmentOperator, fail, ok, withRateLimit } from "@/lib/loyalty/api";
 import { createAppointmentPaymentLink } from "@/lib/appointments/payment-link";
 import { notifyUser } from "@/lib/notifications/service";
 import { deliverBusinessSms } from "@/lib/sms/business";
 import { SERVICE_SMS_PATTERNS } from "@/lib/sms/order-patterns";
 
 export async function POST(_req: Request, { params }: { params: { id: string } | Promise<{ id: string }> }) {
-  const auth = await requireAdmin();
+  const auth = await requireAppointmentOperator();
   if ("error" in auth) return auth.error;
   const limited = withRateLimit(`appointment-admin-pay:${auth.userId}`, { limit: 10, windowMs: 60_000 });
   if (limited) return limited;

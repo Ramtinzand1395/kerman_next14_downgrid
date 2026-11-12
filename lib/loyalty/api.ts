@@ -30,12 +30,19 @@ export async function requireUser() {
   return { userId: session.user.id as string, session };
 }
 
-export async function requireAdmin() {
+export function requireAppointmentOperator() {
+  return requireAdminRole(true);
+}
+
+export function requireAdmin() {
+  return requireAdminRole(false);
+}
+
+async function requireAdminRole(allowStaff: boolean) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { error: fail("ابتدا وارد حساب کاربری شوید", 401) };
   const role = (session.user as { role?: string }).role;
-  // These management APIs back pages that staff (role=admin) cannot access.
-  if (!isSuperadmin(role)) {
+  if (!isSuperadmin(role) && !(allowStaff && role === "admin")) {
     return { error: fail("دسترسی غیرمجاز", 403) };
   }
   await dbConnect();

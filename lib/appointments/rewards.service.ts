@@ -1,3 +1,4 @@
+import type { ClientSession } from "mongoose";
 import Appointment from "@/model/Appointment";
 import VisitReward from "@/model/VisitReward";
 import VisitRewardRule from "@/model/VisitRewardRule";
@@ -196,10 +197,11 @@ export async function reserveVisitReward(
   );
 }
 
-export async function releaseVisitReward(appointmentId: string) {
+export async function releaseVisitReward(appointmentId: string, session?: ClientSession) {
   await VisitReward.updateOne(
     { reservedFor: appointmentId, status: "reserved" },
     { $set: { status: "available", reservedFor: null, reservedAt: null } },
+    { session },
   );
 }
 
@@ -214,6 +216,7 @@ export async function redeemVisitReward(
   serviceBaseAmount: number,
   shippingBaseAmount: number = 0,
   deliveryCity?: string,
+  session?: ClientSession,
 ) {
   if (!appointment.selectedReward) {
     return { discount: 0, shippingDiscount: 0, reward: null };
@@ -224,7 +227,7 @@ export async function redeemVisitReward(
     status: "reserved",
     reservedFor: appointment._id,
     expiresAt: { $gt: new Date() },
-  });
+  }).session(session ?? null);
   if (!reward) return { discount: 0, shippingDiscount: 0, reward: null };
 
   const details = (
@@ -242,7 +245,7 @@ export async function redeemVisitReward(
 
   if (details.type === "free_shipping") {
     if (appointment.fulfillment !== "courier") {
-      await releaseVisitReward(String(appointment._id));
+      await releaseVisitReward(String(appointment._id), session);
       return { discount: 0, shippingDiscount: 0, reward: null };
     }
     if (
@@ -250,7 +253,7 @@ export async function redeemVisitReward(
       (!deliveryCity ||
         deliveryCity.trim().toLowerCase() !== details.shippingRegion.trim().toLowerCase())
     ) {
-      await releaseVisitReward(String(appointment._id));
+      await releaseVisitReward(String(appointment._id), session);
       return { discount: 0, shippingDiscount: 0, reward: null };
     }
     const shippingDiscount =
@@ -261,6 +264,7 @@ export async function redeemVisitReward(
     await VisitReward.updateOne(
       { _id: reward._id, status: "reserved", reservedFor: appointment._id },
       { $set: { status: "redeemed", redeemedAt: new Date() } },
+      { session },
     );
     return { discount: 0, shippingDiscount, reward };
   }
@@ -268,7 +272,7 @@ export async function redeemVisitReward(
   // Financial / service reward (fixed, percent, free_game)
   if (serviceBaseAmount < (details.minAmount ?? 0)) {
     // Condition not met -> release reward back to available!
-    await releaseVisitReward(String(appointment._id));
+    await releaseVisitReward(String(appointment._id), session);
     return { discount: 0, shippingDiscount: 0, reward: null };
   }
 
@@ -281,6 +285,7 @@ export async function redeemVisitReward(
   await VisitReward.updateOne(
     { _id: reward._id, status: "reserved", reservedFor: appointment._id },
     { $set: { status: "redeemed", redeemedAt: new Date() } },
+    { session },
   );
   return { discount, shippingDiscount: 0, reward };
 }

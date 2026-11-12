@@ -10,12 +10,14 @@ import {
   useEffect,
   useState,
 } from "react";
+import { useSession } from "next-auth/react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useRouter } from "@/app/components/navigation/NavigationFeedback";
 import {
   CalendarClock,
   Settings2,
   Sparkles,
+  Truck,
 } from "lucide-react";
 import type {
   AppointmentItem,
@@ -25,6 +27,8 @@ import type {
   CourierStatus,
   RewardSummary,
 } from "@/types/appointments";
+import AppointmentGamesEditor from "./_components/AppointmentGamesEditor";
+import { sendAppointmentPaymentLink } from "./_components/send-payment-link";
 import AppointmentDetailsDrawer from "./_components/AppointmentDetailsDrawer";
 import AppointmentsFilters from "./_components/AppointmentsFilters";
 import AppointmentsOverview from "./_components/AppointmentsOverview";
@@ -46,6 +50,7 @@ type ApiEnvelope<T> = {
 
 const tabs = [
   { key: "appointments", label: "همه درخواست‌ها", icon: CalendarClock },
+  { key: "courier", label: "پیک", icon: Truck },
   { key: "settings", label: "تنظیمات", icon: Settings2 },
   { key: "rewards", label: "قواعد پاداش", icon: Sparkles },
 ] satisfies Array<{ key: AdminTab; label: string; icon: typeof CalendarClock }>;
@@ -54,9 +59,13 @@ function AppointmentsAdminContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
+  const canManageSettings = session?.user?.role === "superadmin";
   const [tab, setTab] = useState<AdminTab>(
-    "appointments",
+    searchParams.get("tab") === "courier" || searchParams.get("fulfillment") === "courier" ? "courier" : "appointments",
   );
+  const [focusedId, setFocusedId] = useState(searchParams.get("appointment") || "");
+  const [gamesEditor, setGamesEditor] = useState<AppointmentItem | null>(null);
   const [filters, setFilters] = useState<AppointmentFiltersState>({
     status: searchParams.get("status") || "",
     serviceType: searchParams.get("service") || "",
@@ -87,16 +96,18 @@ function AppointmentsAdminContent() {
 
   useEffect(() => {
     const params = new URLSearchParams();
+    if (tab === "courier") params.set("tab", "courier");
+    if (focusedId) params.set("appointment", focusedId);
     if (filters.page > 1) params.set("page", String(filters.page));
     if (filters.status) params.set("status", filters.status);
     if (filters.serviceType) params.set("service", filters.serviceType);
     if (filters.date) params.set("date", filters.date);
     if (filters.search) params.set("search", filters.search);
-    router.replace(
-      params.size ? `${pathname}?${params.toString()}` : pathname,
-      { scroll: false },
-    );
-  }, [filters, pathname, router, tab]);
+    const href = params.size ? `${pathname}?${params.toString()}` : pathname;
+    if (href !== `${window.location.pathname}${window.location.search}`) {
+      router.replace(href, { scroll: false });
+    }
+  }, [filters, focusedId, pathname, router, tab]);
 
   const loadAppointments = useCallback(async () => {
     setListLoading(true);
@@ -106,6 +117,8 @@ function AppointmentsAdminContent() {
         page: String(filters.page),
         limit: "12",
       });
+      if (tab === "courier") params.set("fulfillment", "courier");
+      if (focusedId) params.set("appointment", focusedId);
       if (filters.status) params.set("status", filters.status);
       if (filters.serviceType) {
         params.set("serviceType", filters.serviceType);
@@ -146,9 +159,12 @@ function AppointmentsAdminContent() {
     filters.page,
     filters.serviceType,
     filters.status,
+    focusedId,
+    tab,
   ]);
 
   const loadConfiguration = useCallback(async () => {
+    if (!canManageSettings) return;
     setConfigLoading(true);
     setConfigError("");
     try {
@@ -181,7 +197,7 @@ function AppointmentsAdminContent() {
     } finally {
       setConfigLoading(false);
     }
-  }, []);
+  }, [canManageSettings]);
 
   useEffect(() => {
     void loadAppointments();
@@ -196,28 +212,11 @@ function AppointmentsAdminContent() {
     await Promise.all([loadAppointments(), loadConfiguration()]);
   };
 
-  const sendPaymentLink = async (itemId: string): Promise<string> => {
-    const response = await fetch(`/api/admin/appointments/${itemId}/payment`, { method: "POST" });
-    const payload = await response.json().catch(() => ({})) as {
-      data?: { url: string; smsStatus?: string; notificationStatus?: string };
-      error?: string;
-    };
-    if (!response.ok || !payload.data?.url) {
-      throw new Error(payload.error || "لینک پرداخت ساخته نشد.");
-    }
-    try {
-      await navigator.clipboard.writeText(payload.data.url);
-    } catch {
-      // The link is still shown in the notice if clipboard permission is denied.
-    }
-    return `لینک پرداخت: ${payload.data.url} · اعلان: ${payload.data.notificationStatus === "sent" ? "ارسال شد" : "ناموفق"} · پیامک: ${payload.data.smsStatus === "sent" ? "ارسال شد" : "ارسال نشد یا الگوی پیامک تنظیم نیست"}`;
-  };
-
   const requestPaymentLink = async (item: AppointmentItem) => {
     setWorkingId(item._id);
     setNotice("");
     try {
-      setNotice(await sendPaymentLink(item._id));
+      setNotice(await sendAppointmentPaymentLink(item._id));
       await loadAppointments();
     } catch (reason) {
       setNotice(reason instanceof Error ? reason.message : "لینک پرداخت آماده نشد.");
@@ -247,6 +246,7 @@ function AppointmentsAdminContent() {
         body: JSON.stringify({
           status,
           ...(forcedAmount !== undefined ? { baseAmount: forcedAmount } : {}),
+          expectedUpdatedAt: item.updatedAt,
         }),
       });
       const payload = (await response.json().catch(() => ({}))) as {
@@ -259,7 +259,7 @@ function AppointmentsAdminContent() {
       setTransitionRequest(null);
       if (status === "completed") {
         try {
-          setNotice(await sendPaymentLink(item._id));
+          setNotice(await sendAppointmentPaymentLink(item._id));
         } catch (paymentError) {
           setNotice(`مبلغ نهایی ثبت شد اما لینک پرداخت ارسال نشد: ${paymentError instanceof Error ? paymentError.message : "خطای نامشخص"}`);
         }
@@ -286,7 +286,7 @@ function AppointmentsAdminContent() {
       const response = await fetch(`/api/admin/appointments/${item._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courierStatus }),
+        body: JSON.stringify({ courierStatus, expectedUpdatedAt: item.updatedAt }),
       });
       const payload = (await response.json().catch(() => ({}))) as {
         error?: string;
@@ -295,6 +295,10 @@ function AppointmentsAdminContent() {
         throw new Error(payload.error || "تغییر وضعیت پیک انجام نشد.");
       }
       setTransitionRequest(null);
+      if (courierStatus === "at_store") {
+        router.push(`/dashboard/store-order?appointment=${item._id}`);
+        return;
+      }
       setNotice("وضعیت پیک با موفقیت به‌روزرسانی شد.");
       await loadAppointments();
     } catch (reason) {
@@ -450,12 +454,13 @@ function AppointmentsAdminContent() {
         className="flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm"
         aria-label="بخش‌های مدیریت نوبت"
       >
-        {tabs.map(({ key, label, icon: Icon }) => (
+        {tabs.filter(({ key }) => canManageSettings || key === "appointments" || key === "courier").map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             type="button"
             onClick={() => {
               setTab(key);
+              setFocusedId("");
               setFilters((value) => ({ ...value, page: 1 }));
             }}
             aria-pressed={tab === key}
@@ -480,8 +485,13 @@ function AppointmentsAdminContent() {
         </div>
       ) : null}
 
-      {tab === "appointments" ? (
+      {tab === "appointments" || tab === "courier" ? (
         <div className="space-y-4">
+          {focusedId && (
+            <button type="button" onClick={() => setFocusedId("")} className="rounded-xl border bg-white px-3 py-2 text-sm font-bold">
+              نمایش همه درخواست‌های پیک
+            </button>
+          )}
           <AppointmentsFilters
             filters={filters}
             onChange={setFilters}
@@ -499,7 +509,14 @@ function AppointmentsAdminContent() {
               workingId={workingId}
               onPageChange={(page) => setFilters((value) => ({ ...value, page }))}
               onOpenDetails={setDetail}
-              onOpenSettlement={setSettlement}
+              onOpenSettlement={(item) => {
+                setCompletionAmounts((value) => ({
+                  ...value,
+                  [item._id]: String(item.pricing?.serviceBaseAmount ?? item.pricing?.baseAmount ?? ""),
+                }));
+                setSettlement(item);
+              }}
+              onEditGames={setGamesEditor}
               onRequestPayment={requestPaymentLink}
               onRequestCourier={(item, nextStatus) =>
                 setTransitionRequest({ kind: "courier", item, nextStatus })
@@ -510,7 +527,7 @@ function AppointmentsAdminContent() {
             />
           )}
         </div>
-      ) : configError ? (
+      ) : !canManageSettings ? null : configError ? (
         <ErrorState
           message={configError}
           onRetry={() => void loadConfiguration()}
@@ -537,6 +554,18 @@ function AppointmentsAdminContent() {
         item={detail}
         onClose={() => setDetail(null)}
       />
+      {gamesEditor && (
+        <AppointmentGamesEditor
+          key={gamesEditor._id}
+          item={gamesEditor}
+          onClose={() => setGamesEditor(null)}
+          onSaved={(message) => {
+            setGamesEditor(null);
+            setNotice(message);
+            void loadAppointments();
+          }}
+        />
+      )}
       <SettlementModal
         item={settlement}
         amount={settlement ? completionAmounts[settlement._id] || "" : ""}

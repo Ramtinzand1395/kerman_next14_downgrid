@@ -129,6 +129,7 @@ const AppointmentSchema = new Schema(
       startedAt: { type: Date },
       paidAt: { type: Date },
     },
+    storeOrderRegisteredAt: { type: Date, default: null },
     completedAt: { type: Date, default: null },
     visitCountedAt: { type: Date, default: null },
     rewardProcessingState: { type: String, enum: ["pending", "processing", "done", "failed", null], default: null },

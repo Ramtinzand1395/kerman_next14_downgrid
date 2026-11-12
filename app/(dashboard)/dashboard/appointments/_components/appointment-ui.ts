@@ -40,7 +40,7 @@ export const courierLabel: Record<CourierStatus, string> = {
   scheduled: "زمان‌بندی شد",
   assigned: "حرکت از فروشگاه به سمت مشتری",
   picked_up: "تحویل دستگاه به پیک",
-  at_store: "به فروشگاه رسید",
+  at_store: "تحویل دستگاه به مغازه",
   return_ready: "تکمیل خدمات و آماده ارسال",
   returning: "حرکت به سمت مشتری پس از خدمات",
   delivered: "تحویل به مشتری",
@@ -76,9 +76,9 @@ export const courierTone: Record<CourierStatus, string> = {
   cancelled: "bg-rose-50 text-rose-800 ring-rose-200",
 };
 
-export { COURIER_TRANSITIONS as courierNext } from "@/lib/appointments/courier-policy";
+export { COURIER_TRANSITIONS as courierNext, courierReturnDeliveryProgress } from "@/lib/appointments/courier-policy";
 
-export const courierTimeline: CourierStatus[] = ["assigned", "picked_up", "returning"];
+export const courierTimeline: CourierStatus[] = ["assigned", "at_store", "returning"];
 
 export function toman(value: number | null | undefined) {
   if (value === null || value === undefined) return "نامشخص";

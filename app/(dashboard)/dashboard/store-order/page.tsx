@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   Gamepad2,
@@ -12,6 +12,7 @@ import { toast } from "react-toastify";
 
 import { storeOrder } from "@/types";
 import AddOrderModal from "./modals/addorder/AddOrderModal";
+import WebsiteOrders from "./WebsiteOrders";
 import OrderTable from "./OrderTable";
 import StoreOrderCart from "./modals/StoreOrderCart";
 
@@ -122,6 +123,10 @@ export default function StoreOrder() {
             </div>
           )}
         </section>
+
+        <Suspense fallback={<p className="text-sm">در حال دریافت سفارش‌های سایت…</p>}>
+          <WebsiteOrders />
+        </Suspense>
 
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <StoreOrderCart
