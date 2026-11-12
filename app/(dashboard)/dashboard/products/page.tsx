@@ -315,9 +315,12 @@ export default function ProductsPage() {
             </label>
 
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
-              <label className="min-w-0">
-                <span className="mb-1.5 block text-sm font-medium text-slate-700">دسته‌بندی</span>
+              <div className="min-w-0">
+                <label htmlFor="product-filter-category" className="mb-1.5 block text-sm font-medium text-slate-700">
+                  دسته‌بندی
+                </label>
                 <select
+                  id="product-filter-category"
                   value={categoryFilter}
                   disabled={!categories}
                   onChange={(e) => {
@@ -333,11 +336,14 @@ export default function ProductsPage() {
                     </option>
                   ))}
                 </select>
-              </label>
+              </div>
 
-              <label>
-                <span className="mb-1.5 block text-sm font-medium text-slate-700">موجودی</span>
+              <div className="min-w-0">
+                <label htmlFor="product-filter-stock" className="mb-1.5 block text-sm font-medium text-slate-700">
+                  موجودی
+                </label>
                 <select
+                  id="product-filter-stock"
                   value={stockFilter}
                   onChange={(e) => {
                     setStockFilter(e.target.value as StockFilter);
@@ -350,11 +356,14 @@ export default function ProductsPage() {
                   <option value="low">موجودی کم (۱ تا ۹ عدد)</option>
                   <option value="out">ناموجود</option>
                 </select>
-              </label>
+              </div>
 
-              <label>
-                <span className="mb-1.5 block text-sm font-medium text-slate-700">وضعیت انتشار</span>
+              <div className="min-w-0">
+                <label htmlFor="product-filter-status" className="mb-1.5 block text-sm font-medium text-slate-700">
+                  وضعیت انتشار
+                </label>
                 <select
+                  id="product-filter-status"
                   value={statusFilter}
                   onChange={(e) => {
                     setStatusFilter(e.target.value as StatusFilter);
@@ -366,7 +375,7 @@ export default function ProductsPage() {
                   <option value="published">منتشر شده</option>
                   <option value="draft">پیش‌نویس</option>
                 </select>
-              </label>
+              </div>
             </div>
 
             {categoriesError && (
