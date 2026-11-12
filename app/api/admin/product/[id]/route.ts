@@ -48,7 +48,7 @@ export async function PUT(
         { status: 400 },
       );
     }
-    const product = await Product.findById(id);
+    const product = await Product.findById(id).select("+purchasePrices");
     if (!product) {
       return NextResponse.json({ error: "محصول پیدا نشد" }, { status: 404 });
     }
@@ -59,10 +59,12 @@ export async function PUT(
     const {
       productData: validatedProductData,
       removedVariantIds,
+      purchasePrices,
     } = buildProductWriteInput(body, {
       mode: "update",
       productId: id,
       existingVariantIds,
+      existingPurchasePrices: product.purchasePrices,
       existingDefaultVariantId: product.defaultVariantId
         ? String(product.defaultVariantId)
         : null,
@@ -76,8 +78,13 @@ export async function PUT(
       nextProduct,
     );
 
+    const previousCosts: Map<string, number> = product.purchasePrices ?? new Map();
+    const costsChanged = previousCosts.size !== Object.keys(purchasePrices).length ||
+      Object.entries(purchasePrices).some(([key, value]) => previousCosts.get(key) !== value);
+
     const productData = {
       ...validatedProductData,
+      ...(costsChanged ? { purchasePrices } : {}),
       category: catalogReferences.categoryId,
       tags: catalogReferences.tagIds,
       catalogRevision: (product.catalogRevision ?? 0) + 1,

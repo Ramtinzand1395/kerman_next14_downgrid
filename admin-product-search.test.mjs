@@ -9,6 +9,7 @@ import Category from "./model/Category.ts";
 import Comment from "./model/Comment.ts";
 import "./model/Tag.ts";
 import { descendantIds } from "./lib/catalog/category-seo.ts";
+import * as productProfit from "./lib/product-profit.ts";
 
 const require = createRequire(import.meta.url);
 
@@ -46,6 +47,7 @@ test("admin product search filters the catalog before paginating in MongoDB", {
     "@/model/Category": Category,
     "@/model/Comment": Comment,
     "@/lib/catalog/category-seo": { descendantIds },
+    "@/lib/product-profit": productProfit,
     "next-auth": { getServerSession: async () => session },
     "../../auth/[...nextauth]/options": { authOptions: {} },
     // The write dependencies are unused by GET.
@@ -92,7 +94,10 @@ test("admin product search filters the catalog before paginating in MongoDB", {
   });
   await Product.collection.insertMany([
     ...Array.from({ length: 12 }, (_, index) =>
-      product(`assassin-${index}`, { title: `Assassin's Creed ${index}` }),
+      product(`assassin-${index}`, {
+        title: `Assassin's Creed ${index}`,
+        ...(index === 0 ? { purchasePrices: { single: 600 } } : {}),
+      }),
     ),
     ...Array.from({ length: 10 }, (_, index) =>
       product(`newer-${index}`, { category: other._id, createdAt: new Date(1000) }),
@@ -125,6 +130,14 @@ test("admin product search filters the catalog before paginating in MongoDB", {
   assert.equal((await list({ ...search, page: "-1" })).page, 1);
   assert.equal("stats" in first, false);
   assert.equal((await list({ q: "ass" })).stats.total, 24);
+
+  const missingCosts = { ...search, missingPurchasePrice: "true", stock: "in", status: "published" };
+  const missingFirst = await list(missingCosts);
+  const missingSecond = await list({ ...missingCosts, page: "2" });
+  assert.equal(missingFirst.total, 11);
+  assert.equal(missingFirst.products.length, 10);
+  assert.equal(missingSecond.products.length, 1);
+  assert.ok([...missingFirst.products, ...missingSecond.products].every((item) => item.missingPurchasePrice));
 
   const filtered = await list({
     q: "كنسول های بازي",

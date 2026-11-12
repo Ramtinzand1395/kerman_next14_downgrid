@@ -185,8 +185,10 @@ test("real standalone MongoDB registers an order and website account with retryW
     const StoreOrder = load("./model/StoreOrder.ts", { mongoose }).default;
     assert.equal(User.collection.name, "users");
     const customer = await Customer.create({ name: "رامتین", lastName: "زند خاوری", sex: "مرد", mobile: "۰۹۱۲۳۴۵۶۷۸۹" });
+    const receiptNumbers = [];
     const route = loadOrderRoute({
-      mongoose, User, StoreOrder, Customer, sendStoreOrderReceiptSms: async () => null,
+      mongoose, User, StoreOrder, Customer,
+      sendStoreOrderReceiptSms: async ({ mobile }) => receiptNumbers.push(mobile),
     });
     const result = await route.POST(manualOrderRequest(String(customer._id)));
     assert.equal(result.status, 201, await result.clone().text());
@@ -195,6 +197,7 @@ test("real standalone MongoDB registers an order and website account with retryW
     assert.equal(account.firstName, "رامتین");
     assert.equal(account.lastName, "زند خاوری");
     assert.equal(account.phoneVerifiedAt, undefined);
+    assert.deepEqual(receiptNumbers, [mobile]);
     // Reconcile orders saved before website account creation was deployed.
     await User.deleteOne({ mobile });
     const replay = await route.POST(manualOrderRequest(String(customer._id)));
@@ -203,7 +206,7 @@ test("real standalone MongoDB registers an order and website account with retryW
     assert.equal(await StoreOrder.countDocuments(), 1);
     assert.equal(await User.countDocuments(), 1);
 
-    const oldCustomer = await Customer.create({ name: "علی", lastName: "رضایی", sex: "مرد", mobile: "+98 912 345 6780" });
+    const oldCustomer = await Customer.create({ name: "ع".repeat(81), lastName: "رضایی", sex: "مرد", mobile: "+98 912 345 6780" });
     const manualSync = load("./app/api/admin/store-order/customer/[customerId]/website-account/route.ts", {
       mongoose,
       "next-auth": { getServerSession: async () => ({ user: { role: "admin" } }) },
@@ -218,7 +221,7 @@ test("real standalone MongoDB registers an order and website account with retryW
     });
     assert.equal(sync.status, 200);
     const syncedAccount = await User.collection.findOne({ mobile: "09123456780" });
-    assert.equal(syncedAccount.firstName, "علی");
+    assert.equal(syncedAccount.firstName, undefined);
     assert.equal(syncedAccount.lastName, "رضایی");
     assert.equal(await StoreOrder.countDocuments(), 1);
   } finally {

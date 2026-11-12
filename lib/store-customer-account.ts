@@ -16,13 +16,18 @@ export function storeCustomerMobile(value: string) {
   return /^09\d{9}$/.test(mobile) ? mobile : null;
 }
 
+function importableName(value?: string) {
+  const name = value?.trim();
+  return name && name.length <= 80 ? name : undefined;
+}
+
 export async function provisionStoreCustomerAccount(customer: StoreCustomer, session?: ClientSession) {
   const mobile = storeCustomerMobile(customer.mobile);
   if (!mobile) return false;
 
-  const name = customer.name?.trim();
+  const name = importableName(customer.name);
   const firstName = name === "کاربر بی نام" ? undefined : name;
-  const lastName = customer.lastName?.trim();
+  const lastName = importableName(customer.lastName);
   const username = [firstName, lastName].filter(Boolean).join(" ");
 
   const now = new Date();

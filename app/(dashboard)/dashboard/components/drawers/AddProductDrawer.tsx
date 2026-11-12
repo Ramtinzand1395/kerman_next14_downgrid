@@ -4,7 +4,8 @@ import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { ChevronDown, Loader2, PackagePlus, X } from "lucide-react";
 
-import type { ProductForm, Tag } from "@/types";
+import type { ProductForm, ProductVariant, Tag } from "@/types";
+import { isPurchasePrice } from "@/lib/product-profit";
 
 import BasicInfoFields from "../modals/BasicInfoFields";
 import CategorySelector from "../modals/CategorySelector";
@@ -111,6 +112,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
     variantSelector: product?.variantSelector || initialForm.variantSelector,
     metaDescription: product?.metaDescription || initialForm.metaDescription,
     price: product?.price || initialForm.price,
+    purchasePrice: product?.purchasePrice ?? null,
     discountPrice: product?.discountPrice ?? initialForm.discountPrice,
     stock: product?.stock || initialForm.stock,
     brand: product?.brand || initialForm.brand,
@@ -159,7 +161,24 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const existingVariants: ProductVariant[] = product?.variants ?? [];
+  const existingVariantIds = new Set(existingVariants.map((variant) => variant._id));
+
   const validateForm = () => {
+    const singleCostRequired = !product || product.productType === "multi" || isPurchasePrice(product.purchasePrice);
+    const invalidCost = form.productType === "single"
+      ? (singleCostRequired || form.purchasePrice != null) && !isPurchasePrice(form.purchasePrice)
+      : form.variants.some((variant) => {
+          const previous = existingVariants.find((entry) => entry._id === variant._id);
+          return (!previous || isPurchasePrice(previous.purchasePrice) || variant.purchasePrice != null) &&
+            !isPurchasePrice(variant.purchasePrice);
+        });
+    if (invalidCost) {
+      setOpenSection("basic");
+      toast.warning("قیمت خرید لازم را به‌صورت عدد صحیح نامنفی وارد کنید.");
+      return false;
+    }
+
     if (!form.title.trim()) {
       toast.warning("برای ذخیره محصول، عنوان آن را وارد کنید.");
       return false;
@@ -241,11 +260,12 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
           ...form,
           variants:
             form.productType === "multi"
-              ? form.variants.map((v) => ({
-                  ...v,
-                  title: v.title.trim(),
-                  sku: v.sku?.trim() || undefined,
-                  barcode: v.barcode?.trim() || undefined,
+              ? form.variants.map(({ _id, ...variant }) => ({
+                  ...variant,
+                  ...(existingVariantIds.has(_id) ? { _id } : { clientVariantId: _id }),
+                  title: variant.title.trim(),
+                  sku: variant.sku?.trim() || undefined,
+                  barcode: variant.barcode?.trim() || undefined,
                 }))
               : [],
         }),
@@ -281,11 +301,12 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
           ...form,
           variants:
             form.productType === "multi"
-              ? form.variants.map((v) => ({
-                  ...v,
-                  title: v.title.trim(),
-                  sku: v.sku?.trim() || undefined,
-                  barcode: v.barcode?.trim() || undefined,
+              ? form.variants.map(({ _id, ...variant }) => ({
+                  ...variant,
+                  ...(existingVariantIds.has(_id) ? { _id } : { clientVariantId: _id }),
+                  title: variant.title.trim(),
+                  sku: variant.sku?.trim() || undefined,
+                  barcode: variant.barcode?.trim() || undefined,
                 }))
               : [],
         }),
@@ -377,7 +398,15 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
             openSection={openSection}
             onToggle={toggleSection}
           >
-            <BasicInfoFields form={form} updateField={updateField} />
+            <BasicInfoFields
+              form={form}
+              updateField={updateField}
+              purchasePriceRequired={!product || product.productType === "multi" || isPurchasePrice(product.purchasePrice)}
+              variantPurchasePriceRequired={(variant) =>
+                !existingVariantIds.has(variant._id) ||
+                isPurchasePrice(existingVariants.find((entry) => entry._id === variant._id)?.purchasePrice)
+              }
+            />
           </DrawerSection>
 
           <DrawerSection

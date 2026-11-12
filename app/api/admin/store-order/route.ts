@@ -71,9 +71,10 @@ async function respondToSavedOrder(order: SavedOrder, customer: OrderCustomer | 
   };
   const syncPending = order.websiteAccountSyncPending === true;
   const needsAccountSync = syncPending || replayed;
+  const mobile = customer?.mobile ? storeCustomerMobile(customer.mobile) : null;
   try {
     if (needsAccountSync) {
-      if (!customer?.mobile || !storeCustomerMobile(customer.mobile)) {
+      if (!customer || !mobile) {
         return NextResponse.json({
           error: "سفارش ذخیره شده است. شماره موبایل مشتری را در بخش مدیریت مشتریان اصلاح کنید.",
         }, { status: 422 });
@@ -83,10 +84,10 @@ async function respondToSavedOrder(order: SavedOrder, customer: OrderCustomer | 
       if (!syncPending) return NextResponse.json({ ...response, sms: null });
     }
 
-    const sms = customer ? await sendStoreOrderReceiptSms({
+    const sms = customer && mobile ? await sendStoreOrderReceiptSms({
       entityType: "StoreOrder",
       id: order._id.toString(),
-      mobile: customer.mobile,
+      mobile,
       lastName: customer.lastName,
       sex: customer.sex,
       consoleType: order.consoleType,

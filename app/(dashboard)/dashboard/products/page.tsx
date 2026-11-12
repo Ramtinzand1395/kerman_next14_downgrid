@@ -22,16 +22,22 @@ import { formatPrice } from "@/helpers/Price";
 import StatsCard from "../components/StatsCard";
 import AddProductDrawer from "../components/drawers/AddProductDrawer";
 
+type AdminProduct = Product & {
+  purchasePrice: number | null;
+  inventoryProfit: number | null;
+  missingPurchasePrice: boolean;
+};
+
 type DrawerState = {
   type: "add" | "edit" | null;
-  product: Product | null;
+  product: AdminProduct | null;
 };
 
 type StockFilter = "all" | "in" | "low" | "out";
 type StatusFilter = "all" | "draft" | "published";
 
 type ProductList = {
-  products: Product[];
+  products: AdminProduct[];
   page: number;
   totalPages: number;
   total: number;
@@ -54,6 +60,7 @@ export default function ProductsPage() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
+  const [missingPurchasePrice, setMissingPurchasePrice] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [categories, setCategories] = useState<Category[] | null>(null);
@@ -66,6 +73,8 @@ export default function ProductsPage() {
     total: 0,
     value: 0,
     lowStock: 0,
+    knownInventoryProfit: 0,
+    missingPurchasePriceProducts: 0,
     comments: 0,
     verifiedComments: 0,
   });
@@ -82,13 +91,14 @@ export default function ProductsPage() {
   if (stockFilter !== "all") params.set("stock", stockFilter);
   if (statusFilter !== "all") params.set("status", statusFilter);
   if (categoryFilter) params.set("category", categoryFilter);
+  if (missingPurchasePrice) params.set("missingPurchasePrice", "true");
   const queryString = params.toString();
   const requestKey = `${refreshVersion}:${queryString}`;
   const loading = searchPending || request?.key !== requestKey;
   const result = loading ? null : request?.list;
   const failed = !loading && !result;
   const hasFilters = Boolean(
-    trimmedQuery || stockFilter !== "all" || statusFilter !== "all" || categoryFilter,
+    trimmedQuery || stockFilter !== "all" || statusFilter !== "all" || categoryFilter || missingPurchasePrice,
   );
 
   useEffect(() => {
@@ -156,6 +166,7 @@ export default function ProductsPage() {
     setStockFilter("all");
     setStatusFilter("all");
     setCategoryFilter("");
+    setMissingPurchasePrice(false);
     setPage(1);
   };
 
@@ -185,7 +196,7 @@ export default function ProductsPage() {
   };
 
   const openAddDrawer = () => setDrawer({ type: "add", product: null });
-  const openEditDrawer = (product: Product) =>
+  const openEditDrawer = (product: AdminProduct) =>
     setDrawer({ type: "edit", product });
   const closeDrawer = () => setDrawer({ type: null, product: null });
 
@@ -293,6 +304,21 @@ export default function ProductsPage() {
           />
         </section>
 
+        <section className="grid gap-3 sm:grid-cols-2" aria-label="سود موجودی">
+          <StatsCard
+            title="سود بالقوه موجودی با قیمت خرید ثبت‌شده"
+            value={`${formatPrice(stats.knownInventoryProfit)} تومان`}
+            icon={DollarSign}
+            color="green"
+          />
+          <StatsCard
+            title="محصولات بدون قیمت خرید کامل"
+            value={stats.missingPurchasePriceProducts.toLocaleString("fa-IR")}
+            icon={AlertTriangle}
+            color="amber"
+          />
+        </section>
+
         <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 p-4 sm:p-6">
             <label className="block">
@@ -378,6 +404,18 @@ export default function ProductsPage() {
               </div>
             </div>
 
+            <label className="mt-3 flex items-center gap-2 text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                checked={missingPurchasePrice}
+                onChange={(event) => {
+                  setPage(1);
+                  setMissingPurchasePrice(event.target.checked);
+                }}
+              />
+              محصولات بدون قیمت خرید
+            </label>
+
             {categoriesError && (
               <p className="mt-3 text-sm text-red-700" role="status">
                 دسته‌بندی‌ها دریافت نشدند. برای تلاش دوباره، فهرست را به‌روزرسانی کنید.
@@ -405,6 +443,8 @@ export default function ProductsPage() {
                   <th className="px-4 py-3 font-semibold">وضعیت انتشار</th>
                   <th className="px-4 py-3 font-semibold">وضعیت موجودی</th>
                   <th className="px-4 py-3 font-semibold">قیمت</th>
+                  <th className="px-4 py-3 font-semibold">قیمت خرید</th>
+                  <th className="px-4 py-3 font-semibold">سود بالقوه موجودی</th>
                   <th className="px-4 py-3 font-semibold">موجودی</th>
                   <th className="px-4 py-3 font-semibold">آخرین بروزرسانی</th>
                   <th className="px-4 py-3 font-semibold">عملیات</th>
@@ -415,7 +455,7 @@ export default function ProductsPage() {
                 {loading
                   ? Array.from({ length: 6 }).map((_, idx) => (
                       <tr key={idx}>
-                        <td className="px-4 py-3" colSpan={9}>
+                        <td className="px-4 py-3" colSpan={11}>
                           <Skeleton height={28} />
                         </td>
                       </tr>
@@ -469,15 +509,25 @@ export default function ProductsPage() {
 
                         <td className="px-4 py-3 font-semibold text-slate-900">
                           {product.productType === "multi" ? "از " : ""}
-                          {formatPrice(product.discountPrice || product.price)}{" "}
+                          {formatPrice(product.discountPrice ?? product.price)}{" "}
                           تومان
-                          {product.discountPrice ? (
+                          {product.discountPrice != null ? (
                             <span className="mr-2 text-xs font-normal text-slate-400 line-through">
                               {formatPrice(product.price)}
                             </span>
                           ) : null}
                         </td>
 
+                        <td className="px-4 py-3 text-slate-600">
+                          {product.productType === "multi"
+                            ? (product.missingPurchasePrice ? "ناقص در مدل‌ها" : "ثبت‌شده برای مدل‌ها")
+                            : (product.purchasePrice === null ? "ثبت نشده" : `${formatPrice(product.purchasePrice)} تومان`)}
+                        </td>
+                        <td className="px-4 py-3 text-slate-600">
+                          {product.inventoryProfit === null
+                            ? "نامشخص"
+                            : `${formatPrice(product.inventoryProfit)} تومان`}
+                        </td>
                         <td className="px-4 py-3 text-slate-600">
                           {product.stock ?? 0} عدد
                         </td>
