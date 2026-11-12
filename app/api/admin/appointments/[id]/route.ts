@@ -24,7 +24,9 @@ import {
 } from "@/lib/appointments/rewards.service";
 import { courierStatusAfterService } from "@/lib/appointments/courier-policy";
 import { notifyAdmins, notifyUser } from "@/lib/notifications/service";
-import { deliverBusinessSms } from "@/lib/sms/business";
+import { sendStoreOrderReceiptSms } from "@/lib/sms/store-order";
+import { smsAppointmentPaymentReady } from "@/lib/sms/order-patterns";
+import { deliverBusinessSms, type BusinessSmsState } from "@/lib/sms/business";
 
 const labels: Record<string, string> = {
   pending: "در انتظار تأیید",
@@ -231,11 +233,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const set: Record<string, unknown> = {};
-  if (storeOrderCustomerId) {
-    const customer = await Customer.exists({ _id: storeOrderCustomerId, mobile: current.phone });
-    if (!customer) return fail("شماره مشتری سفارش با شماره ثبت‌شده در سایت مطابقت ندارد.", 422);
-    set.storeOrderCustomer = storeOrderCustomerId;
+  const storeCustomer = storeOrderCustomerId
+    ? await Customer.findOne({ _id: storeOrderCustomerId, mobile: current.phone }).select("lastName sex").lean()
+    : null;
+  if (storeOrderCustomerId && !storeCustomer) {
+    return fail("شماره مشتری سفارش با شماره ثبت‌شده در سایت مطابقت ندارد.", 422);
   }
+  if (storeOrderCustomerId) set.storeOrderCustomer = storeOrderCustomerId;
   if (storeOrderDescription !== undefined) set.description = storeOrderDescription;
   let gamesChanged = false;
   if (selectedGames) {
@@ -418,6 +422,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     : await persist();
   if (!updated) return fail("وضعیت نوبت هم‌زمان تغییر کرده است.", 409);
 
+  let storeOrderSmsStatus: BusinessSmsState | undefined;
+  if (isCourier && set.storeOrderRegisteredAt) {
+    const receiptSms = await sendStoreOrderReceiptSms({
+      entityType: "Appointment",
+      id: String(current._id),
+      mobile: current.phone,
+      lastName: storeCustomer?.lastName || current.customerName,
+      sex: storeCustomer?.sex,
+      consoleType: current.device,
+      registeredAt: updated.storeOrderRegisteredAt,
+    });
+    storeOrderSmsStatus = receiptSms.state;
+  }
   let gamesNotificationStatus: "sent" | "failed" | undefined;
   if (gamesChanged) {
     gamesNotificationStatus = await notifyUser({
@@ -501,9 +518,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       eventKey: `COURIER_STATUS:${current._id}:${nextCourierStatus}`,
     }).catch(() => {});
 
-    if (["return_ready", "returning", "delivered"].includes(nextCourierStatus)) {
-      const bodyIdByStatus: Record<string, number | undefined> = {
-        return_ready: Number(process.env.APPOINTMENT_SMS_RETURN_READY_BODY_ID) || undefined,
+    if (nextCourierStatus === "returning" || nextCourierStatus === "delivered") {
+      const bodyIdByStatus = {
         returning: Number(process.env.APPOINTMENT_SMS_HANDED_TO_COURIER_BODY_ID) || undefined,
         delivered: Number(process.env.APPOINTMENT_SMS_DELIVERED_BODY_ID) || undefined,
       };
@@ -519,5 +535,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
   }
 
-  return ok(gamesNotificationStatus ? { ...updated.toObject(), gamesNotificationStatus } : updated);
+  if (isCourier && nextStatus === "completed") {
+    storeOrderSmsStatus = await smsAppointmentPaymentReady(updated)
+      .then((sms) => sms.state)
+      .catch((error) => {
+        console.error("[appointments] payment-ready SMS failed", error);
+        return "failed" as const;
+      });
+  }
+
+  return ok(gamesNotificationStatus || storeOrderSmsStatus
+    ? { ...updated.toObject(), gamesNotificationStatus, storeOrderSmsStatus }
+    : updated);
 }

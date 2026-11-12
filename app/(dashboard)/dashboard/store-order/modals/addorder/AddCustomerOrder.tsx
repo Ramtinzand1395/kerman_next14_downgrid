@@ -142,6 +142,7 @@ const AddCustomerOrder = ({
         if (!response.ok) throw new Error(payload.error || "ثبت سفارش سایت انجام نشد.");
         toast.success("سفارش سایت در فهرست سفارش‌ها ذخیره شد.");
         if (payload.data?.gamesNotificationStatus === "failed") toast.warning("ارسال اعلان تغییر بازی‌ها ناموفق بود.");
+        if (payload.data?.storeOrderSmsStatus === "failed") toast.warning("سفارش ثبت شد، اما پیامک دریافت دستگاه ارسال نشد.");
         onWebsiteOrderSaved?.();
         closeModal();
         return;

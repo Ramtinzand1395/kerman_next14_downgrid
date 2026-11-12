@@ -9,6 +9,21 @@ export const SERVICE_SMS_PATTERNS = {
   productOrderPaid: 577167,
 } as const;
 
+export const appointmentPaymentReadySmsKey = (id: string) => `APPOINTMENT_PAYMENT_READY:${id}`;
+
+export function smsAppointmentPaymentReady(appointment: { _id: unknown; phone: string; trackingCode: string }) {
+  const id = String(appointment._id);
+  return deliverBusinessSms({
+    eventKey: appointmentPaymentReadySmsKey(id),
+    eventType: "APPOINTMENT_PAYMENT_READY",
+    entityType: "Appointment",
+    entityId: id,
+    bodyId: SERVICE_SMS_PATTERNS.installationPayment,
+    to: appointment.phone,
+    args: [appointment.trackingCode],
+  });
+}
+
 function validMobile(value: unknown): value is string {
   return typeof value === "string" && /^09\d{9}$/.test(value.trim());
 }

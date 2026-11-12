@@ -1,9 +1,10 @@
 import Appointment from "@/model/Appointment";
+import BusinessSmsEvent from "@/model/BusinessSmsEvent";
 import { requireAppointmentOperator, fail, ok, withRateLimit } from "@/lib/loyalty/api";
 import { createAppointmentPaymentLink } from "@/lib/appointments/payment-link";
 import { notifyUser } from "@/lib/notifications/service";
 import { deliverBusinessSms } from "@/lib/sms/business";
-import { SERVICE_SMS_PATTERNS } from "@/lib/sms/order-patterns";
+import { SERVICE_SMS_PATTERNS, appointmentPaymentReadySmsKey } from "@/lib/sms/order-patterns";
 
 export async function POST(_req: Request, { params }: { params: { id: string } | Promise<{ id: string }> }) {
   const auth = await requireAppointmentOperator();
@@ -16,7 +17,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } |
   const appointment = await Appointment.findById(id).lean();
   if (!appointment) return fail("درخواست پیدا نشد", 404);
 
-  // Each payment authority is sent at most once, even when the button is clicked repeatedly.
+  // Courier SMS belongs to the ready transition. The payment endpoint only reports its recorded status.
   const authority = appointment.payment?.authority;
   const eventKey = `APPOINTMENT_PAYMENT_LINK:${id}:${authority}`;
   const [notification, sms] = await Promise.allSettled([
@@ -33,15 +34,18 @@ export async function POST(_req: Request, { params }: { params: { id: string } |
       senderId: auth.userId,
       eventKey,
     }),
-    deliverBusinessSms({
-      eventKey,
-      eventType: "APPOINTMENT_PAYMENT_LINK",
-      entityType: "Appointment",
-      entityId: id,
-      bodyId: SERVICE_SMS_PATTERNS.installationPayment,
-      to: appointment.phone,
-      args: [appointment.trackingCode],
-    }),
+    appointment.fulfillment === "courier"
+      ? BusinessSmsEvent.findOne({ eventKey: appointmentPaymentReadySmsKey(id) }).select("status").lean()
+        .then((event) => ({ state: event?.status ?? "not_requested" }))
+      : deliverBusinessSms({
+          eventKey,
+          eventType: "APPOINTMENT_PAYMENT_LINK",
+          entityType: "Appointment",
+          entityId: id,
+          bodyId: SERVICE_SMS_PATTERNS.installationPayment,
+          to: appointment.phone,
+          args: [appointment.trackingCode],
+        }),
   ]);
   return ok({
     url: result.url,

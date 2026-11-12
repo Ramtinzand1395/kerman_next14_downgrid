@@ -88,6 +88,9 @@ const OrderTable = ({
           throw new Error(payload.error || "سفارش آماده نشد.");
         }
         toast.success("سفارش آماده شد.");
+        if (payload.data?.storeOrderSmsStatus === "failed") {
+          toast.warning("سفارش آماده شد، اما پیامک بررسی اعلان‌ها و پرداخت ارسال نشد.");
+        }
         if (Number(payload.data?.pricing?.finalAmount) > 0) {
           try {
             toast.info(await sendAppointmentPaymentLink(order.appointmentId));

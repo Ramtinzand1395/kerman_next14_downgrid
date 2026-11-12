@@ -12,5 +12,9 @@ export async function sendAppointmentPaymentLink(itemId: string): Promise<string
   } catch {
     // The link is still shown in the notice if clipboard permission is denied.
   }
-  return `لینک پرداخت: ${payload.data.url} · اعلان: ${payload.data.notificationStatus === "sent" ? "ارسال شد" : "ناموفق"} · پیامک: ${payload.data.smsStatus === "sent" ? "ارسال شد" : "ارسال نشد یا الگوی پیامک تنظیم نیست"}`;
+  const smsStatus = payload.data.smsStatus;
+  const smsSummary = smsStatus === "not_requested" ? "" : ` · پیامک: ${smsStatus === "sent"
+    ? "ارسال شد"
+    : smsStatus === "pending" || smsStatus === "sending" ? "در حال ارسال" : "ارسال نشد"}`;
+  return `لینک پرداخت: ${payload.data.url} · اعلان: ${payload.data.notificationStatus === "sent" ? "ارسال شد" : "ناموفق"}${smsSummary}`;
 }
