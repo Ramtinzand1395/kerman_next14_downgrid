@@ -250,7 +250,7 @@ export default function LandingHome({
                 بالاخره کپی‌خور شد
               </h2>
               <p className="mt-2 text-sm leading-6 text-blue-50 sm:text-sm lg:text-base">
-                در حال تست و آماده‌سازی بازی‌های نسل هشتم.
+                لذت بازی‌های نسل نهم به همراه زیرنویس با کمترین هزینه
               </p>
               <Link
                 href={REQUEST_URL}
