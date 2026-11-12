@@ -13,6 +13,7 @@ function loadRoute(path, dependencies) {
   const { outputText } = ts.transpileModule(source, {
     compilerOptions: {
       module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2022,
       esModuleInterop: true,
     },
   });
