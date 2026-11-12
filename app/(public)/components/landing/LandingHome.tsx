@@ -244,7 +244,7 @@ export default function LandingHome({
             >
               <div className="flex items-center gap-2 text-xs font-black sm:text-sm">
                 <span className="rounded-md bg-red-500 px-2 py-1">جدید</span>
-                <span>PS5 تا ورژن ۱4</span>
+                <span>PS5 تا ورژن 13.60</span>
               </div>
               <h2 className="mt-2 text-2xl font-black leading-tight sm:text-[26px] lg:text-4xl">
                 بالاخره کپی‌خور شد
