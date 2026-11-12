@@ -10,7 +10,7 @@
 // };
 type ExtendedDate = { $date?: string } | { "$date"?: string };
 
-export const toPersianDate = (value: unknown) => {
+export const toPersianDate = (value: unknown, timeZone?: string) => {
   if (!value) return "";
 
   let d: Date | null = null;
@@ -29,6 +29,7 @@ export const toPersianDate = (value: unknown) => {
   if (!d || Number.isNaN(d.getTime())) return "";
 
   return new Intl.DateTimeFormat("fa-IR", {
+    timeZone,
     year: "numeric",
     month: "long",
     day: "numeric",

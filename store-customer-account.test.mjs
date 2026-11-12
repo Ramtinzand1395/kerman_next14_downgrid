@@ -20,11 +20,16 @@ function load(path, dependencies) {
   return module.exports;
 }
 
-function loadOrderRoute({ mongoose, User, StoreOrder, Customer, sendStoreOrderReceiptSms }) {
+const printPayload = load("./lib/print/payload.ts", {});
+const storeOrderPayload = load("./lib/print/store-order-payload.ts", {
+  "@/helpers/toPersianDate": load("./helpers/toPersianDate.ts", {}),
+});
+
+function loadOrderRoute({ mongoose, User, StoreOrder, Customer, sendStoreOrderReceiptSms, printQueue }) {
   const account = load("./lib/store-customer-account.ts", { "@/model/User": User });
   return load("./app/api/admin/store-order/route.ts", {
     mongoose,
-    "next-auth": { getServerSession: async () => ({ user: { role: "admin" } }) },
+    "next-auth": { getServerSession: async () => ({ user: { id, role: "admin" } }) },
     "../../auth/[...nextauth]/options": { authOptions: {} },
     "@/lib/mongodb": async () => {},
     "@/model/Appointment": {},
@@ -34,6 +39,8 @@ function loadOrderRoute({ mongoose, User, StoreOrder, Customer, sendStoreOrderRe
     "@/model/Customer": Customer,
     "@/lib/store-customer-account": account,
     "@/lib/sms/store-order": { sendStoreOrderReceiptSms },
+    "@/lib/print/store-order-payload": storeOrderPayload,
+    "@/lib/print/queue": printQueue ?? { ensureStoreOrderPrintJob: async () => {} },
   });
 }
 
@@ -45,18 +52,19 @@ function manualOrderRequest(customerId = id) {
   });
 }
 
-function orderHarness({ existingUser, rejectOrder = false, standalone = false, rejectAccountOnce = false } = {}) {
+function orderHarness({ existingUser, rejectOrder = false, standalone = false, rejectAccountOnce = false, rejectPrintOnce = false } = {}) {
   let user = existingUser;
   let smsCount = 0;
   let savedOrder;
   let orderWrites = 0;
+  const printJobs = new Map();
   const customer = { name: "رامتین", lastName: "زند خاوری", mobile };
   const databaseSession = {};
   const User = {
     init: async () => {},
     async updateOne(filter, update, options) {
       assert.equal(filter.mobile, mobile);
-      assert.equal(options.session, standalone ? undefined : databaseSession);
+      assert.equal(options.session, standalone || savedOrder ? undefined : databaseSession);
       if (update.$set) {
         assert.equal(filter.role, "user");
         for (const [field, value] of Object.entries(update.$set)) {
@@ -106,8 +114,26 @@ function orderHarness({ existingUser, rejectOrder = false, standalone = false, r
       },
     },
   };
+  const printQueue = load("./lib/print/queue.ts", {
+    "@/lib/mongodb": async () => {},
+    "@/model/PrintQueue": {
+      async create(job) {
+        assert.equal(job._id, savedOrder._id);
+        if (rejectPrintOnce) {
+          rejectPrintOnce = false;
+          throw new Error("simulated print queue failure");
+        }
+        if (printJobs.has(job._id)) {
+          throw Object.assign(new Error("duplicate print job"), { code: 11000, keyPattern: { _id: 1 } });
+        }
+        printJobs.set(job._id, job);
+      },
+    },
+    "./payload": printPayload,
+    "./queue-store": {},
+  });
   const route = loadOrderRoute({
-    mongoose, User, StoreOrder,
+    mongoose, User, StoreOrder, printQueue,
     Customer: { findById: () => ({ lean: async () => customer }) },
     sendStoreOrderReceiptSms: async () => { smsCount++; },
   });
@@ -116,6 +142,7 @@ function orderHarness({ existingUser, rejectOrder = false, standalone = false, r
     get orderWrites() { return orderWrites; },
     get user() { return user; },
     get smsCount() { return smsCount; },
+    printJobs,
   };
 }
 
@@ -143,6 +170,7 @@ test("manual order preserves an existing account for the same phone and rolls ba
   assert.equal((await failed.submit()).status, 500);
   assert.equal(failed.user, undefined);
   assert.equal(failed.smsCount, 0);
+  assert.equal(failed.printJobs.size, 0);
 });
 
 test("standalone saves the order first and a repeat completes a failed account sync without duplicating it", async () => {
@@ -151,15 +179,58 @@ test("standalone saves the order first and a repeat completes a failed account s
   assert.equal(harness.orderWrites, 1);
   assert.equal(harness.user, undefined);
   assert.equal(harness.smsCount, 0);
+  assert.equal(harness.printJobs.size, 0);
 
   const retry = await harness.submit();
   assert.equal(retry.status, 200);
-  assert.equal((await retry.json()).replayed, true);
+  const retryData = await retry.json();
+  assert.equal(retryData.replayed, true);
+  assert.equal(retryData.printStatus, "queued");
+  assert.equal(harness.printJobs.size, 1);
   assert.equal(harness.user.mobile, mobile);
   assert.equal(harness.orderWrites, 1);
   assert.equal(harness.smsCount, 1);
   assert.equal((await harness.submit()).status, 200);
   assert.equal(harness.smsCount, 1);
+});
+
+test("manual order queues one receipt from saved data, including during concurrent replays", async () => {
+  const harness = orderHarness();
+  const result = await harness.submit();
+  assert.equal(result.status, 201);
+  assert.equal((await result.json()).printStatus, "queued");
+
+  const { createdBy, payload } = harness.printJobs.get(id);
+  assert.equal(createdBy, id);
+  assert.equal(payload.fullName, "رامتین زند خاوری");
+  assert.equal(payload.mobile, mobile);
+  assert.equal(payload.receiptType, "ps5");
+  assert.equal(payload.price, 1000);
+  assert.equal(payload.totalSizeGB, 2);
+  assert.deepEqual(payload.games, [{ name: "Game", sizeGB: 2, price: 1000, storage: "" }]);
+
+  const retries = await Promise.all([harness.submit(), harness.submit()]);
+  for (const retry of retries) {
+    assert.equal(retry.status, 200);
+    assert.equal((await retry.json()).printStatus, "queued");
+  }
+  assert.equal(harness.printJobs.size, 1);
+  assert.equal(harness.orderWrites, 1);
+  assert.equal(harness.smsCount, 1);
+});
+
+test("print queue failure keeps the order saved and a retried request can queue the receipt", async () => {
+  const harness = orderHarness({ rejectPrintOnce: true });
+  const result = await harness.submit();
+  assert.equal(result.status, 201);
+  assert.equal((await result.json()).printStatus, "failed");
+  assert.equal(harness.orderWrites, 1);
+  assert.equal(harness.printJobs.size, 0);
+
+  const replay = await harness.submit();
+  assert.equal((await replay.json()).printStatus, "queued");
+  assert.equal(harness.orderWrites, 1);
+  assert.equal(harness.printJobs.size, 1);
 });
 
 test("real standalone MongoDB registers an order and website account with retryWrites enabled", {

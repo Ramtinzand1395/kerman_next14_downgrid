@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const MAX_PRINT_PAYLOAD_BYTES = 64 * 1024;
+export const MAX_PRINT_PAYLOAD_BYTES = 64 * 1024;
 
 const boundedText = (maximum: number) => z.string().max(maximum);
 const boundedNumber = z.number().finite().min(0).max(Number.MAX_SAFE_INTEGER);
@@ -14,7 +14,7 @@ const gameSchema = z
   })
   .passthrough();
 
-const printPayloadSchema = z
+export const printPayloadSchema = z
   .object({
     receiptType: boundedText(100),
     fullName: boundedText(300),

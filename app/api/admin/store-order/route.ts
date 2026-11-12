@@ -6,6 +6,8 @@ import Appointment from "@/model/Appointment";
 import { websiteStoreOrders } from "@/lib/appointments/store-order";
 import StoreOrder from "@/model/StoreOrder";
 import { sendStoreOrderReceiptSms } from "@/lib/sms/store-order";
+import { ensureStoreOrderPrintJob } from "@/lib/print/queue";
+import { buildPrintPayload } from "@/lib/print/store-order-payload";
 import { storeOrder } from "@/types";
 import Customer from "@/model/Customer";
 import mongoose, { type ClientSession } from "mongoose";
@@ -61,9 +63,28 @@ function transactionsUnavailable(error: MongoWriteError) {
 }
 
 type SavedOrder = InstanceType<typeof StoreOrder>;
-type OrderCustomer = { mobile: string; name?: string; lastName: string; sex?: string };
+type OrderCustomer = { mobile: string; name?: string; lastName: string; sex?: string; description?: string };
 
-async function respondToSavedOrder(order: SavedOrder, customer: OrderCustomer | null, replayed = false) {
+async function queueReceipt(order: SavedOrder, customer: OrderCustomer | null, actorId: string) {
+  try {
+    await ensureStoreOrderPrintJob(
+      order._id.toString(),
+      buildPrintPayload(order, customer, "Asia/Tehran"),
+      actorId,
+    );
+    return "queued";
+  } catch (error) {
+    console.error("[store-order] could not queue automatic receipt", error);
+    return "failed";
+  }
+}
+
+async function respondToSavedOrder(
+  order: SavedOrder,
+  customer: OrderCustomer | null,
+  actorId: string,
+  replayed = false,
+) {
   const response = {
     message: replayed ? "سفارش قبلاً ثبت شده است." : "سفارش ایجاد شد.",
     order,
@@ -81,10 +102,10 @@ async function respondToSavedOrder(order: SavedOrder, customer: OrderCustomer | 
       }
       await User.init();
       await provisionStoreCustomerAccount(customer);
-      if (!syncPending) return NextResponse.json({ ...response, sms: null });
     }
 
-    const sms = customer && mobile ? await sendStoreOrderReceiptSms({
+    const printStatus = await queueReceipt(order, customer, actorId);
+    const sms = customer && mobile && (!replayed || syncPending) ? await sendStoreOrderReceiptSms({
       entityType: "StoreOrder",
       id: order._id.toString(),
       mobile,
@@ -98,7 +119,7 @@ async function respondToSavedOrder(order: SavedOrder, customer: OrderCustomer | 
       await StoreOrder.updateOne({ _id: order._id }, { $unset: { websiteAccountSyncPending: 1 } });
       order.websiteAccountSyncPending = undefined;
     }
-    return NextResponse.json({ ...response, sms }, { status: replayed ? 200 : 201 });
+    return NextResponse.json({ ...response, sms, printStatus }, { status: replayed ? 200 : 201 });
   } catch (error) {
     if (!needsAccountSync) throw error;
     console.error("[store-order] could not finish website account sync", error);
@@ -131,7 +152,7 @@ export async function POST(req: Request) {
     }
 
     const replay = await StoreOrder.findOne({ clientRequestKey }).populate("customer");
-    if (replay) return respondToSavedOrder(replay, replay.customer, true);
+    if (replay) return respondToSavedOrder(replay, replay.customer, session.user.id, true);
 
     if (!Array.isArray(list) || list.length === 0) {
       return NextResponse.json(
@@ -219,11 +240,11 @@ export async function POST(req: Request) {
 
     order.$session(null);
     await order.populate("customer");
-    return await respondToSavedOrder(order, customer);
+    return await respondToSavedOrder(order, customer, session.user.id);
   } catch (err) {
     if ((err as { code?: number })?.code === 11000 && clientRequestKey) {
       const replay = await StoreOrder.findOne({ clientRequestKey }).populate("customer");
-      if (replay) return respondToSavedOrder(replay, replay.customer, true);
+      if (replay) return respondToSavedOrder(replay, replay.customer, session.user.id, true);
     }
     console.error("POST /api/admin/store-order error:", err);
     return NextResponse.json(

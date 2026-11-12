@@ -2,7 +2,7 @@
 
 import { Customer, storeOrder } from "@/types";
 import { toast } from "react-toastify";
-import { toPersianDate } from "@/helpers/toPersianDate";
+import { buildPrintPayload } from "@/lib/print/store-order-payload";
 
 const pendingPrintOrderIds = new Set<string>();
 
@@ -18,18 +18,6 @@ const PRINT_ERROR_MESSAGES: Record<string, string> = {
 
 const DEFAULT_PRINT_ERROR =
   "سفارش به صف چاپ اضافه نشد؛ اتصال چاپگر را بررسی کنید.";
-
-const printableStorage = (value: unknown) => {
-  if (typeof value === "string") return value;
-  if (
-    typeof value === "number" ||
-    typeof value === "bigint" ||
-    typeof value === "boolean"
-  ) {
-    return String(value);
-  }
-  return "";
-};
 
 export const getPrintErrorMessage = (data: unknown, status: number) => {
   if (data && typeof data === "object") {
@@ -51,37 +39,6 @@ export const getPrintErrorMessage = (data: unknown, status: number) => {
   if (status === 403) return PRINT_ERROR_MESSAGES.FORBIDDEN;
   if (status === 413) return PRINT_ERROR_MESSAGES.PRINT_PAYLOAD_TOO_LARGE;
   return DEFAULT_PRINT_ERROR;
-};
-
-export const buildPrintPayload = (
-  userOrder: storeOrder,
-  customer: Customer | null,
-) => {
-  const gamesList = Array.isArray(userOrder.list)
-    ? userOrder.list.map((item) => ({
-        name: item?.name || "بدون نام",
-        sizeGB: item?.size ?? 0,
-        price: item?.price ?? 0,
-        storage: printableStorage(item?.storage),
-      }))
-    : [];
-
-  const calculatedTotalSize =
-    userOrder.totalSize ??
-    gamesList.reduce((acc, game) => acc + game.sizeGB, 0);
-
-  return {
-    receiptType: userOrder.consoleType || "store_order",
-    fullName: customer
-      ? `${customer.name || ""} ${customer.lastName || ""}`.trim()
-      : "مشتری متفرقه",
-    mobile: customer?.mobile || "---",
-    date: toPersianDate(userOrder.createdAt) || new Date().toISOString(),
-    games: gamesList,
-    price: userOrder.price ?? 0,
-    totalSizeGB: calculatedTotalSize,
-    customerDescription: userOrder.description || customer?.description || "",
-  };
 };
 
 export const sendPdfToBackend = async (

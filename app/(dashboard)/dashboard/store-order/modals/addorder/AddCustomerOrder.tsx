@@ -171,6 +171,10 @@ const AddCustomerOrder = ({
 
       toast.success(data.message || "سفارش ثبت شد و به ابتدای فهرست اضافه شد.");
 
+      if (data.printStatus === "failed") {
+        toast.warning("سفارش ثبت شد، اما به صف چاپ اضافه نشد. از دکمه چاپ در جزئیات سفارش استفاده کنید.");
+      }
+
       if (data?.sms?.state === "failed") {
         toast.warning("سفارش ثبت شد، اما پیامک اطلاع‌رسانی ارسال نشد.");
       }
