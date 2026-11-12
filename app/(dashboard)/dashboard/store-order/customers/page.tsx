@@ -91,7 +91,7 @@ export default function CustomersPage() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="جست‌وجو با نام، نام خانوادگی یا موبایل"
+              placeholder="جست‌وجو با نام، موبایل یا بارکد"
               className="h-11 w-full rounded-xl border border-slate-300 pr-10 pl-3 text-sm outline-none ring-indigo-500 focus:ring-2"
             />
           </label>
@@ -160,6 +160,7 @@ export default function CustomersPage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
             {selectedCustomer ? (
               <UpdateUser
+                key={selectedCustomer._id}
                 customer={selectedCustomer}
                 setCustomer={(updater) => {
                   setCustomers((prev) =>

@@ -7,6 +7,7 @@ import persian_fa from "react-date-object/locales/persian_fa";
 import { Pencil, Save } from "lucide-react";
 import { toast } from "react-toastify";
 
+import { normalizeCustomerBarcode } from "@/lib/store-customer-barcodes";
 import { Customer } from "@/types";
 import { customerSchema } from "@/validations/CustomerAppValidation";
 
@@ -38,6 +39,18 @@ interface UpdateUserProps {
 
 const UpdateUser = ({ customer, setCustomer, closeModal }: UpdateUserProps) => {
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
+  const [previousBarcodes, setPreviousBarcodes] = useState<string[]>([]);
+  const [barcodeText, setBarcodeText] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const toggleEditing = () => {
+    if (!isEditingCustomer) {
+      const barcodes = customer?.barcodes ?? [];
+      setPreviousBarcodes(barcodes);
+      setBarcodeText(barcodes.join("\n"));
+    }
+    setIsEditingCustomer(!isEditingCustomer);
+  };
 
   const handleCustomerChange = (
     e: React.ChangeEvent<
@@ -49,24 +62,36 @@ const UpdateUser = ({ customer, setCustomer, closeModal }: UpdateUserProps) => {
   };
 
   const handleSaveCustomer = async (customerId: string) => {
+    if (!customer || saving) return;
+
+    setSaving(true);
     try {
       await customerSchema.validate(customer, { abortEarly: false });
 
       const res = await fetch(`/api/admin/store-order/customer/${customerId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customer }),
+        body: JSON.stringify({
+          customer: {
+            ...customer,
+            barcodes: barcodeText.split(/\r?\n/).map(normalizeCustomerBarcode).filter(Boolean),
+          },
+          previousBarcodes,
+        }),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+      if (!res.ok) throw new Error(data.message || data.error);
+
+      setCustomer(data.data);
 
       toast.success(data.message || "اطلاعات مشتری ذخیره شد.");
       setIsEditingCustomer(false);
-     closeModal?.();
+      closeModal?.();
     } catch (err) {
-      console.error(err);
-      toast.error("تغییرات اطلاعات مشتری ذخیره نشد؛ دوباره تلاش کنید.");
+      toast.error(err instanceof Error ? err.message : "تغییرات ذخیره نشد.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -75,7 +100,8 @@ const UpdateUser = ({ customer, setCustomer, closeModal }: UpdateUserProps) => {
       <div className="flex items-center justify-between">
         <h3 className="text-base font-bold text-slate-800">اطلاعات مشتری</h3>
         <button
-          onClick={() => setIsEditingCustomer((prev) => !prev)}
+          disabled={saving}
+          onClick={toggleEditing}
           className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs"
         >
           <Pencil className="h-3.5 w-3.5" />
@@ -136,8 +162,37 @@ const UpdateUser = ({ customer, setCustomer, closeModal }: UpdateUserProps) => {
         ))}
       </div>
 
+      <div className="space-y-1 text-sm text-slate-600">
+        {isEditingCustomer ? (
+          <label className="block space-y-1">
+            <span>بارکد دستگاه‌ها (هر بارکد در یک خط)</span>
+            <textarea
+              dir="ltr"
+              value={barcodeText}
+              onChange={(event) => setBarcodeText(event.target.value)}
+              disabled={saving}
+              className="min-h-24 w-full rounded-lg border border-slate-300 p-2"
+            />
+          </label>
+        ) : (
+          <>
+            <p>بارکد دستگاه‌ها</p>
+            {customer?.barcodes?.length ? (
+              <ul className="space-y-1">
+                {customer.barcodes.map((barcode) => (
+                  <li key={barcode}><bdi>{barcode}</bdi></li>
+                ))}
+              </ul>
+            ) : (
+              <p>---</p>
+            )}
+          </>
+        )}
+      </div>
+
       {isEditingCustomer && customer?._id && (
         <button
+          disabled={saving}
           onClick={() => handleSaveCustomer(customer._id)}
           className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm text-white hover:bg-emerald-700"
         >

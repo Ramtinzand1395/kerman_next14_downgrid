@@ -43,12 +43,14 @@ const steps = [
 const AddOrderModal = ({ closeModal, setOrders }: AddOrderModalProps) => {
   const [activeStep, setActiveStep] = useState<number>(1);
   const [customerData, setCustomerData] = useState<Customer>(defaultCustomer);
+  const [barcode, setBarcode] = useState("");
   const [draftLoaded, setDraftLoaded] = useState(false);
 
   // بازیابی پیش‌نویس ذخیره‌شده (مثلا بعد از خطای ثبت سفارش) تا اطلاعات از اول وارد نشود
   useEffect(() => {
     const draft = readStoreOrderDraft();
 
+    setBarcode(draft?.barcode ?? "");
     if (draft?.customerData) {
       setCustomerData({ ...defaultCustomer, ...draft.customerData });
     }
@@ -62,8 +64,8 @@ const AddOrderModal = ({ closeModal, setOrders }: AddOrderModalProps) => {
   // ذخیره خودکار پیش‌نویس در localStorage هنگام هر تغییر
   useEffect(() => {
     if (!draftLoaded) return;
-    writeStoreOrderDraft({ customerData, activeStep });
-  }, [customerData, activeStep, draftLoaded]);
+    writeStoreOrderDraft({ customerData, activeStep, barcode });
+  }, [customerData, activeStep, barcode, draftLoaded]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-3 pt-6 sm:p-4 sm:pt-10 md:items-center">
@@ -114,6 +116,8 @@ const AddOrderModal = ({ closeModal, setOrders }: AddOrderModalProps) => {
           <SearchCustomer
             customerData={customerData}
             setCustomerData={setCustomerData}
+            barcode={barcode}
+            setBarcode={setBarcode}
             onNext={() => setActiveStep(2)}
           />
         )}
@@ -121,6 +125,8 @@ const AddOrderModal = ({ closeModal, setOrders }: AddOrderModalProps) => {
           <RegisterCustomer
             customerData={customerData}
             setCustomerData={setCustomerData}
+            barcode={barcode}
+            setBarcode={setBarcode}
             onBack={() => setActiveStep(1)}
             onNext={() => setActiveStep(3)}
           />
