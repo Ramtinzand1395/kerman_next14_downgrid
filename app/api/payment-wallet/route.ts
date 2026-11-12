@@ -5,6 +5,7 @@
 //        برداشت اتمیک از کیف پول → کسر موجودی انبار → علامت paid →
 //        اعمال قطعی کوپن + هوک‌های باشگاه مشتریان.
 // اگر برداشت یا کسر انبار شکست بخورد، سفارش حذف/لغو و مبلغ برمی‌گردد.
+import { snapshotOrderPurchasePrices } from "@/lib/order-purchase-prices";
 import dbConnect from "@/lib/mongodb";
 import Address from "@/model/Address";
 import Order from "@/model/Order";
@@ -617,6 +618,7 @@ export async function POST(req: NextRequest) {
             { _id: order._id, paymentStatus: "unpaid" },
             {
               $set: {
+                salePurchasePrices: await snapshotOrderPurchasePrices(checkoutItems, transactionSession),
                 paymentStatus: "paid",
                 paymentVerifiedAt: new Date(),
                 ...identifiers,

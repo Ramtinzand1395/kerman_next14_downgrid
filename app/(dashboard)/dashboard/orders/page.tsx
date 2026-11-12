@@ -62,12 +62,25 @@ type OrdersResponse = {
       trackingCode?: string | null;
     } | null;
     finalPrice: number;
+    grossProfit: number | null;
     paymentStatus: "paid" | "unpaid";
     status: OrderStatus;
     createdAt: string;
   }>;
   pages: number;
 };
+
+function GrossProfit({ order }: { order: OrdersResponse["orders"][number] }) {
+  if (order.paymentStatus !== "paid" || order.status === "cancelled") return null;
+
+  return (
+    <p className="mt-1 text-xs font-semibold text-slate-600">
+      سود ناخالص {order.grossProfit == null
+        ? "نامشخص"
+        : `${order.grossProfit.toLocaleString("fa-IR")} تومان`}
+    </p>
+  );
+}
 
 const getProductImageData = (product: {
   title?: string;
@@ -439,6 +452,7 @@ export default function Orders() {
                   <p className="font-bold text-gray-900">
                     {order.finalPrice.toLocaleString("fa-IR")} تومان
                   </p>
+                  <GrossProfit order={order} />
                   <span
                     className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                       shippingDisplay.isCollect
@@ -585,6 +599,7 @@ export default function Orders() {
               <span className="font-bold text-gray-900">
                 مبلغ پرداخت‌شده آنلاین: {order.finalPrice.toLocaleString("fa-IR")} تومان
               </span>
+              <GrossProfit order={order} />
               <span
                 className={`inline-flex rounded-full px-2.5 py-0.5 font-semibold ${
                   shippingDisplay.isCollect

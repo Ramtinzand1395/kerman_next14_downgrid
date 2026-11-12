@@ -1,5 +1,6 @@
 export interface ProductVariant {
   _id?: string;
+  purchasePrice?: number | null;
   title: string;
   sku?: string;
   barcode?: string;
@@ -122,6 +123,7 @@ interface ProductFaq {
 }
 
 export interface ProductForm {
+  purchasePrice?: number | null;
   status: "draft" | "published";
   productType: "single" | "multi";
   title: string;

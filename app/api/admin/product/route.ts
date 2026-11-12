@@ -2,6 +2,12 @@ import dbConnect from "@/lib/mongodb";
 import Product from "@/model/Product";
 import { NextResponse } from "next/server";
 import Comment from "@/model/Comment";
+import {
+  getPurchasePrice,
+  missingPurchasePriceExpression,
+  summarizeInventory,
+  summarizeProductInventory,
+} from "@/lib/product-profit";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/options";
 import { validateCatalogReferences } from "@/lib/catalogReferences";
@@ -27,78 +33,67 @@ export async function GET(req: Request) {
   await dbConnect();
 
   const url = new URL(req.url);
-  const page = parseInt(url.searchParams.get("page") || "1");
+  const requestedPage = Math.max(1, Number.parseInt(url.searchParams.get("page") || "1", 10) || 1);
   const limit = 10;
-  const skip = (page - 1) * limit;
+  const catalog = { deletedAt: null };
+  const filter = url.searchParams.get("missingPurchasePrice") === "true"
+    ? { ...catalog, $expr: missingPurchasePriceExpression }
+    : catalog;
 
-  const total = await Product.countDocuments({ deletedAt: null });
-  const products = await Product.find({ deletedAt: null })
+  const [total, allInventoryDocs, comments, verifiedComments] = await Promise.all([
+    Product.countDocuments(filter),
+    Product.find(catalog)
+      .select("price discountPrice stock productType variants purchasePrices")
+      .lean(),
+    Comment.countDocuments(),
+    Comment.countDocuments({ verified: false }),
+  ]);
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const page = Math.min(requestedPage, totalPages);
+  const products = await Product.find(filter)
+    .select("+purchasePrices")
     .populate({
       path: "category",
-      populate: {
-        path: "parent",
-        select: "name slug _id",
-      },
+      populate: { path: "parent", select: "name slug _id" },
     })
     .populate("tags")
     .populate("specifications")
-    .skip(skip)
+    .sort({ createdAt: -1, _id: -1 })
+    .skip((page - 1) * limit)
     .limit(limit)
-    .sort({ createdAt: -1 });
-
-  // Calculate accurate KPI metrics across ALL non-deleted products in the catalog
-  const allInventoryDocs = await Product.find({ deletedAt: null })
-    .select("price discountPrice stock productType variants")
     .lean();
 
-  let totalInventoryValue = 0;
-  let lowStockCount = 0;
-
-  for (const doc of allInventoryDocs) {
-    if (
-      doc.productType === "multi" &&
-      Array.isArray(doc.variants) &&
-      doc.variants.length > 0
-    ) {
-      let productStock = 0;
-      for (const variant of doc.variants) {
-        if (variant.isActive !== false) {
-          const vStock = Number(variant.stock || 0);
-          const unitValue = Number(
-            (variant.discountPrice ?? variant.price) || 0,
-          );
-          totalInventoryValue += unitValue * vStock;
-          productStock += vStock;
-        }
-      }
-      if (productStock < 5) {
-        lowStockCount++;
-      }
-    } else {
-      const pStock = Number(doc.stock || 0);
-      const unitValue = Number((doc.discountPrice ?? doc.price) || 0);
-      totalInventoryValue += unitValue * pStock;
-      if (pStock < 5) {
-        lowStockCount++;
-      }
-    }
-  }
-
+  const inventory = summarizeInventory(allInventoryDocs as any[]);
   const stats = {
-    total,
-    value: totalInventoryValue,
-    lowStock: lowStockCount,
-    comments: await Comment.countDocuments(),
-    verifiedComments: await Comment.countDocuments({ verified: false }),
+    total: allInventoryDocs.length,
+    value: inventory.inventoryValue,
+    lowStock: inventory.lowStockProducts,
+    knownInventoryProfit: inventory.knownInventoryProfit,
+    missingPurchasePriceProducts: inventory.missingPurchasePriceProducts,
+    comments,
+    verifiedComments,
   };
 
   return NextResponse.json({
-    products,
+    products: products.map(({ purchasePrices, ...product }: any) => {
+      const cost = { purchasePrices };
+      const { inventoryProfit, missingPurchasePrice } = summarizeProductInventory({ ...product, ...cost });
+      return {
+        ...product,
+        purchasePrice: product.productType === "multi" ? null : getPurchasePrice(cost),
+        variants: product.variants?.map((variant: any) => ({
+          ...variant,
+          purchasePrice: getPurchasePrice(cost, variant._id),
+        })),
+        inventoryProfit,
+        missingPurchasePrice,
+      };
+    }),
     total,
     page,
-    totalPages: Math.ceil(total / limit),
+    totalPages,
     stats,
-  });
+  }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(req: Request) {
@@ -129,12 +124,13 @@ export async function POST(req: Request) {
       );
     }
 
-    const { productData: validatedProductData } = buildProductWriteInput(body, {
+    const { productData: validatedProductData, purchasePrices } = buildProductWriteInput(body, {
       mode: "create",
     });
 
     const productData = {
       ...validatedProductData,
+      purchasePrices,
       category: catalogReferences.categoryId,
       tags: catalogReferences.tagIds,
       sku: validatedProductData.sku || generateSKU(),

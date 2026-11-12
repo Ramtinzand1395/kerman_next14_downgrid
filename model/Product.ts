@@ -122,6 +122,15 @@ const productSchema = new Schema(
 
     variants: [VariantSchema],
 
+    // Keys are "single" or a variant ObjectId. Keep costs outside public variants.
+    purchasePrices: {
+      type: Map,
+      of: nonNegativeSafeIntegerField(true),
+      select: false,
+      default: undefined,
+    },
+    purchasePricesUpdatedAt: { type: Date, select: false },
+
     defaultVariantId: {
       type: Schema.Types.ObjectId,
       default: null,
@@ -225,7 +234,15 @@ const productSchema = new Schema(
       },
     ],
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    toJSON: {
+      transform(_doc, value) {
+        delete value.purchasePrices;
+        delete value.purchasePricesUpdatedAt;
+      },
+    },
+  },
 );
 
 productSchema.index({ createdAt: 1 });
@@ -235,6 +252,18 @@ productSchema.index({ catalogRevision: 1, _id: 1 });
 
 productSchema.pre("validate", function validateMoneyAndDerivedStock() {
   const product = this as any;
+
+  if (product.isNew) {
+    const requiredKeys = product.productType === "multi"
+      ? product.variants.map((variant: any) => String(variant._id))
+      : ["single"];
+    if (requiredKeys.length === 0 || requiredKeys.some((key: string) => !product.purchasePrices?.has(key))) {
+      product.invalidate("purchasePrices", "قیمت خرید محصول و مدل‌های آن الزامی است.");
+    }
+  }
+  if (product.isModified("purchasePrices")) {
+    product.purchasePricesUpdatedAt = new Date();
+  }
 
   if (
     product.discountPrice !== null &&

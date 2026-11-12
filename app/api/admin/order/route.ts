@@ -1,6 +1,7 @@
 
 import dbConnect from "@/lib/mongodb";
 import Order from "@/model/Order";
+import { websiteSaleProfit } from "@/lib/product-profit";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "../../auth/[...nextauth]/options";
@@ -30,6 +31,7 @@ export async function GET(req: Request) {
 
   const [orders, total] = await Promise.all([
     Order.find()
+      .select("+salePurchasePrices")
       .populate("user")
       .populate("items.product")
       .populate("address")
@@ -42,7 +44,7 @@ export async function GET(req: Request) {
   ]);
 
   return NextResponse.json({
-    orders: orders.map((order: any) => {
+    orders: orders.map(({ salePurchasePrices, ...order }: any) => {
       const isCollect =
         order.shipping?.paymentTiming === "on_delivery" ||
         order.shipping?.feeStatus === "pending_carrier" ||
@@ -55,6 +57,7 @@ export async function GET(req: Request) {
           : null;
       return {
         ...order,
+        grossProfit: websiteSaleProfit({ ...order, salePurchasePrices }),
         address: order.addressSnapshot ?? order.address ?? null,
         financials: {
           itemsSubtotalToman: Number(order.totalPrice || 0),
@@ -67,7 +70,7 @@ export async function GET(req: Request) {
     }),
     total,
     pages: Math.ceil(total / limit),
-  });
+  }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function PUT(req: NextRequest) {

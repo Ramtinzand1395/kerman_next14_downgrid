@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "../../../auth/[...nextauth]/options";
 import dbConnect from "@/lib/mongodb";
+import { loadProductProfitSection } from "@/lib/product-profit-report";
 import {
   ReportRangeError,
   resolveReportRange,
@@ -63,19 +64,20 @@ export async function GET(req: Request) {
 
   try {
     await dbConnect();
-    const [overview, commerce, manualOrders, appointments, operations, loyalty] = await Promise.all([
+    const [overview, commerce, manualOrders, appointments, operations, loyalty, productProfit] = await Promise.all([
       settleSection("overview", loadOverviewSection(range)),
       settleSection("commerce", loadCommerceSection(range)),
       settleSection("manualOrders", loadManualOrdersSection(range)),
       settleSection("appointments", loadAppointmentsSection(range)),
       settleSection("operations", loadOperationsSection()),
       settleSection("loyalty", loadLoyaltySection(range)),
+      settleSection("productProfit", loadProductProfitSection(range)),
     ]);
 
     return NextResponse.json(
       {
         meta: serializeReportMeta(range),
-        sections: { overview, commerce, manualOrders, appointments, operations, loyalty },
+        sections: { overview, commerce, manualOrders, appointments, operations, loyalty, productProfit },
       },
       { headers: { "Cache-Control": "no-store" } },
     );

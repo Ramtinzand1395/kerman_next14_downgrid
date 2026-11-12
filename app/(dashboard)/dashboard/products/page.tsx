@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import Skeleton from "react-loading-skeleton";
 import ProductImage from "@/app/components/ProductImage";
@@ -22,22 +22,29 @@ import { formatPrice } from "@/helpers/Price";
 import StatsCard from "../components/StatsCard";
 import AddProductDrawer from "../components/drawers/AddProductDrawer";
 
+type AdminProduct = Product & {
+  purchasePrice: number | null;
+  inventoryProfit: number | null;
+  missingPurchasePrice: boolean;
+};
+
 type DrawerState = {
   type: "add" | "edit" | null;
-  product: Product | null;
+  product: AdminProduct | null;
 };
 
 type StockFilter = "all" | "low" | "out";
 type StatusFilter = "all" | "draft" | "published";
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<AdminProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [query, setQuery] = useState("");
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
+  const [missingPurchasePrice, setMissingPurchasePrice] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
@@ -45,6 +52,8 @@ export default function ProductsPage() {
     total: 0,
     value: 0,
     lowStock: 0,
+    knownInventoryProfit: 0,
+    missingPurchasePriceProducts: 0,
     comments: 0,
     verifiedComments: 0,
   });
@@ -54,28 +63,39 @@ export default function ProductsPage() {
     product: null,
   });
 
+  const requestSequence = useRef(0);
+
   const fetchProducts = async (targetPage: number) => {
+    const sequence = ++requestSequence.current;
     try {
       setLoading(true);
-      const res = await fetch(`/api/admin/product?page=${targetPage}&limit=10`);
+      const params = new URLSearchParams({
+        page: String(targetPage),
+        missingPurchasePrice: String(missingPurchasePrice),
+      });
+      const res = await fetch(`/api/admin/product?${params}`, { cache: "no-store" });
       if (!res.ok) throw new Error("خطا در دریافت محصولات");
 
       const data = await res.json();
+      if (sequence !== requestSequence.current) return;
       setProducts(data.products ?? []);
       setTotalPages(data.totalPages ?? 1);
+      if (data.page !== targetPage) setPage(data.page);
       setTotalCount(data.total ?? 0);
       setStats(data.stats);
     } catch (err) {
+      if (sequence !== requestSequence.current) return;
       console.error(err);
       toast.error("فهرست محصولات دریافت نشد؛ صفحه را تازه‌سازی کنید.");
     } finally {
-      setLoading(false);
+      if (sequence === requestSequence.current) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchProducts(page);
-  }, [page]);
+    return () => { requestSequence.current++; };
+  }, [page, missingPurchasePrice]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
@@ -129,7 +149,7 @@ export default function ProductsPage() {
   };
 
   const openAddDrawer = () => setDrawer({ type: "add", product: null });
-  const openEditDrawer = (product: Product) =>
+  const openEditDrawer = (product: AdminProduct) =>
     setDrawer({ type: "edit", product });
   const closeDrawer = () => setDrawer({ type: null, product: null });
 
@@ -237,6 +257,21 @@ export default function ProductsPage() {
           />
         </section>
 
+        <section className="grid gap-3 sm:grid-cols-2" aria-label="سود موجودی">
+          <StatsCard
+            title="سود بالقوه موجودی با قیمت خرید ثبت‌شده"
+            value={`${formatPrice(stats.knownInventoryProfit)} تومان`}
+            icon={DollarSign}
+            color="green"
+          />
+          <StatsCard
+            title="محصولات بدون قیمت خرید کامل"
+            value={stats.missingPurchasePriceProducts.toLocaleString("fa-IR")}
+            icon={AlertTriangle}
+            color="amber"
+          />
+        </section>
+
         <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 p-4 sm:p-6">
             <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
@@ -277,6 +312,18 @@ export default function ProductsPage() {
             </div>
           </div>
 
+          <label className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-slate-700 sm:px-6">
+            <input
+              type="checkbox"
+              checked={missingPurchasePrice}
+              onChange={(event) => {
+                setPage(1);
+                setMissingPurchasePrice(event.target.checked);
+              }}
+            />
+            محصولات بدون قیمت خرید
+          </label>
+
           <div className="overflow-x-auto">
             <table className="w-full min-w-[950px] text-right text-sm">
               <thead>
@@ -287,6 +334,8 @@ export default function ProductsPage() {
                   <th className="px-4 py-3 font-semibold">وضعیت انتشار</th>
                   <th className="px-4 py-3 font-semibold">وضعیت موجودی</th>
                   <th className="px-4 py-3 font-semibold">قیمت</th>
+                  <th className="px-4 py-3 font-semibold">قیمت خرید</th>
+                  <th className="px-4 py-3 font-semibold">سود بالقوه موجودی</th>
                   <th className="px-4 py-3 font-semibold">موجودی</th>
                   <th className="px-4 py-3 font-semibold">آخرین بروزرسانی</th>
                   <th className="px-4 py-3 font-semibold">عملیات</th>
@@ -297,7 +346,7 @@ export default function ProductsPage() {
                 {loading
                   ? Array.from({ length: 6 }).map((_, idx) => (
                       <tr key={idx}>
-                        <td className="px-4 py-3" colSpan={9}>
+                        <td className="px-4 py-3" colSpan={11}>
                           <Skeleton height={28} />
                         </td>
                       </tr>
@@ -351,15 +400,25 @@ export default function ProductsPage() {
 
                         <td className="px-4 py-3 font-semibold text-slate-900">
                           {product.productType === "multi" ? "از " : ""}
-                          {formatPrice(product.discountPrice || product.price)}{" "}
+                          {formatPrice(product.discountPrice ?? product.price)}{" "}
                           تومان
-                          {product.discountPrice ? (
+                          {product.discountPrice != null ? (
                             <span className="mr-2 text-xs font-normal text-slate-400 line-through">
                               {formatPrice(product.price)}
                             </span>
                           ) : null}
                         </td>
 
+                        <td className="px-4 py-3 text-slate-600">
+                          {product.productType === "multi"
+                            ? (product.missingPurchasePrice ? "ناقص در مدل‌ها" : "ثبت‌شده برای مدل‌ها")
+                            : (product.purchasePrice === null ? "ثبت نشده" : `${formatPrice(product.purchasePrice)} تومان`)}
+                        </td>
+                        <td className="px-4 py-3 text-slate-600">
+                          {product.inventoryProfit === null
+                            ? "نامشخص"
+                            : `${formatPrice(product.inventoryProfit)} تومان`}
+                        </td>
                         <td className="px-4 py-3 text-slate-600">
                           {product.stock} عدد
                         </td>
@@ -420,7 +479,7 @@ export default function ProductsPage() {
               </button>
               <button
                 className="rounded-lg border border-slate-200 px-3 py-1.5 disabled:opacity-50"
-                disabled={page === totalPages || loading}
+                disabled={page >= totalPages || loading}
                 onClick={() => setPage((p) => p + 1)}
               >
                 بعدی

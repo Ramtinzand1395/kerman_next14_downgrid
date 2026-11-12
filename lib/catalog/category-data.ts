@@ -151,7 +151,7 @@ export async function getCategoryProducts(
           { $sort: sort },
           { $skip: (query.page - 1) * PAGE_SIZE },
           { $limit: PAGE_SIZE },
-          { $unset: ["_activeVariants", "_listingPrice", "_listingStock"] },
+          { $unset: ["_activeVariants", "_listingPrice", "_listingStock", "purchasePrices", "purchasePricesUpdatedAt"] },
         ],
       },
     },
