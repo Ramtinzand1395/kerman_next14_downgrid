@@ -4,6 +4,7 @@ import * as crypto from "node:crypto";
 import { readFile } from "node:fs/promises";
 import vm from "node:vm";
 import ts from "typescript";
+import { Mongoose } from "mongoose";
 
 const options = {
   compilerOptions: {
@@ -28,6 +29,7 @@ function setup(user) {
     referralCode: "KA-ABC123",
     signupIntentId: "signup-intent",
   };
+  const otpUpdates = [];
   const signups = [];
   const notifications = [];
   const referralPolicy = {};
@@ -60,6 +62,7 @@ function setup(user) {
         return { ...ticket };
       },
       async updateOne(filter, update) {
+        otpUpdates.push(update);
         assert.equal(filter._id, ticket._id);
         Object.assign(ticket, update.$set);
         return { matchedCount: 1 };
@@ -94,6 +97,7 @@ function setup(user) {
       post({ registrationToken, firstName, lastName, mobile: "09000000000" }),
     getUser: () => user,
     getTicket: () => ticket,
+    otpUpdates,
     signups,
     notifications,
   };
@@ -106,6 +110,12 @@ test("a new mobile must finish the name form before account creation and login",
   assert.equal(challenge.requiresRegistration, true);
   assert.equal(challenge.verificationToken, undefined);
   assert.equal(flow.getTicket().loginTokenHash, undefined);
+  assert.equal(
+    flow.getTicket().registrationTokenHash,
+    crypto.createHash("sha256").update(challenge.registrationToken).digest("hex"),
+  );
+  assert.equal(flow.getTicket().otp, undefined);
+  assert.equal(flow.otpUpdates.length, 0);
   assert.equal(flow.getUser(), undefined);
   assert.deepEqual(flow.notifications, []);
   assert.deepEqual(flow.signups, []);
@@ -159,4 +169,42 @@ test("a legacy account with no names still receives a login token directly", asy
   assert.equal(flow.getUser().username, "کاربر");
   assert.equal(flow.notifications.length, 0);
   assert.equal(flow.signups.length, 0);
+});
+
+test("development reload replaces cached OTP and user models that lack signup fields", async () => {
+  const mongoose = new Mongoose();
+  const oldOtp = mongoose.model("Otp", new mongoose.Schema({ otp: String }));
+  const oldUser = mongoose.model("User", new mongoose.Schema({ username: String }));
+  const mocks = {
+    mongoose: {
+      __esModule: true,
+      default: mongoose,
+      Schema: mongoose.Schema,
+      model: mongoose.model.bind(mongoose),
+    },
+    "@/types/loyalty": { VIP_TIERS: [] },
+  };
+
+  async function loadModel(path) {
+    const compiled = ts.transpileModule(await readFile(path, "utf8"), options).outputText;
+    const exports = {};
+    vm.runInNewContext(compiled, {
+      exports,
+      require: (id) => mocks[id],
+      process: { env: { NODE_ENV: "development" } },
+    });
+    return exports.default;
+  }
+
+  const otp = await loadModel("model/Otp.ts");
+  const user = await loadModel("model/User.ts");
+  assert.notEqual(otp, oldOtp);
+  assert.notEqual(user, oldUser);
+  assert.ok(otp.schema.path("registrationTokenHash"));
+  assert.ok(otp.schema.path("registrationTokenExpiresAt"));
+  const document = new user({ mobile: "09123456789", firstName: "رامتین", lastName: "زند" });
+  assert.equal(document.firstName, "رامتین");
+  assert.equal(document.lastName, "زند");
+  assert.equal(await loadModel("model/Otp.ts"), otp);
+  assert.equal(await loadModel("model/User.ts"), user);
 });

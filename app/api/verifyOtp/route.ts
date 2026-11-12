@@ -54,8 +54,9 @@ export async function POST(req: Request) {
   }
 
   await dbConnect();
-  const token = randomBytes(32).toString("base64url");
+  const registrationToken = randomBytes(32).toString("base64url");
   const now = new Date();
+  const registrationExpiresAt = new Date(now.getTime() + TOKEN_TTL_MS);
   let otpDoc;
   try {
     otpDoc = await Otp.findOneAndUpdate(
@@ -63,19 +64,22 @@ export async function POST(req: Request) {
         _id: otpId,
         otp: normalizedOtp,
         verifiedAt: { $exists: false },
-        createdAt: { $gt: new Date(now.getTime() - 2 * 60_000) },
+        createdAt: { $gt: new Date(now.getTime() - TOKEN_TTL_MS) },
       },
       {
         $unset: { otp: 1 },
         $set: {
           verifiedAt: now,
           createdAt: now,
+          registrationTokenHash: hashToken(registrationToken),
+          registrationTokenExpiresAt: registrationExpiresAt,
         },
       },
-      { returnDocument: "after" },
+      { returnDocument: "after", strict: "throw" },
     );
-  } catch {
-    otpDoc = null;
+  } catch (error) {
+    console.error("[auth] Could not verify OTP", error instanceof Error ? error.name : "UnknownError");
+    return authError("بررسی کد تأیید موقتاً ممکن نیست. دوباره تلاش کنید.", 503);
   }
 
   if (!otpDoc) {
@@ -84,25 +88,14 @@ export async function POST(req: Request) {
 
   const user = await User.findOne({ mobile: otpDoc.mobile });
   if (user) {
-    return finishLogin(otpDoc, user, token, false);
+    const loginToken = randomBytes(32).toString("base64url");
+    return finishLogin(otpDoc, user, loginToken, false);
   }
-
-  const registrationExpiresAt = new Date(now.getTime() + TOKEN_TTL_MS);
-  const result = await Otp.updateOne(
-    { _id: otpDoc._id },
-    {
-      $set: {
-        registrationTokenHash: hashToken(token),
-        registrationTokenExpiresAt: registrationExpiresAt,
-      },
-    },
-  );
-  if (result.matchedCount !== 1) return authError(loginRetryMessage, 409);
 
   return Response.json({
     success: true,
     requiresRegistration: true,
-    registrationToken: token,
+    registrationToken,
     registrationExpiresInMs: Math.max(0, registrationExpiresAt.getTime() - Date.now()),
   });
 }
@@ -262,7 +255,9 @@ async function finishLogin(
       },
     },
   );
-  if (result.matchedCount !== 1) return authError(loginRetryMessage, 409);
+  if (result.matchedCount !== 1) {
+    return authError(loginRetryMessage, 409, "OTP_RESTART_REQUIRED");
+  }
 
   return Response.json({
     success: true,

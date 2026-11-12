@@ -91,6 +91,11 @@ const UserSchema = new Schema<IUser>(
 
 UserSchema.index({ createdAt: 1 });
 
-// Export مدل
+// Reload an older development model so new accounts keep both name fields.
+if (mongoose.models.User && process.env.NODE_ENV === "development" &&
+    !mongoose.models.User.schema.path("firstName")) {
+  mongoose.deleteModel("User");
+}
+
 const User = mongoose.models.User || model<IUser>("User", UserSchema);
 export default User;

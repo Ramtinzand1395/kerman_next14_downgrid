@@ -264,6 +264,7 @@ export default function LoginWithOtp() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok || !data.success) {
+        if (data.code === "OTP_RESTART_REQUIRED") resetOtp();
         throw new Error(data.message || "کد واردشده درست نیست؛ دوباره بررسی کنید.");
       }
       if (data.requiresRegistration && data.registrationToken) {
@@ -446,6 +447,12 @@ export default function LoginWithOtp() {
       const data = await response.json().catch(() => ({}));
       if (data.code === "REGISTRATION_EXPIRED") {
         setRegistrationExpired(true);
+        return;
+      }
+      if (data.code === "OTP_RESTART_REQUIRED") {
+        resetOtp();
+        setRegistration(null);
+        toast.error(data.message);
         return;
       }
       if (!response.ok || !data.success) {
