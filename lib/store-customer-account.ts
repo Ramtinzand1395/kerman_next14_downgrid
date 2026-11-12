@@ -7,9 +7,18 @@ type StoreCustomer = {
   lastName?: string;
 };
 
+export function storeCustomerMobile(value: string) {
+  const mobile = value
+    .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+    .replace(/[\s()-]/g, "")
+    .replace(/^(?:\+98|0098|98)(?=9\d{9}$)/, "0");
+  return /^09\d{9}$/.test(mobile) ? mobile : null;
+}
+
 export async function provisionStoreCustomerAccount(customer: StoreCustomer, session?: ClientSession) {
-  const mobile = customer.mobile.trim();
-  if (!/^09\d{9}$/.test(mobile)) return;
+  const mobile = storeCustomerMobile(customer.mobile);
+  if (!mobile) return false;
 
   const name = customer.name?.trim();
   const firstName = name === "کاربر بی نام" ? undefined : name;
@@ -17,7 +26,7 @@ export async function provisionStoreCustomerAccount(customer: StoreCustomer, ses
   const username = [firstName, lastName].filter(Boolean).join(" ");
 
   const now = new Date();
-  await User.updateOne(
+  const result = await User.updateOne(
     { mobile },
     {
       $setOnInsert: {
@@ -33,4 +42,15 @@ export async function provisionStoreCustomerAccount(customer: StoreCustomer, ses
     },
     { upsert: true, runValidators: true, timestamps: false, session },
   );
+  if (result.upsertedCount === 0) {
+    for (const [field, value] of Object.entries({ firstName, lastName })) {
+      if (!value) continue;
+      await User.updateOne(
+        { mobile, role: "user", [field]: { $in: [null, ""] } },
+        { $set: { [field]: value } },
+        { runValidators: true, session },
+      );
+    }
+  }
+  return true;
 }

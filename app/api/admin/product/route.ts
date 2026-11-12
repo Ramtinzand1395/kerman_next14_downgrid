@@ -1,5 +1,8 @@
 import dbConnect from "@/lib/mongodb";
 import Product from "@/model/Product";
+import Category from "@/model/Category";
+import { isObjectIdOrHexString } from "mongoose";
+import { descendantIds } from "@/lib/catalog/category-seo";
 import { NextResponse } from "next/server";
 import Comment from "@/model/Comment";
 import { getServerSession } from "next-auth";
@@ -24,15 +27,69 @@ export async function GET(req: Request) {
   if (session.user.role !== "superadmin") {
     return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
   }
+
+  const { searchParams } = new URL(req.url);
+  const query = (searchParams.get("q") ?? "")
+    .replace(/[\u0000\u200c]/g, " ")
+    .trim()
+    .slice(0, 120)
+    .trimEnd();
+  const stock = searchParams.get("stock");
+  const status = searchParams.get("status");
+  const categoryId = searchParams.get("category");
+  const requestedPage = Number(searchParams.get("page"));
+  const limit = 10;
+  const filter: Record<string, unknown> = { deletedAt: null };
+
+  if (categoryId && !isObjectIdOrHexString(categoryId)) {
+    return NextResponse.json({ error: "دسته‌بندی نامعتبر است" }, { status: 400 });
+  }
+
   await dbConnect();
 
-  const url = new URL(req.url);
-  const page = parseInt(url.searchParams.get("page") || "1");
-  const limit = 10;
-  const skip = (page - 1) * limit;
+  if (status === "published") filter.status = "published";
+  // Older products without a status are not published in the public catalog.
+  if (status === "draft") filter.status = { $ne: "published" };
+  if (stock === "in") filter.stock = { $gt: 0 };
+  if (stock === "low") filter.stock = { $gt: 0, $lt: 10 };
+  if (stock === "out") {
+    filter.$nor = [{ stock: { $gt: 0 } }];
+  }
 
-  const total = await Product.countDocuments({ deletedAt: null });
-  const products = await Product.find({ deletedAt: null })
+  if (query || categoryId) {
+    const categories = await Category.find().select("name parent").lean();
+    const rows = categories.map((category) => ({
+      _id: String(category._id),
+      parent: category.parent ? String(category.parent) : null,
+      name: String(category.name ?? ""),
+    }));
+
+    if (categoryId) {
+      filter.category = { $in: descendantIds(categoryId.toLowerCase(), rows) };
+    }
+
+    if (query) {
+      const search = buildSearchPattern(query);
+      const matchingCategories = rows
+        .filter((category) => search.test(category.name))
+        .flatMap((category) => descendantIds(category._id, rows));
+
+      filter.$or = [
+        ...["title", "sku", "barcode", "variants.sku", "variants.barcode"].map(
+          (field) => ({ [field]: search }),
+        ),
+        { category: { $in: [...new Set(matchingCategories)] } },
+      ];
+    }
+  }
+
+  const total = await Product.countDocuments(filter);
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const page = Number.isSafeInteger(requestedPage)
+    ? Math.min(Math.max(requestedPage, 1), totalPages)
+    : 1;
+
+  const products = await Product.find(filter)
     .populate({
       path: "category",
       populate: {
@@ -42,10 +99,45 @@ export async function GET(req: Request) {
     })
     .populate("tags")
     .populate("specifications")
-    .skip(skip)
-    .limit(limit)
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1, _id: -1 })
+    .skip((page - 1) * limit)
+    .limit(limit);
 
+  const stats =
+    searchParams.get("includeStats") === "false" ? undefined : await getProductStats();
+
+  return NextResponse.json({ products, total, page, totalPages, stats });
+}
+
+function buildSearchPattern(query: string) {
+  const equivalentCharacters: Record<string, string> = {
+    ی: "[یيى]",
+    ي: "[یيى]",
+    ى: "[یيى]",
+    ک: "[کك]",
+    ك: "[کك]",
+  };
+  const digits = ["0123456789", "۰۱۲۳۴۵۶۷۸۹", "٠١٢٣٤٥٦٧٨٩"];
+  for (let index = 0; index < 10; index++) {
+    const equivalents = digits.map((alphabet) => alphabet[index]);
+    for (const digit of equivalents) {
+      equivalentCharacters[digit] = `[${equivalents.join("")}]`;
+    }
+  }
+
+  const source = query
+    .split(/\s+/)
+    .map((word) =>
+      Array.from(word, (character) =>
+        equivalentCharacters[character] ??
+        character.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+      ).join(""),
+    )
+    .join("[\\s\u200c]+");
+  return new RegExp(source, "i");
+}
+
+async function getProductStats() {
   // Calculate accurate KPI metrics across ALL non-deleted products in the catalog
   const allInventoryDocs = await Product.find({ deletedAt: null })
     .select("price discountPrice stock productType variants")
@@ -84,21 +176,13 @@ export async function GET(req: Request) {
     }
   }
 
-  const stats = {
-    total,
+  return {
+    total: allInventoryDocs.length,
     value: totalInventoryValue,
     lowStock: lowStockCount,
     comments: await Comment.countDocuments(),
     verifiedComments: await Comment.countDocuments({ verified: false }),
   };
-
-  return NextResponse.json({
-    products,
-    total,
-    page,
-    totalPages: Math.ceil(total / limit),
-    stats,
-  });
 }
 
 export async function POST(req: Request) {

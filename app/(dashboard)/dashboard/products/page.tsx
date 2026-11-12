@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import Skeleton from "react-loading-skeleton";
 import ProductImage from "@/app/components/ProductImage";
@@ -17,7 +17,7 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { Product } from "@/types";
+import type { Category, Product } from "@/types";
 import { formatPrice } from "@/helpers/Price";
 import StatsCard from "../components/StatsCard";
 import AddProductDrawer from "../components/drawers/AddProductDrawer";
@@ -27,18 +27,39 @@ type DrawerState = {
   product: Product | null;
 };
 
-type StockFilter = "all" | "low" | "out";
+type StockFilter = "all" | "in" | "low" | "out";
 type StatusFilter = "all" | "draft" | "published";
 
+type ProductList = {
+  products: Product[];
+  page: number;
+  totalPages: number;
+  total: number;
+};
+
+type ProductRequest = {
+  key: string;
+  list: ProductList | null;
+};
+
+const filterClass =
+  "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none ring-indigo-200 transition focus:border-indigo-400 focus:ring";
+
+const categoryLabel = (category: Category) =>
+  category.parent ? `${category.parent.name} / ${category.name}` : category.name;
+
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [request, setRequest] = useState<ProductRequest | null>(null);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [categories, setCategories] = useState<Category[] | null>(null);
+  const [categoriesError, setCategoriesError] = useState(false);
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const statsVersion = useRef(-1);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const [stats, setStats] = useState({
@@ -54,49 +75,89 @@ export default function ProductsPage() {
     product: null,
   });
 
-  const fetchProducts = async (targetPage: number) => {
-    try {
-      setLoading(true);
-      const res = await fetch(`/api/admin/product?page=${targetPage}&limit=10`);
-      if (!res.ok) throw new Error("خطا در دریافت محصولات");
-
-      const data = await res.json();
-      setProducts(data.products ?? []);
-      setTotalPages(data.totalPages ?? 1);
-      setTotalCount(data.total ?? 0);
-      setStats(data.stats);
-    } catch (err) {
-      console.error(err);
-      toast.error("فهرست محصولات دریافت نشد؛ صفحه را تازه‌سازی کنید.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const trimmedQuery = query.trim();
+  const searchPending = trimmedQuery !== debouncedQuery;
+  const params = new URLSearchParams({ page: String(page) });
+  if (debouncedQuery) params.set("q", debouncedQuery);
+  if (stockFilter !== "all") params.set("stock", stockFilter);
+  if (statusFilter !== "all") params.set("status", statusFilter);
+  if (categoryFilter) params.set("category", categoryFilter);
+  const queryString = params.toString();
+  const requestKey = `${refreshVersion}:${queryString}`;
+  const loading = searchPending || request?.key !== requestKey;
+  const result = loading ? null : request?.list;
+  const failed = !loading && !result;
+  const hasFilters = Boolean(
+    trimmedQuery || stockFilter !== "all" || statusFilter !== "all" || categoryFilter,
+  );
 
   useEffect(() => {
-    fetchProducts(page);
-  }, [page]);
+    const timer = window.setTimeout(() => setDebouncedQuery(trimmedQuery), 300);
+    return () => window.clearTimeout(timer);
+  }, [trimmedQuery]);
 
-  const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
-      const normalized = query.trim().toLowerCase();
-      const matchesSearch =
-        !normalized ||
-        product.title.toLowerCase().includes(normalized) ||
-        product.sku?.toLowerCase().includes(normalized) ||
-        product.category?.name?.toLowerCase().includes(normalized);
+  useEffect(() => {
+    const controller = new AbortController();
 
-      if (!matchesSearch) return false;
-      if (
-        statusFilter !== "all" &&
-        (product.status ?? "published") !== statusFilter
-      )
-        return false;
-      if (stockFilter === "low") return product.stock > 0 && product.stock < 10;
-      if (stockFilter === "out") return product.stock <= 0;
-      return true;
-    });
-  }, [products, query, stockFilter, statusFilter]);
+    async function loadCategories() {
+      try {
+        const response = await fetch("/api/admin/category", {
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error("خطا در دریافت دسته‌بندی‌ها");
+        const data: Category[] = await response.json();
+        if (controller.signal.aborted) return;
+        setCategories(
+          data.sort((a, b) => categoryLabel(a).localeCompare(categoryLabel(b), "fa")),
+        );
+        setCategoriesError(false);
+      } catch {
+        if (!controller.signal.aborted) setCategoriesError(true);
+      }
+    }
+
+    void loadCategories();
+    return () => controller.abort();
+  }, [refreshVersion]);
+
+  useEffect(() => {
+    if (searchPending) return;
+    const controller = new AbortController();
+
+    async function loadProducts() {
+      const includeStats = statsVersion.current !== refreshVersion;
+      try {
+        const response = await fetch(
+          `/api/admin/product?${queryString}&includeStats=${includeStats}`,
+          { signal: controller.signal },
+        );
+        if (!response.ok) throw new Error("خطا در دریافت محصولات");
+        const data: ProductList & { stats?: typeof stats } = await response.json();
+        if (controller.signal.aborted) return;
+        setRequest({ key: requestKey, list: data });
+        if (data.stats) {
+          setStats(data.stats);
+          statsVersion.current = refreshVersion;
+        }
+      } catch {
+        if (!controller.signal.aborted) setRequest({ key: requestKey, list: null });
+      }
+    }
+
+    void loadProducts();
+    return () => controller.abort();
+  }, [queryString, refreshVersion, requestKey, searchPending]);
+
+  const refreshProducts = () => setRefreshVersion((version) => version + 1);
+
+  const clearFilters = () => {
+    setQuery("");
+    setDebouncedQuery("");
+    setStockFilter("all");
+    setStatusFilter("all");
+    setCategoryFilter("");
+    setPage(1);
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("آیا از حذف این محصول اطمینان دارید؟")) return;
@@ -114,12 +175,7 @@ export default function ProductsPage() {
 
       toast.success("محصول از فروشگاه حذف شد.");
 
-      const nextCount = products.length - 1;
-      if (nextCount <= 0 && page > 1) {
-        setPage((prev) => prev - 1);
-      } else {
-        await fetchProducts(page);
-      }
+      refreshProducts();
     } catch (err) {
       const message = err instanceof Error ? err.message : "خطا در حذف محصول";
       toast.error(message);
@@ -133,13 +189,13 @@ export default function ProductsPage() {
     setDrawer({ type: "edit", product });
   const closeDrawer = () => setDrawer({ type: null, product: null });
 
-  const refreshAfterSave = async () => {
+  const refreshAfterSave = () => {
     closeDrawer();
-    await fetchProducts(page);
+    refreshProducts();
   };
 
   const stockBadge = (stock: number) => {
-    if (stock <= 0)
+    if (!(stock > 0))
       return (
         <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700">
           ناموجود
@@ -161,7 +217,7 @@ export default function ProductsPage() {
   };
 
   const statusBadge = (status?: "draft" | "published") => {
-    if (status === "draft")
+    if (status !== "published")
       return (
         <span className="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600">
           پیش‌نویس
@@ -192,7 +248,7 @@ export default function ProductsPage() {
 
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
-                onClick={() => fetchProducts(page)}
+                onClick={refreshProducts}
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
               >
                 <RefreshCcw className="h-4 w-4" />
@@ -239,45 +295,107 @@ export default function ProductsPage() {
 
         <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 p-4 sm:p-6">
-            <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
-              <label className="relative block">
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-slate-700">جستجوی محصول</span>
+              <span className="relative block">
                 <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
+                  type="search"
+                  dir="auto"
+                  maxLength={120}
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  aria-label="جستجوی محصولات با نام، شناسه کالا یا دسته‌بندی"
-                  placeholder="جستجو با نام، SKU یا دسته‌بندی"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pr-10 pl-3 text-sm text-slate-700 outline-none ring-indigo-200 transition focus:border-indigo-400 focus:ring"
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setPage(1);
+                  }}
+                  placeholder="نام محصول، SKU، بارکد یا دسته‌بندی"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-3 pr-10 text-right text-sm text-slate-700 outline-none ring-indigo-200 transition focus:border-indigo-400 focus:ring"
                 />
-              </label>
+              </span>
+            </label>
 
-              <select
-                title="فیلتر موجودی" aria-label="فیلتر موجودی"
-                value={stockFilter}
-                onChange={(e) => setStockFilter(e.target.value as StockFilter)}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none ring-indigo-200 transition focus:border-indigo-400 focus:ring"
-              >
-                <option value="all">همه موجودی‌ها</option>
-                <option value="low">فقط موجودی کم</option>
-                <option value="out">فقط ناموجود</option>
-              </select>
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <div className="min-w-0">
+                <label htmlFor="product-filter-category" className="mb-1.5 block text-sm font-medium text-slate-700">
+                  دسته‌بندی
+                </label>
+                <select
+                  id="product-filter-category"
+                  value={categoryFilter}
+                  disabled={!categories}
+                  onChange={(e) => {
+                    setCategoryFilter(e.target.value);
+                    setPage(1);
+                  }}
+                  className={filterClass}
+                >
+                  <option value="">همه دسته‌بندی‌ها</option>
+                  {categories?.map((category) => (
+                    <option key={category._id} value={category._id}>
+                      {categoryLabel(category)}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-              <select
-                title="فیلتر وضعیت محصول" aria-label="فیلتر وضعیت محصول"
-                value={statusFilter}
-                onChange={(e) =>
-                  setStatusFilter(e.target.value as StatusFilter)
-                }
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none ring-indigo-200 transition focus:border-indigo-400 focus:ring"
-              >
-                <option value="all">همه وضعیت‌ها</option>
-                <option value="published">منتشر شده</option>
-                <option value="draft">پیش‌نویس</option>
-              </select>
+              <div className="min-w-0">
+                <label htmlFor="product-filter-stock" className="mb-1.5 block text-sm font-medium text-slate-700">
+                  موجودی
+                </label>
+                <select
+                  id="product-filter-stock"
+                  value={stockFilter}
+                  onChange={(e) => {
+                    setStockFilter(e.target.value as StockFilter);
+                    setPage(1);
+                  }}
+                  className={filterClass}
+                >
+                  <option value="all">همه موجودی‌ها</option>
+                  <option value="in">موجود (حداقل ۱ عدد)</option>
+                  <option value="low">موجودی کم (۱ تا ۹ عدد)</option>
+                  <option value="out">ناموجود</option>
+                </select>
+              </div>
+
+              <div className="min-w-0">
+                <label htmlFor="product-filter-status" className="mb-1.5 block text-sm font-medium text-slate-700">
+                  وضعیت انتشار
+                </label>
+                <select
+                  id="product-filter-status"
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value as StatusFilter);
+                    setPage(1);
+                  }}
+                  className={filterClass}
+                >
+                  <option value="all">همه وضعیت‌ها</option>
+                  <option value="published">منتشر شده</option>
+                  <option value="draft">پیش‌نویس</option>
+                </select>
+              </div>
             </div>
+
+            {categoriesError && (
+              <p className="mt-3 text-sm text-red-700" role="status">
+                دسته‌بندی‌ها دریافت نشدند. برای تلاش دوباره، فهرست را به‌روزرسانی کنید.
+              </p>
+            )}
+
+            {hasFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="mt-3 rounded-lg px-2 py-1 text-sm font-medium text-indigo-700 hover:bg-indigo-50"
+              >
+                پاک کردن جستجو و فیلترها
+              </button>
+            )}
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" aria-busy={loading}>
             <table className="w-full min-w-[950px] text-right text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50 text-slate-500">
@@ -302,7 +420,7 @@ export default function ProductsPage() {
                         </td>
                       </tr>
                     ))
-                  : filteredProducts.map((product) => (
+                  : result?.products.map((product) => (
                       <tr key={product._id} className="hover:bg-slate-50">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
@@ -361,7 +479,7 @@ export default function ProductsPage() {
                         </td>
 
                         <td className="px-4 py-3 text-slate-600">
-                          {product.stock} عدد
+                          {product.stock ?? 0} عدد
                         </td>
 
                         <td className="px-4 py-3 text-slate-500">
@@ -395,38 +513,57 @@ export default function ProductsPage() {
             </table>
           </div>
 
-          {!loading && filteredProducts.length === 0 && (
-            <div className="p-8 text-center text-sm text-slate-500">
-              موردی مطابق جستجو یا فیلتر انتخابی پیدا نشد.
+          {failed && (
+            <div className="p-8 text-center text-sm text-red-700" role="alert">
+              فهرست محصولات دریافت نشد.
+              <button type="button" onClick={refreshProducts} className="mr-2 underline">
+                تلاش دوباره
+              </button>
             </div>
           )}
 
-          <div className="flex flex-col gap-3 border-t border-slate-100 px-4 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-            <span>
-              صفحه {new Intl.NumberFormat("fa-IR").format(page)} از{" "}
-              {new Intl.NumberFormat("fa-IR").format(totalPages)}
-              <span className="mr-2 text-slate-400">
-                (کل: {new Intl.NumberFormat("fa-IR").format(totalCount)})
-              </span>
-            </span>
-
-            <div className="flex gap-2">
-              <button
-                className="rounded-lg border border-slate-200 px-3 py-1.5 disabled:opacity-50"
-                disabled={page === 1 || loading}
-                onClick={() => setPage((p) => p - 1)}
-              >
-                قبلی
-              </button>
-              <button
-                className="rounded-lg border border-slate-200 px-3 py-1.5 disabled:opacity-50"
-                disabled={page === totalPages || loading}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                بعدی
-              </button>
+          {result?.total === 0 && (
+            <div className="p-8 text-center text-sm text-slate-500" role="status">
+              {hasFilters
+                ? "محصولی مطابق جستجو و فیلترهای انتخاب‌شده پیدا نشد."
+                : "هنوز محصولی ثبت نشده است."}
             </div>
-          </div>
+          )}
+
+          {result && (
+            <div className="flex flex-col gap-3 border-t border-slate-100 px-4 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <span role="status">
+                {result.total.toLocaleString("fa-IR")} محصول
+                {result.total > 0 && (
+                  <span className="mr-2 text-slate-500">
+                    (صفحه {result.page.toLocaleString("fa-IR")} از {result.totalPages.toLocaleString("fa-IR")})
+                  </span>
+                )}
+              </span>
+
+              {result.totalPages > 1 && (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className="rounded-lg border border-slate-200 px-3 py-1.5 disabled:opacity-50"
+                    disabled={result.page <= 1}
+                    onClick={() => setPage(result.page - 1)}
+                  >
+                    قبلی
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-lg border border-slate-200 px-3 py-1.5 disabled:opacity-50"
+                    disabled={result.page >= result.totalPages}
+                    onClick={() => setPage(result.page + 1)}
+                  >
+                    بعدی
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
         </section>
       </main>
 

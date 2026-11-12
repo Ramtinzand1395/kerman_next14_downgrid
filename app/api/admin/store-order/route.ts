@@ -10,7 +10,7 @@ import { storeOrder } from "@/types";
 import Customer from "@/model/Customer";
 import mongoose, { type ClientSession } from "mongoose";
 import User from "@/model/User";
-import { provisionStoreCustomerAccount } from "@/lib/store-customer-account";
+import { provisionStoreCustomerAccount, storeCustomerMobile } from "@/lib/store-customer-account";
 
 /* ================= GET ================= */
 export async function GET() {
@@ -69,16 +69,18 @@ async function respondToSavedOrder(order: SavedOrder, customer: OrderCustomer | 
     order,
     ...(replayed ? { replayed: true } : {}),
   };
-  if (replayed && !order.websiteAccountSyncPending) {
-    return NextResponse.json({ ...response, sms: null });
-  }
-
   const syncPending = order.websiteAccountSyncPending === true;
+  const needsAccountSync = syncPending || replayed;
   try {
-    if (syncPending) {
-      if (!customer?.mobile) throw new Error("Store customer missing during account sync");
+    if (needsAccountSync) {
+      if (!customer?.mobile || !storeCustomerMobile(customer.mobile)) {
+        return NextResponse.json({
+          error: "سفارش ذخیره شده است. شماره موبایل مشتری را در بخش مدیریت مشتریان اصلاح کنید.",
+        }, { status: 422 });
+      }
       await User.init();
       await provisionStoreCustomerAccount(customer);
+      if (!syncPending) return NextResponse.json({ ...response, sms: null });
     }
 
     const sms = customer ? await sendStoreOrderReceiptSms({
@@ -97,7 +99,7 @@ async function respondToSavedOrder(order: SavedOrder, customer: OrderCustomer | 
     }
     return NextResponse.json({ ...response, sms }, { status: replayed ? 200 : 201 });
   } catch (error) {
-    if (!syncPending) throw error;
+    if (!needsAccountSync) throw error;
     console.error("[store-order] could not finish website account sync", error);
     return NextResponse.json({
       error: "سفارش ذخیره شد. برای تکمیل ثبت حساب مشتری، دوباره روی «ثبت سفارش» بزنید.",
@@ -179,6 +181,10 @@ export async function POST(req: Request) {
     const customer = await Customer.findById(customerId).lean();
     if (!customer?.mobile) {
       return NextResponse.json({ error: "مشتری معتبر پیدا نشد" }, { status: 404 });
+    }
+
+    if (!storeCustomerMobile(customer.mobile)) {
+      return NextResponse.json({ error: "شماره موبایل مشتری را در بخش مدیریت مشتریان اصلاح کنید." }, { status: 422 });
     }
 
     // The mobile index is required to arbitrate concurrent orders and first sign-ins.

@@ -55,15 +55,23 @@ function orderHarness({ existingUser, rejectOrder = false, standalone = false, r
   const User = {
     init: async () => {},
     async updateOne(filter, update, options) {
-      assert.deepEqual(filter, { mobile });
-      assert.deepEqual(Object.keys(update), ["$setOnInsert"]);
+      assert.equal(filter.mobile, mobile);
       assert.equal(options.session, standalone ? undefined : databaseSession);
+      if (update.$set) {
+        assert.equal(filter.role, "user");
+        for (const [field, value] of Object.entries(update.$set)) {
+          if (user?.role === "user" && !user[field]) user = { ...user, [field]: value };
+        }
+        return { upsertedCount: 0 };
+      }
       if (rejectAccountOnce) {
         rejectAccountOnce = false;
         throw new Error("simulated account write failure");
       }
       assert.equal(options.upsert, true);
-      user ??= update.$setOnInsert;
+      if (user) return { upsertedCount: 0 };
+      user = update.$setOnInsert;
+      return { upsertedCount: 1 };
     },
   };
   class StoreOrder {
@@ -126,10 +134,10 @@ test("manual order provisions a regular website account with an unverified mobil
 });
 
 test("manual order preserves an existing account for the same phone and rolls back on a failed order", async () => {
-  const existingUser = { role: "user", username: "نام انتخابی", phoneVerifiedAt: new Date() };
+  const existingUser = { role: "user", username: "نام انتخابی", firstName: "نام قبلی", phoneVerifiedAt: new Date() };
   const repeat = orderHarness({ existingUser });
   assert.equal((await repeat.submit()).status, 201);
-  assert.equal(repeat.user, existingUser);
+  assert.deepEqual(repeat.user, { ...existingUser, lastName: "زند خاوری" });
 
   const failed = orderHarness({ rejectOrder: true });
   assert.equal((await failed.submit()).status, 500);
@@ -175,7 +183,8 @@ test("real standalone MongoDB registers an order and website account with retryW
     }).default;
     const Customer = load("./model/Customer.ts", { mongoose }).default;
     const StoreOrder = load("./model/StoreOrder.ts", { mongoose }).default;
-    const customer = await Customer.create({ name: "رامتین", lastName: "زند خاوری", sex: "مرد", mobile });
+    assert.equal(User.collection.name, "users");
+    const customer = await Customer.create({ name: "رامتین", lastName: "زند خاوری", sex: "مرد", mobile: "۰۹۱۲۳۴۵۶۷۸۹" });
     const route = loadOrderRoute({
       mongoose, User, StoreOrder, Customer, sendStoreOrderReceiptSms: async () => null,
     });
@@ -186,11 +195,32 @@ test("real standalone MongoDB registers an order and website account with retryW
     assert.equal(account.firstName, "رامتین");
     assert.equal(account.lastName, "زند خاوری");
     assert.equal(account.phoneVerifiedAt, undefined);
+    // Reconcile orders saved before website account creation was deployed.
+    await User.deleteOne({ mobile });
     const replay = await route.POST(manualOrderRequest(String(customer._id)));
     assert.equal(replay.status, 200);
     assert.equal((await replay.json()).replayed, true);
     assert.equal(await StoreOrder.countDocuments(), 1);
     assert.equal(await User.countDocuments(), 1);
+
+    const oldCustomer = await Customer.create({ name: "علی", lastName: "رضایی", sex: "مرد", mobile: "+98 912 345 6780" });
+    const manualSync = load("./app/api/admin/store-order/customer/[customerId]/website-account/route.ts", {
+      mongoose,
+      "next-auth": { getServerSession: async () => ({ user: { role: "admin" } }) },
+      "@/app/api/auth/[...nextauth]/options": { authOptions: {} },
+      "@/lib/mongodb": async () => {},
+      "@/model/Customer": Customer,
+      "@/model/User": User,
+      "@/lib/store-customer-account": load("./lib/store-customer-account.ts", { "@/model/User": User }),
+    });
+    const sync = await manualSync.POST(new Request("http://localhost", { method: "POST" }), {
+      params: Promise.resolve({ customerId: String(oldCustomer._id) }),
+    });
+    assert.equal(sync.status, 200);
+    const syncedAccount = await User.collection.findOne({ mobile: "09123456780" });
+    assert.equal(syncedAccount.firstName, "علی");
+    assert.equal(syncedAccount.lastName, "رضایی");
+    assert.equal(await StoreOrder.countDocuments(), 1);
   } finally {
     await mongoose.disconnect();
     await mongo.stop();
@@ -198,14 +228,15 @@ test("real standalone MongoDB registers an order and website account with retryW
 });
 
 test("only successful OTP verification activates a store-created account and applies signup benefits", async () => {
-  let user = { _id: id, mobile, username: "رامتین زند خاوری", storeOrderPendingSignup: true };
+  let user = { _id: id, mobile, username: "رامتین زند خاوری", firstName: "رامتین", lastName: "زند خاوری", storeOrderPendingSignup: true };
   const referrals = [];
   const registrations = [];
   const route = load("./app/api/verifyOtp/route.ts", {
     "@/lib/mongodb": async () => {},
     "@/model/Otp": {
       findOneAndUpdate: async ({ otp }) => otp === "12345"
-        ? { mobile, referralCode: "KA-123ABC", signupIntentId: "signup-intent" } : null,
+        ? { _id: id, mobile, verifiedAt: new Date(), referralCode: "KA-123ABC", signupIntentId: "signup-intent" } : null,
+      updateOne: async () => ({ matchedCount: 1 }),
     },
     "@/model/User": {
       findOne: async () => user,
