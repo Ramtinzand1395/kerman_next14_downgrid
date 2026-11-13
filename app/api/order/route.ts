@@ -9,7 +9,6 @@ import Product from "@/model/Product";
 import mongoose from "mongoose";
 import { createAddressSnapshot } from "@/lib/addressSnapshot";
 import { notifyAdmins, notifyUser } from "@/lib/notifications/service";
-import { smsProductOrderCreated } from "@/lib/sms/order-patterns";
 import {
   calculateShippingInfo,
   createOrderShippingSnapshot,
@@ -310,14 +309,6 @@ export async function POST(req: Request) {
         eventKey: `NEW_ORDER_ADMIN:${order._id}`,
       }),
     ]).catch((error) => console.error("[notifications] order-created event failed:", error));
-
-    // The order is already committed: SMS failures must not roll back a valid order.
-    await smsProductOrderCreated({
-      _id: order._id,
-      trackingCode: order.trackingCode,
-      finalPrice: order.finalPrice,
-      buyerSnapshot: order.buyerSnapshot,
-    }).catch((error) => console.error("[business-sms] product order created SMS failed", error));
 
     return NextResponse.json(order);
   } catch (error) {

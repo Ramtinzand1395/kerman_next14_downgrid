@@ -5,7 +5,6 @@ import { buildOrderIdentifiers } from "@/lib/orderIdentifierValue";
 // The screenshots showed pending approval for installation and paid-order patterns; provider approval must be checked before live use.
 export const SERVICE_SMS_PATTERNS = {
   installationPayment: 577164,
-  productOrderCreated: 577166,
   productOrderPaid: 577167,
 } as const;
 
@@ -30,26 +29,6 @@ function validMobile(value: unknown): value is string {
 
 function tomanAmount(value: number): string {
   return Math.round(value).toString();
-}
-
-export async function smsProductOrderCreated(order: {
-  _id: unknown;
-  trackingCode?: string | null;
-  finalPrice: number;
-  buyerSnapshot?: { mobile?: string | null } | null;
-}) {
-  const to = order.buyerSnapshot?.mobile?.trim();
-  if (!validMobile(to)) return null;
-  const orderId = String(order._id);
-  return deliverBusinessSms({
-    eventKey: `PRODUCT_ORDER_CREATED:${orderId}`,
-    eventType: "PRODUCT_ORDER_CREATED",
-    entityType: "Order",
-    entityId: orderId,
-    bodyId: SERVICE_SMS_PATTERNS.productOrderCreated,
-    to,
-    args: [order.trackingCode || buildOrderIdentifiers(orderId).trackingCode, tomanAmount(order.finalPrice)],
-  });
 }
 
 export async function smsProductOrderPaid(order: {
