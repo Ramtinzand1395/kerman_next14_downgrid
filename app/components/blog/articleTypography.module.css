@@ -1,0 +1,222 @@
+.body,
+.editor :global(.ql-editor) {
+  direction: rtl;
+  text-align: start;
+  color: #334155;
+  font: inherit;
+  font-size: clamp(1rem, 0.97rem + 0.2vw, 1.125rem);
+  line-height: 1.95;
+  overflow-wrap: anywhere;
+}
+
+.body {
+  max-width: 48rem;
+  margin-inline: auto;
+}
+
+.body :is(h1, h2, h3, h4, h5, h6),
+.editor :global(.ql-editor) :is(h1, h2, h3, h4, h5, h6) {
+  color: #0f172a;
+  line-height: 1.65;
+  font-weight: 800;
+  margin-block: 1.5em 0.45em;
+}
+
+.body :is(h1, h2),
+.editor :global(.ql-editor) :is(h1, h2) {
+  font-size: clamp(1.3rem, 1.12rem + 0.7vw, 1.7rem);
+}
+
+.body h2 {
+  border-block-start: 1px solid #e2e8f0;
+  padding-block-start: 0.8rem;
+}
+
+.body :is(h3, h4),
+.editor :global(.ql-editor) :is(h3, h4) {
+  font-size: clamp(1.125rem, 1.06rem + 0.32vw, 1.3rem);
+}
+
+.body :is(p, ul, ol, blockquote, pre, table),
+.editor :global(.ql-editor) :is(p, ul, ol, blockquote, pre) {
+  margin-block: 0.9em;
+}
+
+.body > :first-child,
+.editor :global(.ql-editor) > :first-child {
+  margin-block-start: 0;
+}
+
+.body :is(p, li),
+.editor :global(.ql-editor) :is(p, li) {
+  unicode-bidi: plaintext;
+}
+
+.body :is(ul, ol) {
+  padding-inline-start: 1.55em;
+}
+
+.body ul { list-style-type: disc; }
+.body ol { list-style-type: decimal; }
+.body li + li { margin-block-start: 0.25em; }
+
+.body li[class*="ql-indent-"] {
+  margin-inline-start: calc(var(--list-indent, 0) * 1.5em);
+}
+
+.body :global(.ql-indent-1) { --list-indent: 1; }
+.body :global(.ql-indent-2) { --list-indent: 2; }
+.body :global(.ql-indent-3) { --list-indent: 3; }
+.body :global(.ql-indent-4) { --list-indent: 4; }
+.body :global(.ql-indent-5) { --list-indent: 5; }
+.body :global(.ql-indent-6) { --list-indent: 6; }
+.body :global(.ql-indent-7) { --list-indent: 7; }
+.body :global(.ql-indent-8) { --list-indent: 8; }
+
+.editor :global(.ql-editor) :is(ul, ol) {
+  padding-inline: 0;
+}
+
+.editor :global(.ql-editor) li:not(:global(.ql-direction-rtl)) {
+  padding-inline: 1.6em 0;
+  position: relative;
+}
+
+.editor :global(.ql-editor) li:not(:global(.ql-direction-rtl))::before {
+  position: absolute;
+  inset-inline-start: 0;
+  margin: 0;
+  text-align: center;
+  unicode-bidi: isolate;
+}
+
+.body img,
+.editor :global(.ql-editor) img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1.1rem auto;
+  border-radius: 0.85rem;
+}
+
+.editor :global(.ql-editor) img {
+  cursor: pointer;
+}
+
+.body a,
+.editor :global(.ql-editor) a {
+  color: #4338ca;
+  text-decoration: underline;
+  text-underline-offset: 0.22em;
+}
+
+.body blockquote,
+.editor :global(.ql-editor) blockquote {
+  background: #eef2ff;
+  border: 0;
+  border-inline-start: 0.25rem solid #6366f1;
+  border-radius: 0.4rem;
+  padding: 0.6rem 1rem;
+}
+
+.body :is(code, pre),
+.editor :global(.ql-editor) :is(code, pre) {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.body pre,
+.editor :global(.ql-editor) pre {
+  white-space: pre-wrap;
+  text-align: left;
+  overflow-wrap: anywhere;
+  border-radius: 0.65rem;
+  padding: 0.85rem 1rem;
+}
+
+.body pre {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.body table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.body :is(th, td) {
+  border: 1px solid #e2e8f0;
+  padding: 0.45em 0.7em;
+}
+
+.body :global(.ql-direction-rtl) { direction: rtl; }
+.body :global(.ql-align-right) { text-align: right; }
+.body :global(.ql-align-center) { text-align: center; }
+.body :global(.ql-align-justify) { text-align: justify; }
+
+.body [dir="ltr"],
+.editor :global(.ql-editor) [dir="ltr"] {
+  direction: ltr;
+}
+
+.editor :global(.ql-container.ql-snow) {
+  border: 1px solid #cbd5e1;
+  border-block-start: 0;
+  border-radius: 0 0 0.85rem 0.85rem;
+  font: inherit;
+}
+
+.editor :global(.ql-toolbar.ql-snow) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.65rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.85rem 0.85rem 0 0;
+  background: #f8fafc;
+  font: inherit;
+}
+
+.editor :global(.ql-toolbar.ql-snow .ql-formats) {
+  margin: 0;
+}
+
+.editor :global(.ql-toolbar.ql-snow button) {
+  width: 2rem;
+  height: 2rem;
+}
+
+.editor :global(.ql-editor) {
+  min-height: 26rem;
+  padding: clamp(0.9rem, 3vw, 1.65rem);
+}
+
+.editor :global(.ql-editor.ql-blank)::before {
+  right: clamp(0.9rem, 3vw, 1.65rem);
+  left: clamp(0.9rem, 3vw, 1.65rem);
+  color: #64748b;
+  font-style: normal;
+}
+
+.editor :global(.ql-snow .ql-picker.ql-header) {
+  width: 7rem;
+}
+
+.editor :global(.ql-header .ql-picker-label svg) {
+  left: 0;
+  right: auto;
+}
+
+.editor :global(.ql-header .ql-picker-label)::before,
+.editor :global(.ql-header .ql-picker-item)::before {
+  content: "متن عادی";
+}
+
+.editor :global(.ql-header [data-value="2"])::before { content: "تیتر بخش"; }
+.editor :global(.ql-header [data-value="3"])::before { content: "زیرتیتر"; }
+.editor :global(.ql-header [data-value="4"])::before { content: "تیتر سطح ۴"; }
+
+.editor :global(.ql-tooltip) {
+  direction: ltr;
+}

@@ -28,6 +28,8 @@ import { uploadCloudinaryImage } from "@/helpers/uploadCloudinaryImage";
 import { analyzeBlogSeo, normalizeBlogSlug } from "@/lib/blogSeo";
 import RichTextEditor from "../components/RichTextEditor";
 import SeoAuditPanel from "./SeoAuditPanel";
+import BlogArticleBody from "@/app/components/blog/BlogArticleBody";
+import articleStyles from "@/app/components/blog/articleTypography.module.css";
 import { DashboardRouteSkeleton } from "@/app/components/loading/LoadingSystem";
 
 type BlogForm = {
@@ -76,6 +78,18 @@ export default function BlogsAdminPage() {
   const [editingBlog, setEditingBlog] = useState<BlogPost | null>(null);
   const [form, setForm] = useState<BlogForm>(emptyForm);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingBodyImage, setUploadingBodyImage] = useState(false);
+  const [showArticlePreview, setShowArticlePreview] = useState(false);
+  const [wideEditor, setWideEditor] = useState(false);
+
+  const uploadBodyImage = useCallback(async (file: File) => {
+    setUploadingBodyImage(true);
+    try {
+      return await uploadCloudinaryImage(file);
+    } finally {
+      setUploadingBodyImage(false);
+    }
+  }, []);
   const [slugTouched, setSlugTouched] = useState(false);
   const [activeView, setActiveView] = useState<"editor" | "library">("editor");
   const [searchQuery, setSearchQuery] = useState("");
@@ -165,6 +179,7 @@ export default function BlogsAdminPage() {
   };
 
   const resetForm = () => {
+    setShowArticlePreview(false);
     setForm(emptyForm);
     setEditingBlog(null);
     setSlugTouched(false);
@@ -178,6 +193,7 @@ export default function BlogsAdminPage() {
   };
 
   const startEdit = (blog: BlogPost) => {
+    setShowArticlePreview(false);
     setEditingBlog(blog);
     setSlugTouched(true);
     setServerIssues([]);
@@ -447,8 +463,8 @@ export default function BlogsAdminPage() {
       </nav>
 
       {activeView === "editor" ? (
-        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-          <main className="space-y-5">
+        <div className={`grid grid-cols-[minmax(0,1fr)] items-start gap-5 ${wideEditor ? "" : "xl:grid-cols-[minmax(0,1fr)_340px]"}`}>
+          <main className="min-w-0 space-y-5">
             <section className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(30,41,59,0.06)] md:p-6">
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
@@ -692,14 +708,51 @@ export default function BlogsAdminPage() {
                   </span>
                 </div>
               </div>
-              <RichTextEditor
-                label="محتوای کامل"
-                value={form.content}
-                onChange={(value) => updateForm("content", value)}
-                imageUpload={uploadCloudinaryImage}
-                placeholder="مقدمه مقاله را بنویسید؛ سپس موضوع را با تیترهای H2 بخش‌بندی کنید..."
-                className="[&_.ql-container]:min-h-[420px] [&_.ql-editor]:min-h-[420px] [&_.ql-editor]:text-base [&_.ql-editor]:leading-8"
-              />
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  aria-pressed={showArticlePreview}
+                  onClick={() => setShowArticlePreview((visible) => !visible)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                >
+                  {showArticlePreview ? <PenLine size={16} /> : <Eye size={16} />}
+                  {showArticlePreview ? "بازگشت به ویرایش" : "پیش‌نمایش متن"}
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={wideEditor}
+                  onClick={() => setWideEditor((wide) => !wide)}
+                  className="hidden items-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 xl:inline-flex"
+                >
+                  {wideEditor ? "نمای کنار پنل سئو" : "نمای عریض"}
+                </button>
+              </div>
+              <div hidden={showArticlePreview}>
+                <RichTextEditor
+                  key={editingBlog?._id ?? "new-article"}
+                  article
+                  label="محتوای کامل"
+                  value={form.content}
+                  onChange={(value) => updateForm("content", value)}
+                  imageUpload={uploadBodyImage}
+                  placeholder="مقدمه مقاله را بنویسید؛ سپس موضوع را با تیترهای بخش بچینید..."
+                  className={articleStyles.editor}
+                />
+                <p className="mt-2 text-xs leading-5 text-slate-500" role="status">
+                  {uploadingBodyImage
+                    ? "در حال آپلود تصویر داخل متن…"
+                    : "برای ویرایش متن جایگزین، روی تصویر دوبار بزنید."}
+                </p>
+              </div>
+              {showArticlePreview ? (
+                <div className="min-h-48 rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
+                  {analysis.stats.wordCount > 0 || /<img\b/i.test(form.content) ? (
+                    <BlogArticleBody content={form.content} />
+                  ) : (
+                    <p className="text-sm text-slate-500">هنوز متنی برای نمایش وجود ندارد.</p>
+                  )}
+                </div>
+              ) : null}
             </section>
 
             <section className="rounded-[24px] border border-indigo-100 bg-[linear-gradient(145deg,#ffffff_0%,#f5f3ff_100%)] p-4 shadow-[0_10px_30px_rgba(79,70,229,0.07)] md:p-6">
@@ -798,7 +851,7 @@ export default function BlogsAdminPage() {
                 <button
                   type="button"
                   onClick={() => void saveArticle(false)}
-                  disabled={Boolean(submitting) || uploadingImage}
+                  disabled={Boolean(submitting) || uploadingImage || uploadingBodyImage}
                   className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
                 >
                   {submitting === "draft" ? (
@@ -811,7 +864,7 @@ export default function BlogsAdminPage() {
                 <button
                   type="button"
                   onClick={() => void saveArticle(true)}
-                  disabled={Boolean(submitting) || uploadingImage}
+                  disabled={Boolean(submitting) || uploadingImage || uploadingBodyImage}
                   className={`inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black text-white transition disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none ${
                     analysis.readyToPublish
                       ? "bg-indigo-600 hover:bg-indigo-700"

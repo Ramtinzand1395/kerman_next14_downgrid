@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { SITE_URL } from "@/lib/site";
-import { sanitizeBlogContent, stripBlogHtml } from "@/lib/blogSeo";
+import { stripBlogHtml } from "@/lib/blogSeo";
+import BlogArticleBody from "@/app/components/blog/BlogArticleBody";
 import { getBlogBySlug } from "@/services/blog/getBlogBySlug";
 
 export const dynamic = "force-dynamic";
@@ -85,7 +86,6 @@ export default async function BlogDetailPage({ params }: { params: Params }) {
   }
 
   const publishedDate = blog.publishedAt || blog.createdAt;
-  const safeContent = sanitizeBlogContent(blog.content);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -148,10 +148,9 @@ export default async function BlogDetailPage({ params }: { params: Params }) {
         </div>
       ) : null}
 
-      <div
-        className="prose prose-slate mt-8 max-w-none leading-8"
-        dangerouslySetInnerHTML={{ __html: safeContent }}
-      />
+      <div className="mt-8">
+        <BlogArticleBody content={blog.content} />
+      </div>
 
       {blog.tags?.length ? (
         <div className="mt-8 flex flex-wrap gap-2">

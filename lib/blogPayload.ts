@@ -1,8 +1,8 @@
+import { sanitizeBlogContent } from "@/lib/blogContent";
 import {
   getBlockingSeoMessages,
   normalizeBlogSlug,
   parseBlogKeywords,
-  sanitizeBlogContent,
   stripBlogHtml,
 } from "@/lib/blogSeo";
 

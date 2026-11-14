@@ -56,17 +56,6 @@ export const stripBlogHtml = (value = "") =>
     .replace(/\s+/g, " ")
     .trim();
 
-export const sanitizeBlogContent = (value = "") =>
-  value
-    .replace(/<(script|style|iframe|object|embed|form)\b[^>]*>[\s\S]*?<\/\1>/gi, "")
-    .replace(/<(script|style|iframe|object|embed|form)\b[^>]*\/?>/gi, "")
-    .replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-    .replace(
-      /\s+(href|src)\s*=\s*(["'])\s*javascript:[\s\S]*?\2/gi,
-      ' $1="#"',
-    )
-    .trim();
-
 const normalizeText = (value = "") =>
   stripBlogHtml(value)
     .toLocaleLowerCase("fa")

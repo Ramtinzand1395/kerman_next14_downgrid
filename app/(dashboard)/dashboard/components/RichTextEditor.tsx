@@ -1,11 +1,32 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo } from "react";
+import { useMemo, useRef, type MouseEvent, type Ref } from "react";
+import type ReactQuill from "react-quill";
+import type { Quill } from "quill";
 import "react-quill/dist/quill.snow.css";
 
-const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
-const QuillEditor = ReactQuill as any;
+const QuillEditor = dynamic(
+  async () => {
+    const { default: Editor } = await import("react-quill");
+    return function LoadedEditor({
+      editorRef,
+      ...props
+    }: ReactQuill.ReactQuillProps & { editorRef: Ref<ReactQuill> }) {
+      return <Editor {...props} ref={editorRef} />;
+    };
+  },
+  { ssr: false },
+);
+
+const formats = [
+  "header", "bold", "italic", "underline", "strike", "list", "bullet",
+  "blockquote", "code-block", "link", "image",
+];
+
+const articleFormats = [
+  ...formats, "alt", "width", "height", "code", "direction", "align", "indent",
+];
 
 interface RichTextEditorProps {
   label: string;
@@ -14,6 +35,7 @@ interface RichTextEditorProps {
   placeholder?: string;
   className?: string;
   imageUpload?: (file: File) => Promise<string>;
+  article?: boolean;
 }
 
 export default function RichTextEditor({
@@ -23,7 +45,10 @@ export default function RichTextEditor({
   placeholder,
   className = "",
   imageUpload,
+  article = false,
 }: RichTextEditorProps) {
+  const editorRef = useRef<ReactQuill>(null);
+  const uploading = useRef(false);
   const modules = useMemo(
     () => ({
       toolbar: {
@@ -31,95 +56,91 @@ export default function RichTextEditor({
           [{ header: [2, 3, 4, false] }],
           ["bold", "italic", "underline", "strike"],
           [{ list: "ordered" }, { list: "bullet" }],
-          ["blockquote", "code-block"],
+          article ? ["blockquote", "code", "code-block"] : ["blockquote", "code-block"],
           ["link", "image"],
           ["clean"],
         ],
         handlers: {
-          image: function (this: any) {
+          image: function (this: { quill: Quill }) {
+            if (uploading.current) return;
+            const editor = this.quill;
+            const selection = editor.getSelection(true);
+            const insertionIndex = () => {
+              const lastIndex = editor.getLength() - 1;
+              return Math.min(selection?.index ?? lastIndex, lastIndex);
+            };
             const input = document.createElement("input");
-            input.setAttribute("type", "file");
-            input.setAttribute("accept", "image/*");
-            input.click();
-
+            input.type = "file";
+            input.accept = "image/*";
             input.onchange = async () => {
               const file = input.files?.[0];
-              if (!file) return;
+              if (!file || uploading.current) return;
 
-              const insertImage = (source: string) => {
-                const editor = this.quill;
-                if (!editor) return;
-
-                const range = editor.getSelection(true);
-                const cursorPosition = range?.index ?? editor.getLength();
-                editor.insertEmbed(cursorPosition, "image", source);
-                editor.setSelection(cursorPosition + 1);
-
-                if (imageUpload) {
-                  const alt = window.prompt(
-                    "متن جایگزین تصویر را کوتاه و توصیفی بنویسید:",
-                    "",
-                  );
-                  const imageNode = editor.root.querySelectorAll("img")[cursorPosition]
-                    || editor.root.querySelectorAll("img")[
-                      editor.root.querySelectorAll("img").length - 1
-                    ];
-                  if (imageNode && alt?.trim()) {
-                    imageNode.setAttribute("alt", alt.trim());
-                    editor.update("user");
-                  }
-                }
-              };
-
-              if (imageUpload) {
-                try {
-                  insertImage(await imageUpload(file));
-                } catch (error) {
-                  window.alert(
-                    error instanceof Error ? error.message : "آپلود تصویر ناموفق بود",
-                  );
-                }
+              if (!imageUpload) {
+                const reader = new FileReader();
+                reader.onload = () => {
+                  if (typeof reader.result !== "string" || !editor.root.isConnected) return;
+                  const index = insertionIndex();
+                  editor.insertEmbed(index, "image", reader.result, "user");
+                  editor.setSelection(index + 1, 0);
+                };
+                reader.readAsDataURL(file);
                 return;
               }
 
-              const reader = new FileReader();
-              reader.onload = () => {
-                if (typeof reader.result === "string") insertImage(reader.result);
-              };
-
-              reader.readAsDataURL(file);
+              uploading.current = true;
+              try {
+                const alt = window.prompt("متن جایگزین تصویر را کوتاه و توصیفی بنویسید:", "");
+                if (alt === null) return;
+                const url = await imageUpload(file);
+                if (!editor.root.isConnected) return;
+                const index = insertionIndex();
+                const Delta = (editor.constructor as typeof Quill).import("delta");
+                editor.updateContents(
+                  new Delta().retain(index).insert({ image: url }, { alt: alt.trim() }),
+                  "user",
+                );
+                editor.setSelection(index + 1, 0);
+              } catch (error) {
+                window.alert(error instanceof Error ? error.message : "آپلود تصویر ناموفق بود");
+              } finally {
+                uploading.current = false;
+              }
             };
+            input.click();
           },
         },
       },
     }),
-    [imageUpload],
+    [article, imageUpload],
   );
 
-  const formats = [
-    "header",
-    "bold",
-    "italic",
-    "underline",
-    "strike",
-    "list",
-    "bullet",
-    "blockquote",
-    "code-block",
-    "link",
-    "image",
-  ];
+  const editImageAlt = (event: MouseEvent<HTMLDivElement>) => {
+    const image = event.target;
+    if (!(image instanceof HTMLImageElement) || !image.closest(".ql-editor")) return;
+    const editor = editorRef.current?.getEditor();
+    if (!editor?.root.contains(image)) return;
+    const blot = (editor.constructor as typeof Quill).find(image);
+    if (!blot) return;
+    const alt = window.prompt("متن جایگزین این تصویر", image.getAttribute("alt") || "");
+    if (alt === null) return;
+    editor.formatText(editor.getIndex(blot), 1, "alt", alt.trim() || false, "user");
+  };
 
   return (
-    <div className={className}>
+    <div className={className} dir={article ? "rtl" : undefined}>
       <label className="mb-2 block text-xs">{label}</label>
-      <div className="rounded-lg bg-white text-slate-900">
+      <div
+        className="rounded-lg bg-white text-slate-900"
+        onDoubleClick={article ? editImageAlt : undefined}
+      >
         <QuillEditor
+          editorRef={editorRef}
           theme="snow"
           value={value}
           onChange={onChange}
           modules={modules}
-          formats={formats}
+          formats={article ? articleFormats : formats}
           placeholder={placeholder}
         />
       </div>
