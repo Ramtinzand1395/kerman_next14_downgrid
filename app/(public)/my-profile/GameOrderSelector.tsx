@@ -41,7 +41,7 @@ import { profileRoute } from "@/lib/profileRoutes";
 import InstallationGamePicker from "./InstallationGamePicker";
 import InstallationGameSummary from "@/app/components/games/InstallationGameSummary";
 import ConsoleIcon from "@/app/components/games/ConsoleIcon";
-import { installationSize, type InstallationGame } from "@/lib/appointments/games";
+import { installationSize, isCopyCourierInstallation, type InstallationGame } from "@/lib/appointments/games";
 import { formatPrice } from "@/helpers/Price";
 
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -226,6 +226,7 @@ export default function GameOrderSelector({
   const pendingFocusRef = useRef<WizardField | null>(null);
   const [created, setCreated] = useState<CreatedAppointment | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState("");
+  const allowsCopyPricing = isCopyCourierInstallation({ fulfillment: "courier", serviceType, device, installationType });
 
   const dates = useMemo(
     () =>
@@ -462,7 +463,7 @@ export default function GameOrderSelector({
         serviceType,
         device,
         installationType: installationType || null,
-        selectedGames: installationType === "account"
+        selectedGames: allowsCopyPricing
           ? selectedGames.map(({ platform, gameId }) => ({ platform, gameId })) : [],
         selectedRewardId: selectedRewardId || null,
       }),
@@ -487,7 +488,7 @@ export default function GameOrderSelector({
       });
 
     return () => controller.abort();
-  }, [courierQuoteRevision, device, fulfillment, installationType, selectedAddressId, selectedGames, selectedRewardId, serviceType]);
+  }, [allowsCopyPricing, courierQuoteRevision, device, fulfillment, installationType, selectedAddressId, selectedGames, selectedRewardId, serviceType]);
 
   const usableRewards = useMemo(
     () =>
@@ -859,7 +860,7 @@ export default function GameOrderSelector({
 
               {step === 2 && serviceType === "game_install" && (
                 <div {...fieldProps("selectedGames")}>
-                  <InstallationGamePicker key={`${device}:${installationType}`} device={device} installationType={installationType} showPrices={installationType === "account" && fulfillment !== "in_store"} value={selectedGames} onChange={setSelectedGames} />
+                  <InstallationGamePicker key={`${device}:${installationType}`} device={device} installationType={installationType} showPrices={allowsCopyPricing && fulfillment !== "in_store"} value={selectedGames} onChange={setSelectedGames} />
                   {renderFieldError("selectedGames")}
                 </div>
               )}
@@ -973,7 +974,7 @@ export default function GameOrderSelector({
                     <h2 className="text-xl font-black text-slate-950">خلاصه و ثبت درخواست</h2>
                     <p className="mt-1 text-sm text-slate-500">خلاصه سفارش را بررسی کنید و سپس درخواست را ثبت کنید.</p>
                   </div>
-                  {serviceType === "game_install" && <InstallationGameSummary games={courierPreview?.selectedGames ?? selectedGames} showPrices={fulfillment === "courier" && installationType === "account"} />}
+                  {serviceType === "game_install" && <InstallationGameSummary games={courierPreview?.selectedGames ?? selectedGames} showPrices={fulfillment === "courier" && allowsCopyPricing} />}
                   <dl className="grid gap-3 rounded-2xl bg-slate-50 p-4 text-sm sm:grid-cols-2">
                     <div><dt className="text-slate-500">نام حساب کاربری</dt><dd className="mt-1 font-bold">{customerName || "کاربر"}</dd></div>
                     <div><dt className="text-slate-500">شماره موبایل حساب</dt><dd dir="ltr" className="mt-1 text-right font-bold">{phone || "هنگام ثبت از حساب شما دریافت می‌شود"}</dd></div>

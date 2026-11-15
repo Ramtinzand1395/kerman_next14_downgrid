@@ -8,7 +8,7 @@ import { computeAppointmentPricing } from "@/lib/appointments/policy";
 import { findCourierRegion, getAppointmentSettings } from "@/lib/appointments/settings";
 import {
   catalogPlatformAliases, installationCatalog, installationGameTotal, installationPlatforms,
-  INSTALLATION_GAME_FIELDS, isAccountCourierInstallation, resolveInstallationGames,
+  INSTALLATION_GAME_FIELDS, isCopyCourierInstallation, resolveInstallationGames,
   type GameCatalogDocument, type InstallationGame,
 } from "@/lib/appointments/games";
 import { installationGameRefSchema } from "@/validations/appointment.validation";
@@ -100,7 +100,7 @@ export async function POST(req: Request) {
     settings.courierRoundTripMultiplier > 1 ? pickupShippingCost : 0;
   const shippingBaseAmount = pickupShippingCost + returnShippingCost;
   let quotedGames: InstallationGame[] | undefined;
-  if (device && selectedGames.length && isAccountCourierInstallation({
+  if (device && selectedGames.length && isCopyCourierInstallation({
     fulfillment: "courier", serviceType, device, installationType,
   })) {
     const platforms = installationPlatforms(device, installationType);

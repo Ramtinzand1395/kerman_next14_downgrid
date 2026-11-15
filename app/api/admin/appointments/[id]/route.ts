@@ -3,7 +3,7 @@ import Customer from "@/model/Customer";
 import GameList from "@/model/GameList";
 import {
   catalogPlatformAliases, gameKey, installationCatalog, installationGameTotal, installationPlatforms,
-  installationSize, INSTALLATION_GAME_FIELDS, isAccountCourierInstallation,
+  installationSize, INSTALLATION_GAME_FIELDS, isCopyCourierInstallation,
   resolveInstallationGames, type GameCatalogDocument, type InstallationGame,
 } from "@/lib/appointments/games";
 import Appointment from "@/model/Appointment";
@@ -241,14 +241,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (storeOrderCustomerId) set.storeOrderCustomer = storeOrderCustomerId;
   if (storeOrderDescription !== undefined) set.description = storeOrderDescription;
   let gamesChanged = false;
-  let accountGameTotal: number | null | undefined;
-  const catalogPricedOrder = isAccountCourierInstallation(current);
+  let catalogGameTotal: number | null | undefined;
+  const catalogPricedOrder = isCopyCourierInstallation(current);
   if (selectedGames) {
     const platforms = installationPlatforms(current.device, current.installationType);
     const docs = await GameList.find({ platform: { $in: catalogPlatformAliases(platforms) } })
       .select(INSTALLATION_GAME_FIELDS).lean() as GameCatalogDocument[];
     const previous = (current.selectedGames || []) as InstallationGame[];
-    const catalog = installationCatalog(docs, platforms);
+    const catalog = installationCatalog(docs, platforms, catalogPricedOrder);
     const byKey = new Map(catalog.map((game) => [gameKey(game), game]));
     for (const game of previous) {
       if (!platforms.includes(game.platform)) continue;
@@ -269,7 +269,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       }
       if (catalogPricedOrder) {
         const total = installationGameTotal(games);
-        if (gamesChanged || pricesChanged || (!current.pricing?.known && total !== null)) accountGameTotal = total;
+        if (gamesChanged || pricesChanged || (!current.pricing?.known && total !== null)) catalogGameTotal = total;
       }
     } catch (error) {
       return fail((error as Error).message, 422);
@@ -277,7 +277,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   if (registerStoreOrder && parsed.data.baseAmount === undefined &&
-      (accountGameTotal === null || (accountGameTotal === undefined && !current.pricing?.known))) {
+      (catalogGameTotal === null || (catalogGameTotal === undefined && !current.pricing?.known))) {
     return fail("مبلغ خدمت را وارد کنید.", 422);
   }
 
@@ -368,12 +368,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     updateFilter["courier.status"] = current.courier?.status || "pending";
   }
   if (current.updatedAt) updateFilter.updatedAt = current.updatedAt;
-  if (!Object.keys(set).length && parsed.data.baseAmount === undefined && accountGameTotal === undefined) return ok(current);
+  if (!Object.keys(set).length && parsed.data.baseAmount === undefined && catalogGameTotal === undefined) return ok(current);
 
   const persist = async (dbSession?: ClientSession) => {
-    const hasCatalogQuote = accountGameTotal !== undefined &&
-      (accountGameTotal !== null || parsed.data.baseAmount === undefined);
-    const serviceQuote = hasCatalogQuote ? accountGameTotal : parsed.data.baseAmount;
+    const hasCatalogQuote = catalogGameTotal !== undefined &&
+      (catalogGameTotal !== null || parsed.data.baseAmount === undefined);
+    const serviceQuote = hasCatalogQuote ? catalogGameTotal : parsed.data.baseAmount;
     if (catalogPricedOrder && nextStatus !== "completed" && serviceQuote !== undefined) {
       const reward = current.selectedReward
         ? await VisitReward.findOne({ _id: current.selectedReward, reservedFor: current._id, status: "reserved" })

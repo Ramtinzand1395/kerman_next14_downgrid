@@ -11,7 +11,7 @@ import {
   X,
 } from "lucide-react";
 import InstallationGameSummary from "@/app/components/games/InstallationGameSummary";
-import { isAccountCourierInstallation } from "@/lib/appointments/games";
+import { isCopyCourierInstallation } from "@/lib/appointments/games";
 import type { AppointmentItem } from "@/types/appointments";
 import {
   courierLabel,
@@ -169,7 +169,7 @@ export default function AppointmentDetailsDrawer({ item: initialItem, onClose }:
             ) : null}
           </section>
 
-          <InstallationGameSummary games={item.selectedGames} showPrices={isAccountCourierInstallation(item)} />
+          <InstallationGameSummary games={item.selectedGames} showPrices={isCopyCourierInstallation(item)} />
 
           <section className="rounded-2xl border border-slate-200 p-4">
             <h3 className="font-black text-slate-900">مشتری</h3>

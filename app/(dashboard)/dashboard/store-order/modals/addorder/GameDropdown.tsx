@@ -1,7 +1,7 @@
 import GameCover from "@/app/components/games/GameCover";
 import { GameItem, storeOrder } from "@/types";
 import type { AppointmentItem } from "@/types/appointments";
-import { gameKey, installationGameTotal, isAccountCourierInstallation, type InstallationGame } from "@/lib/appointments/games";
+import { gameKey, installationGameTotal, isCopyCourierInstallation, type InstallationGame } from "@/lib/appointments/games";
 import { useEffect, useMemo, useState } from "react";
 
 interface GameDropdownProps {
@@ -106,7 +106,7 @@ const GameDropdown: React.FC<GameDropdownProps> = ({
     return () => controller.abort();
   }, [appointment, search, Selectedgames?.consoleType]);
 
-  const catalogPricing = Boolean(appointment && isAccountCourierInstallation(appointment));
+  const catalogPricing = Boolean(appointment && isCopyCourierInstallation(appointment));
   const filteredGames = useMemo(() => {
     if (!search.trim()) return games;
 

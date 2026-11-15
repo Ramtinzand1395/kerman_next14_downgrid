@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { gameKey, installationGameTotal, isAccountCourierInstallation, MAX_INSTALLATION_GAMES, type InstallationGame } from "@/lib/appointments/games";
+import { gameKey, installationGameTotal, isCopyCourierInstallation, MAX_INSTALLATION_GAMES, type InstallationGame } from "@/lib/appointments/games";
 import { formatPrice } from "@/helpers/Price";
 import MoneyInput from "@/app/components/forms/MoneyInput";
 import type { AppointmentItem } from "@/types/appointments";
@@ -24,7 +24,7 @@ export default function AppointmentGamesEditor({ item, onClose, onSaved }: Props
   const [saving, setSaving] = useState(false);
   const [catalogError, setCatalogError] = useState("");
   const [saveError, setSaveError] = useState("");
-  const catalogPricing = isAccountCourierInstallation(item);
+  const catalogPricing = isCopyCourierInstallation(item);
   const gamesTotal = catalogPricing ? installationGameTotal(selected) : null;
 
   function changeSelection(games: InstallationGame[]) {

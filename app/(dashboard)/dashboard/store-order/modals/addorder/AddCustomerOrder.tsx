@@ -12,7 +12,7 @@ import { toast } from "react-toastify";
 
 import { ConsoleType, Customer, GameItem, storeOrder, OrdersByConsole } from "@/types";
 import type { AppointmentItem } from "@/types/appointments";
-import { installationGameTotal, isAccountCourierInstallation } from "@/lib/appointments/games";
+import { installationGameTotal, isCopyCourierInstallation } from "@/lib/appointments/games";
 import MoneyInput from "@/app/components/forms/MoneyInput";
 import { formatPrice } from "@/helpers/Price";
 import GameDropdown from "./GameDropdown";
@@ -49,7 +49,7 @@ const AddCustomerOrder = ({
   setOrders,
   onBack,
 }: AddCustomerOrderProps) => {
-  const catalogPricing = Boolean(appointment && isAccountCourierInstallation(appointment));
+  const catalogPricing = Boolean(appointment && isCopyCourierInstallation(appointment));
   const [loading, setLoading] = useState(false);
   const [requestKey] = useState(
     () => appointment ? "" : readStoreOrderDraft()?.requestKey || crypto.randomUUID(),

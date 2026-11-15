@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import InstallationGameSummary from "@/app/components/games/InstallationGameSummary";
 import { formatPrice } from "@/helpers/Price";
-import { isAccountCourierInstallation } from "@/lib/appointments/games";
+import { isCopyCourierInstallation } from "@/lib/appointments/games";
 import dbConnect from "@/lib/mongodb";
 import Appointment from "@/model/Appointment";
 import type { AppointmentItem } from "@/types/appointments";
@@ -25,7 +25,7 @@ export default async function GameOrderInvoice({ params }: { params: { appointme
   const item = await Appointment.findOne({
     _id: appointmentId, user: session.user.id, reservationFinalizedAt: { $ne: null },
   }).select("customerName trackingCode fulfillment serviceType device installationType status startsAt selectedGames pricing payment.status payment.refId").lean<AppointmentItem>();
-  if (!item || !isAccountCourierInstallation(item) || item.pricing?.finalAmount == null) notFound();
+  if (!item || !isCopyCourierInstallation(item) || item.pricing?.finalAmount == null) notFound();
   const { pricing } = item;
   const rows = [
     { title: "مبلغ خدمت", amount: pricing.serviceBaseAmount ?? pricing.baseAmount },

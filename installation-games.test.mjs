@@ -11,11 +11,12 @@ const id4 = '4'.repeat(24), id5 = '5'.repeat(24), idX = 'a'.repeat(24);
 const fixtures = [
   { platform: 'ps4', items: [{ _id: id4, name: 'Same Game', size: 40, price: 700_000, imageUrl: 'https://res.cloudinary.com/aeylqy7h/image/upload/game.webp' }] },
   { platform: 'ps5', items: [{ _id: id5, name: 'Same Game', size: 60.25, price: 1_350_000 }] },
-  { platform: 'copy', items: [{ _id: id4, name: 'PS4 Copy', size: null }] },
-  { platform: 'ps5Copy', items: [{ _id: id5, name: 'PS5 Copy', size: 0 }] },
+  { platform: 'copy', items: [{ _id: id4, name: 'PS4 Copy', size: 40, price: 100_000 }] },
+  { platform: 'ps5Copy', items: [{ _id: id5, name: 'PS5 Copy', size: 0, price: 150_000 }] },
   { platform: 'xbox', items: [{ _id: idX, name: 'Xbox Game', size: 20 }] },
 ];
 const refs = [{ platform: 'ps4', gameId: id4 }, { platform: 'ps5', gameId: id5 }];
+const copyRefs = [{ platform: 'copy', gameId: id4 }, { platform: 'ps5Copy', gameId: id5 }];
 const legal = games.installationCatalog(fixtures, games.installationPlatforms('ps5', 'account'));
 
 function loadModule(path, deps) {
@@ -30,6 +31,8 @@ const base = () => ({
   device: 'ps5', installationType: 'account', selectedGames: refs,
   description: '', customerName: 'Test User', phone: '09123456789', startsAt: new Date(Date.now() + 86400_000),
 });
+const copyCourier = () => ({...base(), fulfillment:'courier', installationType:'copy', selectedGames:copyRefs,
+  addressId:idX, pickupDate:'2026-11-03', pickupWindow:{start:'10:00',end:'12:00'}});
 
 test('installation compatibility matrix separates legal, copy and Xbox catalogs', () => {
   assert.deepEqual(policy.supportedDevicesForService('game_install', []), ['ps5', 'ps4', 'xbox']);
@@ -168,41 +171,49 @@ test('catalog API combines both generations before search/pagination and require
   assert.equal(first.data.total,2);
   assert.equal(first.data.pages,2);
   assert.notEqual(first.data.games[0].version,second.data.games[0].version);
+  assert.equal(first.data.games[0].price, undefined);
+  const copy = await route.GET({url:url.replace('installationType=account&limit=1','installationType=copy')});
+  assert.deepEqual(copy.data.games.map(game => [game.platform, game.price]), [['copy', 100_000], ['ps5Copy', 150_000]]);
   assert.equal((await route.GET({url:url+'&search=missing'})).data.games.length,0);
   assert.equal((await route.GET({url:url.replace('device=ps5','device=xbox')})).status,422);
   const denied = loadModule('./app/api/profile/appointments/games/route.ts',{...routeDeps,'@/lib/loyalty/api':{requireUser:async()=>({error:{status:401}})}});
   assert.equal((await denied.GET({url})).status,401);
 });
 
-test('courier registrations persist the same game snapshots as in-store registrations', async () => {
+test('PS4 and PS5 copy courier registrations persist catalog prices and include courier costs', async () => {
   const {service,writes} = serviceHarness();
-  const result = await service.createAppointment(idX, {...base(),fulfillment:'courier',addressId:idX,pickupDate:'2026-11-03',pickupWindow:{start:'10:00',end:'12:00'}});
+  const result = await service.createAppointment(idX, copyCourier());
   assert.ok(result.appointment);
   assert.equal(writes[0].fulfillment,'courier');
   assert.equal(writes[0].selectedGames.length,2);
-  assert.equal(writes[0].totalSizeGB,100.25);
+  assert.equal(writes[0].totalSizeGB,40);
   assert.ok(writes[0].courier.addressSnapshot);
-  assert.equal(writes[0].pricing.serviceBaseAmount, 2_050_000);
-  assert.equal(writes[0].pricing.finalAmount, 2_150_000);
-  assert.deepEqual(writes[0].selectedGames.map(game => game.price), [700_000, 1_350_000]);
+  assert.equal(writes[0].pricing.serviceBaseAmount, 250_000);
+  assert.equal(writes[0].pricing.finalAmount, 350_000);
+  assert.deepEqual(writes[0].selectedGames.map(game => game.price), [100_000, 150_000]);
+
+  const ps4 = serviceHarness();
+  const ps4Result = await ps4.service.createAppointment(idX, {...copyCourier(), device:'ps4', selectedGames:[copyRefs[0]]});
+  assert.equal(ps4Result.appointment.pricing.serviceBaseAmount, 100_000);
+  assert.equal(ps4Result.appointment.pricing.finalAmount, 200_000);
 });
 
 test('courier catalog pricing leaves unknown games for review and does not treat them as free', async () => {
-  const input = {...base(), fulfillment:'courier', addressId:idX, pickupDate:'2026-11-03', pickupWindow:{start:'10:00',end:'12:00'}};
   const { service, writes } = serviceHarness({ docs: [
-    fixtures[0], { platform: 'ps5', items: [{ _id: id5, name: 'Unpriced game', price: null }] },
+    fixtures[2], { platform: 'ps5Copy', items: [{ _id: id5, name: 'Unpriced game', price: null }] },
   ] });
-  assert.ok((await service.createAppointment(idX, input)).appointment);
+  assert.ok((await service.createAppointment(idX, copyCourier())).appointment);
   assert.equal(writes[0].pricing.known, false);
   assert.equal(writes[0].pricing.finalAmount, null);
 
   const inStore = serviceHarness();
-  assert.ok((await inStore.service.createAppointment(idX, base())).appointment);
+  assert.ok((await inStore.service.createAppointment(idX, {...base(), installationType:'copy', selectedGames:copyRefs})).appointment);
   assert.equal(inStore.writes[0].pricing.known, false);
+  assert.ok(inStore.writes[0].selectedGames.every(game => game.price === undefined));
   assert.equal(games.installationGameTotal([{ price: 0 }]), 0);
 });
 
-test('courier preview and registration both price selected PS4 and PS5 games from the catalog', async () => {
+test('courier preview prices copy versions only and rejects stale copy quotes during registration', async () => {
   const preview = loadModule('./app/api/profile/appointments/courier-preview/route.ts', {
     ...routeDeps,
     'next/server': { NextResponse: { json: (body, init) => Response.json(body, init) } },
@@ -215,32 +226,42 @@ test('courier preview and registration both price selected PS4 and PS5 games fro
     '@/model/Address': { default: { findOne: () => ({ lean: async () => ({ _id:idX, city:'Kerman' }) }) } },
     '@/model/VisitReward': { default: {} },
   });
-  const body = { addressId:idX, serviceType:'game_install', device:'ps5', installationType:'account',
-    selectedGames:refs.map(game => ({ ...game, price:1 })) };
-  const response = await preview.POST(new Request('https://example.test', { method:'POST', body:JSON.stringify(body) }));
+  const body = { addressId:idX, serviceType:'game_install', device:'ps5', installationType:'copy',
+    selectedGames:copyRefs.map(game => ({ ...game, price:1 })) };
+  const post = data => preview.POST(new Request('https://example.test', { method:'POST', body:JSON.stringify(data) }));
+  const response = await post(body);
   assert.equal(response.status, 200);
   const quote = await response.json();
-  assert.equal(quote.pricing.serviceBaseAmount, 2_050_000);
-  assert.equal(quote.pricing.finalAmount, 2_150_000);
-  assert.deepEqual(quote.selectedGames.map(game => game.price), [700_000, 1_350_000]);
+  assert.equal(quote.pricing.serviceBaseAmount, 250_000);
+  assert.equal(quote.pricing.finalAmount, 350_000);
+  assert.deepEqual(quote.selectedGames.map(game => game.price), [100_000, 150_000]);
 
   const {service, writes} = serviceHarness();
-  const input = {...base(), fulfillment:'courier', addressId:idX, pickupDate:'2026-11-03', pickupWindow:{start:'10:00',end:'12:00'}};
+  const input = copyCourier();
   assert.equal((await service.createAppointment(idX, {...input, expectedGameTotal:1})).status, 409);
   assert.equal(writes.length, 0);
   const result = await service.createAppointment(idX, {...input, expectedGameTotal:quote.pricing.serviceBaseAmount});
   assert.equal(result.appointment.pricing.finalAmount, quote.pricing.finalAmount);
+
+  const account = {...body, installationType:'account', selectedGames:refs};
+  const accountQuote = await (await post(account)).json();
+  assert.equal(accountQuote.pricing.serviceBaseAmount, null);
+  assert.equal(accountQuote.selectedGames, undefined);
+  const accountResult = await serviceHarness().service.createAppointment(idX, {...input, ...account});
+  assert.equal(accountResult.appointment.pricing.known, false);
+  assert.ok(accountResult.appointment.selectedGames.every(game => game.price === undefined));
 });
 
 test('Mongoose preserves game snapshots and legacy appointments can still validate without selections', async () => {
   const { default: Appointment } = loadModule('./model/Appointment.ts', {'@/lib/appointments/policy':policy});
-  const data = {...base(),user:idX,trackingCode:'KA-TEST',requestHash:'a'.repeat(64),endsAt:new Date(Date.now()+86400_000+1800000),slotKey:'test',selectedGames:legal,totalSizeGB:100.25};
+  const selectedGames = games.installationCatalog(fixtures, ['copy', 'ps5Copy']);
+  const data = {...base(),installationType:'copy',user:idX,trackingCode:'KA-TEST',requestHash:'a'.repeat(64),endsAt:new Date(Date.now()+86400_000+1800000),slotKey:'test',selectedGames,totalSizeGB:40};
   const instance = new Appointment(data);
   await instance.validate();
-  assert.equal(instance.toObject().selectedGames[0].gameId,legal[0].gameId);
-  assert.equal(instance.toObject().selectedGames[0].version,legal[0].version);
-  assert.equal(instance.toObject().selectedGames[0].price, legal[0].price);
-  assert.equal(instance.toObject().totalSizeGB,100.25);
+  assert.equal(instance.toObject().selectedGames[0].gameId,selectedGames[0].gameId);
+  assert.equal(instance.toObject().selectedGames[0].version,selectedGames[0].version);
+  assert.equal(instance.toObject().selectedGames[0].price, 100_000);
+  assert.equal(instance.toObject().totalSizeGB,40);
   const legacy = new Appointment({...data,selectedGames:undefined,totalSizeGB:undefined});
   await legacy.validate();
   assert.deepEqual(legacy.toObject().selectedGames,[]);

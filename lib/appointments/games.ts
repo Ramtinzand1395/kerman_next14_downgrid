@@ -16,11 +16,11 @@ export const MAX_INSTALLATION_GAMES = 100;
 export const INSTALLATION_GAME_FIELDS = "platform items._id items.name items.size items.price items.imageUrl items.imageAlt";
 export const gameKey = (game: InstallationGameRef) => `${game.platform}:${game.gameId}`;
 
-export function isAccountCourierInstallation(order: {
+export function isCopyCourierInstallation(order: {
   fulfillment?: string | null; serviceType?: string | null; device?: string; installationType?: string | null;
 }) {
   return order.fulfillment === "courier" && order.serviceType === "game_install" &&
-    order.installationType === "account" && (order.device === "ps4" || order.device === "ps5");
+    order.installationType === "copy" && (order.device === "ps4" || order.device === "ps5");
 }
 
 function isGamePrice(price: number | null | undefined): price is number {
@@ -57,11 +57,12 @@ export function catalogPlatformAliases(platforms: string[]) {
   return platforms.flatMap((p) => p === "copy" ? ["copy", "ps4copy", "ps4Copy"] : p === "ps5Copy" ? ["ps5Copy", "ps5copy"] : [p]);
 }
 
-export function installationCatalog(docs: GameCatalogDocument[], platforms: string[]): InstallationGame[] {
+export function installationCatalog(docs: GameCatalogDocument[], platforms: string[], includePrices = true): InstallationGame[] {
   const games = new Map<string, InstallationGame>();
   for (const doc of docs) {
     const platform = normalizeGamePlatform(doc.platform);
     if (!platforms.includes(platform)) continue;
+    const priced = includePrices && (platform === "copy" || platform === "ps5Copy");
     for (const item of doc.items || []) {
       // Legacy imports can contain unnamed placeholder rows. They are not games.
       if (!item || typeof item.name !== "string" || !item.name.trim()) continue;
@@ -69,7 +70,7 @@ export function installationCatalog(docs: GameCatalogDocument[], platforms: stri
         platform, gameId: String(item._id), name: item.name,
         version: platform === "xbox" ? "Xbox" : platform.startsWith("ps5") ? "PS5" : "PS4",
         sizeGB: typeof item.size === "number" && Number.isFinite(item.size) && item.size >= 0 ? item.size : null,
-        ...((platform === "ps4" || platform === "ps5") && { price: isGamePrice(item.price) ? item.price : null }),
+        ...(priced && { price: isGamePrice(item.price) ? item.price : null }),
         imageUrl: item.imageUrl || "", imageAlt: item.imageAlt || "",
       };
       games.set(gameKey(game), game);

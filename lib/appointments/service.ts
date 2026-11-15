@@ -12,7 +12,7 @@ import {
   installationPlatforms,
   installationSize,
   INSTALLATION_GAME_FIELDS,
-  isAccountCourierInstallation,
+  isCopyCourierInstallation,
   resolveInstallationGames,
   type GameCatalogDocument,
   type InstallationGameRef,
@@ -298,6 +298,7 @@ export async function createAppointment(userId: string, input: CreateAppointment
       return { appointment: publicAppointment(appointment.toObject()), reused: true } as const;
     }
   } else {
+    const pricedCourier = isCopyCourierInstallation(input);
     let selectedGames: InstallationGame[] = [];
     if (input.serviceType === "game_install") {
       const platforms = installationPlatforms(input.device, input.installationType);
@@ -305,7 +306,7 @@ export async function createAppointment(userId: string, input: CreateAppointment
       const docs = await GameList.find({ platform: { $in: catalogPlatformAliases(platforms) } })
         .select(INSTALLATION_GAME_FIELDS).lean() as GameCatalogDocument[];
       try {
-        selectedGames = resolveInstallationGames(gameRefs, installationCatalog(docs, platforms));
+        selectedGames = resolveInstallationGames(gameRefs, installationCatalog(docs, platforms, pricedCourier));
       } catch (error) {
         return { error: (error as Error).message, status: 422 } as const;
       }
@@ -321,9 +322,8 @@ export async function createAppointment(userId: string, input: CreateAppointment
     const user = await User.findById(userId).select("_id");
     if (!user) return { error: "کاربر یافت نشد.", status: 404 } as const;
 
-    const gameTotal = isAccountCourierInstallation(input)
-      ? installationGameTotal(selectedGames) : null;
-    if (input.fulfillment === "courier" && isAccountCourierInstallation(input) &&
+    const gameTotal = pricedCourier ? installationGameTotal(selectedGames) : null;
+    if (input.fulfillment === "courier" && pricedCourier &&
         input.expectedGameTotal !== undefined && input.expectedGameTotal !== gameTotal) {
       return { error: "قیمت بازی‌ها تغییر کرده است. مبلغ تازه را بررسی و دوباره ثبت کنید.", status: 409 } as const;
     }
