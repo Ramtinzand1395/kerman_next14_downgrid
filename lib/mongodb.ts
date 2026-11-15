@@ -29,11 +29,9 @@ export default async function dbConnect() {
   }
 
   if (!cached!.promise) {
-    const opts = {
-      bufferCommands: false,
-    };
-
-    cached!.promise = mongoose.connect(mongodbUri, opts).catch((error) => {
+    // Models loaded during the initial connection must wait for the database
+    // before creating collections and indexes.
+    cached!.promise = mongoose.connect(mongodbUri).catch((error) => {
       // A rejected promise must not poison this server instance forever.
       cached!.promise = null;
       cached!.conn = null;

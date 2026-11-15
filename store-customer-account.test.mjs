@@ -162,8 +162,9 @@ test("standalone saves the order first and a repeat completes a failed account s
   assert.equal(harness.smsCount, 1);
 });
 
-test("real standalone MongoDB registers an order and website account with retryWrites enabled", {
-  skip: process.env.STORE_CUSTOMER_ACCOUNT_MONGO_TESTS !== "true",
+test("real standalone MongoDB registers an order when models load during the initial connection", {
+  skip: process.env.STORE_CUSTOMER_LOCAL_MONGO_TESTS !== "true" &&
+    process.env.STORE_CUSTOMER_ACCOUNT_MONGO_TESTS !== "true",
 }, async () => {
   const { MongoMemoryServer } = await import("mongodb-memory-server");
   const { Mongoose } = await import("mongoose");
@@ -172,17 +173,22 @@ test("real standalone MongoDB registers an order and website account with retryW
     binary: { version: "7.0.24" },
     instance: { ip: "127.0.0.1", args: ["--nounixsocket"] },
   });
+  const previousMongoUri = process.env.MONGODB_URI;
   try {
     const uri = new URL(mongo.getUri("store_account_standalone"));
     assert.equal(uri.hostname, "127.0.0.1");
     uri.searchParams.set("retryWrites", "true");
-    await mongoose.connect(uri.toString());
+    process.env.MONGODB_URI = uri.toString();
+    const dbConnect = load("./lib/mongodb.ts", { mongoose }).default;
+    const connecting = dbConnect();
+    assert.equal(mongoose.connection.readyState, mongoose.STATES.connecting);
     const User = load("./model/User.ts", {
       mongoose: { __esModule: true, default: mongoose, Schema: mongoose.Schema, model: mongoose.model.bind(mongoose) },
       "@/types/loyalty": { VIP_TIERS: ["bronze", "silver", "gold"] },
     }).default;
     const Customer = load("./model/Customer.ts", { mongoose }).default;
     const StoreOrder = load("./model/StoreOrder.ts", { mongoose }).default;
+    await connecting;
     assert.equal(User.collection.name, "users");
     const customer = await Customer.create({ name: "رامتین", lastName: "زند خاوری", sex: "مرد", mobile: "۰۹۱۲۳۴۵۶۷۸۹" });
     const receiptNumbers = [];
@@ -225,6 +231,9 @@ test("real standalone MongoDB registers an order and website account with retryW
     assert.equal(syncedAccount.lastName, "رضایی");
     assert.equal(await StoreOrder.countDocuments(), 1);
   } finally {
+    if (previousMongoUri === undefined) delete process.env.MONGODB_URI;
+    else process.env.MONGODB_URI = previousMongoUri;
+    delete globalThis.mongooseCache;
     await mongoose.disconnect();
     await mongo.stop();
   }
