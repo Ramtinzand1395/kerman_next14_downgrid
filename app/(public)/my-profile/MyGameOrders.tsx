@@ -56,9 +56,18 @@ function dateTime(value: string) {
     minute: "2-digit",
   }).format(new Date(value));
 }
+const paymentMessages: Record<string, string> = {
+  paid: "پرداخت شما با موفقیت ثبت شد.",
+  pending: "نتیجه پرداخت در حال بررسی است. اگر مبلغ از حسابتان کم شده، دوباره پرداخت نکنید و وضعیت همین سفارش را بررسی کنید.",
+  failed: "زرین‌پال تأیید کرد که پرداخت قبلی تکمیل نشده است. وضعیت برداشت را در حساب بانکی‌تان بررسی کنید.",
+  unpaid: "هنوز پرداختی برای این سفارش ثبت نشده است.",
+};
+
 export default function MyGameOrders() {
   const search = useSearchParams();
-  const paymentResult = search.get("servicePayment");
+  const linkedAppointment = search.get("appointment");
+  const [checkedPayment, setCheckedPayment] = useState("");
+  const paymentResult = checkedPayment || search.get("servicePayment");
   const [paying, setPaying] = useState("");
   const [appointments, setAppointments] = useState<AppointmentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,13 +101,15 @@ export default function MyGameOrders() {
 
   useEffect(() => {
     if (loading || appointments.length === 0) return;
-    const target = decodeURIComponent(window.location.hash.slice(1));
+    const target = linkedAppointment
+      ? `appointment-${linkedAppointment}`
+      : window.location.hash.slice(1);
     if (!target.startsWith("appointment-")) return;
     const appointmentId = target.slice("appointment-".length);
     if (!appointments.some((appointment) => appointment._id === appointmentId)) return;
     // The order cards are rendered after an API call; native anchor scrolling can run too early.
     document.getElementById(target)?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [loading, appointments]);
+  }, [loading, appointments, linkedAppointment]);
 
 
 
@@ -120,16 +131,23 @@ export default function MyGameOrders() {
     }
   };
 
-  async function pay(appointmentId: string) {
+  async function pay(appointmentId: string, checkOnly: boolean) {
     setPaying(appointmentId);
     setError("");
     try {
-      const response = await fetch(`/api/profile/appointments/${appointmentId}/payment`, { method: "POST" });
+      const path = `/api/profile/appointments/${appointmentId}/payment`;
+      const response = await fetch(checkOnly ? `${path}?check=1` : path, { method: "POST" });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "پرداخت آماده نشد؛ دوباره تلاش کنید.");
-      window.location.assign(result.data.url);
+      if (result.data.url) {
+        window.location.assign(result.data.url);
+        return;
+      }
+      setCheckedPayment(result.data.paymentStatus);
+      await load();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "اتصال به درگاه برقرار نشد.");
+    } finally {
       setPaying("");
     }
   }
@@ -140,7 +158,7 @@ export default function MyGameOrders() {
 
   return (
     <section className="space-y-5">
-      {paymentResult && <p role="status" className="rounded-xl bg-blue-50 p-4 text-sm text-blue-900">{paymentResult === "paid" ? "پرداخت شما با موفقیت ثبت شد." : paymentResult === "pending" ? "نتیجه پرداخت هنوز تأیید نشده است؛ برای بررسی دوباره، پرداخت همان درخواست را باز کنید." : "پرداخت انجام نشد؛ می‌توانید دوباره تلاش کنید."}</p>}
+      {paymentResult && paymentMessages[paymentResult] && <p role="status" className="rounded-xl bg-blue-50 p-4 text-sm text-blue-900">{paymentMessages[paymentResult]}</p>}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-black text-slate-900">نوبت‌های نصب و تعمیرات</h2>
@@ -167,6 +185,7 @@ export default function MyGameOrders() {
           {appointments.map((item) => {
             const ServiceIcon = item.serviceType === "repair" ? Wrench : Gamepad2;
             const cancellable = (!item.courier || ["pending", "scheduled"].includes(item.courier.status)) && ["pending", "confirmed"].includes(item.status) && new Date(item.startsAt) > new Date();
+            const paymentPending = item.payment?.status === "pending" || item.payment?.status === "initiating";
             return (
               <article id={`appointment-${item._id}`} key={item._id} className="scroll-mt-28 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm target:border-blue-500 target:ring-2 target:ring-blue-200">
                 <header className="flex items-start justify-between gap-3 border-b border-slate-100 bg-slate-50 p-4">
@@ -200,7 +219,9 @@ export default function MyGameOrders() {
                         : "هزینه پس از بررسی مشخص می‌شود"}
                     </span>
                     {item.payment?.status === "paid" ? <span className="text-xs font-bold text-emerald-700">پرداخت موفق{item.payment.refId ? ` · کد پیگیری ${item.payment.refId}` : ""}</span> : item.status === "completed" && item.pricing?.known && Number(item.pricing.finalAmount) > 0 ? (
-                      <button type="button" disabled={Boolean(paying)} onClick={() => void pay(item._id)} className="rounded-xl bg-blue-800 px-4 py-2 text-xs font-bold text-white disabled:opacity-50">{paying === item._id ? <ButtonLoading label="اتصال به درگاه…" /> : "پرداخت آنلاین"}</button>
+                      <button type="button" disabled={Boolean(paying)} onClick={() => void pay(item._id, paymentPending)} className="rounded-xl bg-blue-800 px-4 py-2 text-xs font-bold text-white disabled:opacity-50">{paying === item._id
+                        ? <ButtonLoading label={paymentPending ? "در حال بررسی…" : "اتصال به درگاه…"} />
+                        : paymentPending ? "بررسی وضعیت پرداخت" : "پرداخت آنلاین"}</button>
                     ) : null}
                     {cancellable && (
                       <button type="button" disabled={working === item._id} onClick={() => void cancel(item._id)} className="rounded-xl border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700 disabled:opacity-50">
@@ -208,6 +229,9 @@ export default function MyGameOrders() {
                       </button>
                     )}
                   </div>
+                  {paymentPending && (
+                    <p className="text-xs leading-5 text-amber-800">پرداخت در انتظار تأیید زرین‌پال است. اگر مبلغ از حسابتان کم شده، دوباره پرداخت نکنید.</p>
+                  )}
                 </div>
               </article>
             );

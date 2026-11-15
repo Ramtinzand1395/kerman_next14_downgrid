@@ -36,7 +36,7 @@ type Props = {
 const paymentLabels = {
   unpaid: "پرداخت‌نشده",
   initiating: "در حال آماده‌سازی پرداخت",
-  pending: "در انتظار پرداخت مشتری",
+  pending: "در انتظار تأیید زرین‌پال",
   paid: "پرداخت موفق",
   failed: "ناموفق، قابل تلاش مجدد",
 };

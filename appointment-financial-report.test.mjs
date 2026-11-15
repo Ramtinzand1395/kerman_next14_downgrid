@@ -58,7 +58,7 @@ test('admin details render payment reference, captured amount and time independe
 });
 
 test('admin details distinguish all five payment states and legacy missing payment', () => {
-  for (const [status, label] of Object.entries({unpaid:'پرداخت‌نشده', initiating:'در حال آماده‌سازی پرداخت', pending:'در انتظار پرداخت مشتری', paid:'پرداخت موفق', failed:'ناموفق، قابل تلاش مجدد'})) {
+  for (const [status, label] of Object.entries({unpaid:'پرداخت‌نشده', initiating:'در حال آماده‌سازی پرداخت', pending:'در انتظار تأیید زرین‌پال', paid:'پرداخت موفق', failed:'ناموفق، قابل تلاش مجدد'})) {
     const html = renderToStaticMarkup(React.createElement(Drawer, {item: {...item, payment: {status}}, onClose() {}}));
     assert.ok(html.includes(label), status);
   }
