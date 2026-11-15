@@ -77,7 +77,7 @@ test("client print payload keeps textual storage and defaults old orders to empt
   assert.equal(typeof legacyNumericValue.games[0].storage, "string");
 });
 
-test("legal orders send a Persian receipt type accepted by the print API", async (t) => {
+test("legal orders send the ghanooni receipt type accepted by the print API", async (t) => {
   const { parsePrintPayloadRequest } = await import("./lib/print/payload.ts");
   const sentRequests = [];
   t.mock.method(globalThis, "fetch", async (path, init) => {
@@ -100,7 +100,7 @@ test("legal orders send a Persian receipt type accepted by the print API", async
   assert.equal(sentRequests[0].path, "/api/admin/store-order/print");
   assert.equal(sentRequests[0].method, "POST");
   assert.equal(sentRequests[0].parsed.ok, true);
-  assert.equal(sentRequests[0].parsed.payload.receiptType, "قانونی");
+  assert.equal(sentRequests[0].parsed.payload.receiptType, "ghanooni");
 });
 
 test("API error objects are converted to understandable Persian messages", () => {

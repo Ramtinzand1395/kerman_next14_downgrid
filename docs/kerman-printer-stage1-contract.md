@@ -32,7 +32,7 @@ DELETE /api/admin/store-order/print/printed/<jobId>
 ```
 
 For a manual order marked «قانونی», `payload.receiptType` is the exact string
-`"قانونی"`. Other manual orders continue to use their device type.
+`"ghanooni"`. Other manual orders continue to use their device type.
 
 Repeated ACKs return the same successful Stage1 response. The client should
 persist a small local journal keyed by website job ID with at least `received`,
