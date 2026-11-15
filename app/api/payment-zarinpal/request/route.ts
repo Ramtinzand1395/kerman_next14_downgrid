@@ -1,4 +1,5 @@
 import dbConnect from "@/lib/mongodb";
+import { parseAnalyticsSession } from "@/lib/analytics/ecommerce";
 import Address from "@/model/Address";
 // import Order from "@/model/Order";
 import Product from "@/model/Product";
@@ -67,6 +68,7 @@ export async function POST(req: NextRequest) {
       items?: CheckoutItem[];
       couponCode?: string;
       shippingMethod?: ShippingMethod;
+      analytics?: unknown;
     } = await req.json();
     const idempotencyKey = req.headers.get("Idempotency-Key")?.trim() || null;
     if (
@@ -408,6 +410,7 @@ export async function POST(req: NextRequest) {
         couponCode,
         couponDiscount,
         gatewayAmount: amount,
+        analyticsSession: parseAnalyticsSession(payload.analytics),
       },
       { upsert: true, setDefaultsOnInsert: true },
     );

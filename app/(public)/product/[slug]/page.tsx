@@ -11,6 +11,7 @@ import type { Product } from "@/types";
 import { SITE_URL, toAbsoluteUrl } from "@/lib/site";
 import ProductImage from "@/app/components/ProductImage";
 import { tomanToIrr } from "@/lib/currency";
+import TrackProductView from "./TrackProductView";
 import { merchantReturnPolicyId, normalizeProductCategory } from "@/lib/merchantSchema";
 import {
   getRelatedProducts,
@@ -278,6 +279,7 @@ export default async function ProductPage({
 
   return (
     <div className="container mx-auto px-3 md:px-6 py-6 md:py-10">
+      <TrackProductView productId={String(product._id)} title={product.title} priceToman={minPriceInIRR / 10} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

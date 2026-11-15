@@ -48,6 +48,7 @@ const nextConfig = {
   typescript: { ignoreBuildErrors: validatedDeployment },
 
   experimental: {
+    instrumentationHook: true,
     ...(validatedDeployment ? { cpus: 1 } : {}),
     optimizePackageImports: ["lucide-react"],
   },

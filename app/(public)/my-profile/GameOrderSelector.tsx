@@ -1,5 +1,6 @@
 "use client";
 
+import { trackEvent } from "@/lib/analytics/browser";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link, { useRouter } from "@/app/components/navigation/NavigationFeedback";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -670,6 +671,7 @@ export default function GameOrderSelector({
       if (!response.ok) throw new Error(payload.error || "درخواست ثبت نشد؛ اطلاعات را بررسی و دوباره تلاش کنید.");
       clearAppointmentDraft(sessionStorage);
       if (fulfillment === "courier") {
+        if (response.status === 201) trackEvent("courier_request_submitted", { service_type: serviceType });
         router.replace("/my-profile?step=5&ordersTab=games", { scroll: true });
         return;
       }

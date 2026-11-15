@@ -3,6 +3,7 @@
 
 import { formatPrice } from "@/helpers/Price";
 import useCartStore from "@/stores/cartStore";
+import { readAnalyticsSession } from "@/lib/analytics/browser";
 import { Address } from "@/types";
 import {
   ArrowLeft,
@@ -260,7 +261,7 @@ export default function PaymentForm({
           "Content-Type": "application/json",
           "Idempotency-Key": idempotencyKeyRef.current,
         },
-        body: JSON.stringify(buildPayload()),
+        body: JSON.stringify({ ...buildPayload(), analytics: await readAnalyticsSession() }),
       });
 
       const paymentData = await paymentResponse.json().catch(() => ({}));
@@ -305,7 +306,7 @@ export default function PaymentForm({
           "Content-Type": "application/json",
           "Idempotency-Key": idempotencyKeyRef.current,
         },
-        body: JSON.stringify(buildPayload()),
+        body: JSON.stringify({ ...buildPayload(), analytics: await readAnalyticsSession() }),
       });
 
       const data = await res.json().catch(() => ({}));

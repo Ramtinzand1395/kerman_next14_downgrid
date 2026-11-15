@@ -7,6 +7,7 @@
 // اگر برداشت یا کسر انبار شکست بخورد، سفارش حذف/لغو و مبلغ برمی‌گردد.
 import { snapshotOrderPurchasePrices } from "@/lib/order-purchase-prices";
 import dbConnect from "@/lib/mongodb";
+import { parseAnalyticsSession } from "@/lib/analytics/ecommerce";
 import Address from "@/model/Address";
 import Order from "@/model/Order";
 import Product from "@/model/Product";
@@ -186,6 +187,7 @@ export async function POST(req: NextRequest) {
       items?: CheckoutItem[];
       couponCode?: string;
       shippingMethod?: ShippingMethod;
+      analytics?: unknown;
     } = await req.json();
 
     if (
@@ -600,6 +602,8 @@ export async function POST(req: NextRequest) {
     }
     const inventoryItems = [...inventoryByIdentity.values()];
 
+    const analyticsSession = parseAnalyticsSession(payload.analytics);
+
     // Inventory, catalog outbox events, and the paid transition commit in one
     // MongoDB transaction. A partial multi-product decrement cannot escape.
     const identifiers = buildOrderIdentifiers(order._id);
@@ -621,6 +625,9 @@ export async function POST(req: NextRequest) {
                 salePurchasePrices: await snapshotOrderPurchasePrices(checkoutItems, transactionSession),
                 paymentStatus: "paid",
                 paymentVerifiedAt: new Date(),
+                ...(analyticsSession ? {
+                  purchaseAnalytics: { session: analyticsSession, nextAttemptAt: new Date() },
+                } : {}),
                 ...identifiers,
               },
             },

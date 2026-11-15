@@ -3,6 +3,8 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { safeJSONStorage } from "./safeStorage";
 import { subtractPurchasedItems } from "@/lib/cartReconciliation";
+import { trackCommerce } from "@/lib/analytics/browser";
+import { cartAnalyticsLine } from "@/lib/analytics/ecommerce";
 interface CartStoreActionsType {
   addToCart: (
     product: Partial<CartItem> & {
@@ -31,10 +33,11 @@ interface CartStoreActionsType {
 
 const useCartStore = create<CartStoreActionsType & CartStoreStateType>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       cart: [],
       hasHydrated: false,
       addToCart: (product) => {
+        const previousQuantity = get().cart.find((item) => item.id === product.id)?.quantity ?? 0;
         let status: "added" | "out_of_stock" | "max_reached" = "added";
         set((state) => {
           if ((product.stock ?? 1) <= 0) {
@@ -60,7 +63,7 @@ const useCartStore = create<CartStoreActionsType & CartStoreStateType>()(
               status = "max_reached";
               return state;
             }
-            updatedCart[existingIndex].quantity = Math.min(nextQty, maxQty);
+            updatedCart[existingIndex] = { ...currentItem, quantity: Math.min(nextQty, maxQty) };
             return { cart: updatedCart };
           }
 
@@ -75,9 +78,15 @@ const useCartStore = create<CartStoreActionsType & CartStoreStateType>()(
           };
         });
 
+        const updatedItem = get().cart.find((item) => item.id === product.id);
+        if (updatedItem && updatedItem.quantity > previousQuantity) {
+          trackCommerce("add_to_cart", [cartAnalyticsLine(updatedItem, updatedItem.quantity - previousQuantity)]);
+        }
         return status;
       },
-      increaseQty: (id) =>
+      increaseQty: (id) => {
+        const previousItem = get().cart.find((item) => item.id === id);
+        if (!previousItem) return;
         set((state) => ({
           cart: state.cart.map((item) => {
             if (item.id !== id) {
@@ -89,7 +98,12 @@ const useCartStore = create<CartStoreActionsType & CartStoreStateType>()(
 
             return { ...item, quantity: Math.min(item.quantity + 1, maxQty) };
           }),
-        })),
+        }));
+        const updatedItem = get().cart.find((item) => item.id === id);
+        if (updatedItem && updatedItem.quantity > previousItem.quantity) {
+          trackCommerce("add_to_cart", [cartAnalyticsLine(updatedItem, updatedItem.quantity - previousItem.quantity)]);
+        }
+      },
 
       decreaseQty: (id) =>
         set((state) => ({

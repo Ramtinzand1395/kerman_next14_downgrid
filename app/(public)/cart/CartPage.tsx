@@ -2,6 +2,8 @@
 
 import { formatPrice } from "@/helpers/Price";
 import useCartStore from "@/stores/cartStore";
+import { trackCommerce } from "@/lib/analytics/browser";
+import { cartAnalyticsLine } from "@/lib/analytics/ecommerce";
 import { Address } from "@/types";
 import {
   ArrowLeft,
@@ -68,6 +70,7 @@ export default function CartPage({ shippingSettings }: { shippingSettings: Store
     [cart],
   );
   const previousCouponCartKeyRef = useRef(couponCartKey);
+  const checkoutTracked = useRef(false);
 
   const activeStep = useMemo(() => {
     const step = Number(searchParams.get("step") ?? "1");
@@ -157,6 +160,17 @@ export default function CartPage({ shippingSettings }: { shippingSettings: Store
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!hasHydrated) return;
+    if (activeStep === 1 || cart.length === 0) {
+      checkoutTracked.current = false;
+      return;
+    }
+    if (checkoutTracked.current) return;
+    checkoutTracked.current = true;
+    trackCommerce("begin_checkout", cart.map(cartAnalyticsLine));
+  }, [activeStep, cart, hasHydrated]);
 
   useEffect(() => {
     if (!hasHydrated || !addressHydrated) return;

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { AnalyticsSessionSchema } from "./AnalyticsSessionSchema";
 
 const AddressSnapshotSchema = new mongoose.Schema(
   {
@@ -143,6 +144,7 @@ const TempPaymentSchema = new mongoose.Schema(
     couponCode: { type: String, default: null },
     couponDiscount: { type: Number, default: 0 },
     gatewayAmount: { type: Number, required: true },
+    analyticsSession: { type: AnalyticsSessionSchema, default: undefined },
   },
   { timestamps: true },
 );

@@ -362,6 +362,9 @@ export async function GET(req: NextRequest) {
                 paymentFeeType: result?.data?.fee_type ?? null,
                 paymentFee: result?.data?.fee ?? null,
                 paymentVerifiedAt: new Date(),
+                ...(temp.analyticsSession ? {
+                  purchaseAnalytics: { session: temp.analyticsSession, nextAttemptAt: new Date() },
+                } : {}),
                 ...identifiers,
               },
             ],

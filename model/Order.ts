@@ -1,4 +1,14 @@
 import mongoose from "mongoose";
+import { AnalyticsSessionSchema } from "./AnalyticsSessionSchema";
+
+const PurchaseAnalyticsSchema = new mongoose.Schema({
+  session: { type: AnalyticsSessionSchema, default: undefined },
+  nextAttemptAt: Date,
+  claimToken: String,
+  attempts: { type: Number, default: 0 },
+  sentAt: Date,
+  failedAt: Date,
+}, { _id: false });
 
 const OrderStatusEnum = [
   "pending",
@@ -200,6 +210,8 @@ const OrderSchema = new mongoose.Schema(
       default: null,
     },
 
+    purchaseAnalytics: { type: PurchaseAnalyticsSchema, default: undefined, select: false },
+
     // Atomic claim used by the loyalty purchase hook. Setting this before any
     // loyalty side effect makes concurrent/replayed payment callbacks no-ops.
     loyaltyProcessedAt: {
@@ -255,6 +267,7 @@ const OrderSchema = new mongoose.Schema(
     toJSON: {
       transform(_doc, value) {
         delete value.salePurchasePrices;
+        delete value.purchaseAnalytics;
       },
     },
   },
@@ -262,5 +275,9 @@ const OrderSchema = new mongoose.Schema(
 
 OrderSchema.index({ paymentStatus: 1, paymentVerifiedAt: 1, createdAt: 1 });
 OrderSchema.index({ createdAt: 1, status: 1, paymentStatus: 1 });
+OrderSchema.index(
+  { "purchaseAnalytics.nextAttemptAt": 1 },
+  { partialFilterExpression: { "purchaseAnalytics.nextAttemptAt": { $type: "date" } } },
+);
 
 export default mongoose.models.Order || mongoose.model("Order", OrderSchema);
