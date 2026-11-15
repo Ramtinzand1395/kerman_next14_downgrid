@@ -180,6 +180,10 @@ const AddCustomerOrder = ({
 
       toast.success(data.message || "سفارش ثبت شد و به ابتدای فهرست اضافه شد.");
 
+      if (data.printStatus === "failed") {
+        toast.warning("سفارش ثبت شد، اما به صف چاپ اضافه نشد. از دکمه چاپ در جزئیات سفارش استفاده کنید.");
+      }
+
       if (data?.sms?.state === "failed") {
         toast.warning("سفارش ثبت شد، اما پیامک اطلاع‌رسانی ارسال نشد.");
       }
@@ -270,10 +274,10 @@ const AddCustomerOrder = ({
               className="h-10 w-full rounded-xl border border-slate-300 px-3 outline-none ring-indigo-100 focus:ring-4"
             >
               <option value="">انتخاب کنید</option>
-              <option value="ps5">PS5</option>
-              <option value="ps5Copy"> ps5-copy</option>
-              <option value="ps4">PS4</option>
-              <option value="copy"> ps4-copy</option>
+              <option value="ps5">PS5 اکانتی</option>
+              <option value="ps5Copy">PS5 کپی‌خور</option>
+              <option value="ps4">PS4 اکانتی</option>
+              <option value="copy">PS4 کپی‌خور</option>
               <option value="xbox">Xbox</option>
             </select>}
 
@@ -284,7 +288,13 @@ const AddCustomerOrder = ({
         {appointment?.serviceType !== "repair" && (
           <div className="space-y-1 text-sm text-slate-600">
             <span>افزودن بازی</span>
-            <GameDropdown Selectedgames={order} setSelectedgames={setOrder} appointment={appointment} />
+            <GameDropdown
+              key={order?.consoleType}
+              Selectedgames={order}
+              setSelectedgames={setOrder}
+              appointment={appointment}
+              useInstallationCatalog={!appointment}
+            />
           </div>
         )}
       </div>

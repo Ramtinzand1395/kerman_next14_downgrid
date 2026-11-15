@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import ts from "typescript";
+import * as installationGames from "./lib/appointments/games.ts";
 
 const require = createRequire(import.meta.url);
 const id = "a".repeat(24);
@@ -134,6 +135,7 @@ test("game edits preserve omitted size, price, storage and image fields", async 
   const validation = load("./lib/game-list-validation.ts");
   let update;
   const route = load("./app/api/admin/store-order/game-list/route.ts", {
+    "@/lib/appointments/games": installationGames,
     "@/lib/game-list-validation": validation,
     "next-auth": { getServerSession: async () => ({ user: { role: "superadmin" } }) },
     "@/app/api/auth/[...nextauth]/options": { authOptions: {} }, "@/lib/mongodb": async () => {},

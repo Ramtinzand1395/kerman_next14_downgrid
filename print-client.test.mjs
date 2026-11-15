@@ -26,6 +26,9 @@ function load(path, deps = {}) {
   return module.exports;
 }
 
+const printPayload = load("./lib/print/store-order-payload.ts", {
+  "@/helpers/toPersianDate": { toPersianDate: () => "1405/08/17" },
+});
 const toastCalls = [];
 const printClient = load("./helpers/sendPdfToBackend.ts", {
   "react-toastify": {
@@ -36,7 +39,7 @@ const printClient = load("./helpers/sendPdfToBackend.ts", {
       error: (message) => toastCalls.push(["error", message]),
     },
   },
-  "@/helpers/toPersianDate": { toPersianDate: () => "1405/08/17" },
+  "@/lib/print/store-order-payload": printPayload,
 });
 
 const baseOrder = {
@@ -53,7 +56,7 @@ const baseOrder = {
 };
 
 test("client print payload keeps textual storage and defaults old orders to empty text", () => {
-  const textual = printClient.buildPrintPayload(
+  const textual = printPayload.buildPrintPayload(
     {
       ...baseOrder,
       list: [{ ...baseOrder.list[0], storage: "اکسترنال مشتری" }],
@@ -63,10 +66,10 @@ test("client print payload keeps textual storage and defaults old orders to empt
   assert.equal(textual.games[0].storage, "اکسترنال مشتری");
   assert.equal(typeof textual.games[0].storage, "string");
 
-  const oldOrder = printClient.buildPrintPayload(baseOrder, null);
+  const oldOrder = printPayload.buildPrintPayload(baseOrder, null);
   assert.equal(oldOrder.games[0].storage, "");
 
-  const legacyNumericValue = printClient.buildPrintPayload(
+  const legacyNumericValue = printPayload.buildPrintPayload(
     {
       ...baseOrder,
       list: [{ ...baseOrder.list[0], storage: 2 }],
@@ -92,8 +95,8 @@ test("legal orders send the ghanooni receipt type accepted by the print API", as
 
   for (const consoleType of ["ps4", "ps5", "copy", "ps5Copy", "xbox"]) {
     const order = { ...baseOrder, consoleType };
-    assert.equal(printClient.buildPrintPayload(order, null).receiptType, consoleType);
-    assert.equal(printClient.buildPrintPayload({ ...order, isLegal: false }, null).receiptType, consoleType);
+    assert.equal(printPayload.buildPrintPayload(order, null).receiptType, consoleType);
+    assert.equal(printPayload.buildPrintPayload({ ...order, isLegal: false }, null).receiptType, consoleType);
   }
   assert.equal(await printClient.sendPdfToBackend({ ...baseOrder, isLegal: true }, null), true);
   assert.equal(sentRequests.length, 1);

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import ts from 'typescript';
+import * as installationGames from './lib/appointments/games.ts';
 import { gameInput, gameUpdateInput, isGameCoverUrl } from './lib/game-list-validation.ts';
 const require = createRequire(import.meta.url);
 const base = { platform: 'ps5', name: 'ASTRO BOT', size: 0, price: 0, storage: '' };
@@ -35,6 +36,7 @@ function loadRoute(path, overrides = {}) {
     '@/lib/mongodb': {default:async()=>{}},
     '@/model/GameList': {default:model},
     '@/lib/game-cloudinary': {uploadGameCover:async()=>({url,publicId:'test'})},
+    '@/lib/appointments/games': installationGames,
     '@/lib/game-list-validation': {gameInput,gameUpdateInput,gameItemId:require('zod').z.string().regex(/^[a-f\d]{24}$/i),gamePlatform:gameInput.shape.platform},
     ...overrides,
   };
