@@ -71,7 +71,7 @@ export const buildPrintPayload = (
     gamesList.reduce((acc, game) => acc + game.sizeGB, 0);
 
   return {
-    receiptType: userOrder.consoleType || "store_order",
+    receiptType: userOrder.isLegal === true ? "قانونی" : userOrder.consoleType || "store_order",
     fullName: customer
       ? `${customer.name || ""} ${customer.lastName || ""}`.trim()
       : "مشتری متفرقه",

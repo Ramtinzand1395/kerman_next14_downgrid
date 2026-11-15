@@ -37,11 +37,11 @@ function loadOrderRoute({ mongoose, User, StoreOrder, Customer, sendStoreOrderRe
   });
 }
 
-function manualOrderRequest(customerId = id) {
+function manualOrderRequest(customerId = id, fields = {}) {
   return new Request("http://localhost/api/admin/store-order", {
     method: "POST",
     headers: { "Idempotency-Key": "manual-order-12345678" },
-    body: JSON.stringify({ customerId, price: 1000, consoleType: "ps5", list: [{ name: "Game", price: 1000, size: 2 }] }),
+    body: JSON.stringify({ customerId, price: 1000, consoleType: "ps5", list: [{ name: "Game", price: 1000, size: 2 }], ...fields }),
   });
 }
 
@@ -112,7 +112,7 @@ function orderHarness({ existingUser, rejectOrder = false, standalone = false, r
     sendStoreOrderReceiptSms: async () => { smsCount++; },
   });
   return {
-    submit: () => route.POST(manualOrderRequest()),
+    submit: (fields) => route.POST(manualOrderRequest(id, fields)),
     get orderWrites() { return orderWrites; },
     get user() { return user; },
     get smsCount() { return smsCount; },
@@ -121,7 +121,9 @@ function orderHarness({ existingUser, rejectOrder = false, standalone = false, r
 
 test("manual order provisions a regular website account with an unverified mobile and both names", async () => {
   const harness = orderHarness();
-  assert.equal((await harness.submit()).status, 201);
+  const response = await harness.submit();
+  assert.equal(response.status, 201);
+  assert.equal((await response.json()).order.isLegal, false);
   assert.equal(harness.user.mobile, mobile);
   assert.equal(harness.user.firstName, "رامتین");
   assert.equal(harness.user.lastName, "زند خاوری");
@@ -131,6 +133,12 @@ test("manual order provisions a regular website account with an unverified mobil
   assert.equal(harness.user.phoneVerifiedAt, undefined);
   assert.equal(harness.user.registrationCompletedAt, undefined);
   assert.equal(harness.smsCount, 1);
+});
+
+test("manual order accepts only a boolean legal status", async () => {
+  const harness = orderHarness();
+  assert.equal((await harness.submit({ isLegal: "false" })).status, 422);
+  assert.equal(harness.orderWrites, 0);
 });
 
 test("manual order preserves an existing account for the same phone and rolls back on a failed order", async () => {
@@ -196,9 +204,12 @@ test("real standalone MongoDB registers an order when models load during the ini
       mongoose, User, StoreOrder, Customer,
       sendStoreOrderReceiptSms: async ({ mobile }) => receiptNumbers.push(mobile),
     });
-    const result = await route.POST(manualOrderRequest(String(customer._id)));
+    const result = await route.POST(manualOrderRequest(String(customer._id), { isLegal: true }));
     assert.equal(result.status, 201, await result.clone().text());
     assert.equal(await StoreOrder.countDocuments(), 1);
+    const storedOrder = await StoreOrder.findOne().lean();
+    assert.equal(storedOrder.isLegal, true);
+    assert.equal(storedOrder.consoleType, "ps5");
     const account = await User.findOne({ mobile }).lean();
     assert.equal(account.firstName, "رامتین");
     assert.equal(account.lastName, "زند خاوری");
@@ -208,7 +219,9 @@ test("real standalone MongoDB registers an order when models load during the ini
     await User.deleteOne({ mobile });
     const replay = await route.POST(manualOrderRequest(String(customer._id)));
     assert.equal(replay.status, 200);
-    assert.equal((await replay.json()).replayed, true);
+    const replayed = await replay.json();
+    assert.equal(replayed.replayed, true);
+    assert.equal(replayed.order.isLegal, true);
     assert.equal(await StoreOrder.countDocuments(), 1);
     assert.equal(await User.countDocuments(), 1);
 

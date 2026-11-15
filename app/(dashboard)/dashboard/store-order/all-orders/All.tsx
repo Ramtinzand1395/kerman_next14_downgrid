@@ -130,7 +130,14 @@ export default function AllStoreOrders() {
                     </td>
 
                     {/* CONSOLE */}
-                    <td className="p-3">{order.consoleType}</td>
+                    <td className="p-3">
+                      {order.consoleType}
+                      {order.isLegal === true && (
+                        <span className="mr-2 rounded-full bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700">
+                          قانونی
+                        </span>
+                      )}
+                    </td>
 
                     {/* LIST */}
                     <td className="p-3">

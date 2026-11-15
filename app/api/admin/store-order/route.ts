@@ -122,7 +122,7 @@ export async function POST(req: Request) {
   let clientRequestKey = "";
   try {
     const body = await req.json();
-    const { list, price, customerId, description, consoleType, deliveryStatus } =
+    const { list, price, customerId, description, consoleType, deliveryStatus, isLegal } =
       body;
     clientRequestKey = req.headers.get("Idempotency-Key")?.trim() || "";
 
@@ -158,6 +158,9 @@ export async function POST(req: Request) {
     }
     if (!["ps4", "ps5", "copy", "xbox", "ps5Copy"].includes(consoleType)) {
       return NextResponse.json({ error: "نوع دستگاه معتبر نیست" }, { status: 422 });
+    }
+    if (isLegal !== undefined && typeof isLegal !== "boolean") {
+      return NextResponse.json({ error: "وضعیت قانونی بودن بازی معتبر نیست" }, { status: 422 });
     }
     if (
       deliveryStatus &&
@@ -197,6 +200,7 @@ export async function POST(req: Request) {
       customer: customerId,
       description,
       consoleType,
+      isLegal: isLegal === true,
       deliveryStatus: deliveryStatus || "دریافت از مشتری",
       clientRequestKey,
     };

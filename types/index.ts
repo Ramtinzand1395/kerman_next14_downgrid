@@ -177,6 +177,7 @@ interface StoreOrder {
   customerId?: string;
   description: string;
   consoleType: ConsoleType | "";
+  isLegal?: boolean;
   deliveryStatus: string;
   createdAt: string;
   updatedAt: string;

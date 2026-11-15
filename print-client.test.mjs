@@ -77,6 +77,32 @@ test("client print payload keeps textual storage and defaults old orders to empt
   assert.equal(typeof legacyNumericValue.games[0].storage, "string");
 });
 
+test("legal orders send a Persian receipt type accepted by the print API", async (t) => {
+  const { parsePrintPayloadRequest } = await import("./lib/print/payload.ts");
+  const sentRequests = [];
+  t.mock.method(globalThis, "fetch", async (path, init) => {
+    const request = new Request(`http://localhost${path}`, init);
+    sentRequests.push({
+      path,
+      method: request.method,
+      parsed: await parsePrintPayloadRequest(request),
+    });
+    return Response.json({ success: true });
+  });
+
+  for (const consoleType of ["ps4", "ps5", "copy", "ps5Copy", "xbox"]) {
+    const order = { ...baseOrder, consoleType };
+    assert.equal(printClient.buildPrintPayload(order, null).receiptType, consoleType);
+    assert.equal(printClient.buildPrintPayload({ ...order, isLegal: false }, null).receiptType, consoleType);
+  }
+  assert.equal(await printClient.sendPdfToBackend({ ...baseOrder, isLegal: true }, null), true);
+  assert.equal(sentRequests.length, 1);
+  assert.equal(sentRequests[0].path, "/api/admin/store-order/print");
+  assert.equal(sentRequests[0].method, "POST");
+  assert.equal(sentRequests[0].parsed.ok, true);
+  assert.equal(sentRequests[0].parsed.payload.receiptType, "قانونی");
+});
+
 test("API error objects are converted to understandable Persian messages", () => {
   const message = printClient.getPrintErrorMessage(
     { error: { code: "INVALID_PRINT_PAYLOAD" } },

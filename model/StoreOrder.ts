@@ -28,6 +28,7 @@ const storeOrderSchema = new mongoose.Schema(
       enum: ["ps4", "ps5", "copy", "xbox", "ps5Copy"],
       required: true,
     },
+    isLegal: { type: Boolean, default: false },
     deliveryStatus: {
       type: String,
       enum: ["آماده", "تحویل به مشتری", "دریافت از مشتری"],

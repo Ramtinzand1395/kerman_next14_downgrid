@@ -61,6 +61,7 @@ const AddCustomerOrder = ({
       customerId: customerData._id,
       description: "",
       consoleType: "",
+      isLegal: false,
       deliveryStatus: "",
       createdAt: "",
       updatedAt: "",
@@ -380,6 +381,22 @@ const AddCustomerOrder = ({
           className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none ring-indigo-100 focus:ring-4"
         />
       </label>
+
+      {!appointment && (
+        <label className="flex w-fit cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
+          <input
+            type="checkbox"
+            checked={order?.isLegal === true}
+            onChange={(event) => {
+              const isLegal = event.currentTarget.checked;
+              setOrder((prev) => prev ? { ...prev, isLegal } : prev);
+            }}
+            disabled={loading}
+            className="h-4 w-4 accent-indigo-600"
+          />
+          قانونی
+        </label>
+      )}
 
       <div className="flex items-center justify-between border-t border-slate-200 pt-4">
         <button

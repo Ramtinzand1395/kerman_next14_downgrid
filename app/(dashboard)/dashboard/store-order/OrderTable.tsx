@@ -181,6 +181,11 @@ const OrderTable = ({
                       </button>
                     )}
                     <span className="mr-2 rounded-full bg-slate-200 px-2 py-1 text-xs font-bold text-slate-700">{order.appointmentId ? "سایت" : "مغازه"}</span>
+                    {order.isLegal === true && (
+                      <span className="mr-2 rounded-full bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700">
+                        قانونی
+                      </span>
+                    )}
                   </td>
 
                   <td className="px-2 py-3">
