@@ -7,6 +7,7 @@ import { toast } from "react-toastify";
 import { storeOrder } from "@/types";
 import { orderSchema } from "@/validations/CustomerAppValidation";
 import GameDropdown from "../addorder/GameDropdown";
+import MoneyInput from "@/app/components/forms/MoneyInput";
 
 interface UpdateStoreOrderProps {
   closeModal?: () => void;
@@ -108,11 +109,11 @@ const UpdateStoreOrder = ({
           <label className="text-sm">قیمت</label>
 
           {isEditingOrder ? (
-            <input
+            <MoneyInput
               title="مبلغ سفارش" aria-label="مبلغ سفارش"
-              type="number"
+              min={0}
               value={userOrder?.price || 0}
-              onChange={(e) => handleOrderChange(e, "price")}
+              onValueChange={(value) => setUserOrder((prev) => prev ? { ...prev, price: Number(value) } : prev)}
               className="w-full rounded-lg border p-2"
             />
           ) : (

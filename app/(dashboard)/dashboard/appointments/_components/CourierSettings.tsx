@@ -1,5 +1,7 @@
 "use client";
 
+import MoneyInput from "@/app/components/forms/MoneyInput";
+
 import {
   Clock3,
   MapPin,
@@ -385,6 +387,7 @@ export default function CourierSettings({
                     />
                     <NumberField
                       label="هزینه هر مسیر (تومان)"
+                      money
                       value={region.shippingCost}
                       min={0}
                       onChange={(shippingCost) =>
@@ -413,23 +416,26 @@ function NumberField({
   label,
   value,
   min,
+  money,
   onChange,
 }: {
   label: string;
   value: number;
   min: number;
+  money?: boolean;
   onChange: (value: number) => void;
 }) {
+  const className = "mt-2 h-11 w-full rounded-xl border border-slate-200 px-3 font-normal outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100";
   return (
     <label className="text-sm font-bold text-slate-700">
       {label}
-      <input
+      {money ? <MoneyInput min={min} value={value} onValueChange={(next) => onChange(Number(next))} className={className} /> : <input
         type="number"
         min={min}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="mt-2 h-11 w-full rounded-xl border border-slate-200 px-3 font-normal outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-      />
+        className={className}
+      />}
     </label>
   );
 }

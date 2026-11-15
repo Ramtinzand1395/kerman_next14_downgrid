@@ -8,8 +8,11 @@ import {
   catalogPlatformAliases,
   gameKey,
   installationCatalog,
+  installationGameTotal,
   installationPlatforms,
   installationSize,
+  INSTALLATION_GAME_FIELDS,
+  isAccountCourierInstallation,
   resolveInstallationGames,
   type GameCatalogDocument,
   type InstallationGameRef,
@@ -58,6 +61,7 @@ export type CreateAppointmentInput =
   | {
       fulfillment: "courier";
       clientRequestKey: string;
+      expectedGameTotal?: number | null;
       serviceType: ServiceType;
       device: string;
       installationType?: "account" | "copy" | null;
@@ -299,7 +303,7 @@ export async function createAppointment(userId: string, input: CreateAppointment
       const platforms = installationPlatforms(input.device, input.installationType);
       if (!platforms.length) return { error: "دستگاه یا نوع نصب نامعتبر است.", status: 422 } as const;
       const docs = await GameList.find({ platform: { $in: catalogPlatformAliases(platforms) } })
-        .select("platform items._id items.name items.size items.imageUrl items.imageAlt").lean() as GameCatalogDocument[];
+        .select(INSTALLATION_GAME_FIELDS).lean() as GameCatalogDocument[];
       try {
         selectedGames = resolveInstallationGames(gameRefs, installationCatalog(docs, platforms));
       } catch (error) {
@@ -317,10 +321,17 @@ export async function createAppointment(userId: string, input: CreateAppointment
     const user = await User.findById(userId).select("_id");
     if (!user) return { error: "کاربر یافت نشد.", status: 404 } as const;
 
+    const gameTotal = isAccountCourierInstallation(input)
+      ? installationGameTotal(selectedGames) : null;
+    if (input.fulfillment === "courier" && isAccountCourierInstallation(input) &&
+        input.expectedGameTotal !== undefined && input.expectedGameTotal !== gameTotal) {
+      return { error: "قیمت بازی‌ها تغییر کرده است. مبلغ تازه را بررسی و دوباره ثبت کنید.", status: 409 } as const;
+    }
+
     const initialPricing = computeAppointmentPricing({
       fulfillment,
       serviceType: input.serviceType,
-      serviceBaseAmount: null,
+      serviceBaseAmount: gameTotal,
       shippingBaseAmount,
       reward: null,
       deliveryCity,
@@ -397,7 +408,7 @@ export async function createAppointment(userId: string, input: CreateAppointment
     const updatedPricing = computeAppointmentPricing({
       fulfillment,
       serviceType: input.serviceType,
-      serviceBaseAmount: null,
+      serviceBaseAmount: appointment.pricing?.serviceBaseAmount,
       shippingBaseAmount,
       reward: rewardDetails,
       deliveryCity,

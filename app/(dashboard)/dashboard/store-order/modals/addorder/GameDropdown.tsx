@@ -1,7 +1,7 @@
 import GameCover from "@/app/components/games/GameCover";
 import { GameItem, storeOrder } from "@/types";
 import type { AppointmentItem } from "@/types/appointments";
-import { gameKey, type InstallationGame } from "@/lib/appointments/games";
+import { gameKey, installationGameTotal, isAccountCourierInstallation, type InstallationGame } from "@/lib/appointments/games";
 import { useEffect, useMemo, useState } from "react";
 
 interface GameDropdownProps {
@@ -79,6 +79,7 @@ const GameDropdown: React.FC<GameDropdownProps> = ({
           _id: gameKey(game),
           name: game.name,
           size: game.sizeGB ?? undefined,
+          price: game.price ?? undefined,
           imageUrl: game.imageUrl,
           imageAlt: game.imageAlt,
           appointmentGame: { platform: game.platform, gameId: game.gameId },
@@ -105,6 +106,7 @@ const GameDropdown: React.FC<GameDropdownProps> = ({
     return () => controller.abort();
   }, [appointment, search, Selectedgames?.consoleType]);
 
+  const catalogPricing = Boolean(appointment && isAccountCourierInstallation(appointment));
   const filteredGames = useMemo(() => {
     if (!search.trim()) return games;
 
@@ -150,7 +152,7 @@ const GameDropdown: React.FC<GameDropdownProps> = ({
                     list: newList,
                     totalPrice,
                     totalSize,
-                    price: appointment ? prev.price : totalPrice,
+                    price: catalogPricing ? installationGameTotal(newList) : appointment ? prev.price : totalPrice,
                   };
                 });
 

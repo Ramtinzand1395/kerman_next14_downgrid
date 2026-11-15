@@ -26,6 +26,7 @@ import type {
   RepairIssue,
   RewardType,
   ServiceType,
+  PricingSummary,
 } from "@/types/appointments";
 import { ButtonLoading, PageLoading } from "@/app/components/loading/LoadingSystem";
 import {
@@ -41,6 +42,7 @@ import InstallationGamePicker from "./InstallationGamePicker";
 import InstallationGameSummary from "@/app/components/games/InstallationGameSummary";
 import ConsoleIcon from "@/app/components/games/ConsoleIcon";
 import { installationSize, type InstallationGame } from "@/lib/appointments/games";
+import { formatPrice } from "@/helpers/Price";
 
 type Step = 1 | 2 | 3 | 4 | 5;
 type Slot = { startsAt: string; endsAt: string; time: string; remaining: number; available: boolean };
@@ -51,7 +53,8 @@ type CourierPreview = {
   courierEnabled: boolean;
   reason?: "COURIER_DISABLED" | "OUT_OF_REGION";
   region?: { id: string; title: string; city: string };
-  pricing?: {
+  selectedGames?: InstallationGame[];
+  pricing?: PricingSummary & {
     pickupShippingCost: number;
     returnShippingCost: number;
     shippingBaseAmount: number;
@@ -85,11 +88,7 @@ type CreatedAppointment = {
     pickupWindow?: { start: string; end: string };
     addressSnapshot?: AddressItem & { recipientName?: string; recipientPhone?: string };
   };
-  pricing?: {
-    shippingBaseAmount?: number;
-    shippingDiscountAmount?: number;
-    shippingFinalAmount?: number;
-  };
+  pricing?: PricingSummary;
 };
 
 const services = [
@@ -213,6 +212,7 @@ export default function GameOrderSelector({
   const [courierPreview, setCourierPreview] = useState<CourierPreview | null>(null);
   const [courierPreviewLoading, setCourierPreviewLoading] = useState(false);
   const [courierPreviewError, setCourierPreviewError] = useState("");
+  const [courierQuoteRevision, setCourierQuoteRevision] = useState(0);
   const [availabilityReload, setAvailabilityReload] = useState(0);
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
@@ -461,6 +461,9 @@ export default function GameOrderSelector({
         addressId: selectedAddressId,
         serviceType,
         device,
+        installationType: installationType || null,
+        selectedGames: installationType === "account"
+          ? selectedGames.map(({ platform, gameId }) => ({ platform, gameId })) : [],
         selectedRewardId: selectedRewardId || null,
       }),
       signal: controller.signal,
@@ -468,6 +471,7 @@ export default function GameOrderSelector({
       .then(async (response) => {
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.error || "هزینه پیک محاسبه نشد؛ آدرس را دوباره انتخاب کنید.");
+        if (controller.signal.aborted) return;
         setCourierPreview(payload as CourierPreview);
         const enabled = Boolean(payload.courierEnabled);
         setCourierSupported(enabled);
@@ -483,7 +487,7 @@ export default function GameOrderSelector({
       });
 
     return () => controller.abort();
-  }, [device, fulfillment, selectedAddressId, selectedRewardId, serviceType]);
+  }, [courierQuoteRevision, device, fulfillment, installationType, selectedAddressId, selectedGames, selectedRewardId, serviceType]);
 
   const usableRewards = useMemo(
     () =>
@@ -658,6 +662,7 @@ export default function GameOrderSelector({
               ? {
                   addressId: selectedAddressId,
                   pickupDate: selectedDate,
+                  ...(courierPreview?.selectedGames && { expectedGameTotal: courierPreview.pricing?.serviceBaseAmount ?? null }),
                   pickupWindow: {
                     start: selectedCourierWindow.start,
                     end: selectedCourierWindow.end,
@@ -667,6 +672,7 @@ export default function GameOrderSelector({
         }),
       });
       if (response.status === 401) { loginToContinue(); return; }
+      if (response.status === 409 && courierPreview?.selectedGames) setCourierQuoteRevision((revision) => revision + 1);
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "درخواست ثبت نشد؛ اطلاعات را بررسی و دوباره تلاش کنید.");
       clearAppointmentDraft(sessionStorage);
@@ -707,7 +713,12 @@ export default function GameOrderSelector({
             </p>
           </div>
           {created.fulfillment === "courier" ? (
-            <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs text-slate-500">هزینه پیک</p><p className="mt-2 font-bold text-slate-900">{created.pricing?.shippingFinalAmount !== undefined ? `${created.pricing.shippingFinalAmount.toLocaleString("fa-IR")} تومان` : "هزینه در پاسخ سامانه اعلام نشد"}</p><p className="mt-1 text-xs text-slate-500">مبلغ خدمت پس از بررسی مشخص می‌شود.</p></div>
+            <div className="rounded-2xl bg-slate-50 p-4">
+              <p className="text-xs text-slate-500">هزینه پیک</p>
+              <p className="mt-2 font-bold text-slate-900">{created.pricing?.shippingFinalAmount !== undefined ? toman(created.pricing.shippingFinalAmount) : "هزینه در پاسخ سامانه اعلام نشد"}</p>
+              <p className="mt-1 text-sm text-slate-700">{created.pricing?.finalAmount != null
+                ? `جمع سفارش ${formatPrice(created.pricing.finalAmount)} تومان` : "مبلغ خدمت پس از بررسی مشخص می‌شود."}</p>
+            </div>
           ) : (
             <div className="rounded-2xl bg-slate-50 p-4"><p className="text-xs text-slate-500">آدرس فروشگاه</p><p className="mt-2 text-sm font-bold leading-7 text-slate-900">{storeAddress}</p></div>
           )}
@@ -848,7 +859,7 @@ export default function GameOrderSelector({
 
               {step === 2 && serviceType === "game_install" && (
                 <div {...fieldProps("selectedGames")}>
-                  <InstallationGamePicker key={`${device}:${installationType}`} device={device} installationType={installationType} value={selectedGames} onChange={setSelectedGames} />
+                  <InstallationGamePicker key={`${device}:${installationType}`} device={device} installationType={installationType} showPrices={installationType === "account" && fulfillment !== "in_store"} value={selectedGames} onChange={setSelectedGames} />
                   {renderFieldError("selectedGames")}
                 </div>
               )}
@@ -962,7 +973,7 @@ export default function GameOrderSelector({
                     <h2 className="text-xl font-black text-slate-950">خلاصه و ثبت درخواست</h2>
                     <p className="mt-1 text-sm text-slate-500">خلاصه سفارش را بررسی کنید و سپس درخواست را ثبت کنید.</p>
                   </div>
-                  {serviceType === "game_install" && <InstallationGameSummary games={selectedGames} />}
+                  {serviceType === "game_install" && <InstallationGameSummary games={courierPreview?.selectedGames ?? selectedGames} showPrices={fulfillment === "courier" && installationType === "account"} />}
                   <dl className="grid gap-3 rounded-2xl bg-slate-50 p-4 text-sm sm:grid-cols-2">
                     <div><dt className="text-slate-500">نام حساب کاربری</dt><dd className="mt-1 font-bold">{customerName || "کاربر"}</dd></div>
                     <div><dt className="text-slate-500">شماره موبایل حساب</dt><dd dir="ltr" className="mt-1 text-right font-bold">{phone || "هنگام ثبت از حساب شما دریافت می‌شود"}</dd></div>
@@ -971,6 +982,8 @@ export default function GameOrderSelector({
                     <div><dt className="text-slate-500">روز و ساعت</dt><dd className="mt-1 font-bold">{selectedDate && persianDate(`${selectedDate}T12:00:00+03:30`, { weekday: "long", month: "long", day: "numeric" })} · {fulfillment === "courier" ? `${fa(selectedCourierWindow?.start || "")} تا ${fa(selectedCourierWindow?.end || "")}` : fa(selectedSlot?.time || "")}</dd></div>
                     <div><dt className="text-slate-500">آدرس</dt><dd className="mt-1 font-bold leading-7">{fulfillment === "courier" ? `${selectedAddress?.city || ""}، ${selectedAddress?.address || ""}${selectedAddress?.plaque ? `، پلاک ${selectedAddress.plaque}` : ""}` : storeAddress}</dd></div>
                     {fulfillment === "courier" && courierPreview?.pricing && <div><dt className="text-slate-500">هزینه نهایی پیک</dt><dd className="mt-1 font-bold">{toman(courierPreview.pricing.shippingFinalAmount)}</dd></div>}
+                    {courierPreview?.pricing?.serviceDiscountAmount ? <div><dt className="text-slate-500">تخفیف نصب</dt><dd className="mt-1 font-bold">{discountToman(courierPreview.pricing.serviceDiscountAmount)}</dd></div> : null}
+                    {courierPreview?.pricing?.finalAmount != null && <div><dt className="text-slate-500">جمع سفارش با پیک</dt><dd className="mt-1 font-black">{toman(courierPreview.pricing.finalAmount)}</dd></div>}
                     {description && <div className="sm:col-span-2"><dt className="text-slate-500">توضیحات</dt><dd className="mt-1 whitespace-pre-wrap leading-7">{description}</dd></div>}
                   </dl>
                   <div>
@@ -1035,6 +1048,7 @@ export default function GameOrderSelector({
               <div className="flex justify-between gap-3"><dt className="text-slate-500">هزینه برگشت</dt><dd className="text-left text-xs font-bold">{toman(courierPreview.pricing.returnShippingCost)}</dd></div>
               <div className="flex justify-between gap-3"><dt className="text-slate-500">تخفیف ارسال</dt><dd className="text-left text-xs font-bold text-emerald-700">{discountToman(courierPreview.pricing.shippingDiscountAmount)}</dd></div>
               <div className="flex justify-between gap-3 border-t border-slate-200 pt-3"><dt className="font-black text-slate-700">هزینه نهایی پیک</dt><dd className="text-left text-xs font-black text-[#001A6E]">{toman(courierPreview.pricing.shippingFinalAmount)}</dd></div>
+              {courierPreview.pricing.finalAmount != null && <div className="flex justify-between gap-3"><dt className="font-black text-slate-700">جمع سفارش با پیک</dt><dd className="text-left font-black text-[#001A6E]">{toman(courierPreview.pricing.finalAmount)}</dd></div>}
             </>}
             {fulfillment === "courier" && !courierPreview?.pricing && <div className="flex justify-between gap-3"><dt className="text-slate-500">هزینه پیک</dt><dd className="text-left text-xs font-bold">{courierPreviewLoading ? "در حال دریافت از سرور…" : courierPreviewError ? "دریافت نشد" : "پس از انتخاب آدرس"}</dd></div>}
           </dl>

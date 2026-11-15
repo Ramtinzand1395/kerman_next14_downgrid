@@ -1,6 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import MoneyInput from "@/app/components/forms/MoneyInput";
+
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { CheckCircle2, Sparkles, X } from "lucide-react";
 import type { RewardSummary, RewardType } from "@/types/appointments";
 import { rewardLabel } from "./appointment-ui";
@@ -412,13 +414,22 @@ export default function RewardRules({
 }
 
 function MoneyField({ name, label }: { name: string; label: string }) {
+  const [value, setValue] = useState("");
+  const field = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const form = field.current?.form;
+    const reset = () => setValue("");
+    form?.addEventListener("reset", reset);
+    return () => form?.removeEventListener("reset", reset);
+  }, []);
   return (
     <label className="text-xs font-bold text-slate-600">
       {label}
-      <input
-        name={name}
-        type="number"
+      <input ref={field} type="hidden" name={name} value={value} />
+      <MoneyInput
         min="0"
+        value={value}
+        onValueChange={setValue}
         className="mt-1 h-11 w-full rounded-xl border border-slate-200 px-3"
       />
     </label>

@@ -1,6 +1,7 @@
 "use client";
 // app/(dashboard)/dashboard/loyalty/tabs/CashbackTab.tsx
 // مدیریت قوانین کش‌بک: درصد بازگشت به کیف پول پس از خرید
+import MoneyInput from "@/app/components/forms/MoneyInput";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Plus } from "lucide-react";
@@ -187,20 +188,18 @@ export default function CashbackTab() {
                 />
               </Field>
               <Field label="سقف مبلغ کش‌بک (اختیاری)">
-                <input
-                  type="number"
+                <MoneyInput
                   min={0}
                   value={form.maxAmount}
-                  onChange={(e) => setForm({ ...form, maxAmount: e.target.value })}
+                  onValueChange={(e) => setForm({ ...form, maxAmount: e })}
                   className={inputCls}
                 />
               </Field>
               <Field label="حداقل مبلغ سفارش">
-                <input
-                  type="number"
+                <MoneyInput
                   min={0}
                   value={form.minOrderAmount}
-                  onChange={(e) => setForm({ ...form, minOrderAmount: Number(e.target.value) })}
+                  onValueChange={(e) => setForm({ ...form, minOrderAmount: Number(e) })}
                   className={inputCls}
                 />
               </Field>

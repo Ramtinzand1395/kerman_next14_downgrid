@@ -35,7 +35,7 @@ export function websiteStoreOrders(activeOnly: boolean): PipelineStage[] {
       serviceBaseAmount: { $ifNull: ["$pricing.serviceBaseAmount", "$pricing.baseAmount"] },
       list: { $map: { input: { $ifNull: ["$selectedGames", []] }, as: "game", in: {
         _id: { $concat: ["$$game.platform", ":", "$$game.gameId"] },
-        name: "$$game.name", size: "$$game.sizeGB",
+        name: "$$game.name", size: "$$game.sizeGB", price: "$$game.price",
       } } },
       deliveryDate: { $ifNull: ["$storeOrderDeliveredAt", "$courier.deliveredAt"] },
       deliveryStatus: { $switch: { branches: [

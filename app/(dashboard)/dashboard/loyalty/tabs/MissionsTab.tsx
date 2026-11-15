@@ -1,6 +1,7 @@
 "use client";
 // app/(dashboard)/dashboard/loyalty/tabs/MissionsTab.tsx
 // مدیریت ماموریت‌ها: ساخت/ویرایش/حذف، فیلتر دوره
+import MoneyInput from "@/app/components/forms/MoneyInput";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Plus } from "lucide-react";
@@ -252,11 +253,10 @@ export default function MissionsTab() {
                 />
               </Field>
               <Field label="حداقل مبلغ سفارش (اختیاری)">
-                <input
-                  type="number"
+                <MoneyInput
                   min={0}
                   value={form.minOrderAmount}
-                  onChange={(e) => setForm({ ...form, minOrderAmount: e.target.value })}
+                  onValueChange={(e) => setForm({ ...form, minOrderAmount: e })}
                   className={inputCls}
                 />
               </Field>
@@ -270,11 +270,10 @@ export default function MissionsTab() {
                 />
               </Field>
               <Field label="پاداش کیف پول (تومان)">
-                <input
-                  type="number"
+                <MoneyInput
                   min={0}
                   value={form.rewardWallet}
-                  onChange={(e) => setForm({ ...form, rewardWallet: Number(e.target.value) })}
+                  onValueChange={(e) => setForm({ ...form, rewardWallet: Number(e) })}
                   className={inputCls}
                 />
               </Field>

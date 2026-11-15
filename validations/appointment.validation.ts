@@ -12,7 +12,7 @@ const objectIdRegex = /^[a-f\d]{24}$/i;
 const phoneRegex = /^09\d{9}$/;
 const dateStringRegex = /^\d{4}-\d{2}-\d{2}$/;
 
-const installationGameRefSchema = z.object({
+export const installationGameRefSchema = z.object({
   platform: z.enum(["ps4", "ps5", "copy", "ps5Copy", "xbox"]),
   gameId: z.string().regex(objectIdRegex, "شناسه بازی نامعتبر است"),
 });
@@ -37,6 +37,7 @@ const inStoreAppointmentCreateSchema = baseAppointmentSchema.extend({
 
 const courierAppointmentCreateSchema = baseAppointmentSchema.extend({
   fulfillment: z.literal("courier"),
+  expectedGameTotal: z.number().int().nonnegative().nullable().optional(),
   addressId: z.string().regex(objectIdRegex, "شناسه آدرس نامعتبر است"),
   pickupDate: z.string().regex(dateStringRegex, "فرمت تاریخ تحویل نامعتبر است"),
   pickupWindow: z.object({

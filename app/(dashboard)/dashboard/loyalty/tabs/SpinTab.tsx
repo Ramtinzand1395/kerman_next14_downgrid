@@ -1,6 +1,7 @@
 "use client";
 // app/(dashboard)/dashboard/loyalty/tabs/SpinTab.tsx
 // مدیریت جوایز گردونه شانس: عنوان، نوع، مقدار و وزن احتمال
+import MoneyInput from "@/app/components/forms/MoneyInput";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Plus } from "lucide-react";
@@ -187,11 +188,10 @@ export default function SpinTab() {
                 </select>
               </Field>
               <Field label="مقدار (تومان / XP)">
-                <input
-                  type="number"
+                <MoneyInput
                   min={0}
                   value={form.value}
-                  onChange={(e) => setForm({ ...form, value: Number(e.target.value) })}
+                  onValueChange={(e) => setForm({ ...form, value: Number(e) })}
                   className={inputCls}
                 />
               </Field>

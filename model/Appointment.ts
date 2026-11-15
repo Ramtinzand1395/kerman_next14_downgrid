@@ -69,6 +69,7 @@ const InstallationGameSnapshotSchema = new Schema(
     name: { type: String, required: true },
     version: { type: String, required: true, enum: ["PS4", "PS5", "Xbox"] },
     sizeGB: { type: Number, default: null, min: 0 },
+    price: { type: Number, min: 0 },
     imageUrl: { type: String, default: "" },
     imageAlt: { type: String, default: "" },
   },

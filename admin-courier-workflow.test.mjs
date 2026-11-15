@@ -14,7 +14,7 @@ function load(path,deps){
   return module.exports;
 }
 const validation=load('./validations/appointment.validation.ts',{'@/lib/appointments/policy':policy});
-function harness({ smsState = "sent" } = {}){
+function harness({ smsState = "sent", catalogPrice } = {}){
   let current={_id:id,user:id,phone:'09123456789',trackingCode:'KA1',serviceType:'game_install',fulfillment:'courier',status:'pending',pricing:{known:false,shippingBaseAmount:120000},courier:{status:'pending',addressSnapshot:{city:'کرمان'}},payment:{status:'unpaid'}};
   const notices=[]; const messages=[]; let redeemed=0;
   const smsTransport = {deliverBusinessSms:async (message)=>{
@@ -35,7 +35,7 @@ function harness({ smsState = "sent" } = {}){
     '@/lib/appointments/games':games,
     '@/model/Customer':{default:{findOne:({mobile})=>({select:()=>({lean:async()=>mobile==='09123456789' ? {lastName:'آزمایشی',sex:'مرد'} : null})})}},
     '@/model/GameList':{default:{
-      find:()=>({select:()=>({lean:async()=>[{platform:'ps5',items:[{_id:id,name:'Test Game',size:27.5}]}]})}),
+      find:()=>({select:()=>({lean:async()=>[{platform:'ps5',items:[{_id:id,name:'Test Game',size:27.5,price:catalogPrice}]}]})}),
     }},
     '@/model/VisitReward' :{default:{}},'@/model/AppointmentReservation':{default:{}},
     '@/lib/sms/business':smsTransport,
@@ -94,6 +94,15 @@ test('admin request pricing, pickup, completion and return match customer five-s
   assert.equal(h.current.courier.status,'returning');
   assert.equal((await h.patch({courierStatus:'delivered'})).status,200);
   assert.ok(h.current.courier.deliveredAt);
+});
+
+test('admin updates a courier account order from catalog prices without a manually entered total', async () => {
+  const h = harness({ catalogPrice: 1_350_000 });
+  const game = { platform: 'ps5', gameId: id };
+  assert.equal((await h.patch({ selectedGames: [game] })).status, 200);
+  assert.equal(h.current.selectedGames[0].price, 1_350_000);
+  assert.equal(h.current.pricing.serviceBaseAmount, 1_350_000);
+  assert.equal(h.current.pricing.finalAmount, 1_470_000);
 });
 
 test('completed legacy requests can return without replaying pickup or overwriting history',async()=>{

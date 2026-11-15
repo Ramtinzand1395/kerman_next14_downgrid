@@ -4,16 +4,18 @@ import { useEffect, useState } from "react";
 import { Check, ChevronLeft, ChevronRight, HardDrive, Search, X } from "lucide-react";
 import { GameCardsSkeleton } from "@/app/components/loading/LoadingSystem";
 import GameCover from "@/app/components/games/GameCover";
-import { gameKey, installationSize, MAX_INSTALLATION_GAMES, type InstallationGame } from "@/lib/appointments/games";
+import { gameKey, installationGameTotal, installationSize, MAX_INSTALLATION_GAMES, type InstallationGame } from "@/lib/appointments/games";
+import { formatPrice } from "@/helpers/Price";
 
 type Props = {
   device: string;
   installationType: string;
+  showPrices?: boolean;
   value: InstallationGame[];
   onChange: (games: InstallationGame[]) => void;
 };
 
-export default function InstallationGamePicker({ device, installationType, value, onChange }: Props) {
+export default function InstallationGamePicker({ device, installationType, showPrices, value, onChange }: Props) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [reload, setReload] = useState(0);
@@ -24,6 +26,7 @@ export default function InstallationGamePicker({ device, installationType, value
   const [error, setError] = useState("");
   const { totalSizeGB, unknownSizeCount } = installationSize(value);
   const selectedKeys = new Set(value.map(gameKey));
+  const gameTotal = installationGameTotal(value);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -67,6 +70,9 @@ export default function InstallationGamePicker({ device, installationType, value
           <strong className="text-xl" dir="ltr">{totalSizeGB.toLocaleString("fa-IR")} GB</strong>
         </div>
         <p className="mt-2 text-xs leading-6 text-blue-100">{value.length.toLocaleString("fa-IR")} بازی انتخاب شده{unknownSizeCount ? `؛ حجم ${unknownSizeCount.toLocaleString("fa-IR")} بازی هنوز مشخص نیست.` : "؛ حجم‌ها تقریبی‌اند."}</p>
+        {showPrices && value.length > 0 && <p className="mt-2 text-sm font-bold">
+          جمع قیمت بازی‌ها {gameTotal === null ? "پس از بررسی اعلام می‌شود" : `${formatPrice(gameTotal)} تومان`}
+        </p>}
       </div>
       {value.length > 0 && <div>
         <div className="mb-2 flex items-center justify-between gap-2"><h3 className="text-sm font-bold text-slate-700">انتخاب‌های شما</h3><button type="button" onClick={() => onChange([])} className="min-h-10 px-2 text-xs font-bold text-rose-700">حذف همه</button></div>
@@ -84,6 +90,7 @@ export default function InstallationGamePicker({ device, installationType, value
             <span className={`mt-3 rounded-lg px-2 py-1 text-[10px] font-black ${game.version === "PS5" ? "bg-blue-100 text-blue-800" : game.version === "Xbox" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700"}`}>{game.version}</span>
             <strong className="my-2 line-clamp-2 min-h-10 break-words text-xs leading-5 text-slate-900" dir="auto">{game.name}</strong>
             <span className="mt-auto text-xs text-slate-500" dir="ltr">{game.sizeGB === null ? "حجم نامشخص" : `${game.sizeGB.toLocaleString("fa-IR")} GB`}</span>
+            {showPrices && <span className="mt-1 text-xs font-bold text-[#001A6E]">{game.price == null ? "قیمت پس از بررسی" : `${formatPrice(game.price)} تومان`}</span>}
           </button>;
         })}</div>
         <nav aria-label="صفحه‌بندی بازی‌ها" className="flex items-center justify-between gap-2">

@@ -1,6 +1,7 @@
 "use client";
 // app/(dashboard)/dashboard/loyalty/tabs/SettingsReportsTabs.tsx
 // تنظیمات سراسری باشگاه مشتریان + گزارش‌های مدیریتی
+import MoneyInput from "@/app/components/forms/MoneyInput";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Save } from "lucide-react";
@@ -126,42 +127,39 @@ export function SettingsTab() {
             <h3 className="mb-4 font-bold text-slate-800">دعوت از دوستان</h3>
             <div className="grid grid-cols-3 gap-3">
               <Field label="پاداش معرف (تومان)">
-                <input
-                  type="number"
+                <MoneyInput
                   min={0}
                   value={settings.referral.referrerReward}
-                  onChange={(e) =>
+                  onValueChange={(e) =>
                     setSettings({
                       ...settings,
-                      referral: { ...settings.referral, referrerReward: Number(e.target.value) },
+                      referral: { ...settings.referral, referrerReward: Number(e) },
                     })
                   }
                   className={inputCls}
                 />
               </Field>
               <Field label="هدیه کاربر جدید">
-                <input
-                  type="number"
+                <MoneyInput
                   min={0}
                   value={settings.referral.refereeReward}
-                  onChange={(e) =>
+                  onValueChange={(e) =>
                     setSettings({
                       ...settings,
-                      referral: { ...settings.referral, refereeReward: Number(e.target.value) },
+                      referral: { ...settings.referral, refereeReward: Number(e) },
                     })
                   }
                   className={inputCls}
                 />
               </Field>
               <Field label="حداقل اولین خرید">
-                <input
-                  type="number"
+                <MoneyInput
                   min={0}
                   value={settings.referral.minFirstPurchase}
-                  onChange={(e) =>
+                  onValueChange={(e) =>
                     setSettings({
                       ...settings,
-                      referral: { ...settings.referral, minFirstPurchase: Number(e.target.value) },
+                      referral: { ...settings.referral, minFirstPurchase: Number(e) },
                     })
                   }
                   className={inputCls}
@@ -197,16 +195,15 @@ export function SettingsTab() {
             </div>
             <div className="mt-3">
               <Field label="پاداش کیف پول روز هفتم (تومان)">
-                <input
-                  type="number"
+                <MoneyInput
                   min={0}
                   value={settings.loginStreak.daySevenWalletReward}
-                  onChange={(e) =>
+                  onValueChange={(e) =>
                     setSettings({
                       ...settings,
                       loginStreak: {
                         ...settings.loginStreak,
-                        daySevenWalletReward: Number(e.target.value),
+                        daySevenWalletReward: Number(e),
                       },
                     })
                   }

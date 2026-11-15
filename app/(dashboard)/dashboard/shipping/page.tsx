@@ -1,5 +1,6 @@
 "use client";
 
+import MoneyInput from "@/app/components/forms/MoneyInput";
 import { useEffect, useMemo, useState } from "react";
 import { Iran } from "provinces-and-cities";
 import { Loader2, Save, Truck } from "lucide-react";
@@ -100,7 +101,7 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
 }
 
 function NumberField({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
-  return <label className="block text-sm font-bold text-slate-700">{label}<input type="number" min={1} step={1} value={value} onChange={(event) => onChange(Number(event.target.value))} className="mt-2 w-full rounded-xl border border-slate-300 p-3 font-normal outline-none focus:border-blue-500" /></label>;
+  return <label className="block text-sm font-bold text-slate-700">{label}<MoneyInput min={1} step={1} value={value} onValueChange={(event) => onChange(Number(event))} className="mt-2 w-full rounded-xl border border-slate-300 p-3 font-normal outline-none focus:border-blue-500" /></label>;
 }
 
 function TextArea({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {

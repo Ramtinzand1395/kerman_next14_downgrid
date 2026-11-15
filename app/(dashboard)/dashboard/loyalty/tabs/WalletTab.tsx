@@ -1,6 +1,7 @@
 "use client";
 // app/(dashboard)/dashboard/loyalty/tabs/WalletTab.tsx
 // مدیریت کیف پول: جستجوی کاربر، هدیه اعتبار، تعدیل دستی، تراکنش‌ها و لاگ‌ها
+import MoneyInput from "@/app/components/forms/MoneyInput";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Gift, Search, SlidersHorizontal } from "lucide-react";
@@ -64,7 +65,7 @@ export default function WalletTab() {
   const [typeFilter, setTypeFilter] = useState("");
 
   const [modal, setModal] = useState<null | "gift" | "adjust">(null);
-  const [amount, setAmount] = useState(10_000);
+  const [amount, setAmount] = useState("10000");
   const [description, setDescription] = useState("");
   const [expiresInDays, setExpiresInDays] = useState("");
   const [saving, setSaving] = useState(false);
@@ -163,7 +164,7 @@ export default function WalletTab() {
             type="button"
             disabled={!userId.trim()}
             onClick={() => {
-              setAmount(10_000);
+              setAmount("10000");
               setModal("gift");
             }}
             className="flex items-center gap-1 rounded-xl bg-emerald-600 px-4 py-2 text-sm text-white hover:bg-emerald-700 disabled:opacity-40"
@@ -174,7 +175,7 @@ export default function WalletTab() {
             type="button"
             disabled={!userId.trim()}
             onClick={() => {
-              setAmount(0);
+              setAmount("0");
               setModal("adjust");
             }}
             className="flex items-center gap-1 rounded-xl bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700 disabled:opacity-40"
@@ -294,11 +295,10 @@ export default function WalletTab() {
         >
           <form onSubmit={submitAction} className="space-y-3">
             <Field label={modal === "gift" ? "مبلغ هدیه (تومان)" : "مبلغ (مثبت = افزایش / منفی = کسر)"}>
-              <input
+              <MoneyInput
                 required
-                type="number"
                 value={amount}
-                onChange={(e) => setAmount(Number(e.target.value))}
+                onValueChange={setAmount}
                 className={inputCls}
                 dir="ltr"
               />

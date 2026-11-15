@@ -9,8 +9,8 @@ import * as draft from './lib/appointments/draft.ts';
 const require = createRequire(import.meta.url);
 const id4 = '4'.repeat(24), id5 = '5'.repeat(24), idX = 'a'.repeat(24);
 const fixtures = [
-  { platform: 'ps4', items: [{ _id: id4, name: 'Same Game', size: 40, imageUrl: 'https://res.cloudinary.com/aeylqy7h/image/upload/game.webp' }] },
-  { platform: 'ps5', items: [{ _id: id5, name: 'Same Game', size: 60.25 }] },
+  { platform: 'ps4', items: [{ _id: id4, name: 'Same Game', size: 40, price: 700_000, imageUrl: 'https://res.cloudinary.com/aeylqy7h/image/upload/game.webp' }] },
+  { platform: 'ps5', items: [{ _id: id5, name: 'Same Game', size: 60.25, price: 1_350_000 }] },
   { platform: 'copy', items: [{ _id: id4, name: 'PS4 Copy', size: null }] },
   { platform: 'ps5Copy', items: [{ _id: id5, name: 'PS5 Copy', size: 0 }] },
   { platform: 'xbox', items: [{ _id: idX, name: 'Xbox Game', size: 20 }] },
@@ -60,7 +60,7 @@ test('snapshot resolution rejects duplicate, deleted, incompatible and excessive
 });
 
 test('appointment validation accepts references only and discards client metadata and forged totals', () => {
-  const parsed = validation.appointmentCreateSchema.parse({...base(), totalSizeGB: 1, selectedGames: [{...refs[0], name: 'forged', sizeGB: 1}]});
+  const parsed = validation.appointmentCreateSchema.parse({...base(), totalSizeGB: 1, selectedGames: [{...refs[0], name: 'forged', sizeGB: 1, price: 1}]});
   assert.deepEqual(parsed.selectedGames, [refs[0]]);
   assert.equal(parsed.totalSizeGB, undefined);
   assert.equal(validation.appointmentCreateSchema.safeParse({...base(), selectedGames: [{platform:'bad',gameId:'bad'}]}).success, false);
@@ -182,6 +182,54 @@ test('courier registrations persist the same game snapshots as in-store registra
   assert.equal(writes[0].selectedGames.length,2);
   assert.equal(writes[0].totalSizeGB,100.25);
   assert.ok(writes[0].courier.addressSnapshot);
+  assert.equal(writes[0].pricing.serviceBaseAmount, 2_050_000);
+  assert.equal(writes[0].pricing.finalAmount, 2_150_000);
+  assert.deepEqual(writes[0].selectedGames.map(game => game.price), [700_000, 1_350_000]);
+});
+
+test('courier catalog pricing leaves unknown games for review and does not treat them as free', async () => {
+  const input = {...base(), fulfillment:'courier', addressId:idX, pickupDate:'2026-11-03', pickupWindow:{start:'10:00',end:'12:00'}};
+  const { service, writes } = serviceHarness({ docs: [
+    fixtures[0], { platform: 'ps5', items: [{ _id: id5, name: 'Unpriced game', price: null }] },
+  ] });
+  assert.ok((await service.createAppointment(idX, input)).appointment);
+  assert.equal(writes[0].pricing.known, false);
+  assert.equal(writes[0].pricing.finalAmount, null);
+
+  const inStore = serviceHarness();
+  assert.ok((await inStore.service.createAppointment(idX, base())).appointment);
+  assert.equal(inStore.writes[0].pricing.known, false);
+  assert.equal(games.installationGameTotal([{ price: 0 }]), 0);
+});
+
+test('courier preview and registration both price selected PS4 and PS5 games from the catalog', async () => {
+  const preview = loadModule('./app/api/profile/appointments/courier-preview/route.ts', {
+    ...routeDeps,
+    'next/server': { NextResponse: { json: (body, init) => Response.json(body, init) } },
+    '@/validations/appointment.validation': validation,
+    '@/lib/appointments/policy': policy,
+    '@/lib/appointments/settings': {
+      getAppointmentSettings: async () => ({ courierEnabled: true, courierRoundTripMultiplier: 2 }),
+      findCourierRegion: () => ({ id:'kerman', title:'Kerman', city:'Kerman', shippingCost:50_000 }),
+    },
+    '@/model/Address': { default: { findOne: () => ({ lean: async () => ({ _id:idX, city:'Kerman' }) }) } },
+    '@/model/VisitReward': { default: {} },
+  });
+  const body = { addressId:idX, serviceType:'game_install', device:'ps5', installationType:'account',
+    selectedGames:refs.map(game => ({ ...game, price:1 })) };
+  const response = await preview.POST(new Request('https://example.test', { method:'POST', body:JSON.stringify(body) }));
+  assert.equal(response.status, 200);
+  const quote = await response.json();
+  assert.equal(quote.pricing.serviceBaseAmount, 2_050_000);
+  assert.equal(quote.pricing.finalAmount, 2_150_000);
+  assert.deepEqual(quote.selectedGames.map(game => game.price), [700_000, 1_350_000]);
+
+  const {service, writes} = serviceHarness();
+  const input = {...base(), fulfillment:'courier', addressId:idX, pickupDate:'2026-11-03', pickupWindow:{start:'10:00',end:'12:00'}};
+  assert.equal((await service.createAppointment(idX, {...input, expectedGameTotal:1})).status, 409);
+  assert.equal(writes.length, 0);
+  const result = await service.createAppointment(idX, {...input, expectedGameTotal:quote.pricing.serviceBaseAmount});
+  assert.equal(result.appointment.pricing.finalAmount, quote.pricing.finalAmount);
 });
 
 test('Mongoose preserves game snapshots and legacy appointments can still validate without selections', async () => {
@@ -191,6 +239,7 @@ test('Mongoose preserves game snapshots and legacy appointments can still valida
   await instance.validate();
   assert.equal(instance.toObject().selectedGames[0].gameId,legal[0].gameId);
   assert.equal(instance.toObject().selectedGames[0].version,legal[0].version);
+  assert.equal(instance.toObject().selectedGames[0].price, legal[0].price);
   assert.equal(instance.toObject().totalSizeGB,100.25);
   const legacy = new Appointment({...data,selectedGames:undefined,totalSizeGB:undefined});
   await legacy.validate();

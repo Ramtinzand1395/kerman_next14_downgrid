@@ -2,6 +2,7 @@
 // app/(public)/my-profile/MyWallet.tsx
 // کیف پول کاربر: موجودی، اعتبار در حال انقضا، شارژ از طریق زرین‌پال،
 // و تاریخچه تراکنش‌ها با صفحه‌بندی و فیلتر نوع.
+import MoneyInput from "@/app/components/forms/MoneyInput";
 import { useCallback, useEffect, useState } from "react";
 import Skeleton from "react-loading-skeleton";
 import { toast } from "react-toastify";
@@ -155,13 +156,12 @@ export default function MyWallet() {
         </div>
 
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <input
-            type="number"
+          <MoneyInput
             min={10_000}
             max={50_000_000}
             step={1000}
             value={amount}
-            onChange={(e) => setAmount(Number(e.target.value))}
+            onValueChange={(e) => setAmount(Number(e))}
             className="w-full rounded-xl border border-slate-200 p-3 text-sm sm:max-w-xs"
             placeholder="مبلغ دلخواه (تومان)"
           />

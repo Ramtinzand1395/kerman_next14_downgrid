@@ -1,5 +1,7 @@
 "use client";
 
+import MoneyInput from "@/app/components/forms/MoneyInput";
+
 import { useState } from "react";
 import {
   CheckCircle2,
@@ -275,7 +277,7 @@ function DetailsModal({
                     </select>
                   </label>
                   <label className="text-sm font-semibold text-slate-700">مبلغ بررسی‌شده برای انجام خدمت
-                    <input type="number" min="0" value={totalPrice} onChange={(event) => setTotalPrice(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 font-normal" />
+                    <MoneyInput min="0" value={totalPrice} onValueChange={setTotalPrice} className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 font-normal" />
                   </label>
                 </div>
               )}

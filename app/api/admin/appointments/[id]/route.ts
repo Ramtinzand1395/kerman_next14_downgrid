@@ -2,8 +2,9 @@ import mongoose, { type ClientSession } from "mongoose";
 import Customer from "@/model/Customer";
 import GameList from "@/model/GameList";
 import {
-  catalogPlatformAliases, gameKey, installationCatalog, installationPlatforms,
-  installationSize, resolveInstallationGames, type GameCatalogDocument, type InstallationGame,
+  catalogPlatformAliases, gameKey, installationCatalog, installationGameTotal, installationPlatforms,
+  installationSize, INSTALLATION_GAME_FIELDS, isAccountCourierInstallation,
+  resolveInstallationGames, type GameCatalogDocument, type InstallationGame,
 } from "@/lib/appointments/games";
 import Appointment from "@/model/Appointment";
 import AppointmentReservation from "@/model/AppointmentReservation";
@@ -13,6 +14,7 @@ import { appointmentAdminUpdateSchema } from "@/validations/appointment.validati
 import {
   canAdminTransition,
   canCourierTransition,
+  computeAppointmentPricing,
   AppointmentStatus,
   CourierStatus,
 } from "@/lib/appointments/policy";
@@ -195,9 +197,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (nextStatus === "completed" && (!current.storeOrderRegisteredAt || (isCourier && current.courier?.status !== "at_store"))) {
     return fail("ابتدا دریافت دستگاه و ثبت سفارش دستی را انجام دهید.", 409);
   }
-  if (registerStoreOrder && !current.pricing?.known && parsed.data.baseAmount === undefined) {
-    return fail("مبلغ خدمت را وارد کنید.", 422);
-  }
   if (parsed.data.baseAmount !== undefined && current.status === "completed" && nextStatus !== "confirmed") {
     return fail("برای تغییر مبلغ، ابتدا سفارش را بازگشایی کنید.", 409);
   }
@@ -242,26 +241,44 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (storeOrderCustomerId) set.storeOrderCustomer = storeOrderCustomerId;
   if (storeOrderDescription !== undefined) set.description = storeOrderDescription;
   let gamesChanged = false;
+  let accountGameTotal: number | null | undefined;
+  const catalogPricedOrder = isAccountCourierInstallation(current);
   if (selectedGames) {
     const platforms = installationPlatforms(current.device, current.installationType);
     const docs = await GameList.find({ platform: { $in: catalogPlatformAliases(platforms) } })
-      .select("platform items._id items.name items.size items.imageUrl items.imageAlt").lean() as GameCatalogDocument[];
+      .select(INSTALLATION_GAME_FIELDS).lean() as GameCatalogDocument[];
     const previous = (current.selectedGames || []) as InstallationGame[];
     const catalog = installationCatalog(docs, platforms);
-    const byKey = new Map([...catalog, ...previous.filter((game) => platforms.includes(game.platform))]
-      .map((game) => [gameKey(game), game]));
+    const byKey = new Map(catalog.map((game) => [gameKey(game), game]));
+    for (const game of previous) {
+      if (!platforms.includes(game.platform)) continue;
+      const key = gameKey(game);
+      if (!catalogPricedOrder || game.price != null || !byKey.has(key)) byKey.set(key, game);
+    }
     try {
       const games = resolveInstallationGames(selectedGames, [...byKey.values()]);
       gamesChanged = games.length !== previous.length || games.some((game, index) =>
         !previous[index] || gameKey(game) !== gameKey(previous[index]),
       );
-      if (gamesChanged) {
+      const pricesChanged = catalogPricedOrder && games.some((game, index) =>
+        (game.price ?? null) !== (previous[index]?.price ?? null),
+      );
+      if (gamesChanged || pricesChanged) {
         set.selectedGames = games;
         set.totalSizeGB = installationSize(games).totalSizeGB;
+      }
+      if (catalogPricedOrder) {
+        const total = installationGameTotal(games);
+        if (gamesChanged || pricesChanged || (!current.pricing?.known && total !== null)) accountGameTotal = total;
       }
     } catch (error) {
       return fail((error as Error).message, 422);
     }
+  }
+
+  if (registerStoreOrder && parsed.data.baseAmount === undefined &&
+      (accountGameTotal === null || (accountGameTotal === undefined && !current.pricing?.known))) {
+    return fail("مبلغ خدمت را وارد کنید.", 422);
   }
 
   if (registerStoreOrder && !current.storeOrderRegisteredAt) {
@@ -351,11 +368,29 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     updateFilter["courier.status"] = current.courier?.status || "pending";
   }
   if (current.updatedAt) updateFilter.updatedAt = current.updatedAt;
-  if (!Object.keys(set).length && parsed.data.baseAmount === undefined) return ok(current);
+  if (!Object.keys(set).length && parsed.data.baseAmount === undefined && accountGameTotal === undefined) return ok(current);
 
   const persist = async (dbSession?: ClientSession) => {
-    // Pricing calculation
-    if (parsed.data.baseAmount !== undefined) {
+    const hasCatalogQuote = accountGameTotal !== undefined &&
+      (accountGameTotal !== null || parsed.data.baseAmount === undefined);
+    const serviceQuote = hasCatalogQuote ? accountGameTotal : parsed.data.baseAmount;
+    if (catalogPricedOrder && nextStatus !== "completed" && serviceQuote !== undefined) {
+      const reward = current.selectedReward
+        ? await VisitReward.findOne({ _id: current.selectedReward, reservedFor: current._id, status: "reserved" })
+          .select("snapshot.reward").lean()
+        : null;
+      const price = computeAppointmentPricing({
+        fulfillment: "courier",
+        serviceType: "game_install",
+        serviceBaseAmount: serviceQuote,
+        shippingBaseAmount: current.pricing?.shippingBaseAmount ?? current.courier?.totalShippingCost,
+        reward: (reward?.snapshot as { reward?: Parameters<typeof computeAppointmentPricing>[0]["reward"] } | undefined)?.reward,
+        deliveryCity: current.courier?.addressSnapshot?.city,
+      });
+      set.pricing = price;
+      set["courier.freeShippingDiscount"] = price.shippingDiscountAmount;
+      set["courier.finalShippingCost"] = price.shippingFinalAmount;
+    } else if (parsed.data.baseAmount !== undefined) {
       const serviceBaseAmount = Math.round(parsed.data.baseAmount);
       const shippingBaseAmount =
         current.pricing?.shippingBaseAmount ?? (current.courier?.totalShippingCost || 0);

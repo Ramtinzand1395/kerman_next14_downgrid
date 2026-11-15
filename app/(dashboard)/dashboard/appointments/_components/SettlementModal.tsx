@@ -2,6 +2,7 @@
 
 import { Check, Loader2, X } from "lucide-react";
 import type { AppointmentItem } from "@/types/appointments";
+import MoneyInput from "@/app/components/forms/MoneyInput";
 import {
   discountToman,
   getCourierView,
@@ -87,13 +88,11 @@ export default function SettlementModal({
 
         <label className="mt-4 block text-sm font-bold text-slate-700">
           مبلغ خدمت (تومان)
-          <input
+          <MoneyInput
             autoFocus
-            type="number"
-            inputMode="numeric"
             min="0"
             value={amount}
-            onChange={(event) => onAmountChange(event.target.value)}
+            onValueChange={onAmountChange}
             className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-3 text-lg outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
           />
         </label>

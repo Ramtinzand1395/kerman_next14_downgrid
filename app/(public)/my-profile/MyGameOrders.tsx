@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "@/app/components/navigation/NavigationFeedback";
 import { CalendarClock, Gamepad2, MapPin, RefreshCw, Wrench } from "lucide-react";
 import InstallationGameSummary from "@/app/components/games/InstallationGameSummary";
+import { isAccountCourierInstallation } from "@/lib/appointments/games";
 import { COURIER_RETURN_DELIVERY_STAGES, courierReturnDeliveryProgress, courierStatusAfterService } from "@/lib/appointments/courier-policy";
 import type { AppointmentItem } from "@/types/appointments";
 import { ButtonLoading, Skeleton } from "@/app/components/loading/LoadingSystem";
@@ -186,7 +187,7 @@ export default function MyGameOrders() {
                   <p className="flex items-start gap-2 text-slate-700"><CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-[#001A6E]" /><strong>{dateTime(item.startsAt)}</strong></p>
                   <p className="text-slate-600">دستگاه: <strong className="text-slate-900">{devices[item.device] || item.device}</strong></p>
                   {item.installationType && <p className="text-slate-600">نوع نصب: <strong className="text-slate-900">{item.installationType === "copy" ? "کپی‌خور" : "اکانتی / قانونی"}</strong></p>}
-                  <InstallationGameSummary games={item.selectedGames} />
+                  <InstallationGameSummary games={item.selectedGames} showPrices={isAccountCourierInstallation(item)} />
                   {item.repairIssue && <p className="text-slate-600">مشکل: <strong className="text-slate-900">{issues[item.repairIssue] || item.repairIssue}</strong></p>}
                   {item.description && <p className="rounded-xl bg-slate-50 p-3 leading-6 text-slate-600">{item.description}</p>}
                   {item.fulfillment === "courier" && item.courier?.addressSnapshot ? <p className="flex items-start gap-2 rounded-xl bg-cyan-50 p-3 text-xs leading-6 text-cyan-900"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /> {item.courier.addressSnapshot.city}، {item.courier.addressSnapshot.address}</p> : <p className="flex items-start gap-2 rounded-xl bg-blue-50 p-3 text-xs leading-6 text-blue-900"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /> خیابان ناصریه بین کوچه ۲ و ۴ نبش داروخانه مادر</p>}
@@ -196,7 +197,7 @@ export default function MyGameOrders() {
                   <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
                     <span className="text-xs text-slate-500">
                       {item.pricing?.known
-                        ? `مبلغ نهایی: ${(item.pricing.finalAmount || 0).toLocaleString("fa-IR")} تومان`
+                        ? `${item.status === "completed" ? "مبلغ نهایی" : "جمع سفارش"}: ${(item.pricing.finalAmount || 0).toLocaleString("fa-IR")} تومان`
                         : "هزینه پس از بررسی مشخص می‌شود"}
                     </span>
                     {item.payment?.status === "paid" ? <span className="text-xs font-bold text-emerald-700">پرداخت موفق{item.payment.refId ? ` · کد پیگیری ${item.payment.refId}` : ""}</span> : item.status === "completed" && item.pricing?.known && Number(item.pricing.finalAmount) > 0 ? (
@@ -208,6 +209,11 @@ export default function MyGameOrders() {
                       </button>
                     )}
                   </div>
+                  {isAccountCourierInstallation(item) && item.pricing?.known && (
+                    <Link href={`/my-profile/game-orders/${item._id}/invoice`} className="inline-flex rounded-xl border border-blue-200 px-3 py-2 text-xs font-bold text-blue-900">
+                      مشاهده صورتحساب
+                    </Link>
+                  )}
                 </div>
               </article>
             );

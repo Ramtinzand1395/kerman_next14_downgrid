@@ -1,5 +1,6 @@
 "use client";
 
+import MoneyInput from "@/app/components/forms/MoneyInput";
 import { useEffect, useMemo, useState } from "react";
 import RichTextEditor from "../RichTextEditor";
 import type { ProductForm, ProductVariant } from "@/types";
@@ -41,14 +42,13 @@ function PurchasePriceField({
   return (
     <label className="block text-xs text-slate-300">
       <span className="mb-1 block">قیمت خرید (تومان){required ? " *" : ""}</span>
-      <input
-        type="number"
+      <MoneyInput
         min="0"
         max={Number.MAX_SAFE_INTEGER}
         step="1"
         aria-required={required}
         value={value ?? ""}
-        onChange={(event) => onChange(event.target.value === "" ? null : Number(event.target.value))}
+        onValueChange={(event) => onChange(event === "" ? null : Number(event))}
         className="w-full rounded-lg border border-slate-600 bg-slate-800 px-2.5 py-1.5 text-sm text-slate-100 outline-none focus:border-indigo-500"
       />
     </label>
@@ -307,13 +307,12 @@ const BasicInfoFields = ({
             >
               {fieldLabels.price} *
             </label>
-            <input
+            <MoneyInput
               id="product-price"
-              type="number"
               min="0"
               step="1"
               value={form.price ?? ""}
-              onChange={(e) => updateField("price", Math.max(0, Math.floor(Number(e.target.value))))}
+              onValueChange={(e) => updateField("price", Math.max(0, Math.floor(Number(e))))}
               className="w-full border-b border-slate-600 bg-inherit py-1 text-sm text-slate-100 transition-colors focus:border-b-2 focus:border-indigo-500 focus:outline-none"
             />
           </div>
@@ -378,17 +377,16 @@ const BasicInfoFields = ({
                 >
                   {fieldLabels.discountPrice} (تومان)
                 </label>
-                <input
+                <MoneyInput
                   id="product-discountPrice"
-                  type="number"
                   min="0"
                   max={form.price}
                   step="1"
                   value={form.discountPrice ?? ""}
-                  onChange={(e) =>
+                  onValueChange={(e) =>
                     updateField(
                       "discountPrice",
-                      e.target.value === "" ? null : Math.max(0, Math.floor(Number(e.target.value))),
+                      e === "" ? null : Math.max(0, Math.floor(Number(e))),
                     )
                   }
                   className="w-full border-b border-slate-600 bg-inherit py-1 text-sm text-slate-100 transition-colors focus:border-b-2 focus:border-emerald-500 focus:outline-none"
@@ -513,17 +511,16 @@ const BasicInfoFields = ({
                       <label className="block text-[11px] text-slate-400 mb-1">
                         قیمت (تومان) *
                       </label>
-                      <input
-                        type="number"
+                      <MoneyInput
                         min="0"
                         step="1"
                         placeholder="قیمت"
                         value={variant.price || ""}
-                        onChange={(e) =>
+                        onValueChange={(e) =>
                           handleUpdateVariant(
                             index,
                             "price",
-                            Math.max(0, Math.floor(Number(e.target.value))),
+                            Math.max(0, Math.floor(Number(e))),
                           )
                         }
                         className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 outline-none focus:border-indigo-500"
@@ -541,19 +538,18 @@ const BasicInfoFields = ({
                       <label className="block text-[11px] text-slate-400 mb-1">
                         قیمت تخفیف
                       </label>
-                      <input
-                        type="number"
+                      <MoneyInput
                         min="0"
                         step="1"
                         placeholder="اختیاری"
                         value={variant.discountPrice ?? ""}
-                        onChange={(e) =>
+                        onValueChange={(e) =>
                           handleUpdateVariant(
                             index,
                             "discountPrice",
-                            e.target.value === ""
+                            e === ""
                               ? null
-                              : Math.max(0, Math.floor(Number(e.target.value))),
+                              : Math.max(0, Math.floor(Number(e))),
                           )
                         }
                         className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 outline-none focus:border-emerald-500"

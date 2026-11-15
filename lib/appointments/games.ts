@@ -3,16 +3,39 @@ export type InstallationGame = InstallationGameRef & {
   name: string;
   version: "PS4" | "PS5" | "Xbox";
   sizeGB: number | null;
+  price?: number | null;
   imageUrl: string;
   imageAlt: string;
 };
 export type GameCatalogDocument = {
   platform: string;
-  items?: Array<{ _id: unknown; name: string; size?: number | null; imageUrl?: string; imageAlt?: string }>;
+  items?: Array<{ _id: unknown; name: string; size?: number | null; price?: number | null; imageUrl?: string; imageAlt?: string }>;
 };
 
 export const MAX_INSTALLATION_GAMES = 100;
+export const INSTALLATION_GAME_FIELDS = "platform items._id items.name items.size items.price items.imageUrl items.imageAlt";
 export const gameKey = (game: InstallationGameRef) => `${game.platform}:${game.gameId}`;
+
+export function isAccountCourierInstallation(order: {
+  fulfillment?: string | null; serviceType?: string | null; device?: string; installationType?: string | null;
+}) {
+  return order.fulfillment === "courier" && order.serviceType === "game_install" &&
+    order.installationType === "account" && (order.device === "ps4" || order.device === "ps5");
+}
+
+function isGamePrice(price: number | null | undefined): price is number {
+  return typeof price === "number" && Number.isSafeInteger(price) && price >= 0;
+}
+
+export function installationGameTotal(games: readonly { price?: number | null }[]) {
+  if (!games.length) return null;
+  let total = 0;
+  for (const game of games) {
+    if (!isGamePrice(game.price)) return null;
+    total += game.price;
+  }
+  return Number.isSafeInteger(total) ? total : null;
+}
 
 function normalizeGamePlatform(platform: string) {
   const key = platform.trim().toLowerCase();
@@ -46,6 +69,7 @@ export function installationCatalog(docs: GameCatalogDocument[], platforms: stri
         platform, gameId: String(item._id), name: item.name,
         version: platform === "xbox" ? "Xbox" : platform.startsWith("ps5") ? "PS5" : "PS4",
         sizeGB: typeof item.size === "number" && Number.isFinite(item.size) && item.size >= 0 ? item.size : null,
+        ...((platform === "ps4" || platform === "ps5") && { price: isGamePrice(item.price) ? item.price : null }),
         imageUrl: item.imageUrl || "", imageAlt: item.imageAlt || "",
       };
       games.set(gameKey(game), game);

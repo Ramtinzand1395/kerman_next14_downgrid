@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/loyalty/api";
 import GameList from "@/model/GameList";
-import { catalogPlatformAliases, installationCatalog, installationPlatforms, type GameCatalogDocument } from "@/lib/appointments/games";
+import { catalogPlatformAliases, installationCatalog, installationPlatforms, INSTALLATION_GAME_FIELDS, type GameCatalogDocument } from "@/lib/appointments/games";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +20,7 @@ export async function GET(req: Request) {
   const search = (params.get("search") || "").trim().slice(0, 250).toLocaleLowerCase();
   try {
     const docs = await GameList.find({ platform: { $in: catalogPlatformAliases(platforms) } })
-      .select("platform items._id items.name items.size items.imageUrl items.imageAlt").lean() as GameCatalogDocument[];
+      .select(INSTALLATION_GAME_FIELDS).lean() as GameCatalogDocument[];
     const games = installationCatalog(docs, platforms).filter((game) => !search || game.name.toLocaleLowerCase().includes(search));
     return NextResponse.json({ games: games.slice((page - 1) * limit, page * limit), total: games.length, pages: Math.max(1, Math.ceil(games.length / limit)), page });
   } catch (error) {

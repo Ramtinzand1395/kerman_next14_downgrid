@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import Address from "@/model/Address";
+import GameList from "@/model/GameList";
 import VisitReward from "@/model/VisitReward";
 import { requireUser } from "@/lib/loyalty/api";
 import { computeAppointmentPricing } from "@/lib/appointments/policy";
 import { findCourierRegion, getAppointmentSettings } from "@/lib/appointments/settings";
+import {
+  catalogPlatformAliases, installationCatalog, installationGameTotal, installationPlatforms,
+  INSTALLATION_GAME_FIELDS, isAccountCourierInstallation, resolveInstallationGames,
+  type GameCatalogDocument, type InstallationGame,
+} from "@/lib/appointments/games";
+import { installationGameRefSchema } from "@/validations/appointment.validation";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -15,6 +22,8 @@ const courierPreviewSchema = z.object({
   addressId: z.string().regex(objectIdRegex, "شناسه آدرس نامعتبر است"),
   serviceType: z.enum(["game_install", "repair"]).optional(),
   device: z.string().trim().max(60).optional(),
+  installationType: z.enum(["account", "copy"]).nullable().optional(),
+  selectedGames: z.array(installationGameRefSchema).max(100).default([]),
   selectedRewardId: z.string().regex(objectIdRegex).nullable().optional(),
 });
 
@@ -41,7 +50,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { addressId, serviceType, selectedRewardId } = parsed.data;
+  const { addressId, serviceType, device, installationType, selectedRewardId, selectedGames } = parsed.data;
 
   // ── 1. Load settings ──────────────────────────────────────────────────────
   const settings = await getAppointmentSettings();
@@ -90,6 +99,19 @@ export async function POST(req: Request) {
   const returnShippingCost =
     settings.courierRoundTripMultiplier > 1 ? pickupShippingCost : 0;
   const shippingBaseAmount = pickupShippingCost + returnShippingCost;
+  let quotedGames: InstallationGame[] | undefined;
+  if (device && selectedGames.length && isAccountCourierInstallation({
+    fulfillment: "courier", serviceType, device, installationType,
+  })) {
+    const platforms = installationPlatforms(device, installationType);
+    const catalog = await GameList.find({ platform: { $in: catalogPlatformAliases(platforms) } })
+      .select(INSTALLATION_GAME_FIELDS).lean() as GameCatalogDocument[];
+    try {
+      quotedGames = resolveInstallationGames(selectedGames, installationCatalog(catalog, platforms));
+    } catch (error) {
+      return NextResponse.json({ error: (error as Error).message }, { status: 422 });
+    }
+  }
 
   // ── 5. Resolve optional reward ────────────────────────────────────────────
   let rewardDetails: Parameters<typeof computeAppointmentPricing>[0]["reward"] = null;
@@ -114,14 +136,19 @@ export async function POST(req: Request) {
           minAmount?: number;
           maxShippingCost?: number | null;
           shippingRegion?: string;
+          eligibleDevices?: string[];
+          eligibleInstallationTypes?: string[];
         };
       };
 
-      const eligible =
-        !serviceType ||
-        (snap.eligibleServices?.includes(serviceType) ?? false);
+      const reward = snap.reward;
+      const eligibleService = !serviceType || snap.eligibleServices?.includes(serviceType);
+      const eligibleSelection = reward?.type === "free_shipping"
+        ? !reward.shippingRegion || reward.shippingRegion.trim().toLowerCase() === addressDoc.city.trim().toLowerCase()
+        : (!reward?.eligibleDevices?.length || Boolean(device && reward.eligibleDevices.includes(device))) &&
+          (!reward?.eligibleInstallationTypes?.length || Boolean(installationType && reward.eligibleInstallationTypes.includes(installationType)));
 
-      if (eligible && snap.reward) {
+      if (eligibleService && eligibleSelection && snap.reward) {
         rewardDetails = snap.reward;
         rewardPreview = {
           applicable: true,
@@ -137,7 +164,7 @@ export async function POST(req: Request) {
   const pricing = computeAppointmentPricing({
     fulfillment: "courier",
     serviceType: serviceType ?? "repair",
-    serviceBaseAmount: null,
+    serviceBaseAmount: quotedGames ? installationGameTotal(quotedGames) : null,
     shippingBaseAmount,
     reward: rewardDetails,
     deliveryCity: addressDoc.city,
@@ -154,12 +181,11 @@ export async function POST(req: Request) {
       city: region.city,
     },
     pricing: {
+      ...pricing,
       pickupShippingCost,
       returnShippingCost,
-      shippingBaseAmount: pricing.shippingBaseAmount,
-      shippingDiscountAmount: pricing.shippingDiscountAmount,
-      shippingFinalAmount: pricing.shippingFinalAmount,
     },
+    ...(quotedGames && { selectedGames: quotedGames }),
   };
 
   if (rewardPreview) {

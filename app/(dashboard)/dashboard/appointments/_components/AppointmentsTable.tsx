@@ -167,7 +167,10 @@ export default function AppointmentsTable({
               </dl>
 
               {item.pricing?.known && (
-                <p className="mt-3 text-sm font-bold text-slate-800">مبلغ قابل پرداخت: {toman(item.pricing.finalAmount)}</p>
+                <div className="mt-3 space-y-1 text-slate-800">
+                  {item.fulfillment === "courier" && <p className="text-xs">مبلغ خدمت {toman(item.pricing.serviceBaseAmount ?? item.pricing.baseAmount)}</p>}
+                  <p className="text-sm font-bold">{item.status === "completed" ? "مبلغ قابل پرداخت" : "جمع سفارش"} {toman(item.pricing.finalAmount)}</p>
+                </div>
               )}
 
               {item.description ? (

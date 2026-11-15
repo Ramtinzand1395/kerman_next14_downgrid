@@ -1,6 +1,7 @@
 "use client";
 // app/(dashboard)/dashboard/loyalty/tabs/CouponsTab.tsx
 // مدیریت کوپن‌های تخفیف: لیست با جستجو، ساخت/ویرایش، فعال/غیرفعال
+import MoneyInput from "@/app/components/forms/MoneyInput";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Plus, Search } from "lucide-react";
@@ -294,32 +295,29 @@ export default function CouponsTab() {
                 </select>
               </Field>
               <Field label={form.type === "percent" ? "درصد تخفیف" : "مبلغ تخفیف (تومان)"}>
-                <input
+                <MoneyInput
                   required
-                  type="number"
                   min={1}
                   value={form.value}
-                  onChange={(e) => setForm({ ...form, value: Number(e.target.value) })}
+                  onValueChange={(e) => setForm({ ...form, value: Number(e) })}
                   className={inputCls}
                 />
               </Field>
               <Field label="حداقل مبلغ خرید">
-                <input
-                  type="number"
+                <MoneyInput
                   min={0}
                   value={form.minPurchaseAmount}
-                  onChange={(e) =>
-                    setForm({ ...form, minPurchaseAmount: Number(e.target.value) })
+                  onValueChange={(e) =>
+                    setForm({ ...form, minPurchaseAmount: Number(e) })
                   }
                   className={inputCls}
                 />
               </Field>
               <Field label="سقف تخفیف (اختیاری)">
-                <input
-                  type="number"
+                <MoneyInput
                   min={0}
                   value={form.maxDiscountAmount}
-                  onChange={(e) => setForm({ ...form, maxDiscountAmount: e.target.value })}
+                  onValueChange={(e) => setForm({ ...form, maxDiscountAmount: e })}
                   className={inputCls}
                 />
               </Field>

@@ -239,13 +239,7 @@ function toman(value: number) {
   return `${Math.round(value).toLocaleString("fa-IR")} تومان`;
 }
 
-function compactAmount(value: number) {
-  if (Math.abs(value) >= 1_000_000_000)
-    return `${(value / 1_000_000_000).toLocaleString("fa-IR", { maximumFractionDigits: 1 })} مـ`;
-  if (Math.abs(value) >= 1_000_000)
-    return `${(value / 1_000_000).toLocaleString("fa-IR", { maximumFractionDigits: 1 })} م`;
-  if (Math.abs(value) >= 1_000)
-    return `${(value / 1_000).toLocaleString("fa-IR", { maximumFractionDigits: 0 })} هـ`;
+function formatAmountTick(value: number) {
   return value.toLocaleString("fa-IR");
 }
 
@@ -913,9 +907,9 @@ export default function DashboardPage() {
                   minTickGap={24}
                 />
                 <YAxis
-                  tickFormatter={compactAmount}
+                  tickFormatter={formatAmountTick}
                   tick={{ fontSize: 11 }}
-                  width={62}
+                  width={100}
                 />
                 <Tooltip
                   labelFormatter={(label) => `بازه ${label}`}
@@ -1025,7 +1019,7 @@ export default function DashboardPage() {
                   tick={{ fontSize: 11 }}
                   minTickGap={22}
                 />
-                <YAxis tickFormatter={compactAmount} width={60} />
+                <YAxis tickFormatter={formatAmountTick} width={100} />
                 <Tooltip
                   formatter={(value: any) => [
                     toman(Number(value || 0)),
@@ -1225,7 +1219,7 @@ export default function DashboardPage() {
               <BarChart data={appointments.points}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={24} />
-                <YAxis tickFormatter={compactAmount} tick={{ fontSize: 11 }} width={62} />
+                <YAxis tickFormatter={formatAmountTick} tick={{ fontSize: 11 }} width={100} />
                 <Tooltip formatter={(value: any) => [toman(Number(value || 0)), "وجه دریافت‌شده خدمات و پیک"]} />
                 <Bar dataKey="servicePaidAmount" fill="#059669" radius={[4, 4, 0, 0]} />
               </BarChart>

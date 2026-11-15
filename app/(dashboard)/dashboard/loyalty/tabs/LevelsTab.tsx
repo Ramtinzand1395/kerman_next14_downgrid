@@ -1,6 +1,7 @@
 "use client";
 // app/(dashboard)/dashboard/loyalty/tabs/LevelsTab.tsx
 // مدیریت سطوح Level (Rookie…Legend) و VIP (Bronze…Diamond): آستانه‌ها و مزایا
+import MoneyInput from "@/app/components/forms/MoneyInput";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Crown, RefreshCw, Sparkles } from "lucide-react";
@@ -180,12 +181,11 @@ export default function LevelsTab() {
                 />
               </Field>
               <Field label={editing.kind === "level" ? "حداقل XP" : "حداقل مجموع خرید (تومان)"}>
-                <input
+                <MoneyInput
                   required
-                  type="number"
                   min={0}
                   value={form.threshold}
-                  onChange={(e) => setForm({ ...form, threshold: Number(e.target.value) })}
+                  onValueChange={(e) => setForm({ ...form, threshold: Number(e) })}
                   className={inputCls}
                 />
               </Field>

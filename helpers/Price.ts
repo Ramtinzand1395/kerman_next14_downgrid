@@ -1,4 +1,4 @@
-const persianNumberFormatter = new Intl.NumberFormat("fa-IR");
+const persianNumberFormatter = new Intl.NumberFormat("fa-IR", { useGrouping: true });
 
 export const formatPrice = (price: number) => {
   return persianNumberFormatter.format(price);

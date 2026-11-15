@@ -46,8 +46,10 @@ const ui = load('./app/(dashboard)/dashboard/appointments/_components/appointmen
 });
 const {default: Drawer} = load('./app/(dashboard)/dashboard/appointments/_components/AppointmentDetailsDrawer.tsx', {
   '@/app/components/games/InstallationGameSummary': {__esModule: true, default: () => null},
+  '@/lib/appointments/games': load('./lib/appointments/games.ts'),
   './appointment-ui': ui,
 });
+const {default: MoneyInput} = load('./app/components/forms/MoneyInput.tsx');
 const item = {_id: 'a'.repeat(24), trackingCode: 'KA-REQUEST-123', serviceType: 'game_install',
   device: 'PS5', status: 'completed', customerName: 'مشتری آزمایشی', phone: '09123456789', startsAt: '2026-11-01T10:00:00Z'};
 
@@ -55,6 +57,13 @@ test('admin details render payment reference, captured amount and time independe
   const html = renderToStaticMarkup(React.createElement(Drawer, {item: {...item,
     payment: {status: 'paid', amount: 920000, refId: '123456789012', paidAt: '2026-11-06T08:00:00Z'}}, onClose() {}}));
   for (const value of ['پرداخت موفق', 'کد پیگیری پرداخت', '123456789012', 'مبلغ پرداخت‌شده', '۹۲۰٬۰۰۰', 'زمان پرداخت', 'KA-REQUEST-123']) assert.ok(html.includes(value), value);
+});
+
+test('amount inputs show grouped digits for Persian, Arabic and signed amounts', () => {
+  for (const [value, formatted] of [['۱۲۰۰۰۰۰', '1,200,000'], ['١٢٣٤٥٦', '123,456'], [-50000, '-50,000']]) {
+    const html = renderToStaticMarkup(React.createElement(MoneyInput, {value, onValueChange() {}}));
+    assert.ok(html.includes(`value="${formatted}"`));
+  }
 });
 
 test('admin details distinguish all five payment states and legacy missing payment', () => {

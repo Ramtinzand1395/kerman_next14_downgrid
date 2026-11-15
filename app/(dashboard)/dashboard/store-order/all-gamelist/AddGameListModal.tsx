@@ -1,5 +1,6 @@
 "use client";
 
+import MoneyInput from "@/app/components/forms/MoneyInput";
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { toast } from "react-toastify";
@@ -84,7 +85,7 @@ export default function GameFormModal({ platform, editGame, close, refresh }: Pr
           <label className="block text-sm">نام بازی<input required maxLength={250} value={form.name} onChange={e => change("name", e.target.value)} className={fieldClass} dir="auto" /></label>
           <div className="grid grid-cols-2 gap-3">
             <label className="text-sm">حجم (GB)<input type="number" min="0" step="any" value={form.size} onChange={e => change("size", e.target.value)} className={fieldClass} /></label>
-            <label className="text-sm">قیمت (تومان)<input type="number" min="0" step="1" value={form.price} onChange={e => change("price", e.target.value)} className={fieldClass} /></label>
+            <label className="text-sm">قیمت (تومان)<MoneyInput min="0" step="1" value={form.price} onValueChange={(e) => change("price", e)} className={fieldClass} /></label>
           </div>
           <label className="block text-sm">فضای ذخیره‌سازی<input maxLength={100} value={form.storage} onChange={e => change("storage", e.target.value)} className={fieldClass} /></label>
           <div className="space-y-3 rounded-2xl border p-3">

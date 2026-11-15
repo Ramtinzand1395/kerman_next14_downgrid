@@ -12,6 +12,9 @@ import { toast } from "react-toastify";
 
 import { ConsoleType, Customer, GameItem, storeOrder, OrdersByConsole } from "@/types";
 import type { AppointmentItem } from "@/types/appointments";
+import { installationGameTotal, isAccountCourierInstallation } from "@/lib/appointments/games";
+import MoneyInput from "@/app/components/forms/MoneyInput";
+import { formatPrice } from "@/helpers/Price";
 import GameDropdown from "./GameDropdown";
 import {
   clearStoreOrderDraft,
@@ -46,6 +49,7 @@ const AddCustomerOrder = ({
   setOrders,
   onBack,
 }: AddCustomerOrderProps) => {
+  const catalogPricing = Boolean(appointment && isAccountCourierInstallation(appointment));
   const [loading, setLoading] = useState(false);
   const [requestKey] = useState(
     () => appointment ? "" : readStoreOrderDraft()?.requestKey || crypto.randomUUID(),
@@ -84,6 +88,7 @@ const AddCustomerOrder = ({
           _id: `${game.platform}:${game.gameId}`,
           name: game.name,
           size: game.sizeGB ?? undefined,
+          price: catalogPricing ? game.price ?? undefined : undefined,
           imageUrl: game.imageUrl,
           imageAlt: game.imageAlt,
           appointmentGame: { platform: game.platform, gameId: game.gameId },
@@ -110,6 +115,9 @@ const AddCustomerOrder = ({
     if (order && !appointment) writeStoreOrderDraft({ order, requestKey });
   }, [appointment, order, requestKey]);
 
+  const catalogTotal = catalogPricing ? installationGameTotal(order?.list ?? []) : null;
+  const serviceAmount = catalogTotal ?? order?.price;
+
   const handleSubmit = async () => {
     if (!customerData._id) {
       toast.warning("پیش از ثبت سفارش، اطلاعات مشتری را ذخیره کنید.");
@@ -118,7 +126,7 @@ const AddCustomerOrder = ({
 
     const repair = appointment?.serviceType === "repair";
     if (!order || (!repair && (!order.consoleType || !order.list.length)) ||
-        order.price === null || !Number.isSafeInteger(order.price) || order.price < 0 || (!appointment && order.price === 0)) {
+        serviceAmount == null || !Number.isSafeInteger(serviceAmount) || serviceAmount < 0 || (!appointment && serviceAmount === 0)) {
       toast.warning("برای ثبت سفارش، نوع دستگاه، قیمت و حداقل یک بازی را مشخص کنید.");
       return;
     }
@@ -134,7 +142,7 @@ const AddCustomerOrder = ({
             registerStoreOrder: true,
             storeOrderCustomerId: customerData._id,
             storeOrderDescription: order.description,
-            baseAmount: order.price,
+            ...(catalogTotal === null && { baseAmount: serviceAmount }),
             ...(!repair && { selectedGames: order.list.map((game) => game.appointmentGame) }),
             expectedUpdatedAt: appointment.updatedAt,
           }),
@@ -201,23 +209,6 @@ const AddCustomerOrder = ({
   ) => {
     const { name, value } = e.target;
 
-    if (name === "price") {
-      const numericValue = value.replace(/,/g, "");
-
-      if (!/^\d*$/.test(numericValue)) return;
-
-      setOrder((prev) =>
-        prev
-          ? {
-              ...prev,
-              price: numericValue === "" ? null : Number(numericValue),
-            }
-          : prev,
-      );
-
-      return;
-    }
-
     setOrder((prev) => (prev ? { ...prev, [name]: value } : prev));
   };
 
@@ -236,7 +227,7 @@ const AddCustomerOrder = ({
         list: newList,
         totalSize,
         totalPrice,
-        price: appointment ? prev.price : totalPrice === 0 ? null : totalPrice,
+        price: catalogPricing ? installationGameTotal(newList) : appointment ? prev.price : totalPrice === 0 ? null : totalPrice,
       };
     });
   };
@@ -251,12 +242,13 @@ const AddCustomerOrder = ({
           <span>{appointment ? "مبلغ خدمت (تومان)" : "قیمت نهایی سفارش (تومان)"}</span>
 
           <div className="relative">
-            <input
-              type="text"
+            <MoneyInput
               name="price"
-              value={formatNumber(order?.price)}
-              onChange={handleOrderChange}
-              className="h-10 w-full rounded-xl border border-slate-300 pr-9 pl-3 outline-none ring-indigo-100 focus:ring-4"
+              min={0}
+              value={serviceAmount}
+              onValueChange={(value) => setOrder((prev) => prev ? { ...prev, price: value === "" ? null : Number(value) } : prev)}
+              readOnly={catalogTotal !== null}
+              className="h-10 w-full rounded-xl border border-slate-300 px-9 outline-none ring-indigo-100 focus:ring-4"
             />
 
             <ReceiptText className="absolute right-3 top-2.5 h-4 w-4 text-slate-400" />
@@ -329,7 +321,9 @@ const AddCustomerOrder = ({
 
                   <div className="mt-1 flex items-center gap-3 text-xs text-slate-500">
                     <span>{(game.size || 0).toLocaleString("en-US")} GB</span>
-                    {!appointment && <span>{(game.price || 0).toLocaleString("en-US")} تومان</span>}
+                    {catalogPricing
+                      ? <span>{game.price == null ? "قیمت پس از بررسی" : `${formatPrice(game.price)} تومان`}</span>
+                      : !appointment && <span>{formatPrice(game.price ?? 0)} تومان</span>}
                   </div>
                 </div>
 
@@ -361,10 +355,10 @@ const AddCustomerOrder = ({
             </p>
           </div>
 
-          {!appointment && <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+          {(!appointment || catalogPricing) && <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
             <p className="text-xs text-slate-500">مجموع قیمت بازی‌ها</p>
             <p className="text-sm font-semibold text-slate-700">
-              {(order?.totalPrice ?? 0).toLocaleString("en-US")} تومان
+              {catalogPricing && catalogTotal === null ? "پس از بررسی" : `${formatPrice(catalogTotal ?? order?.totalPrice ?? 0)} تومان`}
             </p>
           </div>}
         </div>

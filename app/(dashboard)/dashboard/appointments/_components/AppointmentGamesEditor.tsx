@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { gameKey, MAX_INSTALLATION_GAMES, type InstallationGame } from "@/lib/appointments/games";
+import { gameKey, installationGameTotal, isAccountCourierInstallation, MAX_INSTALLATION_GAMES, type InstallationGame } from "@/lib/appointments/games";
+import { formatPrice } from "@/helpers/Price";
+import MoneyInput from "@/app/components/forms/MoneyInput";
 import type { AppointmentItem } from "@/types/appointments";
 
 type Props = {
@@ -22,6 +24,13 @@ export default function AppointmentGamesEditor({ item, onClose, onSaved }: Props
   const [saving, setSaving] = useState(false);
   const [catalogError, setCatalogError] = useState("");
   const [saveError, setSaveError] = useState("");
+  const catalogPricing = isAccountCourierInstallation(item);
+  const gamesTotal = catalogPricing ? installationGameTotal(selected) : null;
+
+  function changeSelection(games: InstallationGame[]) {
+    setSelected(games);
+    if (catalogPricing) setAmount(installationGameTotal(games)?.toString() ?? "");
+  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -63,7 +72,7 @@ export default function AppointmentGamesEditor({ item, onClose, onSaved }: Props
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           selectedGames: selected.map(({ platform, gameId }) => ({ platform, gameId })),
-          ...(amount !== initialAmount && amount !== "" ? { baseAmount: Number(amount) } : {}),
+          ...(gamesTotal === null && amount !== "" && amount !== initialAmount ? { baseAmount: Number(amount) } : {}),
           expectedUpdatedAt: item.updatedAt,
         }),
       });
@@ -96,9 +105,9 @@ export default function AppointmentGamesEditor({ item, onClose, onSaved }: Props
             const key = gameKey(game);
             return (
               <button key={key} type="button" disabled={saving || selected.length >= MAX_INSTALLATION_GAMES || selected.some((entry) => gameKey(entry) === key)}
-                onClick={() => setSelected((previous) => [...previous, game])}
+                onClick={() => changeSelection([...selected, game])}
                 className="block w-full rounded-lg px-3 py-1.5 text-right text-sm hover:bg-indigo-50 disabled:opacity-40">
-                افزودن {game.name} · {game.version}
+                افزودن {game.name} · {game.version}{catalogPricing && (game.price == null ? " · قیمت نامشخص" : ` · ${formatPrice(game.price)} تومان`)}
               </button>
             );
           }) : <p className="p-2 text-sm">بازی پیدا نشد.</p>}
@@ -115,15 +124,15 @@ export default function AppointmentGamesEditor({ item, onClose, onSaved }: Props
           {selected.map((game) => (
             <li key={gameKey(game)} className="rounded-lg bg-indigo-50 px-2 py-1 text-sm">
               <button type="button" disabled={saving} aria-label={`حذف ${game.name} نسخه ${game.version}`}
-                onClick={() => setSelected((previous) => previous.filter((entry) => gameKey(entry) !== gameKey(game)))}>
-                {game.name} · {game.version} ×
+                onClick={() => changeSelection(selected.filter((entry) => gameKey(entry) !== gameKey(game)))}>
+                {game.name} · {game.version}{catalogPricing && game.price != null && ` · ${formatPrice(game.price)} تومان`} ×
               </button>
             </li>
           ))}
         </ul>
         <label className="block text-sm font-bold">
           مبلغ خدمت (تومان)
-          <input type="number" min={0} max={1_000_000_000} step={1} value={amount} onChange={(event) => setAmount(event.target.value)}
+          <MoneyInput min={0} max={gamesTotal === null ? 1_000_000_000 : undefined} value={gamesTotal ?? amount} onValueChange={setAmount} readOnly={gamesTotal !== null}
             className="mt-1 w-full rounded-lg border p-2" />
         </label>
         {saveError && <p role="alert" className="text-sm font-bold text-rose-700">{saveError}</p>}
