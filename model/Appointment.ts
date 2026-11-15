@@ -128,6 +128,8 @@ const AppointmentSchema = new Schema(
       refId: { type: String },
       startedAt: { type: Date },
       paidAt: { type: Date },
+      nextCheckAt: { type: Date },
+      notificationPending: { type: Boolean },
     },
     storeOrderCustomer: { type: Schema.Types.ObjectId, ref: "Customer", default: null },
     storeOrderDeliveredAt: { type: Date, default: null },
@@ -141,6 +143,11 @@ const AppointmentSchema = new Schema(
 );
 
 AppointmentSchema.index({ "payment.authority": 1 }, { unique: true, partialFilterExpression: { "payment.authority": { $type: "string" } } });
+AppointmentSchema.index({ "payment.status": 1, "payment.nextCheckAt": 1 });
+AppointmentSchema.index(
+  { "payment.notificationPending": 1, "payment.paidAt": 1 },
+  { partialFilterExpression: { "payment.notificationPending": true } },
+);
 AppointmentSchema.index({ user: 1, clientRequestKey: 1 }, { unique: true });
 AppointmentSchema.index({ serviceType: 1, startsAt: 1, status: 1 });
 AppointmentSchema.index({ fulfillment: 1, status: 1 });

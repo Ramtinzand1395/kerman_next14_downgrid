@@ -246,6 +246,28 @@ function AppointmentsAdminContent() {
     }
   };
 
+  const checkPayment = async (item: AppointmentItem) => {
+    setWorkingId(item._id);
+    setNotice("");
+    try {
+      const response = await fetch(`/api/admin/appointments/${item._id}/payment?check=1`, { method: "POST" });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "بررسی پرداخت انجام نشد.");
+      const messages: Record<string, string> = {
+        paid: "پرداخت در زرین‌پال تأیید شد.",
+        failed: "زرین‌پال اعلام کرد پرداخت قبلی تکمیل نشده است.",
+        unpaid: "هنوز پرداختی برای این سفارش ثبت نشده است.",
+        pending: "نتیجه پرداخت هنوز از زرین‌پال تأیید نشده است.",
+      };
+      setNotice(messages[payload.data.paymentStatus]);
+      await loadAppointments();
+    } catch (reason) {
+      setNotice(reason instanceof Error ? reason.message : "بررسی پرداخت انجام نشد.");
+    } finally {
+      setWorkingId("");
+    }
+  };
+
   const updateStatus = async (
     item: AppointmentItem,
     status: AppointmentStatus,
@@ -540,6 +562,7 @@ function AppointmentsAdminContent() {
               }}
               onEditGames={setGamesEditor}
               onRequestPayment={requestPaymentLink}
+              onCheckPayment={checkPayment}
               onRequestCourier={(item, nextStatus) =>
                 setTransitionRequest({ kind: "courier", item, nextStatus })
               }

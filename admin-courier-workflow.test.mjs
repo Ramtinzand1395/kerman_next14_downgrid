@@ -58,7 +58,9 @@ function harness({ smsState = "sent" } = {}){
   });
   const paymentRoute = load('./app/api/admin/appointments/[id]/payment/route.ts',{
     '@/lib/loyalty/api':{requireAppointmentOperator:async()=>({userId:id}),ok:data=>({status:200,data}),fail:(error,status)=>({status,error}),withRateLimit:()=>null},
-    '@/lib/appointments/payment-link':{createAppointmentPaymentLink:async()=>({url:'https://example.test/pay'})},
+    '@/lib/appointments/payment-link':{isPayableAppointmentAmount:amount=>Number.isSafeInteger(amount) && amount > 0},
+    '@/lib/appointments/payment-recovery':{appointmentOrdersPath:()=>'/my-profile?step=5&ordersTab=games'},
+    '@/lib/baseUrl':{getSiteUrl:()=> 'https://example.test'},
     '@/lib/notifications/service':{notifyUser:async n=>{notices.push(n);}},
     '@/lib/sms/order-patterns':orderPatterns,
     '@/lib/sms/business':smsTransport,

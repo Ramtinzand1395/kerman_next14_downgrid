@@ -37,6 +37,7 @@ type Props = {
   onEditGames: (item: AppointmentItem) => void;
   onOpenSettlement: (item: AppointmentItem) => void;
   onRequestPayment: (item: AppointmentItem) => void;
+  onCheckPayment: (item: AppointmentItem) => void;
   onRequestCourier: (item: AppointmentItem, status: CourierStatus) => void;
   onRequestStatus: (
     item: AppointmentItem,
@@ -56,6 +57,7 @@ export default function AppointmentsTable({
   onOpenSettlement,
   onEditGames,
   onRequestPayment,
+  onCheckPayment,
   onRequestCourier,
   onRequestStatus,
 }: Props) {
@@ -218,10 +220,15 @@ export default function AppointmentsTable({
                 {item.status === "completed" && item.payment?.status !== "paid" && Number(item.pricing?.finalAmount) > 0 && (
                   <button type="button" disabled={workingId === item._id} onClick={() => onRequestPayment(item)} className="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">ساخت / کپی / ارسال لینک پرداخت</button>
                 )}
+                {item.payment?.status === "pending" && (
+                  <button type="button" disabled={workingId === item._id} onClick={() => onCheckPayment(item)} className="rounded-xl border border-amber-300 px-3 py-2 text-xs font-bold text-amber-800 disabled:opacity-50">
+                    بررسی وضعیت پرداخت
+                  </button>
+                )}
                 {["pending", "confirmed"].includes(item.status) && (!courier || ["pending", "scheduled"].includes(courier.status)) && item.payment?.status !== "paid" && (
                   <button type="button" disabled={workingId === item._id} onClick={() => onRequestStatus(item, "cancelled")} className="rounded-xl border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700 disabled:opacity-50">لغو سفارش</button>
                 )}
-                {item.pricing?.known && <span className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700">پرداخت: {item.payment?.status === "paid" ? "موفق" : item.payment?.status === "pending" ? "در انتظار مشتری" : "پرداخت‌نشده"}{item.payment?.refId ? ` · پیگیری ${item.payment.refId}` : ""}</span>}
+                {item.pricing?.known && <span className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700">پرداخت: {item.payment?.status === "paid" ? "موفق" : item.payment?.status === "pending" ? "در انتظار تأیید زرین‌پال" : item.payment?.status === "failed" ? "ناموفق" : "پرداخت‌نشده"}{item.payment?.refId ? ` · پیگیری ${item.payment.refId}` : ""}</span>}
                 <button
                   type="button"
                   onClick={() => onOpenDetails(item)}
