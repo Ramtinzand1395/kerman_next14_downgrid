@@ -146,7 +146,7 @@ export function hasCatalogFilters(query: CatalogQuery) {
   );
 }
 
-const guides: Record<string, { intro: string; guide: string }> = {
+const guides: Record<string, { heading?: string; intro: string; guide: string }> = {
   "gaming-wall-art": {
     intro:
       "تابلو گیمینگ و شاسی دکوراتیو با طرح بازی‌ها و شخصیت‌های محبوب را در این صفحه ببینید. هر طرح صفحهٔ مخصوص خود را دارد و اندازه‌ها و نوع اجرای موجود در همان صفحه قابل انتخاب‌اند.",
@@ -204,6 +204,7 @@ Object.assign(guides, {
       "هنگام خرید PS2، به مدل دستگاه، ورودی‌های تصویر، سازگاری با تلویزیون، دسته‌ها و مموری کارت توجه کنید. روش اجرای بازی و کابل‌های مورد نیاز را از مشخصات همان دستگاه بررسی کنید.",
   },
   "account-games": {
+    heading: "خرید بازی اکانتی PS4 و PS5",
     intro:
       "بازی‌های اکانتی را همراه با پلتفرم و شرایط استفادهٔ هر محصول بررسی کنید.",
     guide:
@@ -276,7 +277,8 @@ export function categoryContent(
   const parentName = ancestors.at(-1)?.name;
   const name = category.name;
   return {
-    title: category.seoTitle || `خرید ${name} و بررسی قیمت`,
+    heading: specific?.heading || `خرید ${name}`,
+    title: category.seoTitle || (specific?.heading ? `${specific.heading} | قیمت و ظرفیت` : `خرید ${name} و بررسی قیمت`),
     description:
       category.metaDescription ||
       `خرید ${name} از کرمان آتاری؛ مشاهده محصولات${parentName ? ` در دسته ${parentName}` : ""}، مقایسه قیمت و مشخصات و بررسی مدل‌های موجود.`,

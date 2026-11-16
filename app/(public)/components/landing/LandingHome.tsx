@@ -297,10 +297,10 @@ export default function LandingHome({
                   فروشگاه برو.
                 </p>
                 <Link
-                  href="/category/games"
+                  href="/category/account-games"
                   className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 text-sm font-black text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/70 focus:ring-offset-2 focus:ring-offset-[#061f4f]"
                 >
-                  دیدن همه بازی‌ها
+                  خرید بازی اکانتی
                   <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                 </Link>
               </div>

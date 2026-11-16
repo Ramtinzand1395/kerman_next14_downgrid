@@ -79,6 +79,9 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const { category, rows, ancestors, query, listing, totalPages, content } =
     await getPage(params.slug, JSON.stringify(searchParams));
   const path = categoryHref(category.slug);
+  const platformFilters = category.slug === "account-games"
+    ? listing.tags.filter(({ slug }) => slug === "ps4-game" || slug === "ps5-game")
+    : [];
   if (
     searchParams.category ||
     decodeCategorySlug(params.slug) !== params.slug
@@ -159,7 +162,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
           مجموعهٔ محصولات کرمان آتاری
         </p>
         <h1 className="text-2xl font-extrabold md:text-3xl">
-          خرید {category.name}
+          {content.heading}
         </h1>
         <p className="mt-4 max-w-3xl text-sm leading-8 text-slate-200">
           {content.intro}
@@ -185,6 +188,32 @@ export default async function CategoryPage({ params, searchParams }: Props) {
               </span>
             </Link>
           ))}
+        </nav>
+      )}
+      {platformFilters.length > 0 && (
+        <nav aria-label="فیلتر بازی اکانتی بر اساس کنسول" className="flex flex-wrap gap-2">
+          {platformFilters.map((tag) => {
+            const selected = query.tag === tag.slug;
+            const suffix = catalogQueryString({
+              ...query,
+              page: 1,
+              tag: selected ? "" : tag.slug,
+            });
+            return (
+              <Link
+                key={tag.slug}
+                href={suffix ? `${path}?${suffix}` : path}
+                aria-current={selected ? "true" : undefined}
+                className={`rounded-xl border px-4 py-2 text-sm font-semibold ${
+                  selected
+                    ? "border-blue-600 bg-blue-600 text-white"
+                    : "border-blue-200 bg-white text-blue-700 hover:border-blue-500"
+                }`}
+              >
+                {tag.name}
+              </Link>
+            );
+          })}
         </nav>
       )}
       <form
