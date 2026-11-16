@@ -7,12 +7,9 @@ import {
   CalendarDays,
   ChevronLeft,
   Clock3,
-  Dumbbell,
   Gamepad2,
-  Gauge,
   Headphones,
   Instagram,
-  Map,
   MapPin,
   PackageOpen,
   Search,
@@ -22,7 +19,6 @@ import {
   Sparkles,
   Store,
   Swords,
-  UsersRound,
   Wrench,
 } from "lucide-react";
 import type { LandingData } from "@/lib/landing-data";
@@ -34,6 +30,7 @@ import Faq from "./Faq";
 import HomeHeroSlider from "./HomeHeroSlider";
 import { HOME_HERO_SLIDES } from "./home-hero-slides";
 import LandingCatalog from "./LandingCatalog";
+import LandingSpecialOffers from "./LandingSpecialOffers";
 import ServiceOrderSection from "./ServiceOrderSection";
 import { STORE_CONTACT } from "@/lib/store-contact";
 
@@ -68,29 +65,6 @@ const quickAccess = [
     icon: CalendarDays,
   },
 ];
-
-const genreIcons = {
-  sports: Dumbbell,
-  action: Swords,
-  adventure: Map,
-  "two-player": UsersRound,
-  racing: Gauge,
-  rpg: BookOpen,
-} as const;
-
-const genreThemes = {
-  sports:
-    "bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white",
-  action:
-    "bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white",
-  adventure:
-    "bg-amber-50 text-amber-600 group-hover:bg-amber-500 group-hover:text-white",
-  "two-player":
-    "bg-violet-50 text-violet-600 group-hover:bg-violet-600 group-hover:text-white",
-  racing:
-    "bg-sky-50 text-sky-600 group-hover:bg-sky-600 group-hover:text-white",
-  rpg: "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white",
-} as const;
 
 const serviceCards = [
   { title: "عیب‌یابی کنسول", icon: Search },
@@ -266,102 +240,14 @@ export default function LandingHome({
         <div className="landing-section">
           <LandingCatalog
             title="نمیدونی چی بازی کنی؟"
-            description="سبک مورد علاقت رو انتخاب کن تا محبوب ترین بازی های همون سبک را ببینی"
+            description="سبک موردعلاقه‌ات رو انتخاب کن و بازی‌های همون سبک رو ببین."
             tabs={data.gameTabs}
             variant="games"
+            defaultTabId="latest"
           />
         </div>
 
-        <section
-          className="landing-section overflow-hidden rounded-[28px] border border-[#174f9f] bg-[#061f4f] p-4 text-white shadow-[0_22px_55px_rgba(5,35,86,0.18)] sm:p-6 lg:p-8"
-          aria-labelledby="genre-heading"
-        >
-          {data.genres.length > 0 ? (
-            <div className="grid gap-6 lg:grid-cols-[0.72fr_1.28fr] lg:items-center lg:gap-8">
-              <div>
-                <span className="inline-flex min-h-8 items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 text-xs font-black text-blue-100 sm:text-sm">
-                  <Sparkles
-                    className="h-4 w-4 text-[#78aaff]"
-                    aria-hidden="true"
-                  />
-                  انتخاب سریع با حال‌وهوای تو
-                </span>
-                <h2
-                  id="genre-heading"
-                  className="mt-4 text-2xl font-black leading-[1.4] sm:text-3xl lg:text-[36px]"
-                >
-                  نمی‌دونی چی بازی کنی؟
-                </h2>
-                <p className="mt-2 max-w-md text-sm font-medium leading-7 text-blue-100 sm:text-base">
-                  سبک موردعلاقه‌ات را انتخاب کن و مستقیم به بازی‌های همان تگ در
-                  فروشگاه برو.
-                </p>
-                <Link
-                  href="/category/games"
-                  className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 text-sm font-black text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/70 focus:ring-offset-2 focus:ring-offset-[#061f4f]"
-                >
-                  دیدن همه بازی‌ها
-                  <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
-                {data.genres.map((genre) => {
-                  const Icon =
-                    genreIcons[genre.slug as keyof typeof genreIcons] ||
-                    Gamepad2;
-                  const theme =
-                    genreThemes[genre.slug as keyof typeof genreThemes] ||
-                    "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white";
-                  return (
-                    <Link
-                      key={genre.slug}
-                      href={`/category/games?tag=${encodeURIComponent(genre.slug)}`}
-                      className="group flex min-h-[112px] flex-col rounded-2xl border border-white/10 bg-white p-3.5 text-[#0b1d48] shadow-[0_10px_24px_rgba(0,10,35,0.16)] transition duration-300 hover:-translate-y-1 hover:border-white hover:shadow-[0_16px_30px_rgba(0,10,35,0.24)] focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#061f4f] sm:min-h-[126px] sm:p-4"
-                    >
-                      <span
-                        className={
-                          "flex h-10 w-10 items-center justify-center rounded-xl transition-colors duration-300 sm:h-11 sm:w-11 " +
-                          theme
-                        }
-                      >
-                        <Icon className="h-5 w-5" aria-hidden="true" />
-                      </span>
-                      <span className="mt-3 flex w-full items-end gap-2">
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-black sm:text-base">
-                            {genre.name}
-                          </span>
-                          <span className="mt-0.5 block text-[11px] font-bold text-slate-400 sm:text-xs">
-                            {genre.count.toLocaleString("fa-IR")} بازی
-                          </span>
-                        </span>
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition group-hover:bg-[#1469f5] group-hover:text-white">
-                          <ChevronLeft
-                            className="h-3.5 w-3.5"
-                            aria-hidden="true"
-                          />
-                        </span>
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            <div className="py-2 text-center">
-              <h2
-                id="genre-heading"
-                className="text-xl font-black sm:text-2xl lg:text-[28px]"
-              >
-                نمی‌دونی چی بازی کنی؟
-              </h2>
-              <p className="mx-auto mt-4 max-w-lg rounded-xl border border-dashed border-white/25 bg-white/10 p-5 text-xs text-blue-100">
-                هنوز تگ بازیِ دارای محصول منتشرشده ثبت نشده است.
-              </p>
-            </div>
-          )}
-        </section>
+        <LandingSpecialOffers offers={data.offers} />
 
         <div className="landing-section">
           <LandingCatalog

@@ -5,6 +5,7 @@ import ProductModel from "@/model/Product";
 import Tag from "@/model/Tag";
 import "@/model/Comment";
 import type { BlogPost, Product } from "@/types";
+import { getLandingOffer, type LandingOffer, type LandingOfferProduct } from "./landing-offers";
 
 type CategoryRecord = {
   _id: { toString(): string };
@@ -19,12 +20,6 @@ type TagRecord = {
   slug: string;
 };
 
-export type LandingGenre = {
-  name: string;
-  slug: string;
-  count: number;
-};
-
 export type LandingProductTab = {
   id: string;
   label: string;
@@ -36,9 +31,48 @@ export type LandingData = {
   gameTabs: LandingProductTab[];
   equipmentTabs: LandingProductTab[];
   consoles: Product[];
-  genres: LandingGenre[];
+  offers: LandingOffer[];
   articles: BlogPost[];
 };
+
+const GAME_TABS = [
+  { id: "latest", label: "جدیدترین", href: "/category/games" },
+  { id: "adventure", label: "ماجراجویی", href: "/category/games?tag=adventure" },
+  { id: "two-player", label: "دو نفره", href: "/category/games?tag=two-player" },
+  { id: "rpg", label: "نقش‌آفرینی", href: "/category/games?tag=rpg" },
+  { id: "racing", label: "مسابقه‌ای", href: "/category/games?tag=racing" },
+  { id: "sports", label: "ورزشی", href: "/category/games?tag=sports" },
+  { id: "action", label: "اکشن", href: "/category/games?tag=action" },
+];
+
+async function getLandingOffers(): Promise<LandingOffer[]> {
+  try {
+    const products = await ProductModel.find({
+      status: "published",
+      deletedAt: null,
+      $or: [
+        { productType: { $ne: "multi" }, discountPrice: { $type: "number" } },
+        {
+          productType: "multi",
+          variants: {
+            $elemMatch: { isActive: { $ne: false }, discountPrice: { $type: "number" } },
+          },
+        },
+      ],
+    })
+      .select("title slug mainImage mainImageAlt price discountPrice stock productType variantSelector variants._id variants.title variants.price variants.discountPrice variants.isActive variants.stock")
+      .sort({ createdAt: -1, _id: -1 })
+      .lean<LandingOfferProduct[]>();
+
+    return products.flatMap((product) => {
+      const offer = getLandingOffer(product);
+      return offer ? [offer] : [];
+    });
+  } catch (error) {
+    console.error("Landing offers error:", error);
+    return [];
+  }
+}
 
 const PRODUCT_FIELDS =
   "sku title slug description shortDesc price discountPrice stock brand mainImage mainImageAlt productType variants variantSelector category tags comments createdAt updatedAt seoTitle metaDescription";
@@ -158,12 +192,7 @@ function descendantsFor(categories: CategoryRecord[], rootSlug: string) {
 
 export async function getLandingData(): Promise<LandingData> {
   const empty: LandingData = {
-    gameTabs: [
-      { id: "ps5", label: "PS5", href: "/category/games?tag=ps5", products: [] },
-      { id: "featured", label: "ویژه", href: "/category/games", products: [] },
-      { id: "ps4", label: "PS4", href: "/category/games?tag=ps4", products: [] },
-      { id: "latest", label: "جدیدترین", href: "/category/games", products: [] },
-    ],
+    gameTabs: GAME_TABS.map((tab) => ({ ...tab, products: [] })),
     equipmentTabs: [
       { id: "gaming-wall-art", label: "تابلو گیمینگ", href: "/category/gaming-wall-art", products: [] },
       { id: "controllers", label: "دسته بازی", href: "/category/controllers", products: [] },
@@ -173,7 +202,7 @@ export async function getLandingData(): Promise<LandingData> {
       { id: "ps5-accessories", label: "لوازم PS5", href: "/category/accessories?tag=ps5", products: [] },
     ],
     consoles: [],
-    genres: [],
+    offers: [],
     articles: [],
   };
 
@@ -220,6 +249,7 @@ export async function getLandingData(): Promise<LandingData> {
       categoryIds.length
         ? ProductModel.find({
             status: "published",
+            deletedAt: null,
             category: { $in: categoryIds },
             ...extraFilter,
           })
@@ -231,7 +261,7 @@ export async function getLandingData(): Promise<LandingData> {
               match: { verified: true },
               select: "rating createdAt",
             })
-            .sort({ createdAt: -1 })
+            .sort({ createdAt: -1, _id: -1 })
             .limit(limit)
             .lean()
         : Promise.resolve([]);
@@ -248,10 +278,8 @@ export async function getLandingData(): Promise<LandingData> {
     };
 
     const [
-      ps5GamesRaw,
-      featuredGamesRaw,
-      ps4GamesRaw,
-      latestGamesRaw,
+      gameTabsRaw,
+      offers,
       gamingWallArtRaw,
       controllersRaw,
       chargersRaw,
@@ -261,17 +289,14 @@ export async function getLandingData(): Promise<LandingData> {
       consolesRaw,
       articlesRaw,
     ] = await Promise.all([
-      taggedQuery(gameCategoryIds, ["ps5", "ps5-game"], 6),
-      productQuery(gameCategoryIds, 6, {
-        $expr: {
-          $and: [
-            { $ne: ["$discountPrice", null] },
-            { $lt: ["$discountPrice", "$price"] },
-          ],
-        },
-      }),
-      taggedQuery(gameCategoryIds, ["ps4", "ps4-game"], 6),
-      productQuery(gameCategoryIds, 6),
+      Promise.all(
+        GAME_TABS.map((tab) =>
+          tab.id === "latest"
+            ? productQuery(gameCategoryIds, 6)
+            : taggedQuery(gameCategoryIds, [tab.id], 6),
+        ),
+      ),
+      getLandingOffers(),
       productQuery(gamingWallArtCategoryIds, 4),
       productQuery(categoryIdsFor("controllers"), 4),
       taggedQuery(
@@ -300,29 +325,6 @@ export async function getLandingData(): Promise<LandingData> {
         .lean(),
     ]);
 
-    const genreSlugs = [
-      "sports",
-      "action",
-      "adventure",
-      "two-player",
-      "racing",
-      "rpg",
-    ];
-    const genreTags = tags.filter((tag) => genreSlugs.includes(tag.slug));
-    const genreCounts = await Promise.all(
-      genreTags.map(async (tag) => ({
-        name: tag.name,
-        slug: tag.slug,
-        count: gameCategoryIds.length
-          ? await ProductModel.countDocuments({
-              status: "published",
-              category: { $in: gameCategoryIds },
-              tags: tag._id,
-            })
-          : 0,
-      })),
-    );
-
     const withProducts = (
       tabs: LandingProductTab[],
       products: any[][],
@@ -333,12 +335,7 @@ export async function getLandingData(): Promise<LandingData> {
       }));
 
     return {
-      gameTabs: withProducts(empty.gameTabs, [
-        ps5GamesRaw,
-        featuredGamesRaw,
-        ps4GamesRaw,
-        latestGamesRaw,
-      ]),
+      gameTabs: withProducts(empty.gameTabs, gameTabsRaw),
       equipmentTabs: withProducts(empty.equipmentTabs, [
         gamingWallArtRaw,
         controllersRaw,
@@ -348,7 +345,7 @@ export async function getLandingData(): Promise<LandingData> {
         ps5AccessoriesRaw,
       ]),
       consoles: consolesRaw.map(serializeProduct),
-      genres: genreCounts,
+      offers,
       articles: articlesRaw.map(serializeArticle),
     };
   } catch (error) {
