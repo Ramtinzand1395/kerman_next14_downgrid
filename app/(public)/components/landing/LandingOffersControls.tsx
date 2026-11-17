@@ -3,31 +3,18 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, Clock3 } from "lucide-react";
 import { toPersianDigits } from "@/helpers/Price";
+import { secondsUntilNextOffersCycle } from "@/lib/landing-offers-countdown";
 
-export function OffersCountdown({
-  endsAt,
-  initialSeconds,
-}: {
-  endsAt: number;
-  initialSeconds: number;
-}) {
+export function OffersCountdown({ initialSeconds }: { initialSeconds: number }) {
   const [seconds, setSeconds] = useState(initialSeconds);
 
   useEffect(() => {
-    const tick = () => {
-      const remaining = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
-      setSeconds(remaining);
-      return remaining;
-    };
+    const tick = () => setSeconds(secondsUntilNextOffersCycle());
 
-    if (tick() === 0) return;
-    const interval = window.setInterval(() => {
-      if (tick() === 0) window.clearInterval(interval);
-    }, 1000);
+    tick();
+    const interval = window.setInterval(tick, 1000);
     return () => window.clearInterval(interval);
-  }, [endsAt]);
-
-  if (seconds <= 0) return null;
+  }, []);
 
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor(seconds / 60) % 60;
@@ -37,7 +24,7 @@ export function OffersCountdown({
     <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-blue-50">
       <span className="inline-flex items-center gap-1.5">
         <Clock3 className="size-4" aria-hidden="true" />
-        تا پایان جشنواره
+        تا ساعت ۸ صبح
       </span>
       <span
         role="timer"

@@ -3,13 +3,11 @@ import Link from "@/app/components/navigation/NavigationFeedback";
 import ProductImage from "@/app/components/ProductImage";
 import { calculateDiscountPercent, formatPrice } from "@/helpers/Price";
 import type { LandingOffer } from "@/lib/landing-offers";
+import { secondsUntilNextOffersCycle } from "@/lib/landing-offers-countdown";
 import { OffersCountdown, OffersSlider } from "./LandingOffersControls";
 
 export default function LandingSpecialOffers({ offers }: { offers: LandingOffer[] }) {
   if (offers.length === 0) return null;
-
-  const endsAt = Date.parse(process.env.HOME_SPECIAL_OFFERS_END_AT || "");
-  const initialSeconds = Math.ceil((endsAt - Date.now()) / 1000);
 
   return (
     <section
@@ -21,9 +19,7 @@ export default function LandingSpecialOffers({ offers }: { offers: LandingOffer[
           <Percent className="size-5 text-[#9ec3ff]" aria-hidden="true" />
           پیشنهاد ویژه
         </h2>
-        {initialSeconds > 0 && (
-          <OffersCountdown endsAt={endsAt} initialSeconds={initialSeconds} />
-        )}
+        <OffersCountdown initialSeconds={secondsUntilNextOffersCycle()} />
       </div>
 
       <OffersSlider>
