@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "@/app/components/navigation/NavigationFeedback";
+import CourierTutorial from "@/app/components/services/CourierTutorial";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowLeft,
@@ -251,6 +252,11 @@ export default function ServiceOrderSection({
                 position="object-[43%_center]"
               />
             </div>
+            {courierEnabled && (
+              <div className="border-t border-blue-100 p-4 sm:px-6">
+                <CourierTutorial />
+              </div>
+            )}
           </motion.article>
 
           <motion.article

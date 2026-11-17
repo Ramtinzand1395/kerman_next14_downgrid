@@ -29,6 +29,7 @@ import type {
   PricingSummary,
 } from "@/types/appointments";
 import { ButtonLoading, PageLoading } from "@/app/components/loading/LoadingSystem";
+import CourierTutorial from "@/app/components/services/CourierTutorial";
 import {
   clearAppointmentDraft,
   readAppointmentDraft,
@@ -771,6 +772,7 @@ export default function GameOrderSelector({
             >
               {step === 1 && (
                 <div className="space-y-7">
+                  {courierSupported && fulfillment === "courier" && <CourierTutorial />}
                   <div>
                     <h2 className="text-xl font-black text-slate-950">چه خدمتی نیاز دارید؟</h2>
                     <p className="mt-1 text-sm text-slate-500">هر زمان انتخاب را عوض کنید، زمان وابسته پاک می‌شود.</p>
@@ -885,6 +887,11 @@ export default function GameOrderSelector({
                     </button>
                   </div>
                   {renderFieldError("fulfillment")}
+                  {courierSupported && (
+                    <div className="mt-4">
+                      <CourierTutorial />
+                    </div>
+                  )}
                   {!courierSupported && (
                     <p className="mt-4 rounded-2xl bg-amber-50 p-4 text-xs leading-6 text-amber-900">
                       در حال حاضر ارسال با پیک از سمت سامانه غیرفعال است.
