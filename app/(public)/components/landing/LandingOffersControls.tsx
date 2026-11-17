@@ -1,50 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { ChevronLeft, ChevronRight, Clock3 } from "lucide-react";
-import { toPersianDigits } from "@/helpers/Price";
-import { secondsUntilNextOffersCycle } from "@/lib/landing-offers-countdown";
-
-export function OffersCountdown({ initialSeconds }: { initialSeconds: number }) {
-  const [seconds, setSeconds] = useState(initialSeconds);
-
-  useEffect(() => {
-    const tick = () => setSeconds(secondsUntilNextOffersCycle());
-
-    tick();
-    const interval = window.setInterval(tick, 1000);
-    return () => window.clearInterval(interval);
-  }, []);
-
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor(seconds / 60) % 60;
-  const remainingSeconds = seconds % 60;
-
-  return (
-    <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-blue-50">
-      <span className="inline-flex items-center gap-1.5">
-        <Clock3 className="size-4" aria-hidden="true" />
-        تا ساعت ۸ صبح
-      </span>
-      <span
-        role="timer"
-        aria-label={
-          toPersianDigits(hours) + " ساعت و " +
-          toPersianDigits(minutes) + " دقیقه و " +
-          toPersianDigits(remainingSeconds) + " ثانیه"
-        }
-        dir="ltr"
-        className="flex items-center gap-1 font-black tabular-nums"
-      >
-        {[hours, minutes, remainingSeconds].map((value, index) => (
-          <span key={index} className="min-w-9 rounded-lg bg-white px-2 py-1.5 text-center text-sm text-[#0b1d48]">
-            {toPersianDigits(String(value).padStart(2, "0"))}
-          </span>
-        ))}
-      </span>
-    </div>
-  );
-}
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export function OffersSlider({ children }: { children: ReactNode }) {
   const listId = useId();

@@ -3,11 +3,21 @@ import Link from "@/app/components/navigation/NavigationFeedback";
 import ProductImage from "@/app/components/ProductImage";
 import { calculateDiscountPercent, formatPrice } from "@/helpers/Price";
 import type { LandingOffer } from "@/lib/landing-offers";
-import { secondsUntilNextOffersCycle } from "@/lib/landing-offers-countdown";
-import { OffersCountdown, OffersSlider } from "./LandingOffersControls";
+import { OffersSlider } from "./LandingOffersControls";
 
 export default function LandingSpecialOffers({ offers }: { offers: LandingOffer[] }) {
   if (offers.length === 0) return null;
+
+  const cards = offers.map((offer) => ({
+    offer,
+    percent: offer.discountPrice === 0
+      ? 100
+      : Math.min(99, calculateDiscountPercent(offer.price, offer.discountPrice)),
+  }));
+  const maxDiscount = cards.reduce((max, { percent }) => Math.max(max, percent), 0);
+  const offerBadge = maxDiscount > 0
+    ? `تا ${formatPrice(maxDiscount)}٪ تخفیف`
+    : `${formatPrice(offers.length)} محصول تخفیف‌خورده`;
 
   return (
     <section
@@ -19,52 +29,48 @@ export default function LandingSpecialOffers({ offers }: { offers: LandingOffer[
           <Percent className="size-5 text-[#9ec3ff]" aria-hidden="true" />
           پیشنهاد ویژه
         </h2>
-        <OffersCountdown initialSeconds={secondsUntilNextOffersCycle()} />
+        <span className="rounded-full bg-[#1469f5] px-3 py-1.5 text-xs font-black text-white sm:text-sm">
+          {offerBadge}
+        </span>
       </div>
 
       <OffersSlider>
-        {offers.map((offer) => {
-          const percent = offer.discountPrice === 0
-            ? 100
-            : calculateDiscountPercent(offer.price, offer.discountPrice);
-
-          return (
-            <li key={offer.slug} className="w-[min(46%,10rem)] shrink-0 snap-start sm:w-48 lg:w-52">
-              <Link
-                href={offer.href}
-                className="group flex h-full flex-col rounded-xl border border-[#e2ebfb] bg-white p-2.5 text-[#0b1d48] transition hover:border-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-300 sm:p-3"
-              >
-                <div className="relative aspect-square overflow-hidden rounded-lg bg-[#f7f9fd]">
-                  <ProductImage
-                    src={offer.image}
-                    alt={offer.imageAlt}
-                    width={320}
-                    height={320}
-                    sizes="(max-width: 639px) 160px, (max-width: 1023px) 192px, 208px"
-                    loading="lazy"
-                    className="h-full w-full object-contain p-1 transition group-hover:scale-[1.03]"
-                  />
-                  {percent > 0 && (
-                    <span className="absolute start-1.5 top-1.5 rounded-md bg-[#1469f5] px-2 py-1 text-xs font-black text-white">
-                      {formatPrice(percent)}٪
-                    </span>
-                  )}
-                </div>
-                <h3 className="mt-2 line-clamp-2 min-h-10 text-xs font-black leading-5 sm:text-sm">
-                  {offer.title}
-                </h3>
-                {offer.variantTitle && (
-                  <span className="mt-1 line-clamp-1 text-xs text-slate-500">{offer.variantTitle}</span>
+        {cards.map(({ offer, percent }) => (
+          <li key={offer.slug} className="w-[min(46%,10rem)] shrink-0 snap-start sm:w-48 lg:w-52">
+            <Link
+              href={offer.href}
+              className="group flex h-full flex-col rounded-xl border border-[#e2ebfb] bg-white p-2.5 text-[#0b1d48] transition hover:border-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-300 sm:p-3"
+            >
+              <div className="relative aspect-square overflow-hidden rounded-lg bg-[#f7f9fd]">
+                <ProductImage
+                  src={offer.image}
+                  alt={offer.imageAlt}
+                  width={320}
+                  height={320}
+                  sizes="(max-width: 639px) 160px, (max-width: 1023px) 192px, 208px"
+                  loading="lazy"
+                  className="h-full w-full object-contain p-1 transition group-hover:scale-[1.03]"
+                />
+                {percent > 0 && (
+                  <span className="absolute start-1.5 top-1.5 rounded-md bg-[#1469f5] px-2 py-1 text-xs font-black text-white">
+                    {formatPrice(percent)}٪
+                  </span>
                 )}
-                <div className="mt-auto pt-2.5">
-                  <del className="block text-xs text-slate-500">{formatPrice(offer.price)}</del>
-                  <span className="text-sm font-black text-[#1262e7]">{formatPrice(offer.discountPrice)} تومان</span>
-                  {!offer.inStock && <span className="block text-xs text-slate-500">ناموجود</span>}
-                </div>
-              </Link>
-            </li>
-          );
-        })}
+              </div>
+              <h3 className="mt-2 line-clamp-2 min-h-10 text-xs font-black leading-5 sm:text-sm">
+                {offer.title}
+              </h3>
+              {offer.variantTitle && (
+                <span className="mt-1 line-clamp-1 text-xs text-slate-500">{offer.variantTitle}</span>
+              )}
+              <div className="mt-auto pt-2.5">
+                <del className="block text-xs text-slate-500">{formatPrice(offer.price)}</del>
+                <span className="text-sm font-black text-[#1262e7]">{formatPrice(offer.discountPrice)} تومان</span>
+                {!offer.inStock && <span className="block text-xs text-slate-500">ناموجود</span>}
+              </div>
+            </Link>
+          </li>
+        ))}
       </OffersSlider>
     </section>
   );
