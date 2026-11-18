@@ -53,7 +53,7 @@ const SearchCustomer = ({
       const res = await fetch(`/api/admin/store-order/customer?${params}`);
       const data = await res.json();
 
-      if (res.status === 400 && data?.message === "خریدار پیدا نشد.") {
+      if (res.status === 404) {
         if (!lockedMobile) setCustomerData({
           _id: "",
           name: "",
