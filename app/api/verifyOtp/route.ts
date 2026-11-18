@@ -87,7 +87,7 @@ export async function POST(req: Request) {
   }
 
   const user = await User.findOne({ mobile: otpDoc.mobile });
-  if (user && (!user.storeOrderPendingSignup || (normalizeName(user.firstName) && normalizeName(user.lastName)))) {
+  if (user && !user.storeOrderPendingSignup) {
     const loginToken = randomBytes(32).toString("base64url");
     return finishLogin(otpDoc, user, loginToken, false);
   }
@@ -171,7 +171,7 @@ async function finishLogin(
   const otpSignupIntentId = otpDoc.signupIntentId;
   if (user.storeOrderPendingSignup === true) {
     const claimed = await User.findOneAndUpdate(
-      { _id: user._id, storeOrderPendingSignup: true },
+      { _id: user._id, mobile, storeOrderPendingSignup: true },
       {
         $set: {
           phoneVerifiedAt: otpDoc.verifiedAt,
@@ -185,7 +185,9 @@ async function finishLogin(
       { returnDocument: "after" },
     );
     const current = claimed ?? await User.findOne({ mobile });
-    if (!current) return authError(loginRetryMessage, 500);
+    if (!current || String(current._id) !== String(user._id)) {
+      return authError(loginRetryMessage, 409, "OTP_RESTART_REQUIRED");
+    }
     user = current;
     isNewUser = Boolean(claimed);
   }

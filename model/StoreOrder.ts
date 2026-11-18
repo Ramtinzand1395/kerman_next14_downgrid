@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { StoreCustomerSnapshotSchema } from "./StoreCustomerSnapshot";
 
 const storeOrderSchema = new mongoose.Schema(
   {
@@ -15,11 +16,12 @@ const storeOrderSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    customer: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Customer",
-      required: true,
+    customer: { type: mongoose.Schema.Types.ObjectId }, // Customer ID kept for compatibility with old orders.
+    userId: {
+      type: mongoose.Schema.Types.ObjectId, ref: "User", index: true,
+      required: function (this: { customer?: mongoose.Types.ObjectId }) { return !this.customer; },
     },
+    customerSnapshot: StoreCustomerSnapshotSchema,
     description: {
       type: String,
     },
@@ -37,7 +39,6 @@ const storeOrderSchema = new mongoose.Schema(
     },
     deliveryDate: { type: String, default: "تحویل داده نشده", required: true },
     deliveryCode: { type: String, unique: true },
-    websiteAccountSyncPending: Boolean,
     clientRequestKey: { type: String, trim: true, maxlength: 128, default: null },
   },
   {

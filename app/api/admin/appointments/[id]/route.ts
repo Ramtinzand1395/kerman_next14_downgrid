@@ -1,5 +1,7 @@
 import mongoose, { type ClientSession } from "mongoose";
-import Customer from "@/model/Customer";
+import {
+  findStoreCustomer, storeCustomerSnapshot, storeSmsName, toStoreCustomer,
+} from "@/lib/store-customer-account";
 import GameList from "@/model/GameList";
 import {
   catalogPlatformAliases, gameKey, installationCatalog, installationGameTotal, installationPlatforms,
@@ -232,13 +234,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const set: Record<string, unknown> = {};
-  const storeCustomer = storeOrderCustomerId
-    ? await Customer.findOne({ _id: storeOrderCustomerId, mobile: current.phone }).select("lastName sex").lean()
-    : null;
-  if (storeOrderCustomerId && !storeCustomer) {
-    return fail("شماره مشتری سفارش با شماره ثبت‌شده در سایت مطابقت ندارد.", 422);
+  const selectedStoreUser = storeOrderCustomerId ? await findStoreCustomer(storeOrderCustomerId) : null;
+  if (storeOrderCustomerId && (!selectedStoreUser || String(selectedStoreUser._id) !== String(current.user))) {
+    return fail("مشتری انتخاب‌شده با مالک این درخواست مطابقت ندارد.", 422);
   }
-  if (storeOrderCustomerId) set.storeOrderCustomer = storeOrderCustomerId;
+  const storeCustomer = selectedStoreUser ? toStoreCustomer(selectedStoreUser) : null;
+  if (storeCustomer && !current.storeOrderRegisteredAt) {
+    set.storeOrderCustomerSnapshot = {
+      ...storeCustomerSnapshot(storeCustomer),
+      mobile: current.phone,
+    };
+  }
   if (storeOrderDescription !== undefined) set.description = storeOrderDescription;
   let gamesChanged = false;
   let catalogGameTotal: number | null | undefined;
@@ -463,7 +469,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       entityType: "Appointment",
       id: String(current._id),
       mobile: current.phone,
-      lastName: storeCustomer?.lastName || current.customerName,
+      lastName: storeCustomer ? storeSmsName(storeCustomer) : current.customerName,
       sex: storeCustomer?.sex,
       consoleType: current.device,
       registeredAt: updated.storeOrderRegisteredAt,

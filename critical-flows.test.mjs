@@ -58,7 +58,7 @@ test("business SMS is post-commit, idempotent, and cannot roll back the order", 
     readFile("lib/sms/business.ts", "utf8"),
     readFile("helpers/CustomerSms.ts", "utf8"),
   ]);
-  assert.match(createRoute, /await writeWithTransaction\(\)[\s\S]+respondToSavedOrder/);
+  assert.match(createRoute, /await StoreOrder\.create\([\s\S]+respondToSavedOrder/);
   assert.match(createRoute, /async function respondToSavedOrder[\s\S]+sendStoreOrderReceiptSms/);
   assert.doesNotMatch(createRoute, /StoreOrder\.deleteOne/);
   assert.match(statusRoute, /deliveryStatus: existing\.deliveryStatus/);

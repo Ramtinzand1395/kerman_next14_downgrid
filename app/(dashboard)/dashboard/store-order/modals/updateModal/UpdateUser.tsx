@@ -114,7 +114,11 @@ const UpdateUser = ({ customer, setCustomer, closeModal }: UpdateUserProps) => {
           <label key={field} className="space-y-1 text-sm text-slate-600">
             <span>{fieldLabels[field]}</span>
 
-            {isEditingCustomer ? (
+            {isEditingCustomer &&
+              (field !== "mobile" || customer?.canEditMobile !== false) &&
+              (field !== "name" && field !== "lastName" || customer?.canEditName !== false) &&
+              (field !== "sex" || customer?.canEditGender !== false) &&
+              (field !== "birthday" || customer?.canEditBirthday !== false) ? (
               field === "sex" ? (
                 <select
                   title="جنسیت"

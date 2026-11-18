@@ -58,7 +58,7 @@ export const sendPdfToBackend = async (
   pendingPrintOrderIds.add(orderId);
 
   try {
-    const printPayload = buildPrintPayload(userOrder, customer);
+    const printPayload = buildPrintPayload(userOrder, userOrder.customerSnapshot ?? customer);
 
     // ارسال دیتای ساختاریافته به بک‌اند
     const res = await fetch("/api/admin/store-order/print", {

@@ -6,8 +6,10 @@ import StoreOrder from "@/model/StoreOrder";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import moment from "moment-jalaali";
-import { Filter } from "mongodb";
-import { storeOrder } from "@/types";
+import type { Filter } from "mongodb";
+import type { storeOrder } from "@/types";
+import { toStoreCustomer } from "@/lib/store-customer-account";
+import { storeOrderCustomerJoin } from "@/lib/store-order-identity";
 
 moment.loadPersian({ usePersianDigits: false });
 
@@ -60,41 +62,23 @@ export async function GET(req: Request) {
   }
 
   /* ================= Customer Filter ================= */
-  const matchCustomer: Filter<storeOrder> = {};
-
-  if (mobile) {
-    matchCustomer["customer.mobile"] = {
-      $regex: mobile,
-      $options: "i",
-    };
-  }
-
-  if (lastName) {
-    matchCustomer["customer.lastName"] = {
-      $regex: lastName,
-      $options: "i",
-    };
-  }
+  const pattern = (value: string) => new RegExp(value.slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+  const matchCustomer = [
+    ...(mobile ? [{ $or: ["customer.mobile", "customerSnapshot.mobile"].map((key) => ({ [key]: pattern(mobile) })) }] : []),
+    ...(lastName ? [{ $or: ["customer.lastName", "customer.username", "customer.storeProfile.lastName", "customerSnapshot.lastName"].map((key) => ({ [key]: pattern(lastName) })) }] : []),
+  ];
 
   /* ================= Aggregation ================= */
   const pipeline:any[] = [
     { $match: matchOrder },
 
-    {
-      $lookup: {
-        from: "customers",
-        localField: "customer",
-        foreignField: "_id",
-        as: "customer",
-      },
-    },
-    { $unwind: "$customer" },
+    ...storeOrderCustomerJoin(),
     { $unionWith: {
       coll: Appointment.collection.name,
       pipeline: [...websiteStoreOrders(false), { $match: matchOrder }],
     } },
 
-    Object.keys(matchCustomer).length ? { $match: matchCustomer } : null,
+    matchCustomer.length ? { $match: { $and: matchCustomer } } : null,
 
     { $sort: { createdAt: -1 } },
 
@@ -111,7 +95,9 @@ export async function GET(req: Request) {
 
   const result = await StoreOrder.aggregate(pipeline);
 
-  const orders = result[0]?.data || [];
+  const orders = (result[0]?.data ?? []).map((order: any) => ({
+    ...order, customer: order.customer ? toStoreCustomer(order.customer) : undefined,
+  }));
   const total = result[0]?.total[0]?.count || 0;
 
   return NextResponse.json({

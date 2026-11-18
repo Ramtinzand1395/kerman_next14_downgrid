@@ -43,9 +43,13 @@ test("manual orders use one customer record and enforce unique device barcodes i
   });
   await mongoose.connect(mongo.getUri("store_customer_test"));
 
-  const { default: Customer } = await import("./model/Customer.ts");
+  const { default: User } = loadRoute("./model/User.ts", {
+    "@/types/loyalty": { VIP_TIERS: ["bronze", "silver", "gold"] },
+  });
+  const account = loadRoute("./lib/store-customer-account.ts", { "@/model/User": User });
   const dependencies = {
-    "@/model/Customer": Customer,
+    "@/model/User": User,
+    "@/lib/store-customer-account": account,
     "@/lib/mongodb": async () => {},
     "@/lib/store-customer-barcodes": await import("./lib/store-customer-barcodes.ts"),
     "@/validations/validation": await import("./validations/validation.ts"),
@@ -71,7 +75,7 @@ test("manual orders use one customer record and enforce unique device barcodes i
   for (const barcode of ["000A", "B-02", "000A"]) {
     assert.equal((await POST(request("POST", { mobile: first.mobile, barcode }))).status, 200);
   }
-  assert.equal(await Customer.countDocuments(), 2);
+  assert.equal(await User.countDocuments(), 2);
   const lookup = await GET(new Request(url + "?barcode=000A"));
   assert.equal(lookup.status, 200);
   assert.equal((await lookup.json()).data._id, customer._id);
@@ -84,7 +88,7 @@ test("manual orders use one customer record and enforce unique device barcodes i
   }), params);
   assert.equal(update.status, 200);
   assert.deepEqual((await update.json()).data.barcodes, ["C-03"]);
-  assert.equal((await GET(new Request(url + "?barcode=000A"))).status, 400);
+  assert.equal((await GET(new Request(url + "?barcode=000A"))).status, 404);
   assert.equal((await POST(request("POST", { mobile: second.mobile, barcode: "000A" }))).status, 200);
 
   const staleUpdate = await PUT(request("PUT", {
@@ -92,4 +96,27 @@ test("manual orders use one customer record and enforce unique device barcodes i
     previousBarcodes: ["000A", "B-02"],
   }), params);
   assert.equal(staleUpdate.status, 409);
+
+  const verified = await User.create({
+    mobile: "09123456787", firstName: "نام سایت", lastName: "حساب سایت",
+    birthday: new Date("1996-04-20T00:00:00Z"), phoneVerifiedAt: new Date(),
+    registrationCompletedAt: new Date(),
+  });
+  const found = await GET(new Request(url + "?mobile=%2B989123456787"));
+  assert.equal((await found.json()).data._id, String(verified._id));
+  const sameUser = await POST(request("POST", {
+    mobile: verified.mobile, name: "فروشگاه", lastName: "دستی", sex: "مرد",
+    birthday: "۱۴۰۵/۰۵/۱۷", barcode: "SITE-1",
+  }));
+  const selected = (await sameUser.json()).data;
+  assert.equal(selected._id, String(verified._id));
+  assert.equal(selected.canEditMobile, false);
+  assert.equal(selected.lastName, "حساب سایت");
+  assert.notEqual(selected.birthday, "۱۴۰۵/۰۵/۱۷");
+  const forbidden = await PUT(request("PUT", {
+    customer: { ...selected, mobile: "09123456786" },
+    previousBarcodes: ["SITE-1"],
+  }), { params: Promise.resolve({ customerId: selected._id }) });
+  assert.equal(forbidden.status, 409);
+  assert.equal(await User.countDocuments(), 3);
 });

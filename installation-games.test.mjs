@@ -253,7 +253,10 @@ test('courier preview prices copy versions only and rejects stale copy quotes du
 });
 
 test('Mongoose preserves game snapshots and legacy appointments can still validate without selections', async () => {
-  const { default: Appointment } = loadModule('./model/Appointment.ts', {'@/lib/appointments/policy':policy});
+  const { default: Appointment } = loadModule('./model/Appointment.ts', {
+    '@/lib/appointments/policy':policy,
+    './StoreCustomerSnapshot': loadModule('./model/StoreCustomerSnapshot.ts', {}),
+  });
   const selectedGames = games.installationCatalog(fixtures, ['copy', 'ps5Copy']);
   const data = {...base(),installationType:'copy',user:idX,trackingCode:'KA-TEST',requestHash:'a'.repeat(64),endsAt:new Date(Date.now()+86400_000+1800000),slotKey:'test',selectedGames,totalSizeGB:40};
   const instance = new Appointment(data);

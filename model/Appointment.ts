@@ -1,4 +1,5 @@
 import mongoose, { Schema } from "mongoose";
+import { StoreCustomerSnapshotSchema } from "./StoreCustomerSnapshot";
 import { APPOINTMENT_STATUSES, COURIER_STATUSES } from "@/lib/appointments/policy";
 
 const HistorySchema = new Schema(
@@ -130,7 +131,8 @@ const AppointmentSchema = new Schema(
       startedAt: { type: Date },
       paidAt: { type: Date },
     },
-    storeOrderCustomer: { type: Schema.Types.ObjectId, ref: "Customer", default: null },
+    storeOrderCustomer: { type: Schema.Types.ObjectId, default: null },
+    storeOrderCustomerSnapshot: StoreCustomerSnapshotSchema,
     storeOrderDeliveredAt: { type: Date, default: null },
     storeOrderRegisteredAt: { type: Date, default: null },
     completedAt: { type: Date, default: null },

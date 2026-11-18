@@ -77,7 +77,7 @@ function setup(user) {
         return { ...user };
       },
       async findOneAndUpdate(filter, update) {
-        if (filter._id !== user?._id || !user.storeOrderPendingSignup) return null;
+        if (filter._id !== user?._id || filter.mobile !== user?.mobile || !user.storeOrderPendingSignup) return null;
         Object.assign(user, update.$set);
         if (update.$unset?.storeOrderPendingSignup) delete user.storeOrderPendingSignup;
         return { ...user };
@@ -119,6 +119,17 @@ test("a store-created account with incomplete names can complete registration on
   assert.equal(flow.getUser()._id, "store-user");
   assert.equal(flow.getUser().lastName, "زند خاوری");
   assert.equal(flow.getUser().storeOrderPendingSignup, undefined);
+  assert.equal(flow.signups.length, 1);
+});
+
+test("the registered names take precedence over a complete store name on the same ID", async () => {
+  const imported = { _id: "store-id", mobile: "09123456789", firstName: "نام", lastName: "فروشگاه", storeOrderPendingSignup: true };
+  const flow = setup(imported);
+  const { registrationToken } = await (await flow.verify()).json();
+  assert.ok(registrationToken);
+  assert.equal((await flow.complete(registrationToken, "نام", "سایت")).status, 200);
+  assert.equal(flow.getUser()._id, imported._id);
+  assert.equal(flow.getUser().lastName, "سایت");
   assert.equal(flow.signups.length, 1);
 });
 

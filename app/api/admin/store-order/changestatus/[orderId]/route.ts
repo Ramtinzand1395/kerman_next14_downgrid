@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/mongodb";
 import StoreOrder from "@/model/StoreOrder";
+import { findStoreCustomer, storeCustomerMobile, storeSmsName, toStoreCustomer } from "@/lib/store-customer-account";
 
 moment.loadPersian({ usePersianDigits: false });
 
@@ -59,7 +60,7 @@ export async function PUT(
       return NextResponse.json({ message: "وضعیت سفارش معتبر نیست." }, { status: 422 });
     }
 
-    const existing = await StoreOrder.findById(orderId).populate("customer");
+    const existing = await StoreOrder.findById(orderId);
 
     if (!existing) {
       return NextResponse.json(
@@ -67,6 +68,11 @@ export async function PUT(
         { status: 404 }
       );
     }
+
+    const linkedUser = await findStoreCustomer(String(existing.userId ?? existing.customer ?? ""));
+    const customer = linkedUser ? toStoreCustomer(linkedUser) : undefined;
+    const mobile = storeCustomerMobile(customer?.mobile);
+    const orderData = (doc: typeof existing) => ({ ...doc.toObject(), customer });
 
     let deliveryDate: string | null = null;
     if (status === "تحویل به مشتری") {
@@ -76,7 +82,7 @@ export async function PUT(
     if (existing.deliveryStatus === status) {
       return NextResponse.json({
         message: "وضعیت سفارش قبلاً ثبت شده است.",
-        data: existing,
+        data: orderData(existing),
         sms: null,
       });
     }
@@ -90,14 +96,14 @@ export async function PUT(
         },
       },
       { returnDocument: "after", runValidators: true },
-    ).populate("customer");
+    );
     if (!order) {
       return NextResponse.json({ message: "وضعیت سفارش هم‌زمان تغییر کرده است." }, { status: 409 });
     }
 
     let smsResponse = null;
 
-    if (sendSms && order.customer) {
+    if (sendSms && customer && mobile) {
       const persianConsole = getPersianConsoleName(order.consoleType);
 
       if (status === "آماده") {
@@ -107,10 +113,10 @@ export async function PUT(
           entityType: "StoreOrder",
           entityId: order._id.toString(),
           bodyId: 332452,
-          to: order.customer.mobile,
+          to: mobile,
           args: [
-            order.customer.sex === "مرد" ? "جناب آقای" : "سرکار خانم",
-            order.customer.lastName,
+            customer.sex === "مرد" ? "جناب آقای" : customer.sex === "زن" ? "سرکار خانم" : "مشتری گرامی",
+            storeSmsName(customer),
             toPersianDigits(order.deliveryCode),
           ],
         }).catch(() => ({
@@ -128,10 +134,10 @@ export async function PUT(
           entityType: "StoreOrder",
           entityId: order._id.toString(),
           bodyId: 323178,
-          to: order.customer.mobile,
+          to: mobile,
           args: [
-            order.customer.sex === "مرد" ? "جناب آقای" : "سرکار خانم",
-            order.customer.lastName,
+            customer.sex === "مرد" ? "جناب آقای" : customer.sex === "زن" ? "سرکار خانم" : "مشتری گرامی",
+            storeSmsName(customer),
             persianConsole,
             toPersianDigits(deliveryDate || ""),
           ],
@@ -146,7 +152,7 @@ export async function PUT(
 
     return NextResponse.json({
       message: "سفارش تغییر کرد.",
-      data: order,
+      data: orderData(order),
       sms: smsResponse,
     });
   } catch (err) {

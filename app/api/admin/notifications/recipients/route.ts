@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
   await dbConnect();
   const users = await User.find({
     role: "user",
+    storeOrderPendingSignup: { $ne: true },
     $or: [
       { username: textSearch },
       { mobile: mobileSearch },

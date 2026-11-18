@@ -7,6 +7,9 @@ interface IUser extends Document {
   firstName?: string;
   lastName?: string;
   storeOrderPendingSignup?: boolean;
+  legacyCustomerId?: mongoose.Types.ObjectId;
+  barcodes?: string[];
+  storeProfile?: StoreProfile;
   email?: string;
   mobile: string;
   role: string;
@@ -44,6 +47,19 @@ interface IUser extends Document {
   updatedAt: Date;
 }
 
+interface StoreProfile {
+  name?: string;
+  lastName?: string;
+  sex?: string;
+  birthday?: string;
+  description?: string;
+}
+
+const StoreProfileSchema = new Schema<StoreProfile>(
+  { name: String, lastName: String, sex: String, birthday: String, description: String },
+  { _id: false },
+);
+
 // تعریف Schema
 const UserSchema = new Schema<IUser>(
   {
@@ -51,6 +67,9 @@ const UserSchema = new Schema<IUser>(
     firstName: { type: String, trim: true, maxlength: 80 },
     lastName: { type: String, trim: true, maxlength: 80 },
     storeOrderPendingSignup: Boolean,
+    legacyCustomerId: { type: Schema.Types.ObjectId, select: false, immutable: true },
+    barcodes: { type: [String], default: undefined, select: false },
+    storeProfile: { type: StoreProfileSchema, select: false },
     email: { type: String, sparse: true },
     mobile: { type: String, unique: true, required: true },
     role: {
@@ -92,11 +111,13 @@ const UserSchema = new Schema<IUser>(
 );
 
 UserSchema.index({ createdAt: 1 });
+UserSchema.index({ legacyCustomerId: 1 }, { unique: true, sparse: true });
+UserSchema.index({ barcodes: 1 }, { unique: true, partialFilterExpression: { "barcodes.0": { $exists: true } } });
 
 // Reload an older development model so new accounts keep both name fields.
 if (mongoose.models.User && process.env.NODE_ENV === "development" &&
     (!mongoose.models.User.schema.path("firstName") ||
-     !mongoose.models.User.schema.path("storeOrderPendingSignup"))) {
+     !mongoose.models.User.schema.path("storeProfile"))) {
   mongoose.deleteModel("User");
 }
 

@@ -23,13 +23,13 @@ function oid(value: string | mongoose.Types.ObjectId) {
 
 async function audienceCursor(audience: Audience) {
   if (audience.kind === "selected") {
-    return User.find({ _id: { $in: audience.userIds.map(oid) }, role: "user" })
+    return User.find({ _id: { $in: audience.userIds.map(oid) }, role: "user", storeOrderPendingSignup: { $ne: true } })
       .select("_id")
       .lean()
       .cursor();
   }
   if (audience.kind === "all_users") {
-    return User.find({ role: "user" }).select("_id").sort({ _id: 1 }).lean().cursor();
+    return User.find({ role: "user", storeOrderPendingSignup: { $ne: true } }).select("_id").sort({ _id: 1 }).lean().cursor();
   }
   let orderMatch: Record<string, unknown>;
   if (audience.kind === "active_orders") {
