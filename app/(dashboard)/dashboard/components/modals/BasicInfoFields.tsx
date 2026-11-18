@@ -187,6 +187,9 @@ const BasicInfoFields = ({
         </select>
       </div>
 
+      <label><input type="checkbox" checked={!!form.isDigital} onChange={(e) => updateField("isDigital", e.target.checked)} /> محصول دیجیتال (بدون ارسال)</label>
+      {form.isDigital && <label><input type="checkbox" checked={!!form.isOnlineGame} onChange={(e) => updateField("isOnlineGame", e.target.checked)} /> بازی آنلاین با تحویل اکانت</label>}
+
       {/* Title */}
       <div className="col-span-2 sm:col-span-1 relative my-2 w-full">
         <label

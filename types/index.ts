@@ -123,6 +123,8 @@ interface ProductFaq {
 }
 
 export interface ProductForm {
+  isDigital?: boolean;
+  isOnlineGame?: boolean;
   purchasePrice?: number | null;
   status: "draft" | "published";
   productType: "single" | "multi";
@@ -243,6 +245,8 @@ export interface Category {
 }
 
 export interface Product {
+  isDigital?: boolean;
+  isOnlineGame?: boolean;
   status?: "draft" | "published";
   productType?: "single" | "multi";
   variants?: ProductVariant[];

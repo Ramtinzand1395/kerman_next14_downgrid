@@ -95,6 +95,7 @@ const OrderSchema = new mongoose.Schema(
           ref: "Product",
           required: true,
         },
+        isOnlineGame: Boolean,
         productTitle: {
           type: String,
           default: null,

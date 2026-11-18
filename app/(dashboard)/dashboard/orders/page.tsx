@@ -265,6 +265,7 @@ export default function Orders() {
             <h1 className="text-xl md:text-2xl font-bold text-gray-800">
               سفارش‌ها
             </h1>
+            <a href="/dashboard/orders/accounts" className="text-indigo-700">تحویل اکانت بازی</a>
             <p className="text-sm text-gray-500 mt-1">
               مدیریت کامل سفارش‌ها با طراحی ریسپانسیو و نمایش سریع جزئیات
             </p>

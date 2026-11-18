@@ -107,6 +107,8 @@ const VariantSchema = new Schema({
 
 const productSchema = new Schema(
   {
+    isDigital: { type: Boolean, default: false },
+    isOnlineGame: { type: Boolean, default: false },
     status: {
       type: String,
       enum: ["draft", "published"],

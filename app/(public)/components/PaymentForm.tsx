@@ -23,7 +23,7 @@ import { summarizeOrderMoney } from "@/lib/orderSummary";
 import OrderMoneySummaryView from "./OrderMoneySummary";
 
 interface PaymentFormProps {
-  selectedAddress: Address;
+  selectedAddress: Address | null;
   appliedCoupon: AppliedCoupon | null;
   setAppliedCoupon: (coupon: AppliedCoupon | null) => void;
 }
@@ -51,9 +51,11 @@ export default function PaymentForm({
   const shippingInfo = shippingOptions.find(
     (option) => option.method === selectedShippingMethod,
   ) || null;
-  const shippingCost = shippingInfo?.feeToman ?? 0;
+  const shippingReady = !selectedAddress || !!shippingInfo;
+  const shippingCost = selectedAddress ? shippingInfo?.feeToman ?? 0 : 0;
 
   useEffect(() => {
+    if (!selectedAddress) return;
     let cancelled = false;
     setShippingLoading(true);
     setShippingError("");
@@ -83,7 +85,7 @@ export default function PaymentForm({
     return () => {
       cancelled = true;
     };
-  }, [selectedAddress._id]);
+  }, [selectedAddress?._id]);
 
   // ── کیف پول ──
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
@@ -183,7 +185,7 @@ export default function PaymentForm({
 
   useEffect(() => {
     idempotencyKeyRef.current = crypto.randomUUID();
-  }, [selectedAddress._id, selectedShippingMethod, cartValidationKey, appliedCoupon?.code]);
+  }, [selectedAddress?._id, selectedShippingMethod, cartValidationKey, appliedCoupon?.code]);
 
   useEffect(() => {
     if (!appliedCoupon?.code) return;
@@ -231,7 +233,7 @@ export default function PaymentForm({
   }, [appliedCoupon?.code, cart, cartValidationKey, setAppliedCoupon]);
 
   const buildPayload = () => ({
-    addressId: selectedAddress._id,
+    addressId: selectedAddress?._id,
     shippingMethod: selectedShippingMethod,
     couponCode: appliedCoupon?.code,
     items: cart.map((item) => ({
@@ -249,7 +251,7 @@ export default function PaymentForm({
   };
 
   const submitOrder = async () => {
-    if (cart.length === 0 || loading || walletLoading || !shippingInfo) return;
+    if (cart.length === 0 || loading || walletLoading || !shippingReady) return;
 
     setLoading(true);
 
@@ -294,7 +296,7 @@ export default function PaymentForm({
   };
 
   const payWithWallet = async () => {
-    if (cart.length === 0 || loading || walletLoading || !shippingInfo) return;
+    if (cart.length === 0 || loading || walletLoading || !shippingReady) return;
 
     setWalletLoading(true);
 
@@ -406,6 +408,7 @@ export default function PaymentForm({
         </section>
 
         <aside className="space-y-4 lg:col-span-2">
+          {selectedAddress && <>
           <div className="rounded-2xl border border-slate-200 p-4">
             <h3 className="mb-2 text-sm font-bold text-slate-800">
               آدرس ارسال
@@ -472,6 +475,7 @@ export default function PaymentForm({
             )}
           </div>
 
+          </>}
           {/* کد تخفیف */}
           <div className="rounded-2xl border border-slate-200 p-4">
             <h3 className="mb-2 flex items-center gap-1.5 text-sm font-bold text-slate-800">
@@ -521,7 +525,7 @@ export default function PaymentForm({
           <div className="rounded-2xl border border-slate-200 p-4">
             <OrderMoneySummaryView
               summary={orderSummary}
-              shippingLabel={shippingInfo?.label || "پس از انتخاب روش ارسال"}
+              shippingLabel={!selectedAddress ? "بدون ارسال" : shippingInfo?.label || "پس از انتخاب روش ارسال"}
               compact
             />
           </div>
@@ -545,7 +549,7 @@ export default function PaymentForm({
         <button
           type="button"
           onClick={submitOrder}
-          disabled={loading || walletLoading || cart.length === 0 || !shippingInfo}
+          disabled={loading || walletLoading || cart.length === 0 || !shippingReady}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-900 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
         >
           {loading ? (

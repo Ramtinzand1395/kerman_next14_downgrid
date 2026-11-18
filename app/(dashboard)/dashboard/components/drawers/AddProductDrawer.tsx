@@ -112,6 +112,8 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
     variantSelector: product?.variantSelector || initialForm.variantSelector,
     metaDescription: product?.metaDescription || initialForm.metaDescription,
     price: product?.price || initialForm.price,
+    isDigital: product?.isDigital ?? false,
+    isOnlineGame: product?.isOnlineGame ?? false,
     purchasePrice: product?.purchasePrice ?? null,
     discountPrice: product?.discountPrice ?? initialForm.discountPrice,
     stock: product?.stock || initialForm.stock,

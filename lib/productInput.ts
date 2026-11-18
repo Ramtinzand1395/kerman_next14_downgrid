@@ -504,6 +504,7 @@ export function buildProductWriteInput(
   }
 
   const productData = {
+    ...(typeof body.isDigital === "boolean" ? { isDigital: body.isDigital, isOnlineGame: body.isDigital && body.isOnlineGame === true } : {}),
     status,
     productType,
     variants,

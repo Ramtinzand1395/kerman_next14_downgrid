@@ -58,6 +58,21 @@ export default function CartPage({ shippingSettings }: { shippingSettings: Store
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
 
   const { cart, hasHydrated, removeFromCart, increaseQty, decreaseQty } = useCartStore();
+  const productIds = [...new Set(cart.map(item => item.productId))].sort().join(",");
+  const [digitalCartKey, setDigitalCartKey] = useState("");
+  const digitalOnly = !!productIds && digitalCartKey === productIds;
+  useEffect(() => {
+    if (!productIds) return;
+    const controller = new AbortController();
+    fetch("/api/shipping/digital", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: productIds.split(",") }), signal: controller.signal,
+    }).then(async response => {
+      const body = await response.json();
+      if (!controller.signal.aborted) setDigitalCartKey(response.ok && body.digitalOnly ? productIds : "");
+    }).catch(() => {});
+    return () => controller.abort();
+  }, [productIds]);
   const couponCartKey = useMemo(
     () =>
       cart
@@ -77,11 +92,11 @@ export default function CartPage({ shippingSettings }: { shippingSettings: Store
     if (Number.isNaN(step) || step < 1 || step > 3) {
       return 1;
     }
-    return step;
-  }, [searchParams]);
+    return digitalOnly && step === 2 ? 3 : step;
+  }, [searchParams, digitalOnly]);
 
   const shippingInfo = useMemo(() => {
-    if (!selectedAddress?.city || !selectedAddress?.province) return null;
+    if (digitalOnly || !selectedAddress?.city || !selectedAddress?.province) return null;
     try {
       return calculateShippingInfo({
         province: selectedAddress.province,
@@ -91,7 +106,7 @@ export default function CartPage({ shippingSettings }: { shippingSettings: Store
     } catch {
       return null;
     }
-  }, [selectedAddress, shippingSettings]);
+  }, [selectedAddress, shippingSettings, digitalOnly]);
 
   const orderSummary = useMemo(() => {
     const items = cart.map((item) => ({
@@ -178,10 +193,10 @@ export default function CartPage({ shippingSettings }: { shippingSettings: Store
       router.replace("/cart?step=1", { scroll: false });
       return;
     }
-    if (activeStep === 3 && !selectedAddress) {
+    if (activeStep === 3 && !digitalOnly && !selectedAddress) {
       router.replace("/cart?step=2", { scroll: false });
     }
-  }, [activeStep, addressHydrated, cart.length, hasHydrated, router, selectedAddress]);
+  }, [activeStep, addressHydrated, cart.length, hasHydrated, router, selectedAddress, digitalOnly]);
 
   useEffect(() => {
     if (!selectedAddress) {
@@ -196,12 +211,13 @@ export default function CartPage({ shippingSettings }: { shippingSettings: Store
   }, [selectedAddress]);
 
   const goToStep = (step: number) => {
+    if (digitalOnly && step === 2) step = activeStep === 3 ? 1 : 3;
     if (step > 1 && cart.length === 0) {
       router.push("/cart?step=1", { scroll: false });
       return;
     }
 
-    if (step === 3 && !selectedAddress) {
+    if (step === 3 && !digitalOnly && !selectedAddress) {
       router.push("/cart?step=2", { scroll: false });
       return;
     }
@@ -230,7 +246,7 @@ export default function CartPage({ shippingSettings }: { shippingSettings: Store
         </div>
 
         <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
-          {checkoutSteps.map((step) => {
+          {checkoutSteps.filter(step => !digitalOnly || step.id !== 2).map((step) => {
             const StepIcon = step.icon;
             const isActive = activeStep === step.id;
             const isCompleted = activeStep > step.id;
@@ -431,9 +447,9 @@ export default function CartPage({ shippingSettings }: { shippingSettings: Store
           )}
 
           {activeStep === 3 &&
-            (selectedAddress ? (
+            (digitalOnly || selectedAddress ? (
               <PaymentForm
-                selectedAddress={selectedAddress}
+                selectedAddress={digitalOnly ? null : selectedAddress}
                 appliedCoupon={appliedCoupon}
                 setAppliedCoupon={setAppliedCoupon}
               />
@@ -467,7 +483,7 @@ export default function CartPage({ shippingSettings }: { shippingSettings: Store
                 <OrderMoneySummaryView
                   summary={orderSummary}
                   shippingLabel={
-                    selectedAddress && shippingInfo
+                    digitalOnly ? "بدون ارسال" : selectedAddress && shippingInfo
                       ? shippingInfo.label
                       : "محاسبه بر اساس آدرس"
                   }

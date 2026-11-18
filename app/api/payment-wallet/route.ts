@@ -191,30 +191,11 @@ export async function POST(req: NextRequest) {
     } = await req.json();
 
     if (
-      !payload.addressId ||
       !Array.isArray(payload.items) ||
       payload.items.length === 0
     ) {
       return NextResponse.json(
         { success: false, error: "درخواست سفارش نامعتبر است." },
-        { status: 400 },
-      );
-    }
-
-    if (!mongoose.isValidObjectId(payload.addressId)) {
-      return NextResponse.json(
-        { success: false, error: "شناسه آدرس معتبر نیست." },
-        { status: 400 },
-      );
-    }
-
-    const address = await Address.findOne({
-      _id: payload.addressId,
-      userId,
-    }).lean();
-    if (!address) {
-      return NextResponse.json(
-        { success: false, error: "آدرس انتخابی معتبر نیست." },
         { status: 400 },
       );
     }
@@ -256,8 +237,27 @@ export async function POST(req: NextRequest) {
       status: "published",
       deletedAt: null,
     })
-      .select("title sku mainImage price discountPrice stock productType variants variantSelector category status deletedAt")
+      .select("isDigital isOnlineGame title sku mainImage price discountPrice stock productType variants variantSelector category status deletedAt")
       .lean();
+
+    const digitalOnly = products.length > 0 && products.every((product) => product.isDigital === true);
+    if (!digitalOnly && !mongoose.isValidObjectId(payload.addressId)) {
+      return NextResponse.json(
+        { success: false, error: "شناسه آدرس معتبر نیست." },
+        { status: 400 },
+      );
+    }
+
+    const address = digitalOnly ? null : await Address.findOne({
+      _id: payload.addressId,
+      userId,
+    }).lean();
+    if (!digitalOnly && !address) {
+      return NextResponse.json(
+        { success: false, error: "آدرس انتخابی معتبر نیست." },
+        { status: 400 },
+      );
+    }
 
     if (products.length !== uniqueProductIds.length) {
       return NextResponse.json(
@@ -324,6 +324,7 @@ export async function POST(req: NextRequest) {
           selectedVariant.discountPrice ?? selectedVariant.price;
         return {
           product: item.productId,
+          isOnlineGame: product.isDigital === true && product.isOnlineGame === true,
           productTitle: product.title,
           productImage: product.mainImage,
           productSku: product.sku || null,
@@ -357,7 +358,8 @@ export async function POST(req: NextRequest) {
       const unitPrice = product.discountPrice ?? product.price;
       return {
         product: item.productId,
-        productTitle: product.title,
+        isOnlineGame: product.isDigital === true && product.isOnlineGame === true,
+          productTitle: product.title,
         productImage: product.mainImage,
         productSku: product.sku || null,
         price: Number(product.price || 0),
@@ -370,20 +372,20 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    const addressSnapshot = createAddressSnapshot(address, {
+    const addressSnapshot = !address ? undefined : createAddressSnapshot(address, {
       name: buyer.username,
       mobile: buyer.mobile,
     });
-    const shippingSettings = await getStoreShippingSettings();
-    const shippingInfo = calculateShippingInfo({
+    
+    const shippingInfo = !address ? null : calculateShippingInfo({
       province: address.province,
       city: address.city,
       postalCode: address.postalCode,
       address: address.address,
-    }, payload.shippingMethod, shippingSettings);
-    const shippingCost = shippingInfo.feeToman;
-    const shippingPaymentType = shippingInfo.paymentType;
-    const shipping = createOrderShippingSnapshot(shippingInfo, addressSnapshot);
+    }, payload.shippingMethod, await getStoreShippingSettings());
+    const shippingCost = shippingInfo ? shippingInfo.feeToman : 0;
+    const shippingPaymentType = shippingInfo?.paymentType ?? "PREPAID";
+    const shipping = shippingInfo && addressSnapshot ? createOrderShippingSnapshot(shippingInfo, addressSnapshot) : undefined;
 
     const totalPrice = checkoutItems.reduce((acc, item) => acc + item.total, 0);
 
@@ -426,7 +428,7 @@ export async function POST(req: NextRequest) {
 
       const fingerprint = automaticIdempotencyFingerprint({
         userId,
-        addressId: payload.addressId,
+        addressId: digitalOnly ? "digital" : payload.addressId!,
         items: normalizedItems,
         shippingCost,
         couponCode,
@@ -493,7 +495,7 @@ export async function POST(req: NextRequest) {
     try {
       order = await Order.create({
         user: userId,
-        address: payload.addressId,
+        address: digitalOnly ? undefined : payload.addressId,
         addressSnapshot,
         buyerSnapshot: {
           name: String(buyer.username || "کاربر"),

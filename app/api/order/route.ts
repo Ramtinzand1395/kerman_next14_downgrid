@@ -43,31 +43,11 @@ export async function POST(req: Request) {
   } = await req.json();
 
   if (
-    !payload.addressId ||
     !Array.isArray(payload.items) ||
     payload.items.length === 0
   ) {
     return NextResponse.json(
       { error: "درخواست سفارش نامعتبر است." },
-      { status: 400 },
-    );
-  }
-
-  if (!mongoose.isValidObjectId(payload.addressId)) {
-    return NextResponse.json(
-      { error: "شناسه آدرس معتبر نیست." },
-      { status: 400 },
-    );
-  }
-
-  const address = await Address.findOne({
-    _id: payload.addressId,
-    userId: session.user.id,
-  }).lean();
-
-  if (!address) {
-    return NextResponse.json(
-      { error: "آدرس انتخابی معتبر نیست." },
       { status: 400 },
     );
   }
@@ -111,8 +91,28 @@ export async function POST(req: Request) {
     status: "published",
     deletedAt: null,
   })
-    .select("title sku mainImage price discountPrice stock productType variants variantSelector status deletedAt")
+    .select("isDigital isOnlineGame title sku mainImage price discountPrice stock productType variants variantSelector status deletedAt")
     .lean();
+
+  const digitalOnly = products.length > 0 && products.every((product) => product.isDigital === true);
+    if (!digitalOnly && !mongoose.isValidObjectId(payload.addressId)) {
+    return NextResponse.json(
+      { error: "شناسه آدرس معتبر نیست." },
+      { status: 400 },
+    );
+  }
+
+  const address = digitalOnly ? null : await Address.findOne({
+    _id: payload.addressId,
+    userId: session.user.id,
+  }).lean();
+
+  if (!digitalOnly && !address) {
+    return NextResponse.json(
+      { error: "آدرس انتخابی معتبر نیست." },
+      { status: 400 },
+    );
+  }
 
   if (products.length !== uniqueProductIds.length) {
     return NextResponse.json(
@@ -191,6 +191,7 @@ export async function POST(req: Request) {
 
         return {
           product: item.productId,
+          isOnlineGame: product.isDigital === true && product.isOnlineGame === true,
           productTitle: product.title,
           productImage: product.mainImage,
           productSku: product.sku || null,
@@ -226,7 +227,8 @@ export async function POST(req: Request) {
 
       return {
         product: item.productId,
-        productTitle: product.title,
+        isOnlineGame: product.isDigital === true && product.isOnlineGame === true,
+          productTitle: product.title,
         productImage: product.mainImage,
         productSku: product.sku || null,
         price: Number(product.price || 0),
@@ -239,20 +241,20 @@ export async function POST(req: Request) {
       };
     });
 
-    const addressSnapshot = createAddressSnapshot(address, {
+    const addressSnapshot = !address ? undefined : createAddressSnapshot(address, {
       name: buyer.username,
       mobile: buyer.mobile,
     });
-    const shippingSettings = await getStoreShippingSettings();
-    const shippingInfo = calculateShippingInfo({
+    
+    const shippingInfo = !address ? null : calculateShippingInfo({
       province: address.province,
       city: address.city,
       postalCode: address.postalCode,
       address: address.address,
-    }, payload.shippingMethod, shippingSettings);
-    const shippingCost = shippingInfo.feeToman;
-    const shippingPaymentType = shippingInfo.paymentType;
-    const shipping = createOrderShippingSnapshot(shippingInfo, addressSnapshot);
+    }, payload.shippingMethod, await getStoreShippingSettings());
+    const shippingCost = shippingInfo ? shippingInfo.feeToman : 0;
+    const shippingPaymentType = shippingInfo?.paymentType ?? "PREPAID";
+    const shipping = shippingInfo && addressSnapshot ? createOrderShippingSnapshot(shippingInfo, addressSnapshot) : undefined;
 
     const totalPrice = orderItems.reduce((a: number, i) => a + i.total, 0);
     const finalPrice = totalPrice + (shippingCost ?? 0);
@@ -261,7 +263,7 @@ export async function POST(req: Request) {
     try {
       order = await Order.create({
         user: session.user.id,
-        address: payload.addressId,
+        address: digitalOnly ? undefined : payload.addressId,
         addressSnapshot,
         buyerSnapshot: {
           name: String(buyer.username || "کاربر"),
