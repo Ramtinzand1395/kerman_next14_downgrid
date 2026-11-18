@@ -1,5 +1,6 @@
 import type { PipelineStage } from "mongoose";
 import type { AppointmentItem } from "@/types/appointments";
+import { storeCustomerProjection } from "@/lib/store-order-identity";
 
 export function websiteOrderUrl(item: Pick<AppointmentItem, "_id" | "fulfillment">) {
   const params = new URLSearchParams({ appointment: item._id });
@@ -17,7 +18,10 @@ export function websiteStoreOrders(activeOnly: boolean): PipelineStage[] {
         "courier.status": { $nin: ["delivered", "cancelled"] },
       } : {}),
     } },
-    { $lookup: { from: "customers", localField: "storeOrderCustomer", foreignField: "_id", as: "storeCustomer" } },
+    { $lookup: {
+      from: "users", localField: "user", foreignField: "_id",
+      pipeline: [{ $project: storeCustomerProjection }], as: "storeCustomer",
+    } },
     { $project: {
       appointmentId: "$_id",
       fulfillment: 1,
@@ -30,7 +34,8 @@ export function websiteStoreOrders(activeOnly: boolean): PipelineStage[] {
         { case: { $and: [{ $eq: ["$installationType", "copy"] }, { $eq: ["$device", "ps5"] }] }, then: "ps5Copy" },
         { case: { $and: [{ $eq: ["$installationType", "copy"] }, { $eq: ["$device", "ps4"] }] }, then: "copy" },
       ], default: "$device" } },
-      customer: { $ifNull: [{ $first: "$storeCustomer" }, { lastName: "$customerName", mobile: "$phone" }] },
+      customer: { $ifNull: [{ $first: "$storeCustomer" }, null] },
+      customerSnapshot: { $ifNull: ["$storeOrderCustomerSnapshot", { name: "$customerName", mobile: "$phone" }] },
       price: { $ifNull: ["$pricing.finalAmount", null] },
       serviceBaseAmount: { $ifNull: ["$pricing.serviceBaseAmount", "$pricing.baseAmount"] },
       list: { $map: { input: { $ifNull: ["$selectedGames", []] }, as: "game", in: {

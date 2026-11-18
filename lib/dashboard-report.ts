@@ -447,7 +447,13 @@ export async function loadOverviewSection(range: ReportRange) {
       },
       { $group: { _id: null, units: { $sum: "$units" } } },
     ]),
-    User.countDocuments({ createdAt: { $gte: range.startInclusive, $lt: range.endExclusive } }),
+    User.countDocuments({
+      storeOrderPendingSignup: { $ne: true },
+      $or: [
+        { registrationCompletedAt: { $gte: range.startInclusive, $lt: range.endExclusive } },
+        { registrationCompletedAt: null, createdAt: { $gte: range.startInclusive, $lt: range.endExclusive } },
+      ],
+    }),
     Product.countDocuments({ createdAt: { $gte: range.startInclusive, $lt: range.endExclusive } }),
   ]);
   return {

@@ -33,7 +33,12 @@ function harness({ smsState = "sent", catalogPrice, installationType = 'account'
     '@/lib/appointments/service':{rescheduleAppointment:async()=>{}},
     '@/lib/appointments/rewards.service':{issueVisitRewards:async()=>{},redeemVisitReward:async()=>{redeemed++;return {discount:0,shippingDiscount:0};},releaseVisitReward:async()=>{}},
     '@/lib/appointments/games':games,
-    '@/model/Customer':{default:{findOne:({mobile})=>({select:()=>({lean:async()=>mobile==='09123456789' ? {lastName:'آزمایشی',sex:'مرد'} : null})})}},
+    '@/lib/store-customer-account': {
+      findStoreCustomer: async (id) => ({_id:id,mobile:'09123456789',lastName:'آزمایشی',sex:'مرد'}),
+      storeCustomerSnapshot: ({lastName,sex,mobile}) => ({lastName,sex,mobile}),
+      toStoreCustomer: user => user,
+      storeSmsName: customer => customer.lastName,
+    },
     '@/model/GameList':{default:{
       find:()=>({select:()=>({lean:async()=>[{platform:installationType === 'copy' ? 'ps5Copy' : 'ps5',items:[{_id:id,name:'Test Game',size:27.5,price:catalogPrice}]}]})}),
     }},
@@ -158,7 +163,9 @@ test('website in-store orders register and complete through the manual stages wi
   assert.equal((await h.patch({status:'completed',baseAmount:500000})).status,409);
   assert.equal((await h.patch({registerStoreOrder:true,storeOrderCustomerId:id,baseAmount:500000,
     storeOrderDescription:'اطلاعات سفارش', selectedGames:[{platform:'ps5',gameId:id}]})).status,200);
-  assert.equal(h.current.storeOrderCustomer,id);
+  assert.equal(h.current.user,id);
+  assert.equal(h.current.storeOrderCustomerSnapshot.lastName,'آزمایشی');
+  assert.equal(h.current.storeOrderCustomer,undefined);
   assert.equal(h.current.description,'اطلاعات سفارش');
   assert.equal(h.current.pricing.finalAmount,500000);
   assert.equal((await h.patch({deliverStoreOrder:true})).status,409);

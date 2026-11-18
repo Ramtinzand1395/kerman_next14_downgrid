@@ -152,6 +152,10 @@ export interface ProductForm {
 
 export interface Customer {
   barcodes?: string[];
+  canEditMobile?: boolean;
+  canEditName?: boolean;
+  canEditGender?: boolean;
+  canEditBirthday?: boolean;
   _id: string;
   name: string;
   mobile: string;
@@ -174,6 +178,7 @@ interface StoreOrder {
   totalPrice?: number;
   price: number | null;
   customer?: Customer | string;
+  customerSnapshot?: Pick<Customer, "name" | "lastName" | "mobile" | "sex" | "birthday" | "description">;
   customerId?: string;
   description: string;
   consoleType: ConsoleType | "";
