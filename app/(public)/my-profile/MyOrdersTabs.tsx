@@ -2,7 +2,8 @@
 
 import { usePathname, useSearchParams } from "next/navigation";
 import { useRouter } from "@/app/components/navigation/NavigationFeedback";
-import { ShoppingBasket, Gamepad2 } from "lucide-react";
+import Link from "next/link";
+import { ShoppingBasket, Gamepad2, KeyRound } from "lucide-react";
 import dynamic from "next/dynamic";
 import { PageLoading } from "@/app/components/loading/LoadingSystem";
 
@@ -30,7 +31,7 @@ export default function MyOrdersTabs() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1.5">
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1.5">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = tab.key === active;
@@ -51,6 +52,10 @@ export default function MyOrdersTabs() {
             </button>
           );
         })}
+        <Link href="/my-profile?step=12" className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-indigo-700">
+          <KeyRound className="h-4 w-4 shrink-0" />
+          اکانت‌های من
+        </Link>
       </div>
 
       <div>

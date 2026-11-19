@@ -3,6 +3,7 @@
 import { useRouter } from "@/app/components/navigation/NavigationFeedback";
 import {
   Heart,
+  KeyRound,
   MapPinHouse,
   MessageSquareText,
   ShoppingBasket,
@@ -20,6 +21,7 @@ export default function Stepper({ activeStep }: { activeStep: number }) {
     { id: 3, title: "آدرس‌ها", icon: MapPinHouse },
     { id: 4, title: "نظرات من", icon: MessageSquareText },
     { id: 5, title: "سفارش‌ها", icon: ShoppingBasket },
+    { id: 12, title: "اکانت‌های من", icon: KeyRound },
     { id: 6, title: "دریافت نوبت", icon: CalendarClock },
     { id: 8, title: "کیف پول", icon: WalletCards },
     { id: 9, title: "باشگاه مشتریان", icon: Trophy },
@@ -37,6 +39,7 @@ export default function Stepper({ activeStep }: { activeStep: number }) {
         return (
           <button
             type="button"
+            aria-current={isActive ? "page" : undefined}
             onClick={() =>
               router.push(`?step=${Number(step.id)}`, { scroll: false })
             }

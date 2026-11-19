@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import dynamic from "next/dynamic";
 import { PageLoading } from "@/app/components/loading/LoadingSystem";
 
@@ -27,11 +26,11 @@ export default function ProfileContent({
   initialFulfillment: "courier" | "in_store" | null;
 }) {
   switch (activeStep) {
-    case 1: return <><Link className="block p-3 font-bold" href="/my-profile/accounts">اکانت‌های من</Link><Profile /></>;
+    case 1: return <Profile />;
     case 2: return <Favorites />;
     case 3: return <MyAddresses />;
     case 4: return <MyComments />;
-    case 5: return <><Link className="block p-3 font-bold" href="/my-profile/accounts">اکانت‌های من</Link><MyOrdersTabs /></>;
+    case 5: return <MyOrdersTabs />;
     case 6: return <GameOrderSelector initialFulfillment={initialFulfillment} />;
     case 8: return <MyWallet />;
     case 9: return <MyLoyalty />;

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import MyAccounts from "./MyAccounts";
 import Sidebar from "./Sidebar";
 import Stepper from "./Stepper";
 import ProfileContent from "./ProfileContent";
@@ -42,7 +43,11 @@ export default async function MyProfile({ searchParams }: MyProfilePageProps) {
           </div>
 
           <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50 p-3 md:p-5 shadow-sm min-h-[520px]">
-            <ProfileContent activeStep={activeStep} initialFulfillment={initialFulfillment} />
+            {activeStep === 12 ? (
+              <MyAccounts />
+            ) : (
+              <ProfileContent activeStep={activeStep} initialFulfillment={initialFulfillment} />
+            )}
           </div>
         </section>
       </div>
