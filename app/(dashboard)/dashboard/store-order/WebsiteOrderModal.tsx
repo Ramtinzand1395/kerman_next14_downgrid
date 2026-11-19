@@ -34,9 +34,10 @@ function WebsiteOrderLoader({ id, setOrders, onSaved }: Props & { id: string }) 
         if (appointment.status !== "confirmed" || (appointment.fulfillment === "courier" && appointment.courier?.status !== "at_store")) {
           throw new Error("این سفارش در مرحله ثبت یا ویرایش سفارش دستی نیست.");
         }
-        const customerResponse = await fetch(`/api/admin/store-order/customer?${new URLSearchParams({ mobile: appointment.phone })}`, options);
+        const mobile = (typeof appointment.user === "object" && appointment.user?.mobile) || appointment.phone;
+        const customerResponse = await fetch(`/api/admin/store-order/customer?${new URLSearchParams({ mobile })}`, options);
         const customerPayload = await customerResponse.json();
-        if (!customerResponse.ok && !(customerResponse.status === 400 && customerPayload.message === "خریدار پیدا نشد.")) {
+        if (!customerResponse.ok && !(customerResponse.status === 404 && customerPayload.message === "خریدار پیدا نشد.")) {
           throw new Error(customerPayload.message || "اطلاعات مشتری دریافت نشد.");
         }
         setResult({ appointment, customer: customerPayload.data });

@@ -5,6 +5,7 @@ import {
   ArrowRight,
   Gamepad2,
   Monitor,
+  Pencil,
   ReceiptText,
   Trash2,
 } from "lucide-react";
@@ -15,6 +16,7 @@ import type { AppointmentItem } from "@/types/appointments";
 import { installationGameTotal, isCopyCourierInstallation } from "@/lib/appointments/games";
 import MoneyInput from "@/app/components/forms/MoneyInput";
 import { formatPrice } from "@/helpers/Price";
+import PrintOrderButton from "../updateModal/PrintOrderButton";
 import GameDropdown from "./GameDropdown";
 import {
   clearStoreOrderDraft,
@@ -50,12 +52,13 @@ const AddCustomerOrder = ({
   onBack,
 }: AddCustomerOrderProps) => {
   const catalogPricing = Boolean(appointment && isCopyCourierInstallation(appointment));
+  const [editingDetails, setEditingDetails] = useState(false);
   const [loading, setLoading] = useState(false);
   const [requestKey] = useState(
     () => appointment ? "" : readStoreOrderDraft()?.requestKey || crypto.randomUUID(),
   );
 
-  const [order, setOrder] = useState<storeOrder | null>(() => {
+  const [initialOrder] = useState<storeOrder>(() => {
     const baseOrder: storeOrder = {
       _id: "",
       list: [],
@@ -80,6 +83,8 @@ const AddCustomerOrder = ({
         : ["ps4", "ps5", "xbox"].includes(device) ? device as ConsoleType : "";
       return {
         ...baseOrder,
+        _id: appointment._id,
+        createdAt: appointment.storeOrderRegisteredAt ?? appointment.createdAt ?? "",
         consoleType,
         description: appointment.description || "",
         totalSize: appointment.totalSizeGB ?? 0,
@@ -110,6 +115,8 @@ const AddCustomerOrder = ({
     return baseOrder;
   });
 
+  const [order, setOrder] = useState<storeOrder | null>(initialOrder);
+
   // ذخیره خودکار پیش‌نویس سفارش هنگام هر تغییر
   useEffect(() => {
     if (order && !appointment) writeStoreOrderDraft({ order, requestKey });
@@ -121,13 +128,15 @@ const AddCustomerOrder = ({
   const handleSubmit = async () => {
     if (!customerData._id) {
       toast.warning("پیش از ثبت سفارش، اطلاعات مشتری را ذخیره کنید.");
+      if (appointment) onBack();
       return;
     }
 
     const repair = appointment?.serviceType === "repair";
     if (!order || (!repair && (!order.consoleType || !order.list.length)) ||
         serviceAmount == null || !Number.isSafeInteger(serviceAmount) || serviceAmount < 0 || (!appointment && serviceAmount === 0)) {
-      toast.warning("برای ثبت سفارش، نوع دستگاه، قیمت و حداقل یک بازی را مشخص کنید.");
+      if (appointment) setEditingDetails(true);
+      toast.warning(repair ? "مبلغ خدمت را وارد کنید." : "برای ثبت سفارش، نوع دستگاه، قیمت و حداقل یک بازی را مشخص کنید.");
       return;
     }
 
@@ -238,6 +247,55 @@ const AddCustomerOrder = ({
 
   const formatNumber = (value: number | null | undefined) =>
     value == null ? "" : value.toLocaleString("en-US");
+
+  if (appointment && !editingDetails) {
+    const finalAmount = appointment.pricing?.finalAmount;
+    return (
+      <>
+        <section className="space-y-4 rounded-xl border border-slate-200 p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold">جزئیات سفارش</h3>
+            <button type="button" onClick={() => setEditingDetails(true)} disabled={loading}
+              className="flex items-center gap-1 rounded-lg border px-3 py-1 text-xs">
+              <Pencil className="h-3 w-3" /> ویرایش
+            </button>
+          </div>
+          <dl className="grid gap-3 text-sm md:grid-cols-3">
+            <div><dt>دستگاه</dt><dd>{order?.consoleType || appointment.device}</dd></div>
+            <div><dt>مبلغ خدمت</dt><dd>{serviceAmount == null ? "پس از بررسی" : `${formatPrice(serviceAmount)} تومان`}</dd></div>
+            <div><dt>توضیحات</dt><dd className="whitespace-pre-wrap">{order?.description || "—"}</dd></div>
+            <div><dt>روش تحویل</dt><dd>{appointment.fulfillment === "courier" ? "پیک" : "حضوری"}</dd></div>
+            <div><dt>کد پیگیری</dt><dd>{appointment.trackingCode}</dd></div>
+            {finalAmount != null && <div><dt>مبلغ قابل پرداخت</dt><dd>{formatPrice(finalAmount)} تومان</dd></div>}
+          </dl>
+          {appointment.serviceType !== "repair" && (
+            <div>
+              <h4 className="text-sm">لیست بازی‌ها</h4>
+              {order?.list.length ? (
+                <ul className="mt-2 grid gap-2 md:grid-cols-3">
+                  {order.list.map((game) => <li key={game._id} className="rounded-lg border p-2 text-sm">{game.name}</li>)}
+                </ul>
+              ) : <p className="text-sm text-slate-500">لیست خالی است</p>}
+            </div>
+          )}
+        </section>
+        <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
+          <button type="button" onClick={onBack} disabled={loading} className="rounded-lg border px-4 py-2 text-sm">
+            اطلاعات مشتری و بارکد
+          </button>
+          {!appointment.storeOrderRegisteredAt && (
+            <button type="button" onClick={handleSubmit} disabled={loading}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white disabled:opacity-50">
+              {loading ? "در حال ثبت..." : "ثبت سفارش"}
+            </button>
+          )}
+          {appointment.storeOrderRegisteredAt && finalAmount != null && (
+            <PrintOrderButton order={{ ...initialOrder, price: finalAmount }} customer={customerData} />
+          )}
+        </div>
+      </>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -405,11 +463,16 @@ const AddCustomerOrder = ({
       <div className="flex items-center justify-between border-t border-slate-200 pt-4">
         <button
           type="button"
-          onClick={onBack}
+          disabled={loading}
+          onClick={() => {
+            if (!appointment) return onBack();
+            setOrder(initialOrder);
+            setEditingDetails(false);
+          }}
           className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600"
         >
           <ArrowRight className="h-4 w-4" />
-          مرحله قبل
+          {appointment ? "بازگشت به اطلاعات سفارش" : "مرحله قبل"}
         </button>
 
         <button
@@ -418,7 +481,7 @@ const AddCustomerOrder = ({
           disabled={loading}
           className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {loading ? "در حال ثبت..." : "ثبت سفارش"}
+          {loading ? "در حال ثبت..." : appointment?.storeOrderRegisteredAt ? "ذخیره تغییرات" : "ثبت سفارش"}
         </button>
       </div>
     </div>

@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 
 import { Customer, OrdersByConsole } from "@/types";
 import type { AppointmentItem } from "@/types/appointments";
+import OrderInfoDialog from "../updateModal/OrderInfoDialog";
 import SearchCustomer from "./SearchCustomer";
 import RegisterCustomer from "./RegisterCustomer";
 import AddCustomerOrder from "./AddCustomerOrder";
@@ -37,7 +38,7 @@ const steps = [
 ] as const;
 
 const AddOrderModal = ({ closeModal, setOrders, appointment, customer, onWebsiteOrderSaved }: AddOrderModalProps) => {
-  const [activeStep, setActiveStep] = useState<number>(appointment ? 2 : 1);
+  const [activeStep, setActiveStep] = useState<number>(appointment ? 3 : 1);
   const [customerData, setCustomerData] = useState<Customer>(() => {
     if (customer) return customer;
     if (!appointment) return defaultCustomer;
@@ -45,7 +46,6 @@ const AddOrderModal = ({ closeModal, setOrders, appointment, customer, onWebsite
     return { ...defaultCustomer, mobile: appointment.phone, name: first, lastName: last.join(" ") };
   });
   const [barcode, setBarcode] = useState("");
-  const [websiteOrderStepOpened, setWebsiteOrderStepOpened] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);
 
   // بازیابی پیش‌نویس ذخیره‌شده (مثلا بعد از خطای ثبت سفارش) تا اطلاعات از اول وارد نشود
@@ -70,6 +70,38 @@ const AddOrderModal = ({ closeModal, setOrders, appointment, customer, onWebsite
     writeStoreOrderDraft({ customerData, activeStep, barcode });
   }, [customerData, activeStep, barcode, draftLoaded]);
 
+  const customerForm = (
+    <RegisterCustomer
+      customerData={customerData}
+      setCustomerData={setCustomerData}
+      barcode={barcode}
+      setBarcode={setBarcode}
+      onBack={() => setActiveStep(appointment ? 3 : 1)}
+      onNext={() => setActiveStep(3)}
+    />
+  );
+
+  const orderForm = (
+    <AddCustomerOrder
+      appointment={appointment}
+      onWebsiteOrderSaved={onWebsiteOrderSaved}
+      customerData={customerData}
+      closeModal={closeModal}
+      setOrders={setOrders}
+      onBack={() => setActiveStep(2)}
+    />
+  );
+
+  if (appointment) {
+    return (
+      <OrderInfoDialog closeModal={closeModal} customer={customerData}
+        createdAt={appointment.storeOrderRegisteredAt ?? appointment.createdAt}>
+        {activeStep === 2 && customerForm}
+        <div hidden={activeStep !== 3}>{orderForm}</div>
+      </OrderInfoDialog>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-3 pt-6 sm:p-4 sm:pt-10 md:items-center">
       <div
@@ -88,7 +120,7 @@ const AddOrderModal = ({ closeModal, setOrders, appointment, customer, onWebsite
         </button>
         <div className="mb-6 border-b border-slate-200 pb-4">
           <h2 className="text-xl font-bold text-slate-900">
-            افزودن سفارش جدید {appointment && <span className="rounded-full bg-indigo-100 px-2 py-1 text-xs text-indigo-800">سایت</span>}
+            افزودن سفارش جدید
           </h2>
           <div className="mt-4 grid gap-2 md:grid-cols-3">
             {steps.map((step) => {
@@ -121,35 +153,11 @@ const AddOrderModal = ({ closeModal, setOrders, appointment, customer, onWebsite
             setCustomerData={setCustomerData}
             barcode={barcode}
             setBarcode={setBarcode}
-            lockedMobile={Boolean(appointment)}
             onNext={() => setActiveStep(2)}
           />
         )}
-        {activeStep === 2 && (
-          <RegisterCustomer
-            customerData={customerData}
-            setCustomerData={setCustomerData}
-            barcode={barcode}
-            setBarcode={setBarcode}
-            onBack={() => setActiveStep(1)}
-            onNext={() => {
-              if (appointment) setWebsiteOrderStepOpened(true);
-              setActiveStep(3);
-            }}
-          />
-        )}
-        {(activeStep === 3 || websiteOrderStepOpened) && (
-          <div hidden={activeStep !== 3}>
-            <AddCustomerOrder
-              appointment={appointment}
-              onWebsiteOrderSaved={onWebsiteOrderSaved}
-              customerData={customerData}
-              closeModal={closeModal}
-              setOrders={setOrders}
-              onBack={() => setActiveStep(2)}
-            />
-          </div>
-        )}
+        {activeStep === 2 && customerForm}
+        {activeStep === 3 && orderForm}
       </div>
     </div>
   );
