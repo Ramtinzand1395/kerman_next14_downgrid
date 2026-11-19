@@ -1,7 +1,7 @@
 # Secure print API rollout and rollback
 
-The production workflow deploys every push to `main`. It resets the server to
-the validated commit, builds it, and only then restarts PM2. The `prebuild`
+After a push to `main`, the workflow publishes the validated commit. The VPS
+fetches that commit, builds it, and then restarts PM2. The `prebuild`
 printer preflight therefore runs before the active process is replaced. A
 failed preflight leaves the currently running website and printer API active.
 
@@ -24,8 +24,8 @@ PRINT_PRODUCTION_ROLLOUT_ACK=legacy-client-verified
 ```
 
 The two origins must be HTTPS and different. The preflight also infers
-`production` from `NEXT_DEPLOY_VALIDATED_SHA`, which is set by the existing SSH
-deployment workflow, so omitting `PRINT_DEPLOYMENT_TARGET` cannot bypass the
+`production` from `NEXT_DEPLOY_VALIDATED_SHA`, which is set by the VPS
+deployment script, so omitting `PRINT_DEPLOYMENT_TARGET` cannot bypass the
 production checks.
 
 `PRINT_API_AUTH_MODE` has no runtime default:

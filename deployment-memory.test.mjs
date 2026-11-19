@@ -30,10 +30,12 @@ test('production waits for the full validation job and builds only its validated
   assert.ok(validate.jobs.validate.steps.some(step => step.run === 'npx tsc --noEmit'));
   assert.ok(validate.jobs.validate.steps.some(step => step.run === 'npm run build'));
   assert.ok(validate.jobs.validate.steps.some(step => step.run === 'npm test'));
-  const ssh = deploy.jobs.deploy.steps[0];
-  assert.equal(ssh.env.DEPLOY_COMMIT, '${{ github.sha }}');
-  assert.equal(ssh.with.envs, 'DEPLOY_COMMIT');
-  assert.ok(ssh.with.script.includes('git reset --hard "$DEPLOY_COMMIT"'));
-  assert.ok(ssh.with.script.includes('NEXT_DEPLOY_VALIDATED_SHA="$DEPLOY_COMMIT" npm run build'));
+  const publish = deploy.jobs.deploy.steps.find(step => step.run);
+  assert.equal(publish.run, 'git push origin "${GITHUB_SHA}:refs/heads/vps-release"');
+  const script = readFileSync(new URL('./scripts/deploy-vps.sh', import.meta.url), 'utf8');
+  assert.ok(script.includes('HostName=ssh.github.com -p 443'));
+  assert.ok(script.includes("git rev-parse 'refs/remotes/origin/vps-release^{commit}'"));
+  assert.ok(script.includes('git merge --ff-only "$release_sha"'));
+  assert.ok(script.includes('NEXT_DEPLOY_VALIDATED_SHA="$release_sha" npm run build'));
   assert.equal(deploy.concurrency['cancel-in-progress'], false);
 });

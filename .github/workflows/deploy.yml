@@ -20,86 +20,12 @@ jobs:
     needs: validate
     runs-on: ubuntu-latest
 
+    name: Publish validated commit for the VPS
+    permissions:
+      contents: write
     steps:
-      - name: Deploy to production server
-        uses: appleboy/ssh-action@v1.2.3
-        env:
-          DEPLOY_COMMIT: ${{ github.sha }}
+      - uses: actions/checkout@v4
         with:
-          envs: DEPLOY_COMMIT
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USERS }}
-          key: ${{ secrets.PRIVATE_KEY }}
-          command_timeout: 15m
-          script: |
-            set -e
-
-            echo "Loading Node.js environment..."
-            export NVM_DIR="/home/ramtin/.nvm"
-            source "$NVM_DIR/nvm.sh"
-            export PATH="$PATH:/home/ramtin/.nvm/versions/node/v24.21.0/bin"
-
-            echo "Checking versions..."
-            node -v
-            npm -v
-            pm2 -v
-
-            echo "Going to project directory..."
-            cd /home/ramtin/projects/kerman_next14_downgrid
-
-            echo "Pulling latest changes..."
-            git fetch origin main
-            if [[ ! "$DEPLOY_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
-              echo "Invalid validated commit SHA"
-              exit 1
-            fi
-            git cat-file -e "${DEPLOY_COMMIT}^{commit}"
-            git reset --hard "$DEPLOY_COMMIT"
-
-            echo "Installing dependencies..."
-            npm ci --no-audit --no-fund
-
-            echo "Memory available before build..."
-            free -m
-            node -e 'console.log("Node heap limit MiB:", Math.round(require("node:v8").getHeapStatistics().heap_size_limit / 1024 / 1024))'
-
-            echo "Building the exact commit already type-checked on GitHub..."
-            NEXT_DEPLOY_VALIDATED_SHA="$DEPLOY_COMMIT" npm run build
-
-            echo "Starting the freshly built application from this project directory..."
-            pm2 startOrRestart ecosystem.config.cjs --only kermanatari --update-env
-
-            echo "Saving PM2 process list..."
-            pm2 save
-
-            echo "Checking application status..."
-            pm2 status kermanatari
-
-            echo "Checking the published blog article on the local production process..."
-            ARTICLE_PATH="/api/blog/%D9%82%D9%81%D9%84-%D8%B4%D8%AF%D9%86-%D8%A8%D8%A7%D8%B2%DB%8C-ps4-%D9%88-ps5"
-            HEALTH_URL="http://127.0.0.1:${PORT:-3000}${ARTICLE_PATH}"
-            HEALTH_FILE="$(mktemp)"
-
-            for attempt in $(seq 1 12); do
-              HTTP_STATUS=$(curl --silent --show-error --max-time 20 --output "$HEALTH_FILE" --write-out "%{http_code}" "$HEALTH_URL" || true)
-
-              if [ "$HTTP_STATUS" = "200" ]; then
-                echo "Production article health check passed."
-                rm -f "$HEALTH_FILE"
-                break
-              fi
-
-              echo "Health check attempt ${attempt}/12 returned HTTP ${HTTP_STATUS:-000}."
-
-              if [ "$attempt" = "12" ]; then
-                echo "Production article health check failed."
-                cat "$HEALTH_FILE" || true
-                pm2 logs kermanatari --lines 100 --nostream || true
-                rm -f "$HEALTH_FILE"
-                exit 1
-              fi
-
-              sleep 5
-            done
-
-            echo "Deploy completed successfully."
+          fetch-depth: 0
+      - name: Publish the validated main commit
+        run: git push origin "${GITHUB_SHA}:refs/heads/vps-release"
