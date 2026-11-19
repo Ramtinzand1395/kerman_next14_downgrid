@@ -14,6 +14,7 @@ import { toast } from "react-toastify";
 import { ConsoleType, Customer, GameItem, storeOrder, OrdersByConsole } from "@/types";
 import type { AppointmentItem } from "@/types/appointments";
 import { installationGameTotal, isCopyCourierInstallation } from "@/lib/appointments/games";
+import { websiteOrderDetails } from "@/lib/appointments/store-order-details";
 import MoneyInput from "@/app/components/forms/MoneyInput";
 import { formatPrice } from "@/helpers/Price";
 import PrintOrderButton from "../updateModal/PrintOrderButton";
@@ -77,27 +78,12 @@ const AddCustomerOrder = ({
     };
 
     if (appointment) {
-      const device = appointment.device;
-      const consoleType = appointment.installationType === "copy"
-        ? device === "ps5" ? "ps5Copy" : "copy"
-        : ["ps4", "ps5", "xbox"].includes(device) ? device as ConsoleType : "";
       return {
         ...baseOrder,
         _id: appointment._id,
         createdAt: appointment.storeOrderRegisteredAt ?? appointment.createdAt ?? "",
-        consoleType,
-        description: appointment.description || "",
-        totalSize: appointment.totalSizeGB ?? 0,
+        ...websiteOrderDetails(appointment),
         price: appointment.pricing?.serviceBaseAmount ?? appointment.pricing?.baseAmount ?? null,
-        list: (appointment.selectedGames || []).map((game) => ({
-          _id: `${game.platform}:${game.gameId}`,
-          name: game.name,
-          size: game.sizeGB ?? undefined,
-          price: catalogPricing ? game.price ?? undefined : undefined,
-          imageUrl: game.imageUrl,
-          imageAlt: game.imageAlt,
-          appointmentGame: { platform: game.platform, gameId: game.gameId },
-        })),
       };
     }
 
@@ -159,6 +145,9 @@ const AddCustomerOrder = ({
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.error || "ثبت سفارش سایت انجام نشد.");
         toast.success("سفارش سایت در فهرست سفارش‌ها ذخیره شد.");
+        if (payload.data?.printStatus === "failed") {
+          toast.warning("سفارش ثبت شد، اما به صف چاپ اضافه نشد. از دکمه چاپ در جزئیات سفارش استفاده کنید.");
+        }
         if (payload.data?.gamesNotificationStatus === "failed") toast.warning("ارسال اعلان تغییر بازی‌ها ناموفق بود.");
         if (payload.data?.storeOrderSmsStatus === "failed") toast.warning("سفارش ثبت شد، اما پیامک دریافت دستگاه ارسال نشد.");
         onWebsiteOrderSaved?.();

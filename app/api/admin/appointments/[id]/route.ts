@@ -8,6 +8,9 @@ import {
   installationSize, INSTALLATION_GAME_FIELDS, isCopyCourierInstallation,
   resolveInstallationGames, type GameCatalogDocument, type InstallationGame,
 } from "@/lib/appointments/games";
+import { websiteOrderDetails } from "@/lib/appointments/store-order-details";
+import { buildPrintPayload } from "@/lib/print/store-order-payload";
+import { ensureStoreOrderPrintJob } from "@/lib/print/queue";
 import Appointment from "@/model/Appointment";
 import AppointmentReservation from "@/model/AppointmentReservation";
 import VisitReward from "@/model/VisitReward";
@@ -463,6 +466,25 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     : await persist();
   if (!updated) return fail("وضعیت نوبت هم‌زمان تغییر کرده است.", 409);
 
+  let printStatus: "queued" | "failed" | undefined;
+  if (set.storeOrderRegisteredAt) {
+    try {
+      const customer = updated.storeOrderCustomerSnapshot;
+      const receipt = buildPrintPayload({
+        ...websiteOrderDetails(updated),
+        price: updated.pricing.finalAmount,
+        createdAt: updated.storeOrderRegisteredAt,
+      }, customer?.name || customer?.lastName ? customer : {
+        name: updated.customerName, mobile: updated.phone, description: customer?.description,
+      }, "Asia/Tehran");
+      await ensureStoreOrderPrintJob(String(updated._id), receipt, auth.userId);
+      printStatus = "queued";
+    } catch (error) {
+      console.error("[appointments] could not queue registration receipt", error);
+      printStatus = "failed";
+    }
+  }
+
   let storeOrderSmsStatus: BusinessSmsState | undefined;
   if (isCourier && set.storeOrderRegisteredAt) {
     const receiptSms = await sendStoreOrderReceiptSms({
@@ -585,7 +607,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       });
   }
 
-  return ok(gamesNotificationStatus || storeOrderSmsStatus
-    ? { ...updated.toObject(), gamesNotificationStatus, storeOrderSmsStatus }
+  return ok(printStatus || gamesNotificationStatus || storeOrderSmsStatus
+    ? { ...updated.toObject(), printStatus, gamesNotificationStatus, storeOrderSmsStatus }
     : updated);
 }

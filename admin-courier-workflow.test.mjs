@@ -14,8 +14,13 @@ function load(path,deps){
   return module.exports;
 }
 const validation=load('./validations/appointment.validation.ts',{'@/lib/appointments/policy':policy});
-function harness({ smsState = "sent", catalogPrice, installationType = 'account' } = {}){
+const orderDetails = load('./lib/appointments/store-order-details.ts', { './games': games });
+const receiptPayload = load('./lib/print/store-order-payload.ts', {
+  '@/helpers/toPersianDate': load('./helpers/toPersianDate.ts', {}),
+});
+function harness({ printFailure = false, smsState = "sent", catalogPrice, installationType = 'account' } = {}){
   let current={_id:id,user:id,phone:'09123456789',trackingCode:'KA1',serviceType:'game_install',fulfillment:'courier',status:'pending',pricing:{known:false,shippingBaseAmount:120000},courier:{status:'pending',addressSnapshot:{city:'کرمان'}},payment:{status:'unpaid'}};
+  const prints=[];
   const notices=[]; const messages=[]; let redeemed=0;
   const smsTransport = {deliverBusinessSms:async (message)=>{
     messages.push({ ...message, registered: Boolean(current.storeOrderRegisteredAt), status:current.status, notices: notices.length });
@@ -33,6 +38,13 @@ function harness({ smsState = "sent", catalogPrice, installationType = 'account'
     '@/lib/appointments/service':{rescheduleAppointment:async()=>{}},
     '@/lib/appointments/rewards.service':{issueVisitRewards:async()=>{},redeemVisitReward:async()=>{redeemed++;return {discount:0,shippingDiscount:0};},releaseVisitReward:async()=>{}},
     '@/lib/appointments/games':games,
+    '@/lib/appointments/store-order-details': orderDetails,
+    '@/lib/print/store-order-payload': receiptPayload,
+    '@/lib/print/queue': { ensureStoreOrderPrintJob: async (key, payload, actor) => {
+      assert.ok(current.storeOrderRegisteredAt);
+      if (printFailure) throw new Error('queue unavailable');
+      prints.push({ key, payload, actor });
+    } },
     '@/lib/store-customer-account': {
       findStoreCustomer: async (id) => ({_id:id,mobile:'09123456789',lastName:'آزمایشی',sex:'مرد'}),
       storeCustomerSnapshot: ({lastName,sex,mobile}) => ({lastName,sex,mobile}),
@@ -72,7 +84,7 @@ function harness({ smsState = "sent", catalogPrice, installationType = 'account'
       messages.some(message=>message.eventKey===eventKey) ? {status:smsState} : null
     })})}},
   });
-  return {patch:body=>route.PATCH(new Request('https://example.test',{method:'PATCH',body:JSON.stringify(body)}),{params:{id}}),payment:()=>paymentRoute.POST(new Request("https://example.test",{method:"POST"}),{params:{id}}),get current(){return current;},notices,messages,get redeemed(){return redeemed;}};
+  return {patch:body=>route.PATCH(new Request('https://example.test',{method:'PATCH',body:JSON.stringify(body)}),{params:{id}}),payment:()=>paymentRoute.POST(new Request("https://example.test",{method:"POST"}),{params:{id}}),get current(){return current;},notices,messages,prints,get redeemed(){return redeemed;}};
 }
 
 test('admin request pricing, pickup, completion and return match customer five-step workflow',async()=>{
@@ -209,4 +221,51 @@ test('SMS provider failure leaves courier registration and completion saved', as
   assert.ok(h.current.storeOrderRegisteredAt);
   assert.equal((await h.patch({status:'completed',baseAmount:700000})).data.storeOrderSmsStatus,'failed');
   assert.equal(h.current.status,'completed');
+});
+
+test('only the first successful website registration queues the saved receipt for the shop printer', async () => {
+  for (const fulfillment of ['in_store', 'courier']) {
+    const h = harness({ installationType: 'copy', catalogPrice: 150000 });
+    const isCourier = fulfillment === 'courier';
+    Object.assign(h.current, {
+      fulfillment, customerName: 'مشتری سایت', courier: isCourier ? h.current.courier : null,
+      pricing: { known: false, shippingBaseAmount: isCourier ? 120000 : 0 },
+    });
+    if (isCourier) h.current.courier.status = 'at_store';
+    const registration = {
+      registerStoreOrder: true, baseAmount: 150000, selectedGames: [{ platform: 'ps5Copy', gameId: id }],
+      storeOrderDescription: 'رسید دستگاه', ...(isCourier && { storeOrderCustomerId: id }),
+    };
+    assert.equal((await h.patch(registration)).status, 409);
+    assert.equal(h.prints.length, 0);
+    h.current.status = 'confirmed';
+    const response = await h.patch(registration);
+    assert.equal(response.data.printStatus, 'queued');
+    assert.equal(h.prints.length, 1);
+    const [{ key, payload, actor }] = h.prints;
+    assert.equal(key, id);
+    assert.equal(actor, id);
+    assert.equal(payload.receiptType, 'ps5Copy');
+    assert.equal(payload.price, isCourier ? 270000 : 150000);
+    assert.equal(payload.fullName, isCourier ? 'آزمایشی' : 'مشتری سایت');
+    assert.equal(payload.mobile, h.current.phone);
+    assert.equal(payload.customerDescription, 'رسید دستگاه');
+    assert.equal(payload.totalSizeGB, 27.5);
+    assert.deepEqual(payload.games, [{ name: 'Test Game', sizeGB: 27.5, price: isCourier ? 150000 : 0, storage: '' }]);
+    const edit = await h.patch({ ...registration, storeOrderDescription: 'ویرایش' });
+    assert.equal(edit.status, 200);
+    assert.equal(edit.data.printStatus, undefined);
+    assert.equal(h.prints.length, 1);
+  }
+});
+
+test('a printer queue failure leaves registration saved and reports the manual print fallback', async () => {
+  const h = harness({ printFailure: true });
+  h.current.status = 'confirmed';
+  h.current.courier.status = 'at_store';
+  const response = await h.patch({ registerStoreOrder: true, baseAmount: 700000 });
+  assert.equal(response.status, 200);
+  assert.equal(response.data.printStatus, 'failed');
+  assert.equal(response.data.storeOrderSmsStatus, 'sent');
+  assert.ok(h.current.storeOrderRegisteredAt);
 });
