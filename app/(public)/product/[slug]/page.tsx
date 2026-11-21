@@ -246,6 +246,7 @@ export default async function ProductPage({
           }
         : {
             "@type": "Offer",
+            ...(product.condition === "used" ? { itemCondition: "https://schema.org/UsedCondition" } : {}),
             seller: { "@id": `${SITE_URL}/#organization` },
             hasMerchantReturnPolicy: { "@id": merchantReturnPolicyId(SITE_URL) },
             priceCurrency: "IRR",
@@ -381,8 +382,7 @@ export default async function ProductPage({
                 </div>
               ) : (
                 <p className="text-zinc-600 leading-8 text-sm md:text-base">
-                  این محصول با تضمین اصالت، ارسال براساس مقصد و پشتیبانی کامل ارائه
-                  می‌شود.
+                  {product.condition === "used" ? "برای پرسش دربارهٔ این دستگاه، کد کالا را به فروشگاه اعلام کنید." : "این محصول با تضمین اصالت، ارسال براساس مقصد و پشتیبانی کامل ارائه می‌شود."}
                 </p>
               )}
             </div>

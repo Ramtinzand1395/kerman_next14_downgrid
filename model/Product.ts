@@ -107,6 +107,12 @@ const VariantSchema = new Schema({
 
 const productSchema = new Schema(
   {
+    usedUnitSoldAt: Date,
+    condition: { type: String, enum: ["new", "used", null] },
+    usedConsole: { type: new Schema({
+      model: String, appearance: String, repairHistory: String, accessories: String,
+      terms: String, testedOn: String, notes: String, checks: { type: Map, of: String },
+    }, { _id: false }), default: undefined },
     isDigital: { type: Boolean, default: false },
     isOnlineGame: { type: Boolean, default: false },
     status: {
@@ -197,7 +203,9 @@ const productSchema = new Schema(
     mainImageAlt: String,
     mainImage: {
       type: String,
-      required: true,
+      required(this: { condition?: string; status?: string }) {
+        return this.condition !== "used" || this.status !== "draft";
+      },
     },
 
     images: [
@@ -255,6 +263,9 @@ productSchema.index({ catalogRevision: 1, _id: 1 });
 productSchema.pre("validate", function validateMoneyAndDerivedStock() {
   const product = this as any;
 
+  if (product.condition === "used" && (product.stock > 1 || product.productType !== "single" || product.isDigital || product.isOnlineGame)) {
+    product.invalidate("stock", "کنسول کارکرده باید فیزیکی و تک‌مدلی با موجودی صفر یا یک باشد.");
+  }
   if (product.isNew) {
     const requiredKeys = product.productType === "multi"
       ? product.variants.map((variant: any) => String(variant._id))

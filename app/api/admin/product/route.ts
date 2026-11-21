@@ -215,6 +215,7 @@ export async function POST(req: Request) {
 
     const { productData: validatedProductData, purchasePrices } = buildProductWriteInput(body, {
       mode: "create",
+      categorySlug: catalogReferences.categorySlug,
     });
 
     const productData = {

@@ -200,6 +200,7 @@ function catalogState(value: Record<string, any> | null | undefined) {
     category: objectId(value.category?._id ?? value.category),
     mainImage: value.mainImage ?? null,
     productType: value.productType ?? null,
+    condition: value.condition ?? null,
   };
 }
 

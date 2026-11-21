@@ -25,6 +25,7 @@ const PRODUCT_FIELDS = [
   "sku",
   "barcode",
   "productType",
+  "condition",
   "status",
   "deletedAt",
   "price",
@@ -288,6 +289,7 @@ async function createSaleInTransaction(input: {
       throw catalogConflict(item, "invalid_catalog_data");
     }
     (product as any).inventoryVersion = beforeVersion + 1;
+    if (product.condition === "used") product.usedUnitSoldAt = new Date(input.request.soldAtUtc);
     await product.save({ session: input.session });
     await appendCatalogChange(
       {

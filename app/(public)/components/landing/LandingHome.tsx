@@ -146,6 +146,7 @@ const consoleGuides = [
 ];
 
 function conditionLabel(product: Product) {
+  if (product.condition) return product.condition === "used" ? "کارکرده" : "نو";
   const slugs = new Set((product.tags || []).map((tag) => tag.slug));
   if (slugs.has("new")) return "نو";
   if (slugs.has("used")) return "کارکرده";
@@ -275,12 +276,15 @@ export default function LandingHome({
                 کنسول‌های نو و کارکرده منتشرشده فروشگاه
               </p>
             </div>
+            <div className="flex flex-wrap gap-4">
+            <Link href="/used-consoles" className="inline-flex min-h-10 items-center text-sm font-bold text-blue-700">کنسول‌های کارکرده</Link>
             <Link
               href="/category/consoles"
               className="inline-flex min-h-10 items-center gap-1 text-sm font-black text-[#1469f5]"
             >
               همه کنسول‌ها <ChevronLeft className="h-3.5 w-3.5" />
             </Link>
+            </div>
           </div>
           {data.consoles.length > 0 ? (
             <div

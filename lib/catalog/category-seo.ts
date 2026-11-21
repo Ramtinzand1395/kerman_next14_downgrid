@@ -17,6 +17,7 @@ export type CatalogQuery = {
   tag: string;
   sort: string;
   inStock: boolean;
+  used?: boolean;
 };
 
 export function decodeCategorySlug(value: string): string | null {
@@ -122,6 +123,7 @@ export function parseCatalogQuery(
     sort: ["newest", "lowPrice", "highPrice"].includes(one("sort"))
       ? one("sort")
       : "newest",
+    ...(one("condition") === "used" ? { used: true } : {}),
     inStock: one("inStock") === "1",
   };
 }
@@ -130,6 +132,7 @@ export function catalogQueryString(query: CatalogQuery) {
   if (query.q) params.set("q", query.q);
   if (query.tag) params.set("tag", query.tag);
   if (query.sort !== "newest") params.set("sort", query.sort);
+  if (query.used) params.set("condition", "used");
   if (query.inStock) params.set("inStock", "1");
   if (query.page > 1) params.set("page", String(query.page));
   return params.toString();
@@ -142,7 +145,7 @@ export function categoryCanonical(category: CategoryRow, query: CatalogQuery) {
 }
 export function hasCatalogFilters(query: CatalogQuery) {
   return Boolean(
-    query.q || query.tag || query.inStock || query.sort !== "newest",
+    query.q || query.tag || query.used || query.inStock || query.sort !== "newest",
   );
 }
 

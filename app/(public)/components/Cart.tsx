@@ -297,7 +297,10 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
           )}
         </div>
 
-        <div className="mt-2 flex items-center sm:gap-1 text-xs text-gray-500">
+        {game.condition === "used" && <p className="mt-2 line-clamp-2 text-xs text-slate-700">{game.stock === 0 && game.usedUnitSoldAt ? "فروخته شد" : "کارکرده"} · {game.usedConsole?.appearance}</p>}
+        {game.condition === "used" && !game.comments?.length ? (
+          <Link className="mt-2 text-xs text-blue-700" href={`/product/${game.slug}`}>مشاهدهٔ عکس‌ها و تست دستگاه</Link>
+        ) : <div className="mt-2 flex items-center sm:gap-1 text-xs text-gray-500">
           {[1, 2, 3, 4, 5].map((value) => (
             <Star
               key={value}
@@ -311,7 +314,7 @@ export default function Cart({ game, onFavoriteChange }: CartProps) {
           ))}
           <span>{game.comments?.length ? rating.toFixed(1) : "0.0"}</span>
           <span className="text-xs">({game.comments?.length || 0} نظر)</span>
-        </div>
+        </div>}
       </div>
 
       <motion.button

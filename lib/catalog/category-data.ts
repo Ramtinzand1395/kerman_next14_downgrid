@@ -84,6 +84,7 @@ export async function getCategoryProducts(
   categoryId: string,
   rows: CategoryRow[],
   query: CatalogQuery,
+  priceRange: { min?: number; max?: number } = {},
 ) {
   await dbConnect();
   const filter: Record<string, unknown> = {
@@ -95,6 +96,7 @@ export async function getCategoryProducts(
       ),
     },
   };
+  if (query.used) filter.condition = "used";
   if (query.q)
     filter.$or = ["title", "brand"].map((key) => ({
       [key]: { $regex: escapeRegex(query.q), $options: "i" },
@@ -143,12 +145,16 @@ export async function getCategoryProducts(
   const [result] = await Product.aggregate([
     { $match: filter },
     ...listingStages(),
+    ...(priceRange.min !== undefined || priceRange.max !== undefined ? [{ $match: { _listingPrice: {
+      ...(priceRange.min !== undefined ? { $gte: priceRange.min } : {}),
+      ...(priceRange.max !== undefined ? { $lte: priceRange.max } : {}),
+    } } }] : []),
     ...(query.inStock ? [{ $match: { _listingStock: { $gt: 0 } } }] : []),
     {
       $facet: {
         count: [{ $count: "total" }],
         products: [
-          { $sort: sort },
+          { $sort: query.used ? { _listingStock: -1 as const, ...sort } : sort },
           { $skip: (query.page - 1) * PAGE_SIZE },
           { $limit: PAGE_SIZE },
           { $unset: ["_activeVariants", "_listingPrice", "_listingStock", "purchasePrices", "purchasePricesUpdatedAt"] },

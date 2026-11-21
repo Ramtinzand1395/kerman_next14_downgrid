@@ -75,11 +75,12 @@ async function getLandingOffers(): Promise<LandingOffer[]> {
 }
 
 const PRODUCT_FIELDS =
-  "sku title slug description shortDesc price discountPrice stock brand mainImage mainImageAlt productType variants variantSelector category tags comments createdAt updatedAt seoTitle metaDescription";
+  "condition sku title slug description shortDesc price discountPrice stock brand mainImage mainImageAlt productType variants variantSelector category tags comments createdAt updatedAt seoTitle metaDescription";
 
 function serializeProduct(document: any): Product {
   return {
     _id: document._id.toString(),
+    condition: document.condition,
     sku: document.sku || document._id.toString(),
     title: document.title,
     slug: document.slug,

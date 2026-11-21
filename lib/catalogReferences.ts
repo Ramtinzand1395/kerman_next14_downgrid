@@ -5,6 +5,7 @@ import Tag from "@/model/Tag";
 type ValidCatalogReferences = {
   ok: true;
   categoryId: string;
+  categorySlug: string;
   tagIds: string[];
 };
 
@@ -31,7 +32,7 @@ export async function validateCatalogReferences(
   }
 
   const [categoryExists, existingTagCount] = await Promise.all([
-    Category.exists({ _id: categoryId }),
+    Category.findById(categoryId).select("slug").lean(),
     tagIds.length ? Tag.countDocuments({ _id: { $in: tagIds } }) : 0,
   ]);
 
@@ -42,5 +43,5 @@ export async function validateCatalogReferences(
     return { ok: false, error: "یک یا چند برچسب انتخاب‌شده وجود ندارد." };
   }
 
-  return { ok: true, categoryId, tagIds };
+  return { ok: true, categoryId, categorySlug: String(categoryExists.slug), tagIds };
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { reportLabels } from "@/lib/used-console";
 import { Truck, RotateCcw, Box, Store } from "lucide-react";
 import Link from "@/app/components/navigation/NavigationFeedback";
 import { Comment, Product } from "@/types";
@@ -57,6 +58,7 @@ export const ProductInfo = ({ product: propProduct }: ProductInfoProps) => {
         )}
       </div>
 
+      {product.condition && <span className="mb-2 font-semibold text-indigo-700">{product.condition === "used" ? "کنسول کارکرده" : "کنسول نو"}</span>}
       {/* SKU */}
       {effectiveSku && (
         <span className="text-gray-400 text-sm mb-4 block dir-ltr text-right">
@@ -102,6 +104,7 @@ export const ProductInfo = ({ product: propProduct }: ProductInfoProps) => {
           <Truck className="w-5 h-5 text-rose-500 shrink-0" />
           <span className="text-xs font-medium text-gray-700">ارسال براساس مقصد</span>
         </div>
+        {product.condition !== "used" && <>
         <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
           <RotateCcw className="w-5 h-5 text-blue-500 shrink-0" />
           <span className="text-xs font-medium text-gray-700">
@@ -114,7 +117,25 @@ export const ProductInfo = ({ product: propProduct }: ProductInfoProps) => {
             تضمین اصالت کالا
           </span>
         </div>
+        </>}
       </div>
+
+      {product.condition === "used" && product.usedConsole && (
+        <section className="mb-5 space-y-3 rounded-xl border border-indigo-100 bg-indigo-50/50 p-4">
+          <h3 className="font-bold">نتیجهٔ بررسی همین دستگاه</h3>
+          <dl className="grid gap-2 text-sm">
+            {Object.entries(reportLabels).map(([rawKey, label]) => {
+              const key = rawKey as keyof typeof reportLabels;
+              const value = product.usedConsole?.[key];
+              return value && <div key={key}><dt className="font-semibold">{label}</dt><dd>{key === "testedOn" ? new Date(value + "T12:00:00Z").toLocaleDateString("fa-IR", { timeZone: "Asia/Tehran" }) : value}</dd></div>;
+            })}
+            {Object.entries(product.usedConsole.checks ?? {}).map(([label, result]) =>
+              <div key={label} className="flex justify-between gap-3 border-t pt-2"><dt>{label}</dt><dd>{result}</dd></div>)}
+          </dl>
+          {product.usedConsole.notes && <p className="whitespace-pre-line text-sm">{product.usedConsole.notes}</p>}
+          <Link className="text-sm text-blue-700" href="/terms">شرایط خرید و مرجوعی</Link>
+        </section>
+      )}
 
       {/* tags */}
       {product.tags && product.tags.length > 0 && (
@@ -196,7 +217,7 @@ export const ProductInfo = ({ product: propProduct }: ProductInfoProps) => {
                 ? "گزینه‌های محصول را انتخاب کنید"
                 : !isOutOfStock
                 ? `موجود در انبار (${toPersianDigits(effectiveStock)} عدد)`
-                : "ناموجود در انبار"}
+                : product.condition === "used" && product.usedUnitSoldAt ? "فروخته شد" : "ناموجود در انبار"}
             </span>
           </div>
         </div>
@@ -238,6 +259,7 @@ export const ProductInfo = ({ product: propProduct }: ProductInfoProps) => {
               </div>
             )}
           </div>
+          {isOutOfStock && product.condition === "used" && <Link href="/used-consoles?inStock=1" className="text-sm text-blue-700">دیدن دستگاه‌های موجود</Link>}
           <AddToCart product={product} selectedVariantId={selectedVariantId} />
         </div>
       </div>

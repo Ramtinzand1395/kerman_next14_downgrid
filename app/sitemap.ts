@@ -69,6 +69,7 @@ const staticRoutes: MetadataRoute.Sitemap = [
 
 type ProductSitemapRow = {
   slug: string;
+  condition?: string;
   updatedAt?: string | Date;
 };
 
@@ -117,7 +118,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [products, blogs, categories] = await Promise.all([
     Product.find(
       { status: "published", deletedAt: null },
-      { slug: 1, updatedAt: 1, _id: 0 },
+      { slug: 1, updatedAt: 1, condition: 1, _id: 0 },
     )
       .lean()
       .exec() as Promise<ProductSitemapRow[]>,
@@ -172,6 +173,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
   return [
     ...staticRoutes,
+    ...(products.some(product => product.condition === "used") ? [{ url: `${SITE_URL}/used-consoles`, changeFrequency: "daily" as const, priority: 0.9 }] : []),
     { url: `${SITE_URL}/categories`, changeFrequency: "weekly", priority: 0.8 },
     ...categoryRoutes,
     ...productRoutes,

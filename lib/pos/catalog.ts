@@ -56,6 +56,7 @@ export type CatalogSnapshotItem = {
   basePriceToman: number;
   discountedPriceToman: number | null;
   centralStock: number;
+  requiresOnlineSale?: true;
   variants: CatalogVariant[];
   catalogRevision: number;
   inventoryVersion: number;
@@ -264,6 +265,7 @@ export function mapCatalogProduct(
     basePriceToman,
     discountedPriceToman,
     centralStock,
+    ...(source.condition === "used" ? { requiresOnlineSale: true as const } : {}),
     variants: productType === "multi" ? variants : [],
     catalogRevision: nonNegativeSafeInteger(source.catalogRevision),
     inventoryVersion: nonNegativeSafeInteger(source.inventoryVersion),

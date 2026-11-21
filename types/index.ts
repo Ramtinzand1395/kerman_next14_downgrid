@@ -1,3 +1,10 @@
+import type { ConsoleCondition, ConsoleReport } from "@/lib/used-console";
+
+interface ConsoleDetails {
+  condition?: ConsoleCondition | null;
+  usedConsole?: ConsoleReport | null;
+}
+
 export interface ProductVariant {
   _id?: string;
   purchasePrice?: number | null;
@@ -122,7 +129,7 @@ interface ProductFaq {
   answer: string;
 }
 
-export interface ProductForm {
+export interface ProductForm extends ConsoleDetails {
   isDigital?: boolean;
   isOnlineGame?: boolean;
   purchasePrice?: number | null;
@@ -244,7 +251,8 @@ export interface Category {
   parent?: { _id: string; name: string } | null;
 }
 
-export interface Product {
+export interface Product extends ConsoleDetails {
+  usedUnitSoldAt?: string | null;
   isDigital?: boolean;
   isOnlineGame?: boolean;
   status?: "draft" | "published";

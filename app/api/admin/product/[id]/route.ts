@@ -62,6 +62,10 @@ export async function PUT(
       purchasePrices,
     } = buildProductWriteInput(body, {
       mode: "update",
+      categorySlug: catalogReferences.categorySlug,
+      previousCondition: product.condition,
+      previousReport: product.usedConsole?.toObject({ flattenMaps: true }),
+      previousDigital: product.isDigital,
       productId: id,
       existingVariantIds,
       existingPurchasePrices: product.purchasePrices,
@@ -70,6 +74,9 @@ export async function PUT(
         : null,
     });
 
+    if (validatedProductData.condition === "used" && !validatedProductData.sku) {
+      validatedProductData.sku = product.sku || `SKU-${product._id}`;
+    }
     const previousProduct = product.toObject({ depopulate: true });
     const previousStatus = product.status;
     const nextProduct = { ...previousProduct, ...validatedProductData };
@@ -113,7 +120,15 @@ export async function PUT(
       );
     }
 
+    if (product.condition === "used" || validatedProductData.condition === "used") {
+      const version = product.inventoryVersion ?? 0;
+      if (body.expectedInventoryVersion !== undefined && body.expectedInventoryVersion !== version) {
+        return NextResponse.json({ error: "موجودی دستگاه تغییر کرده است. فرم را دوباره باز کنید." }, { status: 409 });
+      }
+      product.$where = { inventoryVersion: version === 0 ? { $in: [0, null] } : version };
+    }
     product.$locals.removedVariantIds = removedVariantIds;
+    if (productData.stock > 0 || productData.condition !== "used") product.usedUnitSoldAt = undefined;
     product.set(productData);
     const Update = await saveProductWithCatalogChange({
       product,
@@ -133,6 +148,9 @@ export async function PUT(
   } catch (err: any) {
     console.error("❌ Product Update Error:", err);
 
+    if (err?.name === "DocumentNotFoundError" || err?.name === "VersionError") {
+      return NextResponse.json({ error: "دستگاه تغییر کرده است. فرم را دوباره باز کنید." }, { status: 409 });
+    }
     if (err instanceof ProductInputValidationError) {
       return NextResponse.json({ error: err.message }, { status: 400 });
     }

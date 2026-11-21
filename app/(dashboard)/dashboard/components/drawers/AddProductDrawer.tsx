@@ -7,6 +7,8 @@ import { ChevronDown, Loader2, PackagePlus, X } from "lucide-react";
 import type { ProductForm, ProductVariant, Tag } from "@/types";
 import { isPurchasePrice } from "@/lib/product-profit";
 
+import UsedConsoleFields from "../modals/UsedConsoleFields";
+import { isConsoleGeneration, readConsoleReport } from "@/lib/used-console";
 import BasicInfoFields from "../modals/BasicInfoFields";
 import CategorySelector from "../modals/CategorySelector";
 import TagsSelector from "../modals/TagsSelector";
@@ -101,6 +103,8 @@ const DrawerSection = ({
 
 export default function AddProductDrawer({ onClose, onSave, product }: Props) {
   const [form, setForm] = useState<ProductForm>({
+    condition: product?.condition ?? null,
+    usedConsole: product?.usedConsole ?? null,
     status: product?.status || initialForm.status,
     title: product?.title || initialForm.title,
     slug: product?.slug || initialForm.slug,
@@ -152,6 +156,8 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
       .catch(() => toast.error("برچسب‌ها دریافت نشدند؛ دوباره تلاش کنید."));
   }, []);
 
+  const generation = categories.find(category => category._id === form.category)?.slug;
+
   const toggleSection = (key: SectionKey) => {
     setOpenSection((prev) => (prev === key ? prev : key));
   };
@@ -160,7 +166,14 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
     key: K,
     value: ProductForm[K],
   ) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm(prev => {
+      const next = { ...prev, [key]: value };
+      if (key === "condition" && value === "used" && !product && next.stock === 0) next.stock = 1;
+      if (key === "category" && !isConsoleGeneration(categories.find(category => category._id === value)?.slug)) {
+        next.condition = null;
+      }
+      return next;
+    });
   };
 
   const existingVariants: ProductVariant[] = product?.variants ?? [];
@@ -192,6 +205,25 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
     if (!form.category) {
       toast.warning("برای ذخیره محصول، دسته‌بندی آن را انتخاب کنید.");
       return false;
+    }
+    if (form.condition === "used" && isConsoleGeneration(generation)) {
+      if (form.productType !== "single" || form.isDigital || form.isOnlineGame || form.stock > 1) {
+        setOpenSection("basic");
+        toast.warning("دستگاه کارکرده باید فیزیکی و تک‌مدلی با موجودی صفر یا یک باشد.");
+        return false;
+      }
+      try {
+        readConsoleReport(form.usedConsole, generation, form.status === "published");
+      } catch (error) {
+        setOpenSection("taxonomy");
+        toast.warning((error as Error).message);
+        return false;
+      }
+      if (form.status === "published" && !form.mainImage.trim()) {
+        setOpenSection("media");
+        toast.warning("برای انتشار، عکس همین دستگاه را وارد کنید.");
+        return false;
+      }
     }
     if (form.productType === "single") {
       if (typeof form.price !== "number" || form.price < 0) {
@@ -301,6 +333,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          expectedInventoryVersion: product?.inventoryVersion ?? 0,
           variants:
             form.productType === "multi"
               ? form.variants.map(({ _id, ...variant }) => ({
@@ -442,6 +475,9 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
                 form={form}
                 updateField={updateField}
               />
+              {isConsoleGeneration(generation) && (
+                <UsedConsoleFields generation={generation} form={form} updateField={updateField} />
+              )}
               <TagsSelector
                 tagsList={tagsList}
                 form={form}
