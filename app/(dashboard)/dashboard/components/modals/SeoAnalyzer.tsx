@@ -127,11 +127,11 @@ const SeoAnalyzer = ({ form }: SeoAnalyzerProps) => {
 
   const statusIcon = (status: SeoCheck["status"]) =>
     status === "good" ? (
-      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-700" />
     ) : status === "warn" ? (
-      <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400" />
+      <AlertTriangle className="h-4 w-4 shrink-0 text-amber-700" />
     ) : (
-      <XCircle className="h-4 w-4 shrink-0 text-red-400" />
+      <XCircle className="h-4 w-4 shrink-0 text-red-700" />
     );
 
   const canonicalUrl = `https://kermanatari.ir/product/${slug || "product-slug"}`;
@@ -139,7 +139,7 @@ const SeoAnalyzer = ({ form }: SeoAnalyzerProps) => {
   return (
     <div className="space-y-4">
       {/* Google SERP Preview */}
-      <div className="rounded-xl border border-white/30 bg-white p-4">
+      <div className="rounded-xl border border-slate-200 bg-white p-4">
         <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-slate-500">
           <Search className="h-3.5 w-3.5" />
           پیش‌نمایش در نتایج گوگل
@@ -159,22 +159,22 @@ const SeoAnalyzer = ({ form }: SeoAnalyzerProps) => {
       </div>
 
       {/* Score */}
-      <div className="rounded-xl border border-white/30 bg-white/10 p-4">
+      <div className="rounded-xl border border-slate-200 bg-slate-100 p-4">
         <div className="mb-2 flex items-center justify-between text-xs font-semibold">
           <span>امتیاز سئو</span>
           <span
             className={
               score >= 80
-                ? "text-emerald-400"
+                ? "text-emerald-700"
                 : score >= 50
-                  ? "text-amber-400"
-                  : "text-red-400"
+                  ? "text-amber-700"
+                  : "text-red-700"
             }
           >
             {score}٪
           </span>
         </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
           <div
             className={`h-full rounded-full transition-all ${
               score >= 80
@@ -193,12 +193,12 @@ const SeoAnalyzer = ({ form }: SeoAnalyzerProps) => {
         {checks.map((check) => (
           <li
             key={check.label}
-            className="flex items-start gap-2 rounded-lg border border-white/20 bg-white/5 p-3"
+            className="flex items-start gap-2 rounded-lg border border-slate-200 bg-white p-3"
           >
             {statusIcon(check.status)}
             <div>
               <p className="text-xs font-semibold">{check.label}</p>
-              <p className="mt-0.5 text-[11px] leading-5 text-slate-300">
+              <p className="mt-0.5 text-[11px] leading-5 text-slate-600">
                 {check.message}
               </p>
             </div>
