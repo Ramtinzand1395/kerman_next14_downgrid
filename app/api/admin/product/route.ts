@@ -256,7 +256,7 @@ export async function POST(req: Request) {
     console.error("❌ Product Create Error:", err);
 
     if (err instanceof ProductInputValidationError) {
-      return NextResponse.json({ error: err.message }, { status: 400 });
+      return NextResponse.json({ error: err.message, field: err.field }, { status: 400 });
     }
 
     // خطاهای اعتبارسنجی Mongoose را به پیام فارسی تبدیل می‌کنیم
@@ -281,7 +281,7 @@ export async function POST(req: Request) {
       });
 
       return NextResponse.json(
-        { error: messages.join("، ") },
+        { error: messages.join("، "), field: Object.keys(err.errors)[0] || "body" },
         { status: 400 },
       );
     }
@@ -292,13 +292,13 @@ export async function POST(req: Request) {
       const label =
         field === "slug" ? "نامک (slug)" : field === "sku" ? "SKU" : field;
       return NextResponse.json(
-        { error: `${label} وارد شده تکراری است.` },
+        { error: `${label} قبلاً استفاده شده است. مقدار جدیدی وارد کنید.`, field: field || "slug" },
         { status: 400 },
       );
     }
 
     return NextResponse.json(
-      { error: "خطا در ذخیره محصول" },
+      { error: "ذخیره محصول به دلیل خطای سرور انجام نشد. اطلاعات فرم محفوظ است؛ اتصال پایگاه داده را بررسی کنید یا کمی بعد دوباره تلاش کنید." },
       { status: 500 },
     );
   }
