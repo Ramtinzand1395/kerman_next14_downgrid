@@ -153,7 +153,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
-  const [tagsList, setTagsList] = useState<any[]>([]);
+  const [tagsList, setTagsList] = useState<Tag[]>([]);
 
   useEffect(() => {
     fetch("/api/admin/category")
@@ -169,9 +169,16 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
 
   useEffect(() => {
     fetch("/api/admin/tag")
-      .then((res) => res.json())
-      .then(setTagsList)
-      .catch(() => toast.error("برچسب‌ها دریافت نشدند؛ دوباره تلاش کنید."));
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Tag request failed");
+        const result: unknown = await res.json();
+        if (!Array.isArray(result)) throw new Error("Invalid tags");
+        setTagsList(result as Tag[]);
+      })
+      .catch(() => {
+        setTagsList([]);
+        toast.error("برچسب‌ها از سرور دریافت نشدند. اتصال پنل مدیریت را بررسی و صفحه را تازه‌سازی کنید.");
+      });
   }, []);
 
   const generation = categories.find(category => category._id === form.category)?.slug;
@@ -440,7 +447,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
               </div>
 
               {errorMessage && <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-7 text-rose-800">
-                <p className="font-bold">ثبت محصول انجام نشد</p>
+                <p className="font-bold">{product ? "ویرایش محصول انجام نشد" : "ثبت محصول انجام نشد"}</p>
                 <p>{errorMessage}</p>
                 <p className="mt-1 text-xs">اطلاعاتی که وارد کرده‌اید در فرم باقی می‌مانند؛ مشکل را رفع کنید و دوباره امتحان کنید.</p>
               </div>}
