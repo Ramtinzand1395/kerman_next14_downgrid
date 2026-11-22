@@ -1,66 +1,30 @@
-# Safe VPS deployment and MongoDB backup (Kerman Atari)
+# VPS release process (outbound polling)
 
-## Safety design
+GitHub validates the exact main commit (tests, TypeScript, Next.js build), then advances `vps-release`. GitHub does **not** connect to the VPS. On the VPS, `scripts/poll-vps-release.sh` fetches this ref outbound via `ssh.github.com:443`, logs new release SHA, and **does not deploy by default**. Once explicitly enabled, the poller invokes the exact commit's `scripts/deploy-vps.sh`; the latter creates a MongoDB predeploy backup and a separate Git worktree, builds it, restarts only the web PM2 app, checks health and rolls back on failed health.
 
-- GitHub PRs only validate. Neither PR builds nor a draft PR can deploy.
-- After initial rollout, production deploy can be dispatched manually (Actions > Deploy Production (safe) > Run workflow).
-- Automatic deployment after a merge to `main` is **off by default**. Set repository variable `ENABLE_PRODUCTION_AUTO_DEPLOY=true` only after the first manual deployment, rollback drill, and offsite backup are verified.
-- The deployment workflow validates the SHA, SSHes into the VPS, performs a **mandatory** pre-deploy MongoDB archive backup, checks out a detached Git worktree into `~/projects/kermanatari-deploy/releases/<sha>`, installs and builds there, verifies `.next/BUILD_ID`, then restarts only the `kermanatari` PM2 process.
-- If health check fails, it restarts the previously active release (or original repository for the first migration).
-- The notification worker is not restarted.
-- **Short interruption during PM2 restart is expected**; this is versioned deployment with rollback, not zero-downtime blue-green.
-- Backups remain only on the VPS until a separate encrypted offsite destination is configured. The script retains up to 12 monthly and 30 pre-deploy archives. MongoDB credentials and backups are **never** committed or uploaded to GitHub.
+## Testing without modifying production
 
-## Bootstrap prerequisites on VPS
-
-1. Confirm Node 24 via nvm, PM2 and MongoDB Database Tools 100.3+ (`mongodump --version`).
-2. Confirm `MONGODB_URI` is defined in `~/projects/kerman_next14_downgrid/.env` and the production server can connect to Atlas.
-3. Ensure 2-4 GB of extra disk space and adequate swap/RAM for a parallel build. Reserve ~15 GB currently available.
-4. Ensure the VPS can fetch GitHub via `ssh.github.com:443`; GitHub Actions SSH should connect to the VPS using a **dedicated restricted deploy key** (not a personal admin key).
-5. Configure GitHub Actions secrets `VPS_HOST`, `VPS_USER`, `VPS_DEPLOY_KEY`, `VPS_KNOWN_HOSTS`; variable `VPS_SSH_PORT` (default 22). Obtain the VPS SSH host-key fingerprint through a trusted channel and pin it in `VPS_KNOWN_HOSTS` — **do not trust blind ssh-keyscan**.
-6. Make a protected GitHub environment named `production` and require approval for production deployments where supported.
-
-## Backup-only smoke test (no production restart)
-
-From the **updated** repository checkout on VPS, using the same UNIX user as PM2:
+In a shell as `ramtin`, inspect the latest release without enabling automatic deploy:
 
 ```bash
-command -v mongodump && mongodump --version
-bash scripts/backup-vps.sh predeploy
-find ~/projects/kermanatari-deploy/backups -type f -name '*.archive.gz' -ls
+cd ~/projects/kerman_next14_downgrid
+# IMPORTANT: run this only once this patch is merged into main and available locally.
+SCRIPT=$(mktemp)
+GIT_SSH_COMMAND='ssh -o HostName=ssh.github.com -p 443 -o ConnectTimeout=15' git fetch origin main
+MAIN_SHA=$(git rev-parse origin/main)
+git show "$MAIN_SHA:scripts/poll-vps-release.sh" > "$SCRIPT"
+bash "$SCRIPT"
+rm -f "$SCRIPT"
 ```
 
-Check the generated sha256 and gzip archive. Restore test to a **separate empty database/cluster** before trusting the backup as recoverable. Never use `--drop` on production for tests.
+## Timer installation (later, only after full deployment and restore drill)
 
-## First deploy (after Actions is configured)
+Use a dedicated *user* systemd unit/timer to call the poller. The timer should run every 5 minutes with `Persistent=true`. It must use the correct Node/npm/PM2 PATH under nvm, and retain the production user's HOME. Verify manually before enabling automatic deploy. To allow actual deployments, explicitly create `$HOME/projects/kermanatari-deploy/state/enable-auto-deploy` after first successful manual rollout and tested rollback. To disable, remove that file; polling continues reporting only. The `enable-auto-deploy` switch is the safety gate.
 
-Use manual `workflow_dispatch` on the **main** branch with `ENABLE_PRODUCTION_AUTO_DEPLOY` unset/false. Examine logs and both / and /auth/login after the deploy, test OTP and a product preview manually.
+## Backups
 
-The PM2 site process is migrated from its legacy repository cwd to the release worktree; the worker stays on its old directory. The working repository remains intact, but should not be built directly anymore.
+MongoDB Database Tools must be available. `scripts/backup-vps.sh predeploy` runs before each build and checks the archive using `mongorestore --dryRun`. Install a separate monthly *user* systemd timer for `scripts/backup-vps.sh monthly`; use the same environment, shell and credentials as `ramtin`. Verify with a restore drill into a separate test database and keep encrypted offsite copies. Backups are sensitive files; never commit or upload them to GitHub.
 
-## Monthly backups
+## Important operational safety
 
-`monthly-backup.yml` runs 02:15 UTC on day 1 of every month, or by manual dispatch. It requires the same VPS SSH credentials. Backup failures cause the workflow to fail. GitHub stores only job logs, not archive contents.
-
-## Post-deploy / emergency rollback
-
-Do not touch the live `.next`. List releases:
-
-```bash
-readlink -f ~/projects/kermanatari-deploy/current
-readlink -f ~/projects/kermanatari-deploy/previous
-pm2 show kermanatari
-```
-
-Manual rollback to the previous release (short interruption, run as PM2 user):
-
-```bash
-PREV="$(readlink -f "$HOME/projects/kermanatari-deploy/previous")"
-test -f "$PREV/ecosystem.config.cjs" || exit 1
-pm2 delete kermanatari
-pm2 start "$PREV/ecosystem.config.cjs" --only kermanatari --update-env
-curl -f http://127.0.0.1:3000/auth/login
-pm2 save
-```
-
-No automatic cleanup of old release worktrees occurs in this version. Prune them only after verifying the release is not active and not the rollback target.
+Do not enable the deployment timer until the first manual release succeeds and rollback has been tested. Before updating GitHub's release ref, ensure branch permissions prevent unvalidated direct writes to `vps-release`. The main workflow requires full validation. The first PM2 switch entails a short interruption. Do not touch the notification worker.

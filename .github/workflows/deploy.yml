@@ -1,66 +1,36 @@
-name: Deploy Production (safe)
+name: Publish validated release
 on:
-  workflow_dispatch:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
+
 concurrency:
-  group: production-vps
+  group: production-release-pointer
   cancel-in-progress: false
 
 jobs:
   validate:
-    if: github.event_name == 'workflow_dispatch' || vars.ENABLE_PRODUCTION_AUTO_DEPLOY == 'true'
     uses: ./.github/workflows/validate.yml
 
-  deploy:
+  publish:
     needs: validate
     runs-on: ubuntu-latest
-    timeout-minutes: 35
-    environment: production
-    if: github.event_name == 'workflow_dispatch' || vars.ENABLE_PRODUCTION_AUTO_DEPLOY == 'true'
+    permissions:
+      contents: write
     steps:
-      - name: Prepare SSH identity and trusted host
-        shell: bash
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Publish validated main SHA to vps-release
         env:
-          VPS_DEPLOY_KEY: ${{ secrets.VPS_DEPLOY_KEY }}
-          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          VALIDATED_SHA: ${{ github.sha }}
+        shell: bash
         run: |
           set -euo pipefail
-          test -n "$VPS_DEPLOY_KEY"
-          test -n "$VPS_KNOWN_HOSTS"
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          printf '%s\n' "$VPS_DEPLOY_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/known_hosts
-
-      - name: Execute validated commit on VPS
-        shell: bash
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_PORT: ${{ vars.VPS_SSH_PORT }}
-        run: |
-          set -euo pipefail
-          test -n "$VPS_HOST"
-          test -n "$VPS_USER"
-          ssh_port="${VPS_PORT:-22}"
-          [[ "$ssh_port" =~ ^[0-9]+$ ]]
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 -p "$ssh_port" "$VPS_USER@$VPS_HOST" "bash -s -- '$GITHUB_SHA'" <<'REMOTE'
-          set -Eeuo pipefail
-          SHA="$1"
-          [[ "$SHA" =~ ^[a-f0-9]{40}$ ]] || exit 2
-          REPO="$HOME/projects/kerman_next14_downgrid"
-          cd "$REPO"
-          SSH_GIT='ssh -o HostName=ssh.github.com -p 443 -o BatchMode=yes -o ConnectTimeout=15 -o StrictHostKeyChecking=yes'
-          git -c core.sshCommand="$SSH_GIT" fetch --quiet origin refs/heads/main:refs/remotes/origin/main
-          [[ "$(git rev-parse origin/main)" == "$SHA" ]] || { echo "Main advanced during deployment"; exit 1; }
-          TEMP_SCRIPT="$(mktemp)"
-          trap 'rm -f "$TEMP_SCRIPT"' EXIT
-          git show "$SHA:scripts/deploy-vps.sh" > "$TEMP_SCRIPT"
-          bash "$TEMP_SCRIPT" "$SHA"
-          REMOTE
+          [[ "$VALIDATED_SHA" =~ ^[a-f0-9]{40}$ ]]
+          git fetch origin main
+          [[ "$(git rev-parse origin/main)" == "$VALIDATED_SHA" ]] || { echo 'main advanced; newer run will publish'; exit 0; }
+          git push origin "${VALIDATED_SHA}:refs/heads/vps-release"

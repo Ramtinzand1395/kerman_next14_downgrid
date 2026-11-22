@@ -11,6 +11,8 @@ PORT="${PORT:-3000}"
 [[ "$PORT" =~ ^[0-9]{2,5}$ ]] || exit 2
 command -v flock >/dev/null || exit 1
 command -v git >/dev/null || exit 1
+export NVM_DIR="$HOME/.nvm"
+[[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
 command -v pm2 >/dev/null || { echo "PM2 missing" >&2; exit 1; }
 mkdir -p "$ROOT/releases" "$ROOT/state"
 exec 9>"$ROOT/state/deploy.lock"
@@ -19,9 +21,10 @@ flock -n 9 || { echo "Another deployment is running"; exit 1; }
 cd "$REPO"
 export GIT_TERMINAL_PROMPT=0
 SSH_GIT='ssh -o HostName=ssh.github.com -p 443 -o BatchMode=yes -o ConnectTimeout=15 -o StrictHostKeyChecking=yes'
-git -c core.sshCommand="$SSH_GIT" fetch --quiet --no-tags origin refs/heads/main:refs/remotes/origin/main
-MAIN_SHA="$(git rev-parse origin/main)"
-[[ "$MAIN_SHA" == "$SHA" ]] || { echo "Refusing deployment: SHA does not equal current main" >&2; exit 1; }
+git -c core.sshCommand="$SSH_GIT" fetch --quiet --no-tags origin refs/heads/main:refs/remotes/origin/main refs/heads/vps-release:refs/remotes/origin/vps-release
+RELEASE_SHA="$(git rev-parse refs/remotes/origin/vps-release^{commit})"
+[[ "$RELEASE_SHA" == "$SHA" ]] || { echo "Refusing deployment: SHA is not the published validated release" >&2; exit 1; }
+git merge-base --is-ancestor "$SHA" origin/main || { echo "Validated release is not an ancestor of main" >&2; exit 1; }
 [[ "$(git cat-file -t "$SHA")" == commit ]] || exit 1
 [[ -z "$(git status --porcelain --untracked-files=no)" ]] || { echo "Tracked changes in production checkout; refusing" >&2; exit 1; }
 CURRENT="$(readlink -f "$ROOT/current" 2>/dev/null || true)"

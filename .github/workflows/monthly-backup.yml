@@ -1,48 +1,12 @@
-name: Monthly MongoDB backup
+name: Monthly backup instructions
 on:
-  schedule:
-    - cron: '15 2 1 * *' # UTC, first day each month
   workflow_dispatch:
 permissions:
   contents: read
-concurrency:
-  group: production-vps
-  cancel-in-progress: false
 jobs:
-  backup:
+  information:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
-    environment: production
     steps:
-      - name: Configure secure SSH
-        shell: bash
-        env:
-          VPS_DEPLOY_KEY: ${{ secrets.VPS_DEPLOY_KEY }}
-          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
-        run: |
-          set -euo pipefail
-          test -n "$VPS_DEPLOY_KEY"
-          test -n "$VPS_KNOWN_HOSTS"
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          printf '%s\n' "$VPS_DEPLOY_KEY" > ~/.ssh/id_ed25519
-          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
-      - name: Back up production MongoDB on VPS
-        shell: bash
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_PORT: ${{ vars.VPS_SSH_PORT }}
-        run: |
-          set -euo pipefail
-          test -n "$VPS_HOST"
-          test -n "$VPS_USER"
-          ssh_port="${VPS_PORT:-22}"
-          [[ "$ssh_port" =~ ^[0-9]+$ ]]
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 -p "$ssh_port" "$VPS_USER@$VPS_HOST" 'bash -s' <<'REMOTE'
-          set -Eeuo pipefail
-          REPO="$HOME/projects/kerman_next14_downgrid"
-          cd "$REPO"
-          bash scripts/backup-vps.sh monthly
-          REMOTE
+      - run: |
+          echo 'Monthly backups run on the VPS (systemd timer), not through inbound SSH.'
+          echo 'See docs/safe-vps-deployment.md for installation and verification.'
