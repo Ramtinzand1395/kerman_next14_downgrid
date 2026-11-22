@@ -49,7 +49,7 @@ const GalleryUploader = ({ form, updateField }: GalleryUploaderProps) => {
         <p className="mt-1 text-xs leading-6 text-slate-400">برای پیش‌نویس اختیاری است. هنگام انتشار باید تصویر اصلی داشته باشید.</p>
       </div>
       {form.mainImage ? (
-        <div className="relative flex flex-col items-center gap-3 rounded-2xl border border-indigo-500/30 bg-slate-950/50 p-4 sm:flex-row">
+        <div className="relative flex flex-col items-center gap-3 rounded-2xl border border-lime-400/30 bg-slate-950/50 p-4 sm:flex-row">
           <div className="flex h-36 w-full shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-800 sm:w-44">
             <ProductImage width={320} height={240} src={form.mainImage}
               alt={form.mainImageAlt || form.title || "تصویر اصلی محصول"}
@@ -65,8 +65,8 @@ const GalleryUploader = ({ form, updateField }: GalleryUploaderProps) => {
           </div>
         </div>
       ) : null}
-      <label htmlFor={uploadId} className={"flex min-h-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-indigo-500/40 bg-indigo-500/5 px-4 py-6 text-center transition hover:border-indigo-400 hover:bg-indigo-500/10 " + (loadingImage ? "pointer-events-none opacity-60" : "")}>
-        {loadingImage ? <Loader2 className="h-7 w-7 animate-spin text-indigo-300" /> : <UploadCloud className="h-7 w-7 text-indigo-300" />}
+      <label htmlFor={uploadId} className={"flex min-h-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-lime-400/40 bg-lime-400/5 px-4 py-6 text-center transition hover:border-indigo-400 hover:bg-lime-400/10 " + (loadingImage ? "pointer-events-none opacity-60" : "")}>
+        {loadingImage ? <Loader2 className="h-7 w-7 animate-spin text-lime-300" /> : <UploadCloud className="h-7 w-7 text-lime-300" />}
         <strong className="text-sm text-slate-100">{loadingImage ? "در حال آپلود تصویر..." : form.mainImage ? "جایگزین‌کردن عکس اصلی" : "انتخاب تصویر اصلی"}</strong>
         <span className="text-xs text-slate-400">فایل تصویری را از دستگاه خود انتخاب کنید</span>
         <input id={uploadId} type="file" accept="image/*" disabled={loadingImage}
@@ -76,7 +76,7 @@ const GalleryUploader = ({ form, updateField }: GalleryUploaderProps) => {
         متن جایگزین عکس (ALT)
         <input type="text" value={form.mainImageAlt || ""} onChange={event => updateField("mainImageAlt", event.target.value)}
           placeholder="توصیف کوتاه و واقعی از تصویر محصول"
-          className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-indigo-400" />
+          className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-lime-400" />
       </label>
     </div>
   );
