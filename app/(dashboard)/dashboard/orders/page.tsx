@@ -657,7 +657,7 @@ export default function Orders() {
             onClick={() => setPage(index + 1)}
             className={`h-9 min-w-9 px-3 rounded-full text-sm transition-colors ${
               page === index + 1
-                ? "bg-gray-900 text-white shadow"
+                ? "bg-teal-700 text-white shadow"
                 : "bg-white border text-gray-700 hover:bg-gray-100"
             }`}
           >
@@ -709,7 +709,7 @@ function ShippingTrackingEditor({
             setSaving(false);
           }
         }}
-        className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-900 text-white disabled:bg-slate-300"
+        className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-700 text-white disabled:bg-slate-300"
       >
         <Save className="h-3.5 w-3.5" />
       </button>
