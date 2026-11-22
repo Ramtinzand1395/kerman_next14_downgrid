@@ -30,7 +30,19 @@ RELEASE_SHA="$(git rev-parse refs/remotes/origin/vps-release^{commit})"
 git merge-base --is-ancestor "$SHA" origin/main || { echo "Validated release is not an ancestor of main" >&2; exit 1; }
 [[ "$(git cat-file -t "$SHA")" == commit ]] || exit 1
 [[ -z "$(git status --porcelain --untracked-files=no)" ]] || { echo "Tracked changes in production checkout; refusing" >&2; exit 1; }
-CURRENT="$(readlink -f "$ROOT/current" 2>/dev/null || true)"
+# Resolve only an existing, valid release link. readlink -f can return the
+# nonexistent $ROOT/current path on first deployment, creating a self-reference
+# when the previous symlink is later written.
+CURRENT=""
+if [[ -L "$ROOT/current" ]]; then
+  CURRENT="$(readlink -e -- "$ROOT/current")" || { echo "Broken current release symlink" >&2; exit 1; }
+  [[ -d "$CURRENT" ]] || { echo "Current release target is not a directory" >&2; exit 1; }
+elif [[ -e "$ROOT/current" ]]; then
+  echo "Current release path exists but is not a symlink" >&2; exit 1
+fi
+if [[ -f "$ROOT/state/deployed" && -z "$CURRENT" ]]; then
+  echo "Recorded deployment exists but current release link is missing" >&2; exit 1
+fi
 if [[ -f "$ROOT/state/deployed" && "$(cat "$ROOT/state/deployed")" == "$SHA" ]] && [[ -n "$CURRENT" ]]; then
   echo "Already deployed $SHA"; exit 0
 fi
@@ -58,6 +70,11 @@ compgen -G "$RELEASE/.next/static/chunks/webpack-*.js" >/dev/null || { echo "Mis
 # First rollout uses the existing repository as the rollback target.
 OLD="$CURRENT"
 [[ -n "$OLD" ]] || OLD="$REPO"
+# Never activate without a separately usable rollback target.
+[[ "$OLD" != "$RELEASE" ]] || { echo "Rollback target is the candidate release" >&2; exit 1; }
+[[ -s "$OLD/.next/BUILD_ID" && -f "$OLD/ecosystem.config.cjs" && -f "$OLD/node_modules/next/dist/bin/next" ]] || {
+  echo "Previous release cannot be used for rollback: $OLD" >&2; exit 1
+}
 OLD_SHA="$(cat "$ROOT/state/deployed" 2>/dev/null || true)"
 restart_at() {
   local target="$1"
