@@ -3,7 +3,8 @@ import dbConnect from "@/lib/mongodb";
 import Product from "@/model/Product";
 import Blog from "@/model/Blog";
 import { getCategoryCatalog } from "@/lib/catalog/category-data";
-import { categoryHref } from "@/lib/catalog/category-seo";
+import { categoryHref, descendantIds } from "@/lib/catalog/category-seo";
+import { isConsoleGeneration } from "@/lib/used-console";
 
 import { SITE_URL } from "@/lib/site";
 // Read current publication state on every request, including unpublishes/deletes.
@@ -70,6 +71,7 @@ const staticRoutes: MetadataRoute.Sitemap = [
 type ProductSitemapRow = {
   slug: string;
   condition?: string;
+  category?: string | { toString(): string };
   updatedAt?: string | Date;
 };
 
@@ -118,7 +120,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [products, blogs, categories] = await Promise.all([
     Product.find(
       { status: "published", deletedAt: null },
-      { slug: 1, updatedAt: 1, condition: 1, _id: 0 },
+      { slug: 1, updatedAt: 1, condition: 1, category: 1, _id: 0 },
     )
       .lean()
       .exec() as Promise<ProductSitemapRow[]>,
@@ -171,9 +173,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.8,
     }));
+  // The collection is indexable only when its public page can list at least
+  // one published used console from a real PS2–PS5 category, not just any
+  // unrelated product marked used.
+  const usedGenerationCategoryIds = new Set(
+    categories
+      .filter(category => isConsoleGeneration(category.slug))
+      .flatMap(category => descendantIds(category._id, categories)),
+  );
+  const hasPublicUsedConsoles = products.some(
+    product => product.condition === "used" &&
+      product.category != null &&
+      usedGenerationCategoryIds.has(String(product.category)),
+  );
   return [
     ...staticRoutes,
-    ...(products.some(product => product.condition === "used") ? [{ url: `${SITE_URL}/used-consoles`, changeFrequency: "daily" as const, priority: 0.9 }] : []),
+    ...(hasPublicUsedConsoles
+      ? [{ url: `${SITE_URL}/used-consoles`, changeFrequency: "daily" as const, priority: 0.9 }]
+      : []),
     { url: `${SITE_URL}/categories`, changeFrequency: "weekly", priority: 0.8 },
     ...categoryRoutes,
     ...productRoutes,
