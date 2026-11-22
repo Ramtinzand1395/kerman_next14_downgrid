@@ -2,7 +2,9 @@
 Description=Check for validated Kerman Atari release (outbound-only)
 After=network-online.target
 Wants=network-online.target
+
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -lc '/bin/bash %h/projects/kermanatari-deploy/shared/poll-vps-release.sh'
-TimeoutStartSec=2400
+Environment=HOME=/home/ramtin
+ExecStart=/bin/bash -c 'export NVM_DIR="$HOME/.nvm"; source "$NVM_DIR/nvm.sh"; nvm use 24 >/dev/null; exec /bin/bash "$HOME/projects/kermanatari-deploy/shared/poll-vps-release.sh"'
+TimeoutStartSec=3600
