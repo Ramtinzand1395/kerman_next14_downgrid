@@ -195,10 +195,10 @@ useEffect(() => {
                   >
                     <span className="flex items-center gap-3">
                       <item.icon className="h-4 w-4" />
-                      {expanded && item.label}
+                      {(expanded || mobileOpen) && item.label}
                     </span>
 
-                    {expanded && (
+                    {(expanded || mobileOpen) && (
                       <ChevronDown className={`h-4 w-4 transition ${isOpen ? "rotate-180" : ""}`} />
                     )}
                   </button>
@@ -216,7 +216,7 @@ useEffect(() => {
                               className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-right text-slate-300 transition hover:bg-white/[0.07] hover:text-lime-200"
                             >
                               <sub.icon className="h-4 w-4" />
-                              {expanded && sub.label}
+                              {(expanded || mobileOpen) && sub.label}
                             </button>
                           );
                         }
@@ -232,7 +232,7 @@ useEffect(() => {
                             }`}
                           >
                             <sub.icon className="h-4 w-4" />
-                            {expanded && sub.label}
+                            {(expanded || mobileOpen) && sub.label}
                           </Link>
                         );
                       })}
@@ -254,7 +254,7 @@ useEffect(() => {
                 }`}
               >
                 <item.icon className="h-4 w-4" />
-                {expanded && item.label}
+                {(expanded || mobileOpen) && item.label}
 
                 {item.label === "اعلان‌ها" && unreadCount > 0 && (
                   <span className="mr-auto rounded-full bg-rose-500 px-2 py-0.5 text-xs font-bold text-white">
