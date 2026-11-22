@@ -1,5 +1,5 @@
 "use client";
-import { uploadCloudinaryImage } from "@/helpers/uploadCloudinaryImage";
+import { uploadCloudinaryImage, PRODUCT_IMAGE_ACCEPT } from "@/helpers/uploadCloudinaryImage";
 import { ProductForm } from "@/types";
 import { Images, Loader2, Trash2, UploadCloud } from "lucide-react";
 import { useId, useState } from "react";
@@ -8,13 +8,15 @@ import ProductImage from "@/app/components/ProductImage";
 
 interface ImageUploaderProps {
   form: ProductForm;
+  onUploadingChange?: (uploading: boolean) => void;
   updateField: <K extends keyof ProductForm>(
     key: K,
     value: ProductForm[K],
   ) => void;
 }
 
-const ImageUploader = ({ form, updateField }: ImageUploaderProps) => {
+const ImageUploader = ({ form, updateField, onUploadingChange }: ImageUploaderProps) => {
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [loadingImage, setLoadingImage] = useState(false);
   const uploadId = useId();
 
@@ -23,23 +25,34 @@ const ImageUploader = ({ form, updateField }: ImageUploaderProps) => {
     if (!files.length) return;
 
     setLoadingImage(true);
-    toast.info("آپلود تصاویر گالری آغاز شد…");
+    onUploadingChange?.(true);
+    setUploadError(null);
 
     try {
-      const uploaded = await Promise.all(files.map(uploadCloudinaryImage));
-      const newImages = uploaded.map((url) => ({
-        url,
-        alt: `تصویر گالری ${form.title || "محصول"}`,
-      }));
-
-      updateField("galleryImages", [...form.galleryImages, ...newImages]);
-      toast.success("تصاویر گالری آپلود و آماده استفاده شدند.");
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "خطا در آپلود تصاویر گالری",
+      // Keep successful pictures even when another file in the batch fails.
+      const results = await Promise.allSettled(files.map(uploadCloudinaryImage));
+      const newImages = results.flatMap((result, index) =>
+        result.status === "fulfilled"
+          ? [{ url: result.value, alt: `تصویر گالری ${form.title || "محصول"}` }]
+          : [],
       );
+      if (newImages.length) {
+        updateField("galleryImages", [...form.galleryImages, ...newImages]);
+        toast.success(`${newImages.length.toLocaleString("fa-IR")} تصویر به گالری اضافه شد.`);
+      }
+      const failed = results.flatMap((result, index) =>
+        result.status === "rejected"
+          ? [`«${files[index].name}»: ${result.reason instanceof Error ? result.reason.message : "آپلود انجام نشد"}`]
+          : [],
+      );
+      if (failed.length) {
+        const message = `${failed.length.toLocaleString("fa-IR")} تصویر بارگذاری نشد:\n${failed.join("\n")}`;
+        setUploadError(message);
+        toast.error("برخی تصاویر بارگذاری نشدند. جزئیات را زیر گالری ببینید.");
+      }
     } finally {
       setLoadingImage(false);
+      onUploadingChange?.(false);
       e.target.value = "";
     }
   };
@@ -66,6 +79,7 @@ const ImageUploader = ({ form, updateField }: ImageUploaderProps) => {
         <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-500">{form.galleryImages.length.toLocaleString("fa-IR")} تصویر</span>
       </div>
 
+      {uploadError && <p role="alert" className="whitespace-pre-line rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm leading-7 text-rose-800">{uploadError}</p>}
       {form.galleryImages.length > 0 ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {form.galleryImages.map((img, index) => (
@@ -94,9 +108,10 @@ const ImageUploader = ({ form, updateField }: ImageUploaderProps) => {
       <label htmlFor={uploadId} className={"flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-teal-300 bg-teal-50 px-4 py-4 text-sm font-semibold text-teal-800 transition hover:bg-teal-50 " + (loadingImage ? "pointer-events-none opacity-50" : "")}>
         {loadingImage ? <Loader2 className="h-5 w-5 animate-spin" /> : <UploadCloud className="h-5 w-5" />}
         {loadingImage ? "در حال آپلود تصاویر..." : "افزودن چند تصویر به گالری"}
-        <input id={uploadId} title="افزودن تصاویر گالری" type="file" multiple accept="image/*"
+        <input id={uploadId} title="افزودن تصاویر گالری" type="file" multiple accept={PRODUCT_IMAGE_ACCEPT}
           disabled={loadingImage} onChange={handleGallery} className="sr-only" />
       </label>
+      <p className="text-xs text-slate-500">فرمت مجاز: JPG، PNG، WebP، GIF یا AVIF؛ حداکثر ۱۰ مگابایت برای هر عکس.</p>
     </div>
   );
 };
