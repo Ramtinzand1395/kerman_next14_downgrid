@@ -35,10 +35,10 @@ const FaqEditor = ({ form, updateField }: FaqEditorProps) => {
   };
 
   return (
-    <div className="rounded-2xl border border-slate-700 bg-slate-950/40 p-4 shadow-lg backdrop-blur-md">
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm font-semibold">سوالات پرتکرار</p>
-        <span className="rounded-full bg-white/20 px-2 py-1 text-xs">
+        <span className="rounded-full bg-slate-100 px-2 py-1 text-xs">
           {form.faqs.length} سوال
         </span>
       </div>
@@ -47,14 +47,14 @@ const FaqEditor = ({ form, updateField }: FaqEditorProps) => {
         {form.faqs.map((faq, index) => (
           <div
             key={index}
-            className="rounded-xl border border-slate-700 bg-slate-950/40 p-3"
+            className="rounded-xl border border-slate-200 bg-slate-50 p-3"
           >
             <div className="mb-3 flex items-center gap-2">
               <input
                 type="text"
                 aria-label={`متن سوال ${index + 1}`}
                 placeholder="مثلاً: آیا این محصول گارانتی دارد؟"
-                className="w-full rounded-lg border border-slate-700 bg-slate-900 p-2 text-sm outline-none placeholder:text-slate-500 focus:border-indigo-400"
+                className="w-full rounded-lg border border-slate-200 bg-white p-2 text-sm outline-none placeholder:text-slate-500 focus:border-teal-500"
                 value={faq.question}
                 onChange={(e) => updateFaq(index, "question", e.target.value)}
               />
@@ -72,7 +72,7 @@ const FaqEditor = ({ form, updateField }: FaqEditorProps) => {
               rows={3}
               aria-label={`پاسخ سوال ${index + 1}`}
               placeholder="پاسخ سوال را اینجا بنویسید..."
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 p-2 text-sm outline-none placeholder:text-slate-500 focus:border-indigo-400"
+              className="w-full rounded-lg border border-slate-200 bg-white p-2 text-sm outline-none placeholder:text-slate-500 focus:border-teal-500"
               value={faq.answer}
               onChange={(e) => updateFaq(index, "answer", e.target.value)}
             />
