@@ -49,7 +49,7 @@ function PurchasePriceField({
         aria-required={required}
         value={value ?? ""}
         onValueChange={(event) => onChange(event === "" ? null : Number(event))}
-        className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
+        className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20"
       />
     </label>
   );
@@ -171,7 +171,7 @@ const BasicInfoFields = ({
               aria-pressed={form.productType === option.value}
               onClick={() => updateField("productType", option.value)}
               className={"rounded-xl border p-3 text-right transition disabled:cursor-not-allowed disabled:opacity-40 " +
-                (form.productType === option.value ? "border-indigo-400 bg-indigo-500/15" : "border-slate-700 bg-slate-950/50 hover:border-slate-500")}>
+                (form.productType === option.value ? "border-indigo-400 bg-lime-400/10" : "border-slate-700 bg-slate-950/50 hover:border-slate-500")}>
               <span className="block text-sm font-bold text-slate-100">{option.label}</span>
               <span className="mt-1 block text-xs text-slate-400">{option.help}</span>
             </button>
@@ -207,7 +207,7 @@ const BasicInfoFields = ({
           value={form.title || ""}
           onChange={(e) => updateField("title", e.target.value)}
           placeholder="مثلاً کنسول پلی‌استیشن ۵"
-          className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
+          className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20"
         />
       </div>
 
@@ -225,13 +225,13 @@ const BasicInfoFields = ({
           value={form.slug || ""}
           onChange={(e) => updateField("slug", e.target.value)}
           placeholder="مثلاً ps5-standard-edition"
-          className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 dir-ltr text-right"
+          className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20 dir-ltr text-right"
         />
         <button type="button" onClick={() => {
           const suggested = (form.title || "").trim().toLowerCase()
             .replace(/[^\w\u0600-\u06ff]+/g, "-").replace(/^-+|-+$/g, "");
           if (suggested) updateField("slug", suggested);
-        }} className="mt-2 text-xs font-semibold text-indigo-300 transition hover:text-indigo-200">
+        }} className="mt-2 text-xs font-semibold text-lime-300 transition hover:text-lime-200">
           ساخت اسلاگ از نام محصول
         </button>
       </div>
@@ -250,7 +250,7 @@ const BasicInfoFields = ({
           value={form.brand || ""}
           onChange={(e) => updateField("brand", e.target.value)}
           placeholder="مثلاً سونی (Sony)"
-          className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
+          className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20"
         />
       </div>
 
@@ -268,7 +268,7 @@ const BasicInfoFields = ({
           value={form.shortDesc || ""}
           onChange={(e) => updateField("shortDesc", e.target.value)}
           placeholder="خلاصه ویژگی‌های محصول برای پیش‌نمایش"
-          className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
+          className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20"
         />
       </div>
 
@@ -289,7 +289,7 @@ const BasicInfoFields = ({
               value={form.sku || ""}
               onChange={(e) => updateField("sku", e.target.value)}
               placeholder="کد یکتای انبارداری (اختیاری)"
-              className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 dir-ltr text-right"
+              className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20 dir-ltr text-right"
             />
           </div>
 
@@ -308,7 +308,7 @@ const BasicInfoFields = ({
               value={form.barcode || ""}
               onChange={(e) => updateField("barcode", e.target.value)}
               placeholder="بارکد یکتای محصول تکی (اختیاری)"
-              className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 dir-ltr text-right"
+              className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20 dir-ltr text-right"
             />
           </div>
 
@@ -326,7 +326,7 @@ const BasicInfoFields = ({
               step="1"
               value={form.price ?? ""}
               onValueChange={(e) => updateField("price", Math.max(0, Math.floor(Number(e))))}
-              className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
+              className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20"
             />
           </div>
 
@@ -354,7 +354,7 @@ const BasicInfoFields = ({
               step="1"
               value={form.stock ?? ""}
               onChange={(e) => updateField("stock", Math.min(form.condition === "used" ? 1 : Number.MAX_SAFE_INTEGER, Math.max(0, Math.floor(Number(e.target.value)))) )}
-              className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
+              className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20"
             />
           </div>
 
@@ -413,7 +413,7 @@ const BasicInfoFields = ({
 
       {/* ─── MULTI-VARIANT EDITOR ─── */}
       {form.productType === "multi" && (
-        <div className="rounded-xl border border-indigo-500/30 bg-slate-950/40 p-4 sm:col-span-2">
+        <div className="rounded-xl border border-lime-400/30 bg-slate-950/40 p-4 sm:col-span-2">
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-700 pb-3">
             <div>
               <h4 className="text-sm font-bold text-slate-100">
@@ -426,7 +426,7 @@ const BasicInfoFields = ({
             <button
               type="button"
               onClick={handleAddVariant}
-              className="inline-flex items-center justify-center gap-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-white transition shadow-sm"
+              className="inline-flex items-center justify-center gap-1 rounded-lg bg-lime-400 hover:bg-lime-400 px-3 py-1.5 text-xs font-semibold text-white transition shadow-sm"
             >
               <Plus className="h-3.5 w-3.5" />
               افزودن مدل
@@ -449,7 +449,7 @@ const BasicInfoFields = ({
             </div>
             <div className="flex flex-col">
               <span className="text-slate-400">بازه قیمت مدل‌ها:</span>
-              <strong className="text-sm text-indigo-300 mt-0.5">
+              <strong className="text-sm text-lime-300 mt-0.5">
                 {variantSummary.priceRangeText}
               </strong>
             </div>
@@ -484,7 +484,7 @@ const BasicInfoFields = ({
                         onChange={(e) =>
                           handleUpdateVariant(index, "title", e.target.value)
                         }
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 outline-none focus:border-indigo-500"
+                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 outline-none focus:border-lime-500"
                       />
                     </div>
 
@@ -500,7 +500,7 @@ const BasicInfoFields = ({
                         onChange={(e) =>
                           handleUpdateVariant(index, "sku", e.target.value)
                         }
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 outline-none focus:border-indigo-500 dir-ltr text-right"
+                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 outline-none focus:border-lime-500 dir-ltr text-right"
                       />
                     </div>
 
@@ -516,7 +516,7 @@ const BasicInfoFields = ({
                         onChange={(e) =>
                           handleUpdateVariant(index, "barcode", e.target.value)
                         }
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 outline-none focus:border-indigo-500 dir-ltr text-right"
+                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 outline-none focus:border-lime-500 dir-ltr text-right"
                       />
                     </div>
 
@@ -537,7 +537,7 @@ const BasicInfoFields = ({
                             Math.max(0, Math.floor(Number(e))),
                           )
                         }
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 outline-none focus:border-indigo-500"
+                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 outline-none focus:border-lime-500"
                       />
                     </div>
 
@@ -588,7 +588,7 @@ const BasicInfoFields = ({
                             Math.max(0, Math.floor(Number(e.target.value))),
                           )
                         }
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 outline-none focus:border-indigo-500"
+                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 outline-none focus:border-lime-500"
                       />
                     </div>
                   </div>
@@ -602,7 +602,7 @@ const BasicInfoFields = ({
                         onChange={(e) =>
                           handleUpdateVariant(index, "isActive", e.target.checked)
                         }
-                        className="h-3.5 w-3.5 rounded border-slate-700 text-indigo-600 focus:ring-0"
+                        className="h-3.5 w-3.5 rounded border-slate-700 text-lime-700 focus:ring-0"
                       />
                       <span className="text-slate-300">
                         {variant.isActive !== false ? "فعال برای فروش" : "غیرفعال"}
