@@ -125,7 +125,7 @@ const CategorySelector = ({
             setIsOpen(true);
           }}
           placeholder="دسته را انتخاب کنید یا نام آن را جستجو کنید..."
-          className="w-full rounded-xl border border-slate-700 bg-slate-900/70 py-2.5 pr-10 pl-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+          className="w-full rounded-xl border border-slate-700 bg-slate-900/70 py-2.5 pr-10 pl-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-lime-500 focus:ring-2 focus:ring-lime-400/20"
         />
       </div>
 
@@ -153,7 +153,7 @@ const CategorySelector = ({
                       onClick={() => selectCategory(category._id)}
                       className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-right text-xs transition ${
                         isSelected
-                          ? "bg-indigo-500/15 text-indigo-200"
+                          ? "bg-lime-400/10 text-lime-200"
                           : "text-slate-200 hover:bg-slate-800"
                       }`}
                     >
