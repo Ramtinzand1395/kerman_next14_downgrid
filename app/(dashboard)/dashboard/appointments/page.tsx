@@ -487,7 +487,7 @@ function AppointmentsAdminContent() {
             aria-pressed={tab === key}
             className={`flex min-h-11 shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 ${
               tab === key
-                ? "bg-[#001A6E] text-white shadow-sm"
+                ? "bg-teal-700 text-white shadow-sm"
                 : "text-slate-600 hover:bg-slate-50"
             }`}
           >
