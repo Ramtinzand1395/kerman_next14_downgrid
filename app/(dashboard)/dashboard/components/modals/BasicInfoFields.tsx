@@ -403,7 +403,7 @@ const BasicInfoFields = ({
                       e === "" ? null : Math.max(0, Math.floor(Number(e))),
                     )
                   }
-                  className="w-full border-b border-slate-600 bg-inherit py-1 text-sm text-slate-100 transition-colors focus:border-b-2 focus:border-emerald-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20"
                 />
               </div>
             )}
