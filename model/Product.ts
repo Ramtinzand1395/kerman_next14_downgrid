@@ -203,8 +203,8 @@ const productSchema = new Schema(
     mainImageAlt: String,
     mainImage: {
       type: String,
-      required(this: { condition?: string; status?: string }) {
-        return this.condition !== "used" || this.status !== "draft";
+      required(this: { status?: string }) {
+        return this.status === "published";
       },
     },
 
