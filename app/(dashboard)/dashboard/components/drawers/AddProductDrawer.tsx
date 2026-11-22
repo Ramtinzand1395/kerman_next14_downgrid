@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
-import { ChevronDown, Loader2, PackagePlus, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, ClipboardCheck, FileText, ImagePlus, Layers3, Loader2, PackagePlus, Save, SearchCheck, ShieldCheck, X } from "lucide-react";
 
 import type { ProductForm, ProductVariant, Tag } from "@/types";
 import { isPurchasePrice } from "@/lib/product-profit";
@@ -67,39 +67,17 @@ const initialForm: ProductForm = {
   },
 };
 
-type SectionKey = "publish" | "basic" | "variantSelector" | "taxonomy" | "media" | "specs" | "faq" | "seo" | "seoCheck";
+type StepKey = "basic" | "taxonomy" | "media" | "details" | "seo" | "publish";
+type SaveStatus = "draft" | "published";
 
-interface DrawerSectionProps {
-  title: string;
-  sectionKey: SectionKey;
-  openSection: SectionKey;
-  onToggle: (key: SectionKey) => void;
-  children: React.ReactNode;
-}
-
-const DrawerSection = ({
-  title,
-  sectionKey,
-  openSection,
-  onToggle,
-  children,
-}: DrawerSectionProps) => (
-  <section className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
-    <button
-      type="button"
-      onClick={() => onToggle(sectionKey)}
-      className="mb-3 flex w-full items-center justify-between text-right text-xs font-semibold text-slate-200"
-    >
-      <span>{title}</span>
-      <ChevronDown
-        className={`h-4 w-4 transition-transform ${
-          openSection === sectionKey ? "rotate-180" : ""
-        }`}
-      />
-    </button>
-    {openSection === sectionKey ? children : null}
-  </section>
-);
+const STEPS = [
+  { key: "basic", title: "اطلاعات و قیمت", hint: "نام، نوع، قیمت و موجودی", icon: PackagePlus },
+  { key: "taxonomy", title: "دسته و وضعیت", hint: "دسته‌بندی، برچسب و تست دستگاه", icon: Layers3 },
+  { key: "media", title: "تصاویر محصول", hint: "عکس اصلی و گالری", icon: ImagePlus },
+  { key: "details", title: "مشخصات بیشتر", hint: "مشخصات، تنوع‌ها و سوالات", icon: FileText },
+  { key: "seo", title: "سئو و محتوا", hint: "اطلاعات گوگل و بررسی سئو", icon: SearchCheck },
+  { key: "publish", title: "بررسی نهایی", hint: "آماده‌سازی برای ذخیره و انتشار", icon: ShieldCheck },
+] as const;
 
 export default function AddProductDrawer({ onClose, onSave, product }: Props) {
   const [form, setForm] = useState<ProductForm>({
@@ -136,7 +114,11 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
     faqs: product?.faqs || initialForm.faqs,
   });
 
-  const [openSection, setOpenSection] = useState<SectionKey>("basic");
+  const [activeStep, setActiveStep] = useState<StepKey>("basic");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [savingStatus, setSavingStatus] = useState<SaveStatus | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
@@ -158,17 +140,38 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
 
   const generation = categories.find(category => category._id === form.category)?.slug;
 
-  const toggleSection = (key: SectionKey) => {
-    setOpenSection((prev) => (prev === key ? prev : key));
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [activeStep]);
+
+  const requestClose = () => {
+    if (loading) return;
+    if (isDirty && !window.confirm("تغییرات ذخیره‌نشده دارید. فرم بسته شود؟")) return;
+    onClose();
+  };
+
+  const validationWarning = (step: StepKey, message: string) => {
+    setActiveStep(step);
+    setErrorMessage(message);
+    toast.warning(message);
+    return false;
   };
 
   const updateField = <K extends keyof ProductForm>(
     key: K,
     value: ProductForm[K],
   ) => {
+    setIsDirty(true);
+    setErrorMessage(null);
     setForm(prev => {
       const next = { ...prev, [key]: value };
-      if (key === "condition" && value === "used" && !product && next.stock === 0) next.stock = 1;
+      if (key === "condition" && value === "used") {
+        next.productType = "single";
+        next.isDigital = false;
+        next.isOnlineGame = false;
+        next.stock = Math.min(1, Math.max(0, Number(next.stock) || 0));
+        if (!product && next.stock === 0) next.stock = 1;
+      }
       if (key === "category" && !isConsoleGeneration(categories.find(category => category._id === value)?.slug)) {
         next.condition = null;
       }
@@ -179,396 +182,289 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
   const existingVariants: ProductVariant[] = product?.variants ?? [];
   const existingVariantIds = new Set(existingVariants.map((variant) => variant._id));
 
-  const validateForm = () => {
-    const singleCostRequired = !product || product.productType === "multi" || isPurchasePrice(product.purchasePrice);
-    const invalidCost = form.productType === "single"
-      ? (singleCostRequired || form.purchasePrice != null) && !isPurchasePrice(form.purchasePrice)
-      : form.variants.some((variant) => {
-          const previous = existingVariants.find((entry) => entry._id === variant._id);
-          return (!previous || isPurchasePrice(previous.purchasePrice) || variant.purchasePrice != null) &&
-            !isPurchasePrice(variant.purchasePrice);
-        });
-    if (invalidCost) {
-      setOpenSection("basic");
-      toast.warning("قیمت خرید لازم را به‌صورت عدد صحیح نامنفی وارد کنید.");
-      return false;
-    }
+  const validateForm = (requestedStatus: SaveStatus) => {
+    const costRequired = !product || product.productType === "multi" || isPurchasePrice(product.purchasePrice);
+    if (!form.title?.trim()) return validationWarning("basic", "نام محصول را وارد کنید.");
+    if (!form.slug?.trim()) return validationWarning("basic", "آدرس (اسلاگ) محصول را وارد کنید.");
+    if (!form.category) return validationWarning("taxonomy", "یک دسته‌بندی برای محصول انتخاب کنید.");
 
-    if (!form.title.trim()) {
-      toast.warning("برای ذخیره محصول، عنوان آن را وارد کنید.");
-      return false;
-    }
-    if (!form.slug.trim()) {
-      toast.warning("برای ذخیره محصول، اسلاگ آن را وارد کنید.");
-      return false;
-    }
-    if (!form.category) {
-      toast.warning("برای ذخیره محصول، دسته‌بندی آن را انتخاب کنید.");
-      return false;
-    }
-    if (form.condition === "used" && isConsoleGeneration(generation)) {
-      if (form.productType !== "single" || form.isDigital || form.isOnlineGame || form.stock > 1) {
-        setOpenSection("basic");
-        toast.warning("دستگاه کارکرده باید فیزیکی و تک‌مدلی با موجودی صفر یا یک باشد.");
-        return false;
-      }
-      try {
-        readConsoleReport(form.usedConsole, generation, form.status === "published");
-      } catch (error) {
-        setOpenSection("taxonomy");
-        toast.warning((error as Error).message);
-        return false;
-      }
-      if (form.status === "published" && !form.mainImage.trim()) {
-        setOpenSection("media");
-        toast.warning("برای انتشار، عکس همین دستگاه را وارد کنید.");
-        return false;
-      }
-    }
     if (form.productType === "single") {
-      if (typeof form.price !== "number" || form.price < 0) {
-        toast.warning("قیمت محصول معتبر نیست؛ یک عدد صفر یا بیشتر وارد کنید.");
-        return false;
+      if ((costRequired || form.purchasePrice != null) && !isPurchasePrice(form.purchasePrice)) {
+        return validationWarning("basic", "قیمت خرید معتبر را وارد کنید.");
       }
-      if (
-        form.discountPrice !== null &&
-        form.discountPrice !== undefined &&
-        form.discountPrice > form.price
-      ) {
-        toast.warning("قیمت پس از تخفیف نباید از قیمت اصلی بیشتر باشد.");
-        return false;
+      if (typeof form.price !== "number" || !Number.isFinite(form.price) || form.price < 0) {
+        return validationWarning("basic", "قیمت فروش محصول معتبر نیست.");
       }
-      if (typeof form.stock !== "number" || form.stock < 0) {
-        toast.warning("موجودی محصول معتبر نیست؛ یک عدد صفر یا بیشتر وارد کنید.");
-        return false;
+      if (typeof form.stock !== "number" || !Number.isInteger(form.stock) || form.stock < 0) {
+        return validationWarning("basic", "موجودی محصول باید عدد صحیح نامنفی باشد.");
+      }
+      if (form.discountPrice != null && form.discountPrice > form.price) {
+        return validationWarning("basic", "قیمت تخفیف نمی‌تواند از قیمت فروش بیشتر باشد.");
       }
     } else {
-      if (!Array.isArray(form.variants) || form.variants.length === 0) {
-        toast.warning("برای محصول چندمدلی، حداقل یک مدل اضافه کنید.");
-        return false;
-      }
-      for (let i = 0; i < form.variants.length; i++) {
-        const v = form.variants[i];
-        if (!v.title || !v.title.trim()) {
-          toast.warning(`نام مدل ردیف ${i + 1} را وارد کنید.`);
-          return false;
+      if (!form.variants.length) return validationWarning("basic", "برای محصول چندمدلی حداقل یک مدل اضافه کنید.");
+      for (const [index, variant] of form.variants.entries()) {
+        const previous = existingVariants.find(entry => entry._id === variant._id);
+        if ((!previous || isPurchasePrice(previous.purchasePrice) || variant.purchasePrice != null)
+          && !isPurchasePrice(variant.purchasePrice)) {
+          return validationWarning("basic", "قیمت خرید مدل " + (index + 1).toLocaleString("fa-IR") + " را وارد کنید.");
         }
-        if (typeof v.price !== "number" || v.price < 0) {
-          toast.warning(`قیمت مدل «${v.title}» معتبر نیست.`);
-          return false;
+        if (!variant.title?.trim()) return validationWarning("basic", "نام مدل " + (index + 1).toLocaleString("fa-IR") + " را وارد کنید.");
+        if (!Number.isFinite(variant.price) || variant.price < 0 || !Number.isInteger(variant.stock) || variant.stock < 0) {
+          return validationWarning("basic", "قیمت و موجودی مدل «" + variant.title + "» نامعتبر است.");
         }
-        if (
-          v.discountPrice !== null &&
-          v.discountPrice !== undefined &&
-          v.discountPrice > v.price
-        ) {
-          toast.warning(`قیمت پس از تخفیف مدل «${v.title}» نباید از قیمت اصلی بیشتر باشد.`);
-          return false;
-        }
-        if (typeof v.stock !== "number" || v.stock < 0) {
-          toast.warning(`موجودی مدل «${v.title}» معتبر نیست.`);
-          return false;
+        if (variant.discountPrice != null && variant.discountPrice > variant.price) {
+          return validationWarning("basic", "قیمت تخفیف مدل «" + variant.title + "» از قیمت اصلی بیشتر است.");
         }
       }
-      if (
-        form.status === "published" &&
-        !form.variants.some((v) => v.isActive !== false)
-      ) {
-        toast.warning("برای انتشار محصول چندمدلی، حداقل یک مدل را فعال کنید.");
-        return false;
+      if (requestedStatus === "published" && !form.variants.some(v => v.isActive !== false)) {
+        return validationWarning("basic", "برای انتشار حداقل یک مدل فعال کنید.");
       }
     }
+
+    if (form.condition === "used") {
+      if (!isConsoleGeneration(generation)) {
+        return validationWarning("taxonomy", "کنسول کارکرده باید در دسته‌بندی نسل PS2 تا PS5 باشد.");
+      }
+      if (form.productType !== "single" || form.isDigital || form.isOnlineGame || form.stock > 1) {
+        return validationWarning("basic", "کنسول کارکرده باید فیزیکی، تک‌مدلی و دارای موجودی صفر یا یک باشد.");
+      }
+      try {
+        readConsoleReport(form.usedConsole, generation, requestedStatus === "published");
+      } catch (error) {
+        return validationWarning("taxonomy", (error as Error).message);
+      }
+    }
+    if (requestedStatus === "published" && !form.mainImage?.trim()) {
+      return validationWarning("media", "برای انتشار محصول باید تصویر اصلی را آپلود کنید.");
+    }
+    setErrorMessage(null);
     return true;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-
+  const saveProduct = async (requestedStatus: SaveStatus) => {
+    if (loading || !validateForm(requestedStatus)) return;
     setLoading(true);
+    setSavingStatus(requestedStatus);
     try {
-      const res = await fetch("/api/admin/product", {
-        method: "POST",
+      const res = await fetch(product ? "/api/admin/product/" + product._id : "/api/admin/product", {
+        method: product ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
-          variants:
-            form.productType === "multi"
-              ? form.variants.map(({ _id, ...variant }) => ({
-                  ...variant,
-                  ...(existingVariantIds.has(_id) ? { _id } : { clientVariantId: _id }),
-                  title: variant.title.trim(),
-                  sku: variant.sku?.trim() || undefined,
-                  barcode: variant.barcode?.trim() || undefined,
-                }))
-              : [],
+          status: requestedStatus,
+          ...(product ? { expectedInventoryVersion: product.inventoryVersion ?? 0 } : {}),
+          variants: form.productType === "multi"
+            ? form.variants.map(({ _id, ...variant }) => ({
+              ...variant,
+              ...(existingVariantIds.has(_id) ? { _id } : { clientVariantId: _id }),
+              title: variant.title.trim(),
+              sku: variant.sku?.trim() || undefined,
+              barcode: variant.barcode?.trim() || undefined,
+            }))
+            : [],
         }),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
-        toast.error(data?.error || "محصول ذخیره نشد؛ دوباره تلاش کنید.");
+        const message = data?.error || "ذخیره محصول انجام نشد. اطلاعات را بررسی و دوباره تلاش کنید.";
+        setErrorMessage(message);
+        toast.error(message);
         return;
       }
-
-      toast.success("محصول جدید ذخیره شد.");
-      onSave?.(data);
+      toast.success(requestedStatus === "draft" ? "پیش‌نویس محصول ذخیره شد." : "محصول با موفقیت منتشر شد.");
+      if (onSave) await onSave(data);
       onClose();
-    } catch (err) {
-      toast.error("ارتباط با سرور برقرار نشد؛ دوباره تلاش کنید.");
+    } catch {
+      const message = "ارتباط با سرور برقرار نشد؛ دوباره تلاش کنید.";
+      setErrorMessage(message);
+      toast.error(message);
     } finally {
       setLoading(false);
+      setSavingStatus(null);
     }
   };
 
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/admin/product/${product?._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          expectedInventoryVersion: product?.inventoryVersion ?? 0,
-          variants:
-            form.productType === "multi"
-              ? form.variants.map(({ _id, ...variant }) => ({
-                  ...variant,
-                  ...(existingVariantIds.has(_id) ? { _id } : { clientVariantId: _id }),
-                  title: variant.title.trim(),
-                  sku: variant.sku?.trim() || undefined,
-                  barcode: variant.barcode?.trim() || undefined,
-                }))
-              : [],
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data?.error || "تغییرات محصول ذخیره نشد؛ دوباره تلاش کنید.");
-        return;
+  const activeIndex = STEPS.findIndex(step => step.key === activeStep);
+  const active = STEPS[activeIndex];
+  const chosenCategory = categories.find(category => category._id === form.category);
+  const priceReady = form.productType === "single"
+    ? isPurchasePrice(form.purchasePrice) && Number.isFinite(form.price) && form.price >= 0
+    : form.variants.length > 0 && form.variants.every(variant => variant.title.trim() && isPurchasePrice(variant.purchasePrice));
+  let reportReady = true;
+  if (form.condition === "used") {
+    reportReady = false;
+    if (isConsoleGeneration(generation)) {
+      try {
+        readConsoleReport(form.usedConsole, generation, true);
+        reportReady = true;
+      } catch {
+        // Incomplete test reports are allowed while saving drafts.
       }
-
-      toast.success("تغییرات محصول ذخیره شد.");
-      onSave?.(data);
-      onClose();
-    } catch (err) {
-      toast.error("ارتباط با سرور برقرار نشد؛ دوباره تلاش کنید.");
-    } finally {
-      setLoading(false);
     }
-  };
+  }
+  const checklist: { label: string; completed: boolean; step: StepKey }[] = [
+    { label: "عنوان و آدرس محصول", completed: !!form.title?.trim() && !!form.slug?.trim(), step: "basic" },
+    { label: "قیمت و موجودی", completed: !!priceReady, step: "basic" },
+    { label: "دسته‌بندی", completed: !!form.category, step: "taxonomy" },
+    ...(form.condition === "used" ? [{ label: "گزارش تست همین دستگاه", completed: reportReady, step: "taxonomy" as StepKey }] : []),
+    { label: "تصویر اصلی", completed: !!form.mainImage?.trim(), step: "media" },
+  ];
+  const completedCount = checklist.filter(item => item.completed).length;
+  const completion = Math.round(completedCount * 100 / checklist.length);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-stretch justify-end bg-black/40">
-      <div className="h-full w-full max-w-5xl overflow-y-auto bg-slate-900 text-slate-100 shadow-2xl">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-800 bg-slate-900/95 px-6 py-4 backdrop-blur">
-          <div className="flex items-center gap-2">
-            <PackagePlus className="h-5 w-5" />
-            <h2 className="text-sm font-bold">
-              {product ? "ویرایش محصول" : "افزودن محصول"}
-            </h2>
+    <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm" dir="rtl">
+      <div role="dialog" aria-modal="true" aria-label={product ? "ویرایش محصول" : "ثبت محصول جدید"} className="mr-auto flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden border-r border-slate-700 bg-[#0b1220] text-slate-100 shadow-2xl">
+        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 bg-slate-900/95 px-4 py-3 sm:px-7 sm:py-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-500/15 text-indigo-300"><PackagePlus className="h-5 w-5" /></span>
+            <div className="min-w-0">
+              <h2 className="truncate text-base font-bold sm:text-lg">{product ? "ویرایش محصول" : "ثبت محصول جدید"}</h2>
+              <p className="mt-0.5 truncate text-xs text-slate-400">{form.title?.trim() || "اطلاعات را مرحله‌به‌مرحله تکمیل کنید"}</p>
+            </div>
           </div>
+          <div className="flex items-center gap-2">
+            <span className={"rounded-full border px-3 py-1 text-xs font-semibold " + (product?.status === "published" ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-amber-500/30 bg-amber-500/10 text-amber-300")}>
+              {product?.status === "published" ? "منتشرشده" : "پیش‌نویس"}
+            </span>
+            <button type="button" onClick={requestClose} disabled={loading} aria-label="بستن فرم محصول" className="rounded-xl border border-slate-700 p-2.5 text-slate-300 transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-400 disabled:opacity-50"><X className="h-5 w-5" /></button>
+          </div>
+        </header>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-2 hover:bg-slate-800"
-            aria-label="بستن فرم محصول"
-          >
-            <X className="h-5 w-5" />
-          </button>
+        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          <nav aria-label="مراحل ساخت محصول" className="shrink-0 border-b border-slate-800 bg-slate-900/60 lg:w-64 lg:border-b-0 lg:border-l">
+            <div className="flex gap-2 overflow-x-auto p-3 lg:flex-col lg:gap-1.5 lg:p-4">
+              {STEPS.map((step, index) => {
+                const Icon = step.icon;
+                const selected = activeStep === step.key;
+                return (
+                  <button key={step.key} type="button" aria-current={selected ? "step" : undefined} onClick={() => setActiveStep(step.key)} className={"group flex min-w-[138px] items-center gap-3 rounded-xl border px-3 py-3 text-right transition lg:w-full lg:min-w-0 " + (selected ? "border-indigo-400/40 bg-indigo-500/15 text-white shadow-sm" : "border-transparent text-slate-400 hover:border-slate-700 hover:bg-slate-800/80 hover:text-slate-200")}>
+                    <span className={"flex h-9 w-9 shrink-0 items-center justify-center rounded-lg " + (selected ? "bg-indigo-500 text-white" : "bg-slate-800 text-slate-400")}><Icon className="h-4 w-4" /></span>
+                    <span className="min-w-0">
+                      <span className="block whitespace-nowrap text-xs font-semibold sm:text-sm">{step.title}</span>
+                      <span className="mt-1 hidden text-[11px] text-slate-400 lg:block">{step.hint}</span>
+                    </span>
+                    <span className="mr-auto hidden text-[10px] tabular-nums text-slate-500 lg:block">{(index + 1).toLocaleString("fa-IR")}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="hidden border-t border-slate-800 p-5 lg:block">
+              <div className="mb-2 flex items-center justify-between text-xs"><span className="text-slate-400">آمادگی انتشار</span><span className="font-bold text-indigo-300">{completion.toLocaleString("fa-IR")}٪</span></div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-slate-700"><div className="h-full rounded-full bg-indigo-400 transition-all" style={{ width: completion + "%" }} /></div>
+              <p className="mt-3 text-[11px] leading-6 text-slate-500">می‌توانید مراحل را به هر ترتیبی تکمیل کنید. تغییرات تا زمان ذخیره در سایت ثبت نمی‌شوند.</p>
+            </div>
+          </nav>
+
+          <div ref={scrollRef} className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-7 sm:py-7">
+            <div className="mx-auto max-w-3xl space-y-5 pb-8">
+              <div>
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+                  <span>مرحله {(activeIndex + 1).toLocaleString("fa-IR")} از {STEPS.length.toLocaleString("fa-IR")}</span>
+                  <span>{completion.toLocaleString("fa-IR")}٪ اطلاعات کلیدی تکمیل شده</span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-slate-800"><div className="h-full rounded-full bg-indigo-500 transition-all" style={{ width: ((activeIndex + 1) * 100 / STEPS.length) + "%" }} /></div>
+              </div>
+
+              {errorMessage && <div role="alert" className="rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm leading-7 text-rose-200">{errorMessage}</div>}
+
+              <section className="rounded-2xl border border-slate-700/70 bg-slate-900/80 p-4 shadow-lg shadow-black/10 sm:p-6">
+                <div className="mb-6 border-b border-slate-800 pb-4">
+                  <h3 className="text-lg font-bold">{active.title}</h3>
+                  <p className="mt-1.5 text-xs leading-6 text-slate-400">{active.hint}</p>
+                </div>
+                <form onSubmit={event => event.preventDefault()} className="space-y-5">
+                  {activeStep === "basic" && <BasicInfoFields form={form} updateField={updateField}
+                    purchasePriceRequired={!product || product.productType === "multi" || isPurchasePrice(product.purchasePrice)}
+                    variantPurchasePriceRequired={variant => !existingVariantIds.has(variant._id) ||
+                      isPurchasePrice(existingVariants.find(entry => entry._id === variant._id)?.purchasePrice)}
+                  />}
+
+                  {activeStep === "taxonomy" && <div className="space-y-6">
+                    <CategorySelector categories={categories} form={form} updateField={updateField} />
+                    {isConsoleGeneration(generation) && <UsedConsoleFields generation={generation} form={form} updateField={updateField} />}
+                    <div className="border-t border-slate-800 pt-5"><TagsSelector tagsList={tagsList} form={form} updateField={updateField} /></div>
+                  </div>}
+
+                  {activeStep === "media" && <div className="space-y-5">
+                    <p className="rounded-xl border border-sky-500/20 bg-sky-500/10 p-3 text-xs leading-6 text-sky-200">تصویر اصلی روی کارت و صفحه محصول نمایش داده می‌شود. برای محصول کارکرده، حتماً عکس واقعی همان دستگاه را بگذارید. پیش‌نویس را می‌توانید بدون عکس ذخیره کنید.</p>
+                    <GalleryUploader form={form} updateField={updateField} />
+                    <ImageUploader form={form} updateField={updateField} />
+                  </div>}
+
+                  {activeStep === "details" && <div className="space-y-6">
+                    {form.productType === "multi" && <div>
+                      <h4 className="mb-3 text-sm font-bold text-slate-200">انتخاب مدل در صفحه محصول</h4>
+                      <VariantSelectorBuilder value={form.variantSelector} variants={form.variants} onChange={value => updateField("variantSelector", value)} />
+                    </div>}
+                    <SpecificationsEditor form={form} updateField={updateField} />
+                    <FaqEditor form={form} updateField={updateField} />
+                  </div>}
+
+                  {activeStep === "seo" && <div className="space-y-6">
+                    <SeoFields form={form} updateField={updateField} />
+                    <details className="rounded-xl border border-slate-700 bg-slate-950/40 p-4">
+                      <summary className="cursor-pointer text-sm font-semibold text-slate-200">مشاهده تحلیل کامل سئو</summary>
+                      <div className="mt-4"><SeoAnalyzer form={form} /></div>
+                    </details>
+                  </div>}
+
+                  {activeStep === "publish" && <div className="space-y-5">
+                    <div className="rounded-xl border border-slate-700 bg-slate-950/40 p-4">
+                      <h4 className="mb-1 flex items-center gap-2 text-sm font-bold"><ClipboardCheck className="h-4 w-4 text-indigo-300" /> چک‌لیست محصول</h4>
+                      <p className="mb-4 text-xs leading-6 text-slate-400">روی هر مورد ناقص بزنید تا مستقیم به بخش مربوطه بروید.</p>
+                      <div className="space-y-2">
+                        {checklist.map(item => <button key={item.label} type="button" onClick={() => setActiveStep(item.step)} className="flex w-full items-center justify-between rounded-xl border border-slate-800 bg-slate-900 p-3 text-right text-sm transition hover:bg-slate-800">
+                          <span className="flex items-center gap-2">{item.completed ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <span className="flex h-4 w-4 items-center justify-center rounded-full border border-amber-500 text-[10px] text-amber-400">!</span>}{item.label}</span>
+                          <span className={item.completed ? "text-xs text-emerald-400" : "text-xs text-amber-300"}>{item.completed ? "تکمیل" : "نیاز به بررسی"}</span>
+                        </button>)}
+                      </div>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-xl border border-slate-700 bg-slate-950/40 p-4">
+                        <p className="mb-1 text-xs text-slate-400">نام محصول</p>
+                        <p className="break-words text-sm font-semibold">{form.title || "هنوز وارد نشده"}</p>
+                      </div>
+                      <div className="rounded-xl border border-slate-700 bg-slate-950/40 p-4">
+                        <p className="mb-1 text-xs text-slate-400">دسته‌بندی</p>
+                        <p className="text-sm font-semibold">{chosenCategory?.name || "انتخاب نشده"}</p>
+                      </div>
+                      <div className="rounded-xl border border-slate-700 bg-slate-950/40 p-4">
+                        <p className="mb-1 text-xs text-slate-400">نوع کالا</p>
+                        <p className="text-sm font-semibold">{form.condition === "used" ? "کنسول کارکرده" : form.productType === "multi" ? "چندمدلی" : "تک‌مدلی"}</p>
+                      </div>
+                      <div className="rounded-xl border border-slate-700 bg-slate-950/40 p-4">
+                        <p className="mb-1 text-xs text-slate-400">وضعیت تصویر</p>
+                        <p className="text-sm font-semibold">{form.mainImage ? "تصویر اصلی انتخاب شده" : "تصویر اصلی ندارد"}</p>
+                      </div>
+                    </div>
+                    <p className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs leading-6 text-amber-200">«ذخیره پیش‌نویس» محصول را در سایت نمایش نمی‌دهد. «انتشار» تمام کنترل‌های الزامی را انجام می‌دهد و بعد از موفقیت محصول برای مشتریان قابل مشاهده می‌شود.</p>
+                  </div>}
+                </form>
+              </section>
+            </div>
+          </div>
         </div>
 
-        <form
-          onSubmit={product ? handleUpdate : handleSubmit}
-          className="space-y-4 px-6 py-6"
-        >
-          <DrawerSection
-            title="وضعیت انتشار"
-            sectionKey="publish"
-            openSection={openSection}
-            onToggle={toggleSection}
-          >
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => updateField("status", "draft")}
-                className={`rounded-lg border px-3 py-2.5 text-xs font-semibold transition ${
-                  form.status === "draft"
-                    ? "border-amber-400 bg-amber-400/10 text-amber-300"
-                    : "border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600"
-                }`}
-              >
-                پیش‌نویس
-                <span className="mt-1 block text-[10px] font-normal opacity-70">
-                  در سایت نمایش داده نمی‌شود
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => updateField("status", "published")}
-                className={`rounded-lg border px-3 py-2.5 text-xs font-semibold transition ${
-                  form.status === "published"
-                    ? "border-emerald-400 bg-emerald-400/10 text-emerald-300"
-                    : "border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600"
-                }`}
-              >
-                آماده انتشار
-                <span className="mt-1 block text-[10px] font-normal opacity-70">
-                  در سایت نمایش داده می‌شود
-                </span>
-              </button>
+        <footer className="shrink-0 border-t border-slate-800 bg-slate-900/95 px-4 py-3 shadow-[0_-12px_30px_rgba(0,0,0,0.18)] sm:px-7">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2">
+              <button type="button" disabled={activeIndex === 0 || loading} onClick={() => setActiveStep(STEPS[activeIndex - 1].key)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 px-3 py-2.5 text-xs font-semibold text-slate-200 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"><ArrowRight className="h-4 w-4" /> قبلی</button>
+              <button type="button" disabled={activeIndex === STEPS.length - 1 || loading} onClick={() => setActiveStep(STEPS[activeIndex + 1].key)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 px-3 py-2.5 text-xs font-semibold text-slate-200 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40">بعدی <ArrowLeft className="h-4 w-4" /></button>
             </div>
-          </DrawerSection>
-
-          <DrawerSection
-            title="اطلاعات پایه"
-            sectionKey="basic"
-            openSection={openSection}
-            onToggle={toggleSection}
-          >
-            <BasicInfoFields
-              form={form}
-              updateField={updateField}
-              purchasePriceRequired={!product || product.productType === "multi" || isPurchasePrice(product.purchasePrice)}
-              variantPurchasePriceRequired={(variant) =>
-                !existingVariantIds.has(variant._id) ||
-                isPurchasePrice(existingVariants.find((entry) => entry._id === variant._id)?.purchasePrice)
-              }
-            />
-          </DrawerSection>
-
-          <DrawerSection
-            title="مدیریت گزینه‌های انتخاب محصول"
-            sectionKey="variantSelector"
-            openSection={openSection}
-            onToggle={toggleSection}
-          >
-            {form.productType === "multi" ? (
-              <VariantSelectorBuilder
-                value={form.variantSelector}
-                variants={form.variants}
-                onChange={(value) => updateField("variantSelector", value)}
-              />
-            ) : (
-              <p className="text-xs text-slate-400">
-                این بخش فقط برای محصول چند مدلی فعال است.
-              </p>
-            )}
-          </DrawerSection>
-
-          <DrawerSection
-            title="دسته‌بندی و تگ‌ها"
-            sectionKey="taxonomy"
-            openSection={openSection}
-            onToggle={toggleSection}
-          >
-            <div className="space-y-4">
-              <CategorySelector
-                categories={categories}
-                form={form}
-                updateField={updateField}
-              />
-              {isConsoleGeneration(generation) && (
-                <UsedConsoleFields generation={generation} form={form} updateField={updateField} />
-              )}
-              <TagsSelector
-                tagsList={tagsList}
-                form={form}
-                updateField={updateField}
-              />
-            </div>
-          </DrawerSection>
-
-          <DrawerSection
-            title="تصاویر"
-            sectionKey="media"
-            openSection={openSection}
-            onToggle={toggleSection}
-          >
-            <div className="space-y-3">
-              <GalleryUploader form={form} updateField={updateField} />
-              <ImageUploader form={form} updateField={updateField} />
-            </div>
-          </DrawerSection>
-
-          <DrawerSection
-            title="مشخصات فنی"
-            sectionKey="specs"
-            openSection={openSection}
-            onToggle={toggleSection}
-          >
-            <SpecificationsEditor form={form} updateField={updateField} />
-          </DrawerSection>
-
-          <DrawerSection
-            title="سوالات پرتکرار"
-            sectionKey="faq"
-            openSection={openSection}
-            onToggle={toggleSection}
-          >
-            <FaqEditor form={form} updateField={updateField} />
-          </DrawerSection>
-
-          <DrawerSection
-            title="تنظیمات سئو و محتوای محصول"
-            sectionKey="seo"
-            openSection={openSection}
-            onToggle={toggleSection}
-          >
-            <div className="space-y-4">
-              <SeoFields form={form} updateField={updateField} />
-            </div>
-          </DrawerSection>
-
-          <DrawerSection
-            title="بررسی سئو قبل از انتشار"
-            sectionKey="seoCheck"
-            openSection={openSection}
-            onToggle={toggleSection}
-          >
-            <SeoAnalyzer form={form} />
-          </DrawerSection>
-
-          <div className="sticky bottom-0 -mx-6 mt-6 border-t border-slate-700 bg-slate-900/95 px-6 py-4 backdrop-blur">
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                onClick={() => updateField("status", "draft")}
-                disabled={loading}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-amber-500/50 bg-amber-500/10 py-2 text-sm font-semibold text-amber-300 transition hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {loading && form.status === "draft" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : null}
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:flex-none">
+              <button type="button" disabled={loading} onClick={() => void saveProduct("draft")} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-xs font-bold text-amber-200 transition hover:bg-amber-400/20 disabled:opacity-50 sm:flex-none">
+                {savingStatus === "draft" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 ذخیره پیش‌نویس
               </button>
-              <button
-                type="submit"
-                onClick={() => updateField("status", "published")}
-                disabled={loading}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-indigo-600 py-2 text-sm font-semibold transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {loading && form.status === "published" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : null}
-                {loading && form.status === "published"
-                  ? product
-                    ? "در حال بروزرسانی..."
-                    : "در حال انتشار..."
-                  : product
-                    ? "بروزرسانی و انتشار"
-                    : "انتشار محصول"}
+              <button type="button" disabled={loading} onClick={() => void saveProduct("published")} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-indigo-500 disabled:opacity-50 sm:flex-none">
+                {savingStatus === "published" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                {product?.status === "published" ? "ذخیره و انتشار" : "انتشار محصول"}
               </button>
             </div>
           </div>
-        </form>
+        </footer>
       </div>
     </div>
   );
