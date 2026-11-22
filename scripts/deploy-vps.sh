@@ -12,7 +12,10 @@ PORT="${PORT:-3000}"
 command -v flock >/dev/null || exit 1
 command -v git >/dev/null || exit 1
 export NVM_DIR="$HOME/.nvm"
-[[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
+[[ -s "$NVM_DIR/nvm.sh" ]] || { echo "nvm missing" >&2; exit 1; }
+source "$NVM_DIR/nvm.sh"
+nvm use 24 >/dev/null
+command -v node >/dev/null || { echo "Node.js missing" >&2; exit 1; }
 command -v pm2 >/dev/null || { echo "PM2 missing" >&2; exit 1; }
 mkdir -p "$ROOT/releases" "$ROOT/state"
 exec 9>"$ROOT/state/deploy.lock"
@@ -36,9 +39,6 @@ BACKUP_SCRIPT="$(mktemp)"
 trap 'rm -f -- "$BACKUP_SCRIPT"' EXIT
 git show "$SHA:scripts/backup-vps.sh" > "$BACKUP_SCRIPT"
 bash "$BACKUP_SCRIPT" predeploy
-export NVM_DIR="$HOME/.nvm"
-[[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
-nvm use 24 >/dev/null
 RELEASE="$ROOT/releases/$SHA"
 if [[ ! -d "$RELEASE" ]]; then
   git worktree add --detach "$RELEASE" "$SHA"
@@ -65,12 +65,14 @@ restart_at() {
   pm2 start "$target/ecosystem.config.cjs" --only kermanatari --update-env
 }
 health() {
+  local target="$1"
   local i status chunk
+  [[ -s "$target/.next/BUILD_ID" ]] || { echo "Missing build for health target: $target" >&2; return 1; }
+  chunk="$(find "$target/.next/static/chunks" -maxdepth 1 -name 'webpack-*.js' -type f -printf '%f\n' -quit)"
+  [[ -n "$chunk" ]] || { echo "Missing webpack chunk for health target: $target" >&2; return 1; }
   for i in {1..15}; do
     status="$(curl -sS -L --max-time 8 -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/auth/login" 2>/dev/null || true)"
     if [[ "$status" == 200 ]]; then
-      chunk="$(find "$RELEASE/.next/static/chunks" -maxdepth 1 -name 'webpack-*.js' -type f -printf '%f\n' -quit)"
-      [[ -z "$chunk" ]] && return 1
       status="$(curl -sS --max-time 8 -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/_next/static/chunks/$chunk" 2>/dev/null || true)"
       [[ "$status" == 200 ]] && return 0
     fi
@@ -79,12 +81,13 @@ health() {
   return 1
 }
 echo "Activating $SHA"
-if ! restart_at "$RELEASE" || ! health; then
+if ! restart_at "$RELEASE" || ! health "$RELEASE"; then
   echo "Candidate unhealthy; restoring $OLD" >&2
-  if restart_at "$OLD"; then
+  if restart_at "$OLD" && health "$OLD"; then
     pm2 save >/dev/null
+    echo "Rollback healthy: $OLD" >&2
   else
-    echo "CRITICAL: Rollback PM2 start also failed" >&2
+    echo "CRITICAL: Rollback start or health check failed; investigate PM2 immediately" >&2
   fi
   exit 1
 fi
