@@ -1,52 +1,118 @@
 #!/usr/bin/env bash
-# Run as the PM2 owner, from the production checkout.
-set -eo pipefail
-cd "$(git rev-parse --show-toplevel)"
-state_dir="$(git rev-parse --absolute-git-dir)/vps-deploy"
-mkdir -p "$state_dir"
-# Keep the lock in flock's parent process so PM2 cannot inherit it.
-if [[ ${1:-} != --locked ]]; then
-  exec flock --nonblock --conflict-exit-code 0 --close "$state_dir/lock" bash scripts/deploy-vps.sh --locked
-fi
-
-export GIT_TERMINAL_PROMPT=0
-ssh_transport='ssh -o HostName=ssh.github.com -p 443 -o BatchMode=yes -o ConnectTimeout=12 -o StrictHostKeyChecking=yes'
-git -c core.sshCommand="$ssh_transport" fetch --quiet --no-tags origin \
-  refs/heads/main:refs/remotes/origin/main \
-  refs/heads/vps-release:refs/remotes/origin/vps-release
-release_sha=$(git rev-parse 'refs/remotes/origin/vps-release^{commit}')
-if [[ -f "$state_dir/deployed" && $(<"$state_dir/deployed") == "$release_sha" && $(git rev-parse HEAD) == "$release_sha" ]]; then
-  exit 0
-fi
-if [[ $(git branch --show-current) != main ]] || ! git diff --quiet HEAD --; then
-  echo 'Deployment requires main with no staged or modified tracked files.' >&2
-  exit 1
-fi
-if ! git merge-base --is-ancestor "$release_sha" origin/main || ! git merge-base --is-ancestor HEAD "$release_sha"; then
-  echo 'Release is outside main history or would rewind the production checkout.' >&2
-  exit 1
-fi
-echo "Deploying $release_sha"
-git merge --ff-only "$release_sha"
-
+# Versioned VPS deployment, leaves the live .next untouched until the candidate is built.
+set -Eeuo pipefail
+umask 077
+SHA="${1:-}"
+[[ "$SHA" =~ ^[a-f0-9]{40}$ ]] || { echo "Expected full validated commit SHA" >&2; exit 2; }
+REPO="${REPO_DIR:-$HOME/projects/kerman_next14_downgrid}"
+ROOT="${DEPLOY_ROOT:-$HOME/projects/kermanatari-deploy}"
+ENV_FILE="${PRODUCTION_ENV_FILE:-$REPO/.env}"
+PORT="${PORT:-3000}"
+[[ "$PORT" =~ ^[0-9]{2,5}$ ]] || exit 2
+command -v flock >/dev/null || exit 1
+command -v git >/dev/null || exit 1
 export NVM_DIR="$HOME/.nvm"
+[[ -s "$NVM_DIR/nvm.sh" ]] || { echo "nvm missing" >&2; exit 1; }
 source "$NVM_DIR/nvm.sh"
-nvm use 24
+nvm use 24 >/dev/null
+command -v node >/dev/null || { echo "Node.js missing" >&2; exit 1; }
+command -v pm2 >/dev/null || { echo "PM2 missing" >&2; exit 1; }
+mkdir -p "$ROOT/releases" "$ROOT/state"
+exec 9>"$ROOT/state/deploy.lock"
+flock -n 9 || { echo "Another deployment is running"; exit 1; }
+[[ -r "$ENV_FILE" ]] || { echo "Missing production .env" >&2; exit 1; }
+cd "$REPO"
+export GIT_TERMINAL_PROMPT=0
+SSH_GIT='ssh -o HostName=ssh.github.com -p 443 -o BatchMode=yes -o ConnectTimeout=15 -o StrictHostKeyChecking=yes'
+git -c core.sshCommand="$SSH_GIT" fetch --quiet --no-tags origin refs/heads/main:refs/remotes/origin/main refs/heads/vps-release:refs/remotes/origin/vps-release
+RELEASE_SHA="$(git rev-parse refs/remotes/origin/vps-release^{commit})"
+[[ "$RELEASE_SHA" == "$SHA" ]] || { echo "Refusing deployment: SHA is not the published validated release" >&2; exit 1; }
+git merge-base --is-ancestor "$SHA" origin/main || { echo "Validated release is not an ancestor of main" >&2; exit 1; }
+[[ "$(git cat-file -t "$SHA")" == commit ]] || exit 1
+[[ -z "$(git status --porcelain --untracked-files=no)" ]] || { echo "Tracked changes in production checkout; refusing" >&2; exit 1; }
+# Resolve only an existing, valid release link. readlink -f can return the
+# nonexistent $ROOT/current path on first deployment, creating a self-reference
+# when the previous symlink is later written.
+CURRENT=""
+if [[ -L "$ROOT/current" ]]; then
+  CURRENT="$(readlink -e -- "$ROOT/current")" || { echo "Broken current release symlink" >&2; exit 1; }
+  [[ -d "$CURRENT" ]] || { echo "Current release target is not a directory" >&2; exit 1; }
+elif [[ -e "$ROOT/current" ]]; then
+  echo "Current release path exists but is not a symlink" >&2; exit 1
+fi
+if [[ -f "$ROOT/state/deployed" && -z "$CURRENT" ]]; then
+  echo "Recorded deployment exists but current release link is missing" >&2; exit 1
+fi
+if [[ -f "$ROOT/state/deployed" && "$(cat "$ROOT/state/deployed")" == "$SHA" ]] && [[ -n "$CURRENT" ]]; then
+  echo "Already deployed $SHA"; exit 0
+fi
+# A failed backup is a hard stop, before any npm install/build.
+BACKUP_SCRIPT="$(mktemp)"
+trap 'rm -f -- "$BACKUP_SCRIPT"' EXIT
+git show "$SHA:scripts/backup-vps.sh" > "$BACKUP_SCRIPT"
+bash "$BACKUP_SCRIPT" predeploy
+RELEASE="$ROOT/releases/$SHA"
+if [[ ! -d "$RELEASE" ]]; then
+  git worktree add --detach "$RELEASE" "$SHA"
+fi
+[[ "$(git -C "$RELEASE" rev-parse HEAD)" == "$SHA" ]] || { echo "Release SHA mismatch" >&2; exit 1; }
+# Use the same production env while keeping credentials outside the release tree.
+ln -sfn "$ENV_FILE" "$RELEASE/.env"
+# Ensure a fully isolated build, even when retrying an interrupted release.
+rm -rf "$RELEASE/.next"
+cd "$RELEASE"
 npm ci --no-audit --no-fund
-NEXT_DEPLOY_VALIDATED_SHA="$release_sha" npm run build
-pm2 startOrRestart ecosystem.config.cjs --only kermanatari --update-env
-pm2 save
-
-article_path='/api/blog/%D9%82%D9%81%D9%84-%D8%B4%D8%AF%D9%86-%D8%A8%D8%A7%D8%B2%DB%8C-ps4-%D9%88-ps5'
-health_url="http://127.0.0.1:${PORT:-3000}$article_path"
-for attempt in {1..12}; do
-  if [[ $(curl -s --max-time 20 -o /dev/null -w '%{http_code}' "$health_url") == 200 ]]; then
-    printf '%s\n' "$release_sha" > "$state_dir/deployed.tmp"
-    mv "$state_dir/deployed.tmp" "$state_dir/deployed"
-    echo "Deployment healthy: $release_sha"
-    exit 0
+NODE_OPTIONS="--max-old-space-size=1536" NEXT_DEPLOY_VALIDATED_SHA="$SHA" npm run build
+[[ -s "$RELEASE/.next/BUILD_ID" ]] || { echo "Missing BUILD_ID" >&2; exit 1; }
+[[ -s "$RELEASE/.next/server/pages/_error.js" ]] || { echo "Incomplete server bundle" >&2; exit 1; }
+compgen -G "$RELEASE/.next/static/chunks/webpack-*.js" >/dev/null || { echo "Missing webpack chunks" >&2; exit 1; }
+# WARNING: PM2 fork mode has a short restart interruption. This is not zero-downtime.
+# First rollout uses the existing repository as the rollback target.
+OLD="$CURRENT"
+[[ -n "$OLD" ]] || OLD="$REPO"
+# Never activate without a separately usable rollback target.
+[[ "$OLD" != "$RELEASE" ]] || { echo "Rollback target is the candidate release" >&2; exit 1; }
+[[ -s "$OLD/.next/BUILD_ID" && -f "$OLD/ecosystem.config.cjs" && -f "$OLD/node_modules/next/dist/bin/next" ]] || {
+  echo "Previous release cannot be used for rollback: $OLD" >&2; exit 1
+}
+OLD_SHA="$(cat "$ROOT/state/deployed" 2>/dev/null || true)"
+restart_at() {
+  local target="$1"
+  pm2 delete kermanatari >/dev/null 2>&1 || true
+  pm2 start "$target/ecosystem.config.cjs" --only kermanatari --update-env
+}
+health() {
+  local target="$1"
+  local i status chunk
+  [[ -s "$target/.next/BUILD_ID" ]] || { echo "Missing build for health target: $target" >&2; return 1; }
+  chunk="$(find "$target/.next/static/chunks" -maxdepth 1 -name 'webpack-*.js' -type f -printf '%f\n' -quit)"
+  [[ -n "$chunk" ]] || { echo "Missing webpack chunk for health target: $target" >&2; return 1; }
+  for i in {1..15}; do
+    status="$(curl -sS -L --max-time 8 -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/auth/login" 2>/dev/null || true)"
+    if [[ "$status" == 200 ]]; then
+      status="$(curl -sS --max-time 8 -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/_next/static/chunks/$chunk" 2>/dev/null || true)"
+      [[ "$status" == 200 ]] && return 0
+    fi
+    sleep 3
+  done
+  return 1
+}
+echo "Activating $SHA"
+if ! restart_at "$RELEASE" || ! health "$RELEASE"; then
+  echo "Candidate unhealthy; restoring $OLD" >&2
+  if restart_at "$OLD" && health "$OLD"; then
+    pm2 save >/dev/null
+    echo "Rollback healthy: $OLD" >&2
+  else
+    echo "CRITICAL: Rollback start or health check failed; investigate PM2 immediately" >&2
   fi
-  sleep 5
-done
-echo 'Production health check failed.' >&2
-exit 1
+  exit 1
+fi
+ln -sfn "$RELEASE" "$ROOT/current.next"
+mv -Tf "$ROOT/current.next" "$ROOT/current"
+ln -sfn "$OLD" "$ROOT/previous.next"
+mv -Tf "$ROOT/previous.next" "$ROOT/previous"
+printf '%s\n' "$SHA" > "$ROOT/state/deployed.tmp"
+mv "$ROOT/state/deployed.tmp" "$ROOT/state/deployed"
+pm2 save >/dev/null
+echo "Healthy release: $SHA; previous was ${OLD_SHA:-legacy}"

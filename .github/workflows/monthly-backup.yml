@@ -1,0 +1,12 @@
+name: Monthly backup instructions
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  information:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo 'Monthly backups run on the VPS (systemd timer), not through inbound SSH.'
+          echo 'See docs/safe-vps-deployment.md for installation and verification.'
