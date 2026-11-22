@@ -31,7 +31,7 @@ const ImageUploader = ({ form, updateField, onUploadingChange }: ImageUploaderPr
     try {
       // Keep successful pictures even when another file in the batch fails.
       const results = await Promise.allSettled(files.map(uploadCloudinaryImage));
-      const newImages = results.flatMap((result, index) =>
+      const newImages = results.flatMap((result) =>
         result.status === "fulfilled"
           ? [{ url: result.value, alt: `تصویر گالری ${form.title || "محصول"}` }]
           : [],
