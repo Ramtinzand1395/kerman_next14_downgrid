@@ -29,7 +29,10 @@ if [[ -f "$ROOT/state/deployed" && "$(cat "$ROOT/state/deployed")" == "$SHA" ]] 
   echo "Already deployed $SHA"; exit 0
 fi
 # A failed backup is a hard stop, before any npm install/build.
-bash "$REPO/scripts/backup-vps.sh" predeploy
+BACKUP_SCRIPT="$(mktemp)"
+trap 'rm -f -- "$BACKUP_SCRIPT"' EXIT
+git show "$SHA:scripts/backup-vps.sh" > "$BACKUP_SCRIPT"
+bash "$BACKUP_SCRIPT" predeploy
 export NVM_DIR="$HOME/.nvm"
 [[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
 nvm use 24 >/dev/null
