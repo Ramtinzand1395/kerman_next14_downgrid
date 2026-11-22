@@ -430,7 +430,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
                           const exists = categories.some((category) => category.slug === choice.slug);
                           return <button key={choice.slug} type="button" disabled={loading || categoriesLoading} onClick={() => startUsedConsole(choice.slug)}
                             className="min-h-14 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-center transition hover:border-teal-500 hover:bg-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 disabled:cursor-wait disabled:opacity-50">
-                            <span className="block text-base font-black text-white">{choice.label}</span>
+                            <span className="block text-base font-black text-slate-900">{choice.label}</span>
                             {!categoriesLoading && <span className={"mt-1 block text-[10px] " + (exists ? "text-teal-700" : "text-amber-700")}>{exists ? "آماده ثبت" : "دسته موجود نیست"}</span>}
                           </button>;
                         })}
@@ -527,7 +527,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
                 {savingStatus === "draft" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 ذخیره پیش‌نویس
               </button>
-              <button type="button" disabled={loading} onClick={() => void saveProduct("published")} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-teal-700 disabled:opacity-50 sm:flex-none">
+              <button type="button" disabled={loading} onClick={() => void saveProduct("published")} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-teal-800 disabled:opacity-50 sm:flex-none">
                 {savingStatus === "published" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 {product?.status === "published" ? "ذخیره و انتشار" : "انتشار محصول"}
               </button>
