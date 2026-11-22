@@ -40,11 +40,11 @@ const CategorySelector = ({
 
   const searchResults = useMemo(() => {
     const normalizedQuery = normalizeSearch(query);
-    if (!normalizedQuery) return [];
+    // Show a short, useful list immediately on focus; searching refines it.
 
     return categories
       .filter((category) =>
-        normalizeSearch(
+        !normalizedQuery || normalizeSearch(
           `${category.name} ${category.slug} ${category.parent?.name ?? ""}`,
         ).includes(normalizedQuery),
       )
@@ -124,7 +124,7 @@ const CategorySelector = ({
             setQuery(event.target.value);
             setIsOpen(true);
           }}
-          placeholder="نام دسته، دسته مادر یا اسلاگ را جستجو کنید..."
+          placeholder="دسته را انتخاب کنید یا نام آن را جستجو کنید..."
           className="w-full rounded-xl border border-slate-700 bg-slate-900/70 py-2.5 pr-10 pl-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
         />
       </div>
@@ -136,7 +136,7 @@ const CategorySelector = ({
         >
           {!query.trim() ? (
             <p className="px-4 py-3 text-xs text-slate-400">
-              برای نمایش دسته‌ها، بخشی از نام را وارد کنید.
+              دسته‌های پیشنهادی؛ برای پیدا کردن دسته دیگر نام آن را تایپ کنید.
             </p>
           ) : searchResults.length === 0 ? (
             <p className="px-4 py-3 text-xs text-slate-400">
