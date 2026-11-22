@@ -488,3 +488,55 @@ body {
   background: #176b68;
   color: #fff;
 }
+
+
+/* Keep hover, focus and muted panels readable in both admin themes. */
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="hover:bg-slate-100"],
+  [class~="hover:bg-slate-200"],
+  [class~="hover:bg-gray-100"],
+  [class~="hover:bg-gray-200"],
+  [class~="hover:bg-teal-50"],
+  [class~="hover:bg-white"]
+):hover,
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="focus:bg-slate-50"],
+  [class~="focus:bg-slate-100"]
+):focus {
+  background-color: #304254 !important;
+}
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-white/90"],
+  [class~="bg-white/95"],
+  [class~="bg-white/80"],
+  [class~="bg-slate-50/70"],
+  [class~="bg-slate-50/80"]
+) { background-color: #202c39 !important; }
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-purple-50"],
+  [class~="bg-violet-50"],
+  [class~="bg-lime-50"],
+  [class~="bg-yellow-50"],
+  [class~="bg-green-50"]
+) { background-color: #253b3c !important; }
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="text-indigo-600"],
+  [class~="text-purple-700"],
+  [class~="text-lime-700"],
+  [class~="text-green-700"]
+) { color: #8ee7d9 !important; }
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-amber-100"],
+  [class~="bg-red-100"],
+  [class~="bg-rose-100"],
+  [class~="bg-blue-100"]
+) { background-color: #313e49 !important; }
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="border-teal-400"],
+  [class~="border-teal-500"]
+) { border-color: #2dd4bf !important; }
+.dashboard-shell[data-admin-theme="dark"] input::file-selector-button {
+  background: #304254;
+  color: #e6edf5;
+  border-color: #465669;
+}
