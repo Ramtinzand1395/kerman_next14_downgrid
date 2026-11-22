@@ -208,7 +208,7 @@ export async function POST(req: Request) {
     );
     if (!catalogReferences.ok) {
       return NextResponse.json(
-        { error: catalogReferences.error },
+        { error: catalogReferences.error, field: catalogReferences.error.includes("برچسب") ? "tags" : "category" },
         { status: 400 },
       );
     }
@@ -270,14 +270,29 @@ export async function POST(req: Request) {
         stock: "موجودی",
         brand: "برند",
         description: "توضیحات",
+        purchasePrice: "قیمت خرید",
+        discountPrice: "قیمت تخفیف",
+        sku: "SKU",
+        barcode: "بارکد",
+        variants: "مدل‌های محصول",
+        usedConsole: "گزارش تست دستگاه",
+        faqs: "پرسش و پاسخ محصول",
+        specifications: "مشخصات فنی",
+        images: "گالری تصاویر",
+        seoTitle: "عنوان سئو",
+        metaDescription: "توضیحات سئو",
       };
 
       const messages = Object.values(err.errors).map((e: any) => {
-        const label = fieldNames[e.path] || e.path;
-        if (e.kind === "required") {
-          return `${label} الزامی است`;
-        }
-        return e.message;
+        const path = String(e.path || "");
+        const label = fieldNames[path] ||
+          (path.startsWith("faqs") ? "سوالات متداول" :
+          path.startsWith("specifications") ? "مشخصات فنی" :
+          path.startsWith("variants") ? "مدل‌های محصول" : path || "اطلاعات محصول");
+        if (e.kind === "required") return `${label} الزامی است؛ آن را تکمیل کنید.`;
+        if (e.kind === "min" || e.kind === "max") return `مقدار «${label}» خارج از محدوده مجاز است.`;
+        if (e.kind === "enum") return `مقدار «${label}» از گزینه‌های معتبر انتخاب نشده است.`;
+        return `مقدار «${label}» قابل ذخیره نیست. نوع و مقدار این فیلد را بررسی کنید.`;
       });
 
       return NextResponse.json(
@@ -290,7 +305,7 @@ export async function POST(req: Request) {
     if (err?.code === 11000) {
       const field = Object.keys(err?.keyPattern || {})[0];
       const label =
-        field === "slug" ? "نامک (slug)" : field === "sku" ? "SKU" : field;
+        field === "slug" ? "آدرس محصول (اسلاگ)" : field === "sku" ? "SKU" : field === "barcode" ? "بارکد" : "شناسه محصول";
       return NextResponse.json(
         { error: `${label} قبلاً استفاده شده است. مقدار جدیدی وارد کنید.`, field: field || "slug" },
         { status: 400 },
