@@ -318,7 +318,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
       <div role="dialog" aria-modal="true" aria-label={product ? "ویرایش محصول" : "ثبت محصول جدید"} className="ml-auto flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden border-r border-slate-700 bg-[#0b1220] text-slate-100 shadow-2xl">
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 bg-slate-900/95 px-4 py-3 sm:px-7 sm:py-4">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-500/15 text-indigo-300"><PackagePlus className="h-5 w-5" /></span>
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-lime-400/10 text-lime-300"><PackagePlus className="h-5 w-5" /></span>
             <div className="min-w-0">
               <h2 className="truncate text-base font-bold sm:text-lg">{product ? "ویرایش محصول" : "ثبت محصول جدید"}</h2>
               <p className="mt-0.5 truncate text-xs text-slate-400">{form.title?.trim() || "اطلاعات را مرحله‌به‌مرحله تکمیل کنید"}</p>
@@ -339,8 +339,8 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
                 const Icon = step.icon;
                 const selected = activeStep === step.key;
                 return (
-                  <button key={step.key} type="button" aria-current={selected ? "step" : undefined} onClick={() => setActiveStep(step.key)} className={"group flex min-w-[138px] items-center gap-3 rounded-xl border px-3 py-3 text-right transition lg:w-full lg:min-w-0 " + (selected ? "border-indigo-400/40 bg-indigo-500/15 text-white shadow-sm" : "border-transparent text-slate-400 hover:border-slate-700 hover:bg-slate-800/80 hover:text-slate-200")}>
-                    <span className={"flex h-9 w-9 shrink-0 items-center justify-center rounded-lg " + (selected ? "bg-indigo-500 text-white" : "bg-slate-800 text-slate-400")}><Icon className="h-4 w-4" /></span>
+                  <button key={step.key} type="button" aria-current={selected ? "step" : undefined} onClick={() => setActiveStep(step.key)} className={"group flex min-w-[138px] items-center gap-3 rounded-xl border px-3 py-3 text-right transition lg:w-full lg:min-w-0 " + (selected ? "border-lime-300/40 bg-lime-400/10 text-white shadow-sm" : "border-transparent text-slate-400 hover:border-slate-700 hover:bg-slate-800/80 hover:text-slate-200")}>
+                    <span className={"flex h-9 w-9 shrink-0 items-center justify-center rounded-lg " + (selected ? "bg-lime-400 text-slate-950" : "bg-slate-800 text-slate-400")}><Icon className="h-4 w-4" /></span>
                     <span className="min-w-0">
                       <span className="block whitespace-nowrap text-xs font-semibold sm:text-sm">{step.title}</span>
                       <span className="mt-1 hidden text-[11px] text-slate-400 lg:block">{step.hint}</span>
@@ -351,7 +351,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
               })}
             </div>
             <div className="hidden border-t border-slate-800 p-5 lg:block">
-              <div className="mb-2 flex items-center justify-between text-xs"><span className="text-slate-400">آمادگی انتشار</span><span className="font-bold text-indigo-300">{completion.toLocaleString("fa-IR")}٪</span></div>
+              <div className="mb-2 flex items-center justify-between text-xs"><span className="text-slate-400">آمادگی انتشار</span><span className="font-bold text-lime-300">{completion.toLocaleString("fa-IR")}٪</span></div>
               <div className="h-1.5 overflow-hidden rounded-full bg-slate-700"><div className="h-full rounded-full bg-indigo-400 transition-all" style={{ width: completion + "%" }} /></div>
               <p className="mt-3 text-[11px] leading-6 text-slate-500">می‌توانید مراحل را به هر ترتیبی تکمیل کنید. تغییرات تا زمان ذخیره در سایت ثبت نمی‌شوند.</p>
             </div>
@@ -364,7 +364,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
                   <span>مرحله {(activeIndex + 1).toLocaleString("fa-IR")} از {STEPS.length.toLocaleString("fa-IR")}</span>
                   <span>{completion.toLocaleString("fa-IR")}٪ اطلاعات کلیدی تکمیل شده</span>
                 </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-slate-800"><div className="h-full rounded-full bg-indigo-500 transition-all" style={{ width: ((activeIndex + 1) * 100 / STEPS.length) + "%" }} /></div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-slate-800"><div className="h-full rounded-full bg-lime-400 transition-all" style={{ width: ((activeIndex + 1) * 100 / STEPS.length) + "%" }} /></div>
               </div>
 
               {errorMessage && <div role="alert" className="rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm leading-7 text-rose-200">{errorMessage}</div>}
@@ -412,7 +412,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
 
                   {activeStep === "publish" && <div className="space-y-5">
                     <div className="rounded-xl border border-slate-700 bg-slate-950/40 p-4">
-                      <h4 className="mb-1 flex items-center gap-2 text-sm font-bold"><ClipboardCheck className="h-4 w-4 text-indigo-300" /> چک‌لیست محصول</h4>
+                      <h4 className="mb-1 flex items-center gap-2 text-sm font-bold"><ClipboardCheck className="h-4 w-4 text-lime-300" /> چک‌لیست محصول</h4>
                       <p className="mb-4 text-xs leading-6 text-slate-400">روی هر مورد ناقص بزنید تا مستقیم به بخش مربوطه بروید.</p>
                       <div className="space-y-2">
                         {checklist.map(item => <button key={item.label} type="button" onClick={() => setActiveStep(item.step)} className="flex w-full items-center justify-between rounded-xl border border-slate-800 bg-slate-900 p-3 text-right text-sm transition hover:bg-slate-800">
@@ -458,7 +458,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
                 {savingStatus === "draft" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 ذخیره پیش‌نویس
               </button>
-              <button type="button" disabled={loading} onClick={() => void saveProduct("published")} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-indigo-500 disabled:opacity-50 sm:flex-none">
+              <button type="button" disabled={loading} onClick={() => void saveProduct("published")} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-lime-400 px-4 py-2 text-xs font-bold text-slate-950 transition hover:bg-lime-400 disabled:opacity-50 sm:flex-none">
                 {savingStatus === "published" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 {product?.status === "published" ? "ذخیره و انتشار" : "انتشار محصول"}
               </button>
