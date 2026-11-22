@@ -546,7 +546,7 @@ export function buildProductWriteInput(
     seoTitle: optionalString(body.seoTitle),
     metaDescription: optionalString(body.metaDescription),
     mainImageAlt: optionalString(body.mainImageAlt),
-    mainImage: condition === "used" && status === "draft"
+    mainImage: status === "draft"
       ? optionalString(body.mainImage) ?? ""
       : requiredString(body.mainImage, "mainImage"),
     images: normalizeImages(body.galleryImages ?? body.images),
