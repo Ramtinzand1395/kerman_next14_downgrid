@@ -163,13 +163,13 @@ useEffect(() => {
             </span>
             {expanded && (
               <div className="min-w-0 text-right">
-                <p className="truncate text-[11px] font-medium tracking-wide text-slate-400">مدیریت فروشگاه</p>
+                <p className="truncate text-[11px] font-medium tracking-wide text-slate-500">مدیریت فروشگاه</p>
                 <h2 className="truncate text-base font-black text-slate-900">Kerman <span className="text-teal-700">Atari</span></h2>
               </div>
             )}
           </div>
           <button type="button" title={expanded ? "جمع کردن منو" : "باز کردن منو"} aria-label={expanded ? "جمع کردن منو" : "باز کردن منو"}
-            onClick={() => setExpanded(prev => !prev)} className="hidden rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-teal-700 md:inline-flex">
+            onClick={() => setExpanded(prev => !prev)} className="hidden rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-teal-700 md:inline-flex">
             {expanded ? <PanelRightClose className="h-5 w-5" /> : <PanelRightOpen className="h-5 w-5" />}
           </button>
           <button type="button" title="بستن منو" aria-label="بستن منو" onClick={() => setMobileOpen(false)}
