@@ -39,6 +39,11 @@ test("draft reports can be incomplete; publication validates each generation and
     assert.deepEqual(write({ ...body, usedConsole: { ...report, checks } }, { ...options, categorySlug: generation }).usedConsole.checks, checks);
   }
 });
+test("all product drafts may omit images while publication still requires one", () => {
+  const regular = { ...base, mainImage: "", status: "draft" };
+  assert.equal(write(regular).mainImage, "");
+  assert.throws(() => write({ ...regular, status: "published" }));
+});
 test("online confirmation flag in the POS catalog is specific to used units", () => {
   assert.equal(mapCatalogProduct({ _id: "1", ...body }).requiresOnlineSale, true);
   assert.equal(mapCatalogProduct({ _id: "1", ...base }).requiresOnlineSale, undefined);
