@@ -65,7 +65,7 @@ const TagsSelector = ({ updateField, form, tagsList }: TagsSelectorProps) => {
       <div className="mb-2 flex items-center justify-between gap-3">
         <label
           htmlFor="product-tags-search"
-          className="text-sm font-semibold text-slate-200"
+          className="text-sm font-semibold text-slate-800"
         >
           تگ‌ها
         </label>
@@ -76,17 +76,17 @@ const TagsSelector = ({ updateField, form, tagsList }: TagsSelectorProps) => {
       </div>
 
       {selectedTags.length > 0 ? (
-        <div className="mb-2 flex max-h-28 flex-wrap gap-1.5 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900/40 p-2">
+        <div className="mb-2 flex max-h-28 flex-wrap gap-1.5 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-2">
           {selectedTags.map((tag) => (
             <span
               key={tag._id}
-              className="inline-flex items-center gap-1 rounded-full border border-indigo-400/30 bg-lime-400/10 py-1 pr-2.5 pl-1.5 text-[11px] font-medium text-lime-200"
+              className="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 py-1 pr-2.5 pl-1.5 text-[11px] font-medium text-teal-800"
             >
               {tag.name}
               <button
                 type="button"
                 onClick={() => toggleTag(tag._id)}
-                className="rounded-full p-0.5 text-lime-300 transition hover:bg-indigo-400/20 hover:text-white"
+                className="rounded-full p-0.5 text-teal-700 transition hover:bg-teal-100 hover:text-teal-800"
                 aria-label={`حذف تگ ${tag.name}`}
               >
                 <X className="h-3 w-3" />
@@ -119,21 +119,21 @@ const TagsSelector = ({ updateField, form, tagsList }: TagsSelectorProps) => {
             setIsOpen(true);
           }}
           placeholder="نام یا اسلاگ تگ را جستجو کنید..."
-          className="w-full rounded-xl border border-slate-700 bg-slate-900/70 py-2.5 pr-10 pl-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-lime-500 focus:ring-2 focus:ring-lime-400/20"
+          className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pr-10 pl-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-500 focus:border-teal-600 focus:ring-2 focus:ring-teal-500/15"
         />
       </div>
 
       {isOpen ? (
         <div
           id="product-tags-results"
-          className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-2xl shadow-black/30"
+          className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl shadow-black/30"
         >
           {!query.trim() ? (
-            <p className="px-4 py-3 text-xs text-slate-400">
+            <p className="px-4 py-3 text-xs text-slate-500">
               برای نمایش تگ‌ها، بخشی از نام را وارد کنید.
             </p>
           ) : searchResults.length === 0 ? (
-            <p className="px-4 py-3 text-xs text-slate-400">
+            <p className="px-4 py-3 text-xs text-slate-500">
               تگی با این عبارت پیدا نشد.
             </p>
           ) : (
@@ -147,8 +147,8 @@ const TagsSelector = ({ updateField, form, tagsList }: TagsSelectorProps) => {
                       onClick={() => toggleTag(tag._id)}
                       className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-right text-xs transition ${
                         isSelected
-                          ? "bg-lime-400/10 text-lime-200"
-                          : "text-slate-200 hover:bg-slate-800"
+                          ? "bg-teal-50 text-teal-800"
+                          : "text-slate-800 hover:bg-slate-100"
                       }`}
                     >
                       <span className="min-w-0">
@@ -162,8 +162,8 @@ const TagsSelector = ({ updateField, form, tagsList }: TagsSelectorProps) => {
                       <span
                         className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
                           isSelected
-                            ? "border-indigo-400 bg-lime-400 text-slate-950"
-                            : "border-slate-600"
+                            ? "border-teal-500 bg-teal-700 text-white"
+                            : "border-slate-300"
                         }`}
                       >
                         {isSelected ? <Check className="h-3.5 w-3.5" /> : null}
@@ -175,7 +175,7 @@ const TagsSelector = ({ updateField, form, tagsList }: TagsSelectorProps) => {
             </ul>
           )}
           {searchResults.length === 8 ? (
-            <p className="border-t border-slate-800 px-3 py-2 text-[10px] text-slate-500">
+            <p className="border-t border-slate-100 px-3 py-2 text-[10px] text-slate-500">
               ۸ نتیجه اول نمایش داده شده؛ برای نتیجه دقیق‌تر عبارت بیشتری بنویسید.
             </p>
           ) : null}
