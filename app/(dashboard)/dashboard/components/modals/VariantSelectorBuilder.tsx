@@ -176,20 +176,20 @@ export default function VariantSelectorBuilder({ value, variants, onChange }: Pr
   };
 
   return (
-    <div dir="rtl" className="space-y-5 rounded-2xl border border-lime-400/30 bg-slate-900/50 p-4">
+    <div dir="rtl" className="space-y-5 rounded-2xl border border-teal-200 bg-white p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-sm font-bold text-slate-100">مدیریت گزینه‌های انتخاب محصول</h3>
-          <p className="mt-1 text-xs leading-6 text-slate-400">
+          <h3 className="text-sm font-bold text-slate-900">مدیریت گزینه‌های انتخاب محصول</h3>
+          <p className="mt-1 text-xs leading-6 text-slate-500">
             گزینه‌های کوتاه را به مدل‌های واقعی محصول متصل کنید؛ قیمت و موجودی همچنان از خود مدل خوانده می‌شود.
           </p>
         </div>
-        <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-slate-200">
+        <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-slate-800">
           <input
             type="checkbox"
             checked={config.enabled}
             onChange={(event) => onChange({ ...config, enabled: event.target.checked })}
-            className="h-4 w-4 rounded border-slate-600 text-lime-700"
+            className="h-4 w-4 rounded border-slate-300 text-teal-700"
           />
           فعال‌سازی انتخاب‌گر سفارشی
         </label>
@@ -200,57 +200,57 @@ export default function VariantSelectorBuilder({ value, variants, onChange }: Pr
           <section className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="text-xs font-bold text-slate-200">تنظیمات انتخاب‌گر و گروه‌ها</h4>
+                <h4 className="text-xs font-bold text-slate-800">تنظیمات انتخاب‌گر و گروه‌ها</h4>
                 <p className="mt-1 text-[11px] text-slate-500">گروه‌ها و گزینه‌ها را با دکمه‌های جهت مرتب کنید.</p>
               </div>
-              <button type="button" onClick={addGroup} className="inline-flex items-center gap-1 rounded-lg bg-lime-400 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-lime-300">
+              <button type="button" onClick={addGroup} className="inline-flex items-center gap-1 rounded-lg bg-teal-700 px-3 py-2 text-xs font-semibold text-white hover:bg-teal-800">
                 <Plus className="h-3.5 w-3.5" /> افزودن گروه
               </button>
             </div>
 
             {groups.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-700 p-5 text-center text-xs text-slate-400">هنوز گروهی ساخته نشده است.</div>
+              <div className="rounded-xl border border-dashed border-slate-200 p-5 text-center text-xs text-slate-500">هنوز گروهی ساخته نشده است.</div>
             ) : groups.map((group, groupIndex) => (
-              <article key={group.id} className="rounded-xl border border-slate-700 bg-slate-800/70 p-3">
+              <article key={group.id} className="rounded-xl border border-slate-200 bg-slate-100/70 p-3">
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                  <label className="text-[11px] text-slate-400">عنوان نمایشی
-                    <input value={group.label} onChange={(event) => updateGroup(group.id, { label: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-2 text-xs text-white outline-none focus:border-lime-500" />
+                  <label className="text-[11px] text-slate-500">عنوان نمایشی
+                    <input value={group.label} onChange={(event) => updateGroup(group.id, { label: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-900 outline-none focus:border-teal-600" />
                   </label>
-                  <label className="text-[11px] text-slate-400">کلید پایدار
-                    <input dir="ltr" value={group.key} onChange={(event) => updateGroup(group.id, { key: event.target.value.replace(/[^a-zA-Z0-9_-]/g, "") })} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-2 text-left text-xs text-white outline-none focus:border-lime-500" />
+                  <label className="text-[11px] text-slate-500">کلید پایدار
+                    <input dir="ltr" value={group.key} onChange={(event) => updateGroup(group.id, { key: event.target.value.replace(/[^a-zA-Z0-9_-]/g, "") })} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-left text-xs text-slate-900 outline-none focus:border-teal-600" />
                   </label>
-                  <label className="text-[11px] text-slate-400">نوع نمایش
-                    <select value={group.displayType} onChange={(event) => updateGroup(group.id, { displayType: event.target.value as VariantSelectorDisplayType })} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-2 text-xs text-white">
+                  <label className="text-[11px] text-slate-500">نوع نمایش
+                    <select value={group.displayType} onChange={(event) => updateGroup(group.id, { displayType: event.target.value as VariantSelectorDisplayType })} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-900">
                       <option value="dropdown">فهرست کشویی</option><option value="radio">دکمه رادیویی</option><option value="chips">دکمه انتخابی</option><option value="swatches">نمونه رنگی</option>
                     </select>
                   </label>
-                  <label className="text-[11px] text-slate-400">متن راهنما
-                    <input value={group.placeholder || ""} onChange={(event) => updateGroup(group.id, { placeholder: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-2 text-xs text-white outline-none focus:border-lime-500" />
+                  <label className="text-[11px] text-slate-500">متن راهنما
+                    <input value={group.placeholder || ""} onChange={(event) => updateGroup(group.id, { placeholder: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-900 outline-none focus:border-teal-600" />
                   </label>
-                  <label className="text-[11px] text-slate-400 md:col-span-2 xl:col-span-3">توضیح اختیاری
-                    <input value={group.description || ""} onChange={(event) => updateGroup(group.id, { description: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-2 text-xs text-white outline-none focus:border-lime-500" />
+                  <label className="text-[11px] text-slate-500 md:col-span-2 xl:col-span-3">توضیح اختیاری
+                    <input value={group.description || ""} onChange={(event) => updateGroup(group.id, { description: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-900 outline-none focus:border-teal-600" />
                   </label>
                   <div className="flex items-end justify-between gap-2">
-                    <label className="flex items-center gap-2 pb-2 text-xs text-slate-300"><input type="checkbox" checked={group.required} onChange={(event) => updateGroup(group.id, { required: event.target.checked })} /> الزامی</label>
+                    <label className="flex items-center gap-2 pb-2 text-xs text-slate-700"><input type="checkbox" checked={group.required} onChange={(event) => updateGroup(group.id, { required: event.target.checked })} /> الزامی</label>
                     <div className="flex gap-1">
-                      <button type="button" aria-label="انتقال گروه به بالا" onClick={() => moveGroup(groupIndex, -1)} disabled={groupIndex === 0} className="rounded p-2 text-slate-400 hover:bg-slate-700 disabled:opacity-30"><ArrowUp className="h-4 w-4" /></button>
-                      <button type="button" aria-label="انتقال گروه به پایین" onClick={() => moveGroup(groupIndex, 1)} disabled={groupIndex === groups.length - 1} className="rounded p-2 text-slate-400 hover:bg-slate-700 disabled:opacity-30"><ArrowDown className="h-4 w-4" /></button>
+                      <button type="button" aria-label="انتقال گروه به بالا" onClick={() => moveGroup(groupIndex, -1)} disabled={groupIndex === 0} className="rounded p-2 text-slate-500 hover:bg-slate-200 disabled:opacity-30"><ArrowUp className="h-4 w-4" /></button>
+                      <button type="button" aria-label="انتقال گروه به پایین" onClick={() => moveGroup(groupIndex, 1)} disabled={groupIndex === groups.length - 1} className="rounded p-2 text-slate-500 hover:bg-slate-200 disabled:opacity-30"><ArrowDown className="h-4 w-4" /></button>
                       <button type="button" aria-label="حذف گروه" onClick={() => removeGroup(group)} className="rounded p-2 text-rose-400 hover:bg-rose-950/40"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-4 border-t border-slate-700 pt-3">
-                  <div className="mb-2 flex items-center justify-between"><span className="text-xs font-semibold text-slate-300">گزینه‌های {group.label}</span><button type="button" onClick={() => addOption(group)} className="inline-flex items-center gap-1 text-xs text-lime-300 hover:text-lime-200"><Plus className="h-3 w-3" /> افزودن گزینه</button></div>
+                <div className="mt-4 border-t border-slate-200 pt-3">
+                  <div className="mb-2 flex items-center justify-between"><span className="text-xs font-semibold text-slate-700">گزینه‌های {group.label}</span><button type="button" onClick={() => addOption(group)} className="inline-flex items-center gap-1 text-xs text-lime-300 hover:text-lime-200"><Plus className="h-3 w-3" /> افزودن گزینه</button></div>
                   {group.options.length > 8 ? (
-                    <label className="mb-2 flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-2"><Search className="h-3.5 w-3.5 text-slate-500" /><input value={optionSearch[group.id] || ""} onChange={(event) => setOptionSearch((current) => ({ ...current, [group.id]: event.target.value }))} placeholder="جستجو در گزینه‌ها..." className="w-full bg-transparent py-2 text-xs text-white outline-none" /></label>
+                    <label className="mb-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2"><Search className="h-3.5 w-3.5 text-slate-500" /><input value={optionSearch[group.id] || ""} onChange={(event) => setOptionSearch((current) => ({ ...current, [group.id]: event.target.value }))} placeholder="جستجو در گزینه‌ها..." className="w-full bg-transparent py-2 text-xs text-slate-900 outline-none" /></label>
                   ) : null}
                   <div className="space-y-2">
                     {group.options.map((option, optionIndex) => ({ option, optionIndex })).filter(({ option }) => option.label.includes(optionSearch[group.id] || "")).map(({ option, optionIndex }) => (
                       <div key={option.id} className="grid grid-cols-[1fr_auto] gap-2 sm:grid-cols-[1fr_150px_auto]">
-                        <input value={option.label} onChange={(event) => updateOption(group, option.id, { label: event.target.value })} className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-2 text-xs text-white outline-none focus:border-lime-500" />
-                        <input type="color" title="رنگ نمونه" value={option.color || "#6366f1"} onChange={(event) => updateOption(group, option.id, { color: event.target.value })} className="hidden h-9 w-full rounded border border-slate-700 bg-slate-900 p-1 sm:block" />
-                        <div className="flex"><button type="button" aria-label="انتقال گزینه به بالا" onClick={() => moveOption(group, optionIndex, -1)} className="p-2 text-slate-400"><ArrowUp className="h-3.5 w-3.5" /></button><button type="button" aria-label="انتقال گزینه به پایین" onClick={() => moveOption(group, optionIndex, 1)} className="p-2 text-slate-400"><ArrowDown className="h-3.5 w-3.5" /></button><button type="button" aria-label="حذف گزینه" onClick={() => removeOption(group, option.id)} className="p-2 text-rose-400"><Trash2 className="h-3.5 w-3.5" /></button></div>
+                        <input value={option.label} onChange={(event) => updateOption(group, option.id, { label: event.target.value })} className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-900 outline-none focus:border-teal-600" />
+                        <input type="color" title="رنگ نمونه" value={option.color || "#6366f1"} onChange={(event) => updateOption(group, option.id, { color: event.target.value })} className="hidden h-9 w-full rounded border border-slate-200 bg-white p-1 sm:block" />
+                        <div className="flex"><button type="button" aria-label="انتقال گزینه به بالا" onClick={() => moveOption(group, optionIndex, -1)} className="p-2 text-slate-500"><ArrowUp className="h-3.5 w-3.5" /></button><button type="button" aria-label="انتقال گزینه به پایین" onClick={() => moveOption(group, optionIndex, 1)} className="p-2 text-slate-500"><ArrowDown className="h-3.5 w-3.5" /></button><button type="button" aria-label="حذف گزینه" onClick={() => removeOption(group, option.id)} className="p-2 text-rose-400"><Trash2 className="h-3.5 w-3.5" /></button></div>
                       </div>
                     ))}
                   </div>
@@ -259,14 +259,14 @@ export default function VariantSelectorBuilder({ value, variants, onChange }: Pr
             ))}
           </section>
 
-          <section className="overflow-hidden rounded-xl border border-slate-700">
-            <div className="border-b border-slate-700 bg-slate-800 px-3 py-3"><h4 className="text-xs font-bold text-slate-200">اتصال به مدل‌های محصول</h4><p className="mt-1 text-[11px] text-slate-500">هر ردیف باید یک ترکیب یکتا داشته باشد. محصول پیش‌نویس می‌تواند اتصال ناقص داشته باشد، اما انتشار نه.</p></div>
-            <div className="overflow-x-auto"><table className="min-w-full text-right text-xs"><thead className="bg-slate-900 text-slate-400"><tr><th className="px-3 py-2">مدل واقعی</th>{groups.map((group) => <th key={group.id} className="min-w-40 px-3 py-2">{group.label}</th>)}</tr></thead><tbody className="divide-y divide-slate-800">{variants.map((variant) => { const variantId = String(variant._id || ""); const mapping = config.mappings.find((item) => String(item.variantId) === variantId); return <tr key={variantId} className="bg-slate-900/40"><td className="whitespace-nowrap px-3 py-3"><strong className="text-slate-200">{variant.title || "مدل بدون نام"}</strong><span className="mt-1 block font-mono text-[10px] text-slate-500">{variantId}</span></td>{groups.map((group) => <td key={group.id} className="px-3 py-3"><select aria-label={`${group.label} برای ${variant.title}`} value={mapping?.optionIds[group.id] || ""} onChange={(event) => setMappingOption(variantId, group.id, event.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-2 text-xs text-white"><option value="">انتخاب نشده</option>{group.options.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select></td>)}</tr>; })}</tbody></table></div>
+          <section className="overflow-hidden rounded-xl border border-slate-200">
+            <div className="border-b border-slate-200 bg-slate-100 px-3 py-3"><h4 className="text-xs font-bold text-slate-800">اتصال به مدل‌های محصول</h4><p className="mt-1 text-[11px] text-slate-500">هر ردیف باید یک ترکیب یکتا داشته باشد. محصول پیش‌نویس می‌تواند اتصال ناقص داشته باشد، اما انتشار نه.</p></div>
+            <div className="overflow-x-auto"><table className="min-w-full text-right text-xs"><thead className="bg-white text-slate-500"><tr><th className="px-3 py-2">مدل واقعی</th>{groups.map((group) => <th key={group.id} className="min-w-40 px-3 py-2">{group.label}</th>)}</tr></thead><tbody className="divide-y divide-slate-800">{variants.map((variant) => { const variantId = String(variant._id || ""); const mapping = config.mappings.find((item) => String(item.variantId) === variantId); return <tr key={variantId} className="bg-white/40"><td className="whitespace-nowrap px-3 py-3"><strong className="text-slate-800">{variant.title || "مدل بدون نام"}</strong><span className="mt-1 block font-mono text-[10px] text-slate-500">{variantId}</span></td>{groups.map((group) => <td key={group.id} className="px-3 py-3"><select aria-label={`${group.label} برای ${variant.title}`} value={mapping?.optionIds[group.id] || ""} onChange={(event) => setMappingOption(variantId, group.id, event.target.value)} className="w-full rounded-lg border border-slate-200 bg-slate-100 px-2 py-2 text-xs text-slate-900"><option value="">انتخاب نشده</option>{group.options.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select></td>)}</tr>; })}</tbody></table></div>
           </section>
 
         </>
       ) : (
-        <p className="rounded-xl border border-dashed border-slate-700 p-4 text-xs leading-6 text-slate-400">انتخاب‌گر خاموش است و فروشگاه از انتخاب مدل قدیمی استفاده می‌کند. تنظیمات ذخیره‌شده حذف نمی‌شوند.</p>
+        <p className="rounded-xl border border-dashed border-slate-200 p-4 text-xs leading-6 text-slate-500">انتخاب‌گر خاموش است و فروشگاه از انتخاب مدل قدیمی استفاده می‌کند. تنظیمات ذخیره‌شده حذف نمی‌شوند.</p>
       )}
     </div>
   );
