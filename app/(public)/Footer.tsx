@@ -3,6 +3,7 @@ import {
   BadgeCheck,
   Clock3,
   FileText,
+  Gamepad2,
   Home,
   Info,
   Instagram,
@@ -19,6 +20,7 @@ import { STORE_CONTACT } from "@/lib/store-contact";
 const quickLinks = [
   { name: "خانه", href: "/", icon: Home },
   { name: "فروشگاه", href: "/products", icon: ShoppingBag },
+  { name: "کنسول‌های کارکرده", href: "/used-consoles", icon: Gamepad2 },
   { name: "درباره ما", href: "/about-us", icon: Info },
   { name: "تماس با ما", href: "/contact-us", icon: Phone },
   { name: "قوانین و مقررات", href: "/terms", icon: FileText },
