@@ -31,7 +31,25 @@ function loadSitemap({ blogs = [], products = [], connectionError, blogError, ca
     '@/model/Blog': model('blogs', blogs, blogError),
     '@/lib/site': { SITE_URL: 'https://kermanatari.ir' },
     '@/lib/catalog/category-data': { getCategoryCatalog: async () => categories },
-    '@/lib/catalog/category-seo': { categoryHref: slug => `/category/${encodeURIComponent(slug)}` },
+    '@/lib/catalog/category-seo': {
+      categoryHref: slug => `/category/${encodeURIComponent(slug)}`,
+      descendantIds: (id, rows) => {
+        const ids = new Set([id]);
+        const queue = [id];
+        for (let i = 0; i < queue.length; i++) {
+          for (const row of rows) {
+            if (row.parent === queue[i] && !ids.has(row._id)) {
+              ids.add(row._id);
+              queue.push(row._id);
+            }
+          }
+        }
+        return [...ids];
+      },
+    },
+    '@/lib/used-console': {
+      isConsoleGeneration: slug => ['playstation-2', 'playstation-3', 'playstation-4', 'playstation-5'].includes(slug),
+    },
   };
   const module = { exports: {} };
   new Function('require', 'module', 'exports', compiled)(name => {
@@ -116,4 +134,42 @@ test('all populated categories and subcategories enter sitemap; empty categories
   assert.ok(entries.some(row => row.url === 'https://kermanatari.ir/category/accessories'));
   assert.ok(entries.some(row => row.url.endsWith('/category/' + encodeURIComponent('تابلو-تیکن'))));
   assert.ok(!entries.some(row => row.url.endsWith('/category/empty')));
+});
+
+
+test('used PlayStation hub appears in sitemap only for published used devices in PS2–PS5 categories', async () => {
+  const categories = [
+    { _id: 'ps5-id', slug: 'playstation-5', parent: null, productCount: 3 },
+    { _id: 'ps5-slim-id', slug: 'ps5-slim', parent: 'ps5-id', productCount: 1 },
+    { _id: 'accessories-id', slug: 'accessories', parent: null, productCount: 2 },
+  ];
+  const products = [
+    { slug: 'used-ps5', status: 'published', condition: 'used', category: 'ps5-slim-id' },
+    { slug: 'used-controller', status: 'published', condition: 'used', category: 'accessories-id' },
+    { slug: 'draft-ps5', status: 'draft', condition: 'used', category: 'ps5-id' },
+  ];
+  const sitemap = loadSitemap({ products, categories });
+  const urls = (await sitemap.default()).map(entry => entry.url);
+  assert.ok(urls.includes('https://kermanatari.ir/used-consoles'));
+  assert.ok(urls.includes('https://kermanatari.ir/product/used-ps5'));
+  assert.ok(!urls.includes('https://kermanatari.ir/product/draft-ps5'));
+  assert.equal(urls.filter(url => url.endsWith('/used-consoles')).length, 1);
+  const xml = resolveRouteData(await sitemap.default(), 'sitemap');
+  assert.ok(xml.includes('<loc>https://kermanatari.ir/used-consoles</loc>'));
+
+  products[0].status = 'draft';
+  assert.ok(!(await sitemap.default()).some(entry => entry.url.endsWith('/used-consoles')));
+  products[0].status = 'published';
+  products[0].condition = 'new';
+  assert.ok(!(await sitemap.default()).some(entry => entry.url.endsWith('/used-consoles')));
+  products[0].condition = 'used';
+  products[0].deletedAt = new Date();
+  assert.ok(!(await sitemap.default()).some(entry => entry.url.endsWith('/used-consoles')));
+});
+
+test('used controller alone does not create an empty PS2–PS5 collection sitemap URL', async () => {
+  const categories = [{ _id: 'accessories-id', slug: 'accessories', parent: null, productCount: 1 }];
+  const products = [{ slug: 'used-controller', status: 'published', condition: 'used', category: 'accessories-id' }];
+  const urls = (await loadSitemap({ products, categories }).default()).map(row => row.url);
+  assert.ok(!urls.includes('https://kermanatari.ir/used-consoles'));
 });
