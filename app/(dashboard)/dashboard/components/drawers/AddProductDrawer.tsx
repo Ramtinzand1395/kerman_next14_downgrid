@@ -25,7 +25,7 @@ const VariantSelectorBuilder = dynamic(
   {
     ssr: false,
     loading: () => (
-      <p className="text-xs text-slate-400">در حال بارگذاری انتخاب‌گر…</p>
+      <p className="text-xs text-slate-500">در حال بارگذاری انتخاب‌گر…</p>
     ),
   },
 );
@@ -351,45 +351,45 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
   const completion = Math.round(completedCount * 100 / checklist.length);
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm" dir="rtl">
-      <div role="dialog" aria-modal="true" aria-label={product ? "ویرایش محصول" : "ثبت محصول جدید"} className="ml-auto flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden border-r border-slate-700 bg-[#0b1220] text-slate-100 shadow-2xl">
-        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 bg-slate-900/95 px-4 py-3 sm:px-7 sm:py-4">
+    <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm" dir="rtl">
+      <div role="dialog" aria-modal="true" aria-label={product ? "ویرایش محصول" : "ثبت محصول جدید"} className="dashboard-product-editor ml-auto flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden border-r border-slate-200 bg-[#f5f8fa] text-slate-900 shadow-2xl">
+        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-white px-4 py-3 sm:px-7 sm:py-4">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-lime-400/10 text-lime-300"><PackagePlus className="h-5 w-5" /></span>
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-teal-700"><PackagePlus className="h-5 w-5" /></span>
             <div className="min-w-0">
               <h2 className="truncate text-base font-bold sm:text-lg">{product ? "ویرایش محصول" : "ثبت محصول جدید"}</h2>
-              <p className="mt-0.5 truncate text-xs text-slate-400">{form.title?.trim() || "اطلاعات را مرحله‌به‌مرحله تکمیل کنید"}</p>
+              <p className="mt-0.5 truncate text-xs text-slate-500">{form.title?.trim() || "اطلاعات را مرحله‌به‌مرحله تکمیل کنید"}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className={"rounded-full border px-3 py-1 text-xs font-semibold " + (product?.status === "published" ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-amber-500/30 bg-amber-500/10 text-amber-300")}>
+            <span className={"rounded-full border px-3 py-1 text-xs font-semibold " + (product?.status === "published" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-500/30 bg-amber-50 text-amber-700")}>
               {product?.status === "published" ? "منتشرشده" : "پیش‌نویس"}
             </span>
-            <button type="button" onClick={requestClose} disabled={loading} aria-label="بستن فرم محصول" className="rounded-xl border border-slate-700 p-2.5 text-slate-300 transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-400 disabled:opacity-50"><X className="h-5 w-5" /></button>
+            <button type="button" onClick={requestClose} disabled={loading} aria-label="بستن فرم محصول" className="rounded-xl border border-slate-200 p-2.5 text-slate-700 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 disabled:opacity-50"><X className="h-5 w-5" /></button>
           </div>
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-          <nav aria-label="مراحل ساخت محصول" className="shrink-0 border-b border-slate-800 bg-slate-900/60 lg:w-64 lg:border-b-0 lg:border-l">
+          <nav aria-label="مراحل ساخت محصول" className="shrink-0 border-b border-slate-100 bg-slate-50 lg:w-64 lg:border-b-0 lg:border-l">
             <div className="flex gap-2 overflow-x-auto p-3 lg:flex-col lg:gap-1.5 lg:p-4">
               {STEPS.map((step, index) => {
                 const Icon = step.icon;
                 const selected = activeStep === step.key;
                 return (
-                  <button key={step.key} type="button" aria-current={selected ? "step" : undefined} onClick={() => setActiveStep(step.key)} className={"group flex min-w-[138px] items-center gap-3 rounded-xl border px-3 py-3 text-right transition lg:w-full lg:min-w-0 " + (selected ? "border-lime-300/40 bg-lime-400/10 text-white shadow-sm" : "border-transparent text-slate-400 hover:border-slate-700 hover:bg-slate-800/80 hover:text-slate-200")}>
-                    <span className={"flex h-9 w-9 shrink-0 items-center justify-center rounded-lg " + (selected ? "bg-lime-400 text-slate-950" : "bg-slate-800 text-slate-400")}><Icon className="h-4 w-4" /></span>
+                  <button key={step.key} type="button" aria-current={selected ? "step" : undefined} onClick={() => setActiveStep(step.key)} className={"group flex min-w-[138px] items-center gap-3 rounded-xl border px-3 py-3 text-right transition lg:w-full lg:min-w-0 " + (selected ? "border-teal-300 bg-teal-50 text-slate-900 shadow-sm" : "border-transparent text-slate-500 hover:border-slate-200 hover:bg-slate-100 hover:text-slate-800")}>
+                    <span className={"flex h-9 w-9 shrink-0 items-center justify-center rounded-lg " + (selected ? "bg-teal-700 text-white" : "bg-slate-100 text-slate-500")}><Icon className="h-4 w-4" /></span>
                     <span className="min-w-0">
                       <span className="block whitespace-nowrap text-xs font-semibold sm:text-sm">{step.title}</span>
-                      <span className="mt-1 hidden text-[11px] text-slate-400 lg:block">{step.hint}</span>
+                      <span className="mt-1 hidden text-[11px] text-slate-500 lg:block">{step.hint}</span>
                     </span>
                     <span className="mr-auto hidden text-[10px] tabular-nums text-slate-500 lg:block">{(index + 1).toLocaleString("fa-IR")}</span>
                   </button>
                 );
               })}
             </div>
-            <div className="hidden border-t border-slate-800 p-5 lg:block">
-              <div className="mb-2 flex items-center justify-between text-xs"><span className="text-slate-400">آمادگی انتشار</span><span className="font-bold text-lime-300">{completion.toLocaleString("fa-IR")}٪</span></div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-slate-700"><div className="h-full rounded-full bg-lime-400 transition-all" style={{ width: completion + "%" }} /></div>
+            <div className="hidden border-t border-slate-100 p-5 lg:block">
+              <div className="mb-2 flex items-center justify-between text-xs"><span className="text-slate-500">آمادگی انتشار</span><span className="font-bold text-teal-700">{completion.toLocaleString("fa-IR")}٪</span></div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-teal-700 transition-all" style={{ width: completion + "%" }} /></div>
               <p className="mt-3 text-[11px] leading-6 text-slate-500">می‌توانید مراحل را به هر ترتیبی تکمیل کنید. تغییرات تا زمان ذخیره در سایت ثبت نمی‌شوند.</p>
             </div>
           </nav>
@@ -397,47 +397,47 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
           <div ref={scrollRef} className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-7 sm:py-7">
             <div className="mx-auto max-w-3xl space-y-5 pb-8">
               <div>
-                <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
                   <span>مرحله {(activeIndex + 1).toLocaleString("fa-IR")} از {STEPS.length.toLocaleString("fa-IR")}</span>
                   <span>{completion.toLocaleString("fa-IR")}٪ اطلاعات کلیدی تکمیل شده</span>
                 </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-slate-800"><div className="h-full rounded-full bg-lime-400 transition-all" style={{ width: ((activeIndex + 1) * 100 / STEPS.length) + "%" }} /></div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-teal-700 transition-all" style={{ width: ((activeIndex + 1) * 100 / STEPS.length) + "%" }} /></div>
               </div>
 
-              {errorMessage && <div role="alert" className="rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm leading-7 text-rose-200">{errorMessage}</div>}
+              {errorMessage && <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-7 text-rose-800">{errorMessage}</div>}
 
-              <section className="rounded-2xl border border-slate-700/70 bg-slate-900/80 p-4 shadow-lg shadow-black/10 sm:p-6">
-                <div className="mb-6 border-b border-slate-800 pb-4">
+              <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-lg shadow-black/10 sm:p-6">
+                <div className="mb-6 border-b border-slate-100 pb-4">
                   <h3 className="text-lg font-bold">{active.title}</h3>
-                  <p className="mt-1.5 text-xs leading-6 text-slate-400">{active.hint}</p>
+                  <p className="mt-1.5 text-xs leading-6 text-slate-500">{active.hint}</p>
                 </div>
                 <form onSubmit={event => event.preventDefault()} className="space-y-5">
                   {activeStep === "basic" && <div className="space-y-5">
-                    {!product && <section aria-labelledby="used-console-shortcut-heading" className="rounded-2xl border border-lime-400/30 bg-lime-400/[0.06] p-4 sm:p-5">
+                    {!product && <section aria-labelledby="used-console-shortcut-heading" className="rounded-2xl border border-teal-200 bg-teal-50 p-4 sm:p-5">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                          <h4 id="used-console-shortcut-heading" className="flex items-center gap-2 text-sm font-black text-lime-200">
+                          <h4 id="used-console-shortcut-heading" className="flex items-center gap-2 text-sm font-black text-teal-800">
                             <ShieldCheck className="h-5 w-5" aria-hidden="true" /> ثبت سریع کنسول کارکرده
                           </h4>
-                          <p className="mt-2 text-xs leading-6 text-slate-300">
+                          <p className="mt-2 text-xs leading-6 text-slate-700">
                             نسل را انتخاب کنید؛ دسته‌بندی، وضعیت کارکرده و موجودی یک دستگاه خودکار تنظیم می‌شود و گزارش تست باز خواهد شد.
                           </p>
                         </div>
-                        <span className="rounded-full border border-lime-400/20 bg-slate-950/40 px-3 py-1 text-[11px] text-lime-200">بدون انتخاب تگ</span>
+                        <span className="rounded-full border border-teal-200 bg-slate-50 px-3 py-1 text-[11px] text-teal-800">بدون انتخاب تگ</span>
                       </div>
                       <div role="group" aria-label="انتخاب سریع نسل کنسول کارکرده" className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                         {USED_CONSOLE_CHOICES.map((choice) => {
                           const exists = categories.some((category) => category.slug === choice.slug);
                           return <button key={choice.slug} type="button" disabled={loading || categoriesLoading} onClick={() => startUsedConsole(choice.slug)}
-                            className="min-h-14 rounded-xl border border-slate-600 bg-slate-950/70 px-3 py-2.5 text-center transition hover:border-lime-400 hover:bg-lime-400/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-lime-400 disabled:cursor-wait disabled:opacity-50">
+                            className="min-h-14 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-center transition hover:border-teal-500 hover:bg-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 disabled:cursor-wait disabled:opacity-50">
                             <span className="block text-base font-black text-white">{choice.label}</span>
-                            {!categoriesLoading && <span className={"mt-1 block text-[10px] " + (exists ? "text-lime-300" : "text-amber-300")}>{exists ? "آماده ثبت" : "دسته موجود نیست"}</span>}
+                            {!categoriesLoading && <span className={"mt-1 block text-[10px] " + (exists ? "text-teal-700" : "text-amber-700")}>{exists ? "آماده ثبت" : "دسته موجود نیست"}</span>}
                           </button>;
                         })}
                       </div>
-                      {categoriesLoading && <p role="status" className="mt-3 text-xs text-slate-400">در حال دریافت دسته‌بندی‌های سایت…</p>}
+                      {categoriesLoading && <p role="status" className="mt-3 text-xs text-slate-500">در حال دریافت دسته‌بندی‌های سایت…</p>}
                       {!categoriesLoading && USED_CONSOLE_CHOICES.some(choice => !categories.some(category => category.slug === choice.slug)) &&
-                        <p className="mt-3 text-xs leading-6 text-amber-200">اگر دسته نسل موردنظر وجود ندارد، ابتدا آن را از بخش «دسته‌بندی‌ها» در منوی مدیریت ایجاد کنید.</p>}
+                        <p className="mt-3 text-xs leading-6 text-amber-800">اگر دسته نسل موردنظر وجود ندارد، ابتدا آن را از بخش «دسته‌بندی‌ها» در منوی مدیریت ایجاد کنید.</p>}
                     </section>}
                     <BasicInfoFields form={form} updateField={updateField}
                       purchasePriceRequired={!product || product.productType === "multi" || isPurchasePrice(product.purchasePrice)}
@@ -447,24 +447,24 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
                   </div>}
 
                   {activeStep === "taxonomy" && <div className="space-y-6">
-                    <div className="rounded-xl border border-sky-500/20 bg-sky-500/10 p-3 text-xs leading-6 text-sky-200">
+                    <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs leading-6 text-sky-800">
                       برای نمایش گزارش تست، دسته‌بندی اصلی PS2، PS3، PS4 یا PS5 را انتخاب کنید؛ انتخاب تگ کنسول کافی نیست.
-                      {!product && <button type="button" className="mr-2 font-bold text-lime-300 underline underline-offset-4 hover:text-lime-200" onClick={() => setActiveStep("basic")}>انتخاب سریع نسل در مرحله اول</button>}
+                      {!product && <button type="button" className="mr-2 font-bold text-teal-700 underline underline-offset-4 hover:text-teal-800" onClick={() => setActiveStep("basic")}>انتخاب سریع نسل در مرحله اول</button>}
                     </div>
                     <CategorySelector categories={categories} form={form} updateField={updateField} />
                     {isConsoleGeneration(generation) && <UsedConsoleFields generation={generation} form={form} updateField={updateField} />}
-                    <div className="border-t border-slate-800 pt-5"><TagsSelector tagsList={tagsList} form={form} updateField={updateField} /></div>
+                    <div className="border-t border-slate-100 pt-5"><TagsSelector tagsList={tagsList} form={form} updateField={updateField} /></div>
                   </div>}
 
                   {activeStep === "media" && <div className="space-y-5">
-                    <p className="rounded-xl border border-sky-500/20 bg-sky-500/10 p-3 text-xs leading-6 text-sky-200">تصویر اصلی روی کارت و صفحه محصول نمایش داده می‌شود. برای محصول کارکرده، حتماً عکس واقعی همان دستگاه را بگذارید. پیش‌نویس را می‌توانید بدون عکس ذخیره کنید.</p>
+                    <p className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs leading-6 text-sky-800">تصویر اصلی روی کارت و صفحه محصول نمایش داده می‌شود. برای محصول کارکرده، حتماً عکس واقعی همان دستگاه را بگذارید. پیش‌نویس را می‌توانید بدون عکس ذخیره کنید.</p>
                     <GalleryUploader form={form} updateField={updateField} />
                     <ImageUploader form={form} updateField={updateField} />
                   </div>}
 
                   {activeStep === "details" && <div className="space-y-6">
                     {form.productType === "multi" && <div>
-                      <h4 className="mb-3 text-sm font-bold text-slate-200">انتخاب مدل در صفحه محصول</h4>
+                      <h4 className="mb-3 text-sm font-bold text-slate-800">انتخاب مدل در صفحه محصول</h4>
                       <VariantSelectorBuilder value={form.variantSelector} variants={form.variants} onChange={value => updateField("variantSelector", value)} />
                     </div>}
                     <SpecificationsEditor form={form} updateField={updateField} />
@@ -473,42 +473,42 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
 
                   {activeStep === "seo" && <div className="space-y-6">
                     <SeoFields form={form} updateField={updateField} />
-                    <details className="rounded-xl border border-slate-700 bg-slate-950/40 p-4">
-                      <summary className="cursor-pointer text-sm font-semibold text-slate-200">مشاهده تحلیل کامل سئو</summary>
+                    <details className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <summary className="cursor-pointer text-sm font-semibold text-slate-800">مشاهده تحلیل کامل سئو</summary>
                       <div className="mt-4"><SeoAnalyzer form={form} /></div>
                     </details>
                   </div>}
 
                   {activeStep === "publish" && <div className="space-y-5">
-                    <div className="rounded-xl border border-slate-700 bg-slate-950/40 p-4">
-                      <h4 className="mb-1 flex items-center gap-2 text-sm font-bold"><ClipboardCheck className="h-4 w-4 text-lime-300" /> چک‌لیست محصول</h4>
-                      <p className="mb-4 text-xs leading-6 text-slate-400">روی هر مورد ناقص بزنید تا مستقیم به بخش مربوطه بروید.</p>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <h4 className="mb-1 flex items-center gap-2 text-sm font-bold"><ClipboardCheck className="h-4 w-4 text-teal-700" /> چک‌لیست محصول</h4>
+                      <p className="mb-4 text-xs leading-6 text-slate-500">روی هر مورد ناقص بزنید تا مستقیم به بخش مربوطه بروید.</p>
                       <div className="space-y-2">
-                        {checklist.map(item => <button key={item.label} type="button" onClick={() => setActiveStep(item.step)} className="flex w-full items-center justify-between rounded-xl border border-slate-800 bg-slate-900 p-3 text-right text-sm transition hover:bg-slate-800">
+                        {checklist.map(item => <button key={item.label} type="button" onClick={() => setActiveStep(item.step)} className="flex w-full items-center justify-between rounded-xl border border-slate-100 bg-white p-3 text-right text-sm transition hover:bg-slate-100">
                           <span className="flex items-center gap-2">{item.completed ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <span className="flex h-4 w-4 items-center justify-center rounded-full border border-amber-500 text-[10px] text-amber-400">!</span>}{item.label}</span>
-                          <span className={item.completed ? "text-xs text-emerald-400" : "text-xs text-amber-300"}>{item.completed ? "تکمیل" : "نیاز به بررسی"}</span>
+                          <span className={item.completed ? "text-xs text-emerald-400" : "text-xs text-amber-700"}>{item.completed ? "تکمیل" : "نیاز به بررسی"}</span>
                         </button>)}
                       </div>
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-xl border border-slate-700 bg-slate-950/40 p-4">
-                        <p className="mb-1 text-xs text-slate-400">نام محصول</p>
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <p className="mb-1 text-xs text-slate-500">نام محصول</p>
                         <p className="break-words text-sm font-semibold">{form.title || "هنوز وارد نشده"}</p>
                       </div>
-                      <div className="rounded-xl border border-slate-700 bg-slate-950/40 p-4">
-                        <p className="mb-1 text-xs text-slate-400">دسته‌بندی</p>
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <p className="mb-1 text-xs text-slate-500">دسته‌بندی</p>
                         <p className="text-sm font-semibold">{chosenCategory?.name || "انتخاب نشده"}</p>
                       </div>
-                      <div className="rounded-xl border border-slate-700 bg-slate-950/40 p-4">
-                        <p className="mb-1 text-xs text-slate-400">نوع کالا</p>
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <p className="mb-1 text-xs text-slate-500">نوع کالا</p>
                         <p className="text-sm font-semibold">{form.condition === "used" ? "کنسول کارکرده" : form.productType === "multi" ? "چندمدلی" : "تک‌مدلی"}</p>
                       </div>
-                      <div className="rounded-xl border border-slate-700 bg-slate-950/40 p-4">
-                        <p className="mb-1 text-xs text-slate-400">وضعیت تصویر</p>
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <p className="mb-1 text-xs text-slate-500">وضعیت تصویر</p>
                         <p className="text-sm font-semibold">{form.mainImage ? "تصویر اصلی انتخاب شده" : "تصویر اصلی ندارد"}</p>
                       </div>
                     </div>
-                    <p className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs leading-6 text-amber-200">«ذخیره پیش‌نویس» محصول را در سایت نمایش نمی‌دهد. «انتشار» تمام کنترل‌های الزامی را انجام می‌دهد و بعد از موفقیت محصول برای مشتریان قابل مشاهده می‌شود.</p>
+                    <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-6 text-amber-800">«ذخیره پیش‌نویس» محصول را در سایت نمایش نمی‌دهد. «انتشار» تمام کنترل‌های الزامی را انجام می‌دهد و بعد از موفقیت محصول برای مشتریان قابل مشاهده می‌شود.</p>
                   </div>}
                 </form>
               </section>
@@ -516,18 +516,18 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
           </div>
         </div>
 
-        <footer className="shrink-0 border-t border-slate-800 bg-slate-900/95 px-4 py-3 shadow-[0_-12px_30px_rgba(0,0,0,0.18)] sm:px-7">
+        <footer className="shrink-0 border-t border-slate-100 bg-white px-4 py-3 shadow-[0_-12px_30px_rgba(0,0,0,0.18)] sm:px-7">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2">
-              <button type="button" disabled={activeIndex === 0 || loading} onClick={() => setActiveStep(STEPS[activeIndex - 1].key)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 px-3 py-2.5 text-xs font-semibold text-slate-200 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"><ArrowRight className="h-4 w-4" /> قبلی</button>
-              <button type="button" disabled={activeIndex === STEPS.length - 1 || loading} onClick={() => setActiveStep(STEPS[activeIndex + 1].key)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 px-3 py-2.5 text-xs font-semibold text-slate-200 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40">بعدی <ArrowLeft className="h-4 w-4" /></button>
+              <button type="button" disabled={activeIndex === 0 || loading} onClick={() => setActiveStep(STEPS[activeIndex - 1].key)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"><ArrowRight className="h-4 w-4" /> قبلی</button>
+              <button type="button" disabled={activeIndex === STEPS.length - 1 || loading} onClick={() => setActiveStep(STEPS[activeIndex + 1].key)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40">بعدی <ArrowLeft className="h-4 w-4" /></button>
             </div>
             <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:flex-none">
-              <button type="button" disabled={loading} onClick={() => void saveProduct("draft")} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-xs font-bold text-amber-200 transition hover:bg-amber-400/20 disabled:opacity-50 sm:flex-none">
+              <button type="button" disabled={loading} onClick={() => void saveProduct("draft")} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-xs font-bold text-amber-800 transition hover:bg-amber-400/20 disabled:opacity-50 sm:flex-none">
                 {savingStatus === "draft" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 ذخیره پیش‌نویس
               </button>
-              <button type="button" disabled={loading} onClick={() => void saveProduct("published")} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-lime-400 px-4 py-2 text-xs font-bold text-slate-950 transition hover:bg-lime-400 disabled:opacity-50 sm:flex-none">
+              <button type="button" disabled={loading} onClick={() => void saveProduct("published")} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-teal-700 disabled:opacity-50 sm:flex-none">
                 {savingStatus === "published" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 {product?.status === "published" ? "ذخیره و انتشار" : "انتشار محصول"}
               </button>
