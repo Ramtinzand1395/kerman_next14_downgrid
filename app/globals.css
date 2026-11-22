@@ -319,224 +319,243 @@ body {
 }
 
 
-/* Optional, persistent dark theme for the ENTIRE admin shell. Not used on storefront routes. */
+/* Admin dark design system. Scoped: it never changes the public storefront. */
 .dashboard-shell[data-admin-theme="dark"] {
-  --dashboard-ink: #e6edf5;
-  --dashboard-muted: #aab9cb;
-  --dashboard-border: #354354;
-  --dashboard-surface: #202d3a;
-  --dashboard-primary: #5eead4;
-  --dashboard-primary-hover: #2dd4bf;
-  --dashboard-primary-soft: #17433f;
-  background: #141d27;
-  color: #e6edf5;
+  --dashboard-ink: #ecf3f8;
+  --dashboard-muted: #b4c4d3;
+  --dashboard-border: #384a59;
+  --dashboard-surface: #202e3c;
+  --dashboard-primary: #55d5c4;
+  --dashboard-primary-hover: #34bfae;
+  --dashboard-primary-soft: #174442;
+  --admin-base: #141f2a;
+  --admin-panel: #202e3c;
+  --admin-raised: #263746;
+  --admin-input: #182734;
+  --admin-line: #3b4e5e;
+  --admin-text: #edf5fa;
+  --admin-subtext: #b9c9d7;
+  --admin-accent: #6be5d4;
+  background: var(--admin-base);
+  color: var(--admin-text);
   color-scheme: dark;
 }
+
 .dashboard-shell[data-admin-theme="dark"] .dashboard-sidebar,
 .dashboard-shell[data-admin-theme="dark"] .dashboard-topbar,
 .dashboard-shell[data-admin-theme="dark"] .dashboard-panel,
 .dashboard-shell[data-admin-theme="dark"] .dashboard-stat-card {
-  background: #202c39;
-  color: #e6edf5;
-  border-color: #354354;
-  box-shadow: none;
+  background: var(--admin-panel);
+  border-color: var(--admin-line);
+  color: var(--admin-text);
+  box-shadow: 0 6px 22px rgb(1 12 25 / 10%);
 }
+
 .dashboard-shell[data-admin-theme="dark"] .dashboard-product-editor {
-  background: #17212c !important;
-  color: #e6edf5;
+  background: var(--admin-base) !important;
+  color: var(--admin-text);
+  border-color: var(--admin-line) !important;
   color-scheme: dark;
 }
+
+/* Surfaces: include Tailwind's opacity variants. The old dark theme missed
+   bg-teal-50/70, leaving the inspection form bright with near-white labels. */
 .dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="bg-white"],
-  [class~="bg-slate-50"],
-  [class~="bg-gray-50"],
-  [class~="bg-zinc-50"],
-  [class~="bg-slate-100"],
-  [class~="bg-gray-100"]
-) {
-  background-color: #202c39 !important;
-}
+  [class~="bg-white"], [class~="bg-white/80"], [class~="bg-white/90"],
+  [class~="bg-white/95"], [class~="bg-slate-50"], [class~="bg-slate-100"],
+  [class~="bg-slate-50/70"], [class~="bg-slate-50/80"],
+  [class~="bg-slate-100/80"], [class~="bg-gray-50"], [class~="bg-gray-100"],
+  [class~="bg-zinc-50"], [class~="bg-slate-900"], [class~="bg-slate-900/70"]
+) { background-color: var(--admin-panel) !important; }
+
 .dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="bg-slate-200"],
-  [class~="bg-gray-200"],
-  [class~="bg-slate-300"]
-) {
-  background-color: #334155 !important;
-}
+  [class~="bg-slate-200"], [class~="bg-slate-300"], [class~="bg-gray-200"],
+  [class~="bg-gray-300"], [class~="bg-slate-800"], [class~="bg-slate-800/50"]
+) { background-color: var(--admin-raised) !important; }
+
 .dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="text-slate-950"],
-  [class~="text-slate-900"],
-  [class~="text-slate-800"],
-  [class~="text-slate-700"],
-  [class~="text-gray-900"],
-  [class~="text-gray-800"],
-  [class~="text-gray-700"],
+  [class~="bg-teal-50"], [class~="bg-teal-50/70"], [class~="bg-teal-50/80"],
+  [class~="bg-teal-100"], [class~="bg-teal-100/50"],
+  [class~="bg-emerald-50"], [class~="bg-emerald-100"],
+  [class~="bg-green-50"], [class~="bg-lime-50"]
+) { background-color: #1b403f !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-sky-50"], [class~="bg-blue-50"], [class~="bg-indigo-50"],
+  [class~="bg-sky-100"], [class~="bg-blue-100"]
+) { background-color: #223b50 !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-amber-50"], [class~="bg-amber-100"], [class~="bg-orange-50"],
+  [class~="bg-yellow-50"]
+) { background-color: #403421 !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-rose-50"], [class~="bg-rose-100"],
+  [class~="bg-red-50"], [class~="bg-red-100"]
+) { background-color: #452b35 !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-purple-50"], [class~="bg-violet-50"],
+  [class~="bg-indigo-100"]
+) { background-color: #342d4b !important; }
+
+/* Text: clear hierarchy (body 14.5+: high contrast, metadata lower contrast).
+   Preserve actual white text on solid action buttons. */
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="text-slate-950"], [class~="text-slate-900"],
+  [class~="text-slate-800"], [class~="text-slate-700"],
+  [class~="text-gray-950"], [class~="text-gray-900"],
+  [class~="text-gray-800"], [class~="text-gray-700"],
   [class~="text-zinc-900"]
-) { color: #e6edf5 !important; }
+) { color: var(--admin-text) !important; }
+
 .dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="text-slate-600"],
-  [class~="text-slate-500"],
-  [class~="text-slate-400"],
-  [class~="text-gray-600"],
-  [class~="text-gray-500"]
-) { color: #b4c3d3 !important; }
+  [class~="text-slate-600"], [class~="text-slate-500"],
+  [class~="text-slate-400"], [class~="text-gray-600"],
+  [class~="text-gray-500"], [class~="text-gray-400"],
+  [class~="text-zinc-500"]
+) { color: var(--admin-subtext) !important; }
+
 .dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="border-slate-100"],
-  [class~="border-slate-200"],
-  [class~="border-slate-300"],
-  [class~="border-gray-100"],
-  [class~="border-gray-200"],
-  [class~="border-gray-300"],
-  [class~="border-white"]
-) { border-color: #354354 !important; }
+  [class~="text-teal-600"], [class~="text-teal-700"],
+  [class~="text-teal-800"], [class~="text-teal-900"],
+  [class~="text-emerald-600"], [class~="text-emerald-700"],
+  [class~="text-emerald-800"], [class~="text-green-700"],
+  [class~="text-lime-700"]
+) { color: var(--admin-accent) !important; }
+
 .dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="bg-teal-50"],
-  [class~="bg-teal-100"],
-  [class~="bg-emerald-50"],
-  [class~="bg-emerald-100"]
-) { background-color: #173e3e !important; }
+  [class~="text-sky-700"], [class~="text-sky-800"],
+  [class~="text-blue-600"], [class~="text-blue-700"],
+  [class~="text-blue-800"], [class~="text-indigo-600"],
+  [class~="text-indigo-700"], [class~="text-indigo-800"]
+) { color: #a3d3fc !important; }
+
 .dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="text-teal-700"],
-  [class~="text-teal-800"],
-  [class~="text-teal-900"],
-  [class~="text-emerald-700"],
-  [class~="text-emerald-800"]
-) { color: #70e5d5 !important; }
+  [class~="text-amber-600"], [class~="text-amber-700"],
+  [class~="text-amber-800"], [class~="text-orange-700"]
+) { color: #f7d692 !important; }
+
 .dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="border-teal-100"],
-  [class~="border-teal-200"],
-  [class~="border-teal-300"],
+  [class~="text-rose-600"], [class~="text-rose-700"],
+  [class~="text-rose-800"], [class~="text-red-600"],
+  [class~="text-red-700"], [class~="text-red-800"]
+) { color: #ffb0be !important; }
+
+/* Consistent outlines and table dividers */
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="border-slate-100"], [class~="border-slate-200"],
+  [class~="border-slate-300"], [class~="border-slate-600"],
+  [class~="border-slate-700"], [class~="border-gray-100"],
+  [class~="border-gray-200"], [class~="border-gray-300"],
+  [class~="border-white"], [class~="border-white/10"],
+  [class~="divide-slate-100"], [class~="divide-slate-200"]
+) { border-color: var(--admin-line) !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="border-teal-100"], [class~="border-teal-200"],
+  [class~="border-teal-300"], [class~="border-teal-400"],
   [class~="border-emerald-200"]
-) { border-color: #276160 !important; }
+) { border-color: #2c7771 !important; }
+
 .dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="bg-amber-50"],
-  [class~="bg-amber-100"],
-  [class~="bg-orange-50"]
-) { background-color: #382d1d !important; }
+  [class~="border-sky-200"], [class~="border-blue-200"],
+  [class~="border-indigo-200"]
+) { border-color: #416986 !important; }
+
 .dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="text-amber-700"],
-  [class~="text-amber-800"],
-  [class~="text-orange-700"]
-) { color: #fde68a !important; }
+  [class~="border-amber-200"], [class~="border-orange-200"]
+) { border-color: #846538 !important; }
+
 .dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="bg-rose-50"],
-  [class~="bg-red-50"]
-) { background-color: #39252d !important; }
-.dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="text-rose-700"],
-  [class~="text-rose-800"],
-  [class~="text-red-700"],
-  [class~="text-red-600"]
-) { color: #fda4af !important; }
-.dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="bg-sky-50"],
-  [class~="bg-blue-50"],
-  [class~="bg-indigo-50"]
-) { background-color: #213649 !important; }
-.dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="text-sky-800"],
-  [class~="text-blue-700"],
-  [class~="text-indigo-700"]
-) { color: #93c5fd !important; }
-.dashboard-shell[data-admin-theme="dark"] [class*="bg-gradient-to-"] {
-  background-image: none !important;
-}
+  [class~="border-rose-200"], [class~="border-red-200"]
+) { border-color: #985363 !important; }
+
+/* Inputs and selects always have consistent high contrast, including dropdown menus. */
 .dashboard-shell[data-admin-theme="dark"] :is(
   input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]),
-  textarea,
-  select
+  textarea, select
 ) {
-  background-color: #192632 !important;
-  color: #e6edf5 !important;
-  border-color: #465669;
+  color: var(--admin-text) !important;
+  background: var(--admin-input) !important;
+  border-color: #4a6071 !important;
   color-scheme: dark;
 }
 .dashboard-shell[data-admin-theme="dark"] :is(input, textarea)::placeholder {
-  color: #9aafc3 !important;
+  color: #9cafc0 !important;
 }
-.dashboard-shell[data-admin-theme="dark"] :is(.ql-toolbar, .ql-container, .ql-picker-options) {
-  background: #1d2a36;
-  color: #e6edf5;
-  border-color: #465669;
+.dashboard-shell[data-admin-theme="dark"] select option {
+  background: #1c2935;
+  color: #edf5fa;
 }
-.dashboard-shell[data-admin-theme="dark"] :is(.ql-editor, .ql-picker-label) {
-  color: #e6edf5;
+.dashboard-shell[data-admin-theme="dark"] :is(input, textarea, select):focus-visible {
+  outline: 2px solid #5eead4;
+  outline-offset: 1px;
+  border-color: #5eead4 !important;
 }
-.dashboard-shell[data-admin-theme="dark"] :is(.ql-stroke) {
-  stroke: #d6e5ef;
+.dashboard-shell[data-admin-theme="dark"] input::file-selector-button {
+  color: #edf5fa;
+  background: #304352;
+  border-color: var(--admin-line);
 }
-.dashboard-shell[data-admin-theme="dark"] :is(.ql-fill) {
-  fill: #d6e5ef;
-}
-.dashboard-shell[data-admin-theme="dark"] .dashboard-product-editor [class~="bg-teal-700"],
+
+/* Action buttons retain solid dark-teal backgrounds with WHITE labels. */
 .dashboard-shell[data-admin-theme="dark"] [class~="bg-teal-700"] {
-  background-color: #0f766e !important;
+  background-color: #08776f !important;
+  color: #ffffff !important;
 }
 .dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="bg-teal-700"],
-  [class~="bg-rose-600"],
-  [class~="bg-red-500"],
-  [class~="bg-blue-600"]
-) > [class~="text-white"] {
-  color: white !important;
-}
+  [class~="bg-teal-700"], [class~="bg-blue-600"],
+  [class~="bg-emerald-600"], [class~="bg-rose-600"],
+  [class~="bg-red-600"]
+) [class~="text-white"] { color: #fff !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="hover:bg-white"], [class~="hover:bg-slate-50"],
+  [class~="hover:bg-slate-100"], [class~="hover:bg-slate-200"],
+  [class~="hover:bg-teal-50"], [class~="hover:bg-gray-100"]
+):hover { background-color: #304657 !important; }
+
 .dashboard-shell[data-admin-theme="dark"] :is(.dashboard-panel, .dashboard-stat-card):hover {
-  border-color: #496071;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .1);
+  border-color: #597180;
+  box-shadow: 0 10px 28px rgb(0 0 0 / 10%);
+}
+.dashboard-shell[data-admin-theme="dark"] [class*="bg-gradient-to-"] {
+  background-image: none !important;
+  background-color: #243343;
+}
+
+/* Date picker, rich text editor and product images */
+.dashboard-shell[data-admin-theme="dark"] :is(.ql-toolbar, .ql-container, .ql-picker-options) {
+  background: var(--admin-panel);
+  border-color: #425667;
+  color: var(--admin-text);
+}
+.dashboard-shell[data-admin-theme="dark"] :is(.ql-editor, .ql-picker-label) {
+  color: var(--admin-text);
+}
+.dashboard-shell[data-admin-theme="dark"] .ql-stroke { stroke: #cfe1ee; }
+.dashboard-shell[data-admin-theme="dark"] .ql-fill { fill: #cfe1ee; }
+.dashboard-shell[data-admin-theme="dark"] :is(.rmdp-wrapper, .rmdp-calendar, .rmdp-header, .rmdp-day-picker, .rmdp-time-picker) {
+  background: #223242;
+  color: #e8f2f7;
+}
+.dashboard-shell[data-admin-theme="dark"] .rmdp-wrapper {
+  border: 1px solid #425667;
+}
+.dashboard-shell[data-admin-theme="dark"] :is(.rmdp-day, .rmdp-week-day, .rmdp-header-values) {
+  color: #e8f2f7;
+}
+.dashboard-shell[data-admin-theme="dark"] .rmdp-day.rmdp-selected span {
+  background: #08776f;
+  color: #fff;
+}
+.dashboard-shell[data-admin-theme="dark"] .product-image-pending {
+  background-color: #243343;
 }
 .dashboard-shell[data-admin-theme="dark"] ::selection {
   background: #176b68;
   color: #fff;
 }
 
-
-/* Keep hover, focus and muted panels readable in both admin themes. */
-.dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="hover:bg-slate-100"],
-  [class~="hover:bg-slate-200"],
-  [class~="hover:bg-gray-100"],
-  [class~="hover:bg-gray-200"],
-  [class~="hover:bg-teal-50"],
-  [class~="hover:bg-white"]
-):hover,
-.dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="focus:bg-slate-50"],
-  [class~="focus:bg-slate-100"]
-):focus {
-  background-color: #304254 !important;
-}
-.dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="bg-white/90"],
-  [class~="bg-white/95"],
-  [class~="bg-white/80"],
-  [class~="bg-slate-50/70"],
-  [class~="bg-slate-50/80"]
-) { background-color: #202c39 !important; }
-.dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="bg-purple-50"],
-  [class~="bg-violet-50"],
-  [class~="bg-lime-50"],
-  [class~="bg-yellow-50"],
-  [class~="bg-green-50"]
-) { background-color: #253b3c !important; }
-.dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="text-indigo-600"],
-  [class~="text-purple-700"],
-  [class~="text-lime-700"],
-  [class~="text-green-700"]
-) { color: #8ee7d9 !important; }
-.dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="bg-amber-100"],
-  [class~="bg-red-100"],
-  [class~="bg-rose-100"],
-  [class~="bg-blue-100"]
-) { background-color: #313e49 !important; }
-.dashboard-shell[data-admin-theme="dark"] :is(
-  [class~="border-teal-400"],
-  [class~="border-teal-500"]
-) { border-color: #2dd4bf !important; }
-.dashboard-shell[data-admin-theme="dark"] input::file-selector-button {
-  background: #304254;
-  color: #e6edf5;
-  border-color: #465669;
-}
