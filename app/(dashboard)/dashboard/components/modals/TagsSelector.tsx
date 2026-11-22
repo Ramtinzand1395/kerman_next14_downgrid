@@ -80,13 +80,13 @@ const TagsSelector = ({ updateField, form, tagsList }: TagsSelectorProps) => {
           {selectedTags.map((tag) => (
             <span
               key={tag._id}
-              className="inline-flex items-center gap-1 rounded-full border border-indigo-400/30 bg-indigo-500/15 py-1 pr-2.5 pl-1.5 text-[11px] font-medium text-indigo-200"
+              className="inline-flex items-center gap-1 rounded-full border border-indigo-400/30 bg-lime-400/10 py-1 pr-2.5 pl-1.5 text-[11px] font-medium text-lime-200"
             >
               {tag.name}
               <button
                 type="button"
                 onClick={() => toggleTag(tag._id)}
-                className="rounded-full p-0.5 text-indigo-300 transition hover:bg-indigo-400/20 hover:text-white"
+                className="rounded-full p-0.5 text-lime-300 transition hover:bg-indigo-400/20 hover:text-white"
                 aria-label={`حذف تگ ${tag.name}`}
               >
                 <X className="h-3 w-3" />
@@ -119,7 +119,7 @@ const TagsSelector = ({ updateField, form, tagsList }: TagsSelectorProps) => {
             setIsOpen(true);
           }}
           placeholder="نام یا اسلاگ تگ را جستجو کنید..."
-          className="w-full rounded-xl border border-slate-700 bg-slate-900/70 py-2.5 pr-10 pl-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+          className="w-full rounded-xl border border-slate-700 bg-slate-900/70 py-2.5 pr-10 pl-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-lime-500 focus:ring-2 focus:ring-lime-400/20"
         />
       </div>
 
@@ -147,7 +147,7 @@ const TagsSelector = ({ updateField, form, tagsList }: TagsSelectorProps) => {
                       onClick={() => toggleTag(tag._id)}
                       className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-right text-xs transition ${
                         isSelected
-                          ? "bg-indigo-500/15 text-indigo-200"
+                          ? "bg-lime-400/10 text-lime-200"
                           : "text-slate-200 hover:bg-slate-800"
                       }`}
                     >
@@ -162,7 +162,7 @@ const TagsSelector = ({ updateField, form, tagsList }: TagsSelectorProps) => {
                       <span
                         className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
                           isSelected
-                            ? "border-indigo-400 bg-indigo-500 text-white"
+                            ? "border-indigo-400 bg-lime-400 text-slate-950"
                             : "border-slate-600"
                         }`}
                       >
