@@ -2,7 +2,9 @@
 Description=Monthly MongoDB archive backup for Kerman Atari
 After=network-online.target
 Wants=network-online.target
+
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -lc '/bin/bash %h/projects/kermanatari-deploy/shared/backup-vps.sh monthly'
+Environment=HOME=/home/ramtin
+ExecStart=/bin/bash -c 'export NVM_DIR="$HOME/.nvm"; source "$NVM_DIR/nvm.sh"; nvm use 24 >/dev/null; exec /bin/bash "$HOME/projects/kermanatari-deploy/shared/backup-vps.sh" monthly'
 TimeoutStartSec=3600
