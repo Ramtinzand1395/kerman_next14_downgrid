@@ -60,7 +60,7 @@ const ImageUploader = ({ form, updateField }: ImageUploaderProps) => {
     <div className="space-y-4 border-t border-slate-800 pt-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h4 className="flex items-center gap-2 text-sm font-bold text-slate-100"><Images className="h-4 w-4 text-indigo-300" /> گالری تصاویر</h4>
+          <h4 className="flex items-center gap-2 text-sm font-bold text-slate-100"><Images className="h-4 w-4 text-lime-300" /> گالری تصاویر</h4>
           <p className="mt-1 text-xs leading-6 text-slate-400">زاویه‌های دیگر، جزئیات و ایرادهای ظاهری کالا را نشان دهید.</p>
         </div>
         <span className="rounded-full border border-slate-700 bg-slate-950 px-3 py-1 text-xs text-slate-400">{form.galleryImages.length.toLocaleString("fa-IR")} تصویر</span>
@@ -91,7 +91,7 @@ const ImageUploader = ({ form, updateField }: ImageUploaderProps) => {
         <p className="rounded-xl border border-dashed border-slate-700 bg-slate-950/40 px-4 py-6 text-center text-xs text-slate-400">هنوز تصویر دیگری برای محصول ثبت نشده است.</p>
       )}
 
-      <label htmlFor={uploadId} className={"flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-4 py-4 text-sm font-semibold text-indigo-200 transition hover:bg-indigo-500/20 " + (loadingImage ? "pointer-events-none opacity-50" : "")}>
+      <label htmlFor={uploadId} className={"flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-lime-400/40 bg-lime-400/10 px-4 py-4 text-sm font-semibold text-lime-200 transition hover:bg-lime-400/15 " + (loadingImage ? "pointer-events-none opacity-50" : "")}>
         {loadingImage ? <Loader2 className="h-5 w-5 animate-spin" /> : <UploadCloud className="h-5 w-5" />}
         {loadingImage ? "در حال آپلود تصاویر..." : "افزودن چند تصویر به گالری"}
         <input id={uploadId} title="افزودن تصاویر گالری" type="file" multiple accept="image/*"
