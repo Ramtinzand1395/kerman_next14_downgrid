@@ -1,31 +1,36 @@
-name: Deploy Production
-
+name: Publish validated release
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: deploy-production
+  group: production-release-pointer
   cancel-in-progress: false
 
 jobs:
   validate:
     uses: ./.github/workflows/validate.yml
 
-  deploy:
+  publish:
     needs: validate
     runs-on: ubuntu-latest
-
-    name: Publish validated commit for the VPS
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Publish the validated main commit
-        run: git push origin "${GITHUB_SHA}:refs/heads/vps-release"
+      - name: Publish validated main SHA to vps-release
+        env:
+          VALIDATED_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$VALIDATED_SHA" =~ ^[a-f0-9]{40}$ ]]
+          git fetch origin main
+          [[ "$(git rev-parse origin/main)" == "$VALIDATED_SHA" ]] || { echo 'main advanced; newer run will publish'; exit 0; }
+          git push origin "${VALIDATED_SHA}:refs/heads/vps-release"
