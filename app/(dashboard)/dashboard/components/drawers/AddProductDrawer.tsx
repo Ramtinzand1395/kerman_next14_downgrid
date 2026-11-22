@@ -188,8 +188,9 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
   }, [activeStep]);
 
   const requestClose = () => {
-    if (loading) return;
-    if (isDirty && !window.confirm("تغییرات ذخیره‌نشده دارید. فرم بسته شود؟")) return;
+    // An in-flight save or upload must never be interrupted by backdrop dismissal.
+    if (loading || mainImageUploading || galleryUploading) return;
+    if (isDirty && !window.confirm("تغییرات ذخیره‌نشده دارید. آیا می‌خواهید بدون ذخیره فرم را ببندید؟")) return;
     onClose();
   };
 
@@ -393,9 +394,11 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
   const completion = Math.round(completedCount * 100 / checklist.length);
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm" dir="rtl">
-      <div role="dialog" aria-modal="true" aria-label={product ? "ویرایش محصول" : "ثبت محصول جدید"} className="dashboard-product-editor ml-auto flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden border-r border-slate-200 bg-[#f5f8fa] text-slate-900 shadow-2xl">
-        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-white px-4 py-3 sm:px-7 sm:py-4">
+    <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-[3px]" dir="rtl"
+      onClick={(event) => { if (event.target === event.currentTarget) requestClose(); }}>
+
+      <div role="dialog" aria-modal="true" aria-label={product ? "ویرایش محصول" : "ثبت محصول جدید"} className="dashboard-product-editor ml-auto flex h-[100dvh] max-h-[100dvh] w-full max-w-6xl min-w-0 flex-col overflow-hidden border-r border-slate-200 bg-[#f5f8fa] text-slate-900 shadow-2xl lg:rounded-l-2xl">
+        <header className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 bg-white px-3 py-3 sm:gap-3 sm:px-7 sm:py-4">
           <div className="flex min-w-0 items-center gap-3">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-teal-700"><PackagePlus className="h-5 w-5" /></span>
             <div className="min-w-0">
@@ -403,22 +406,22 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
               <p className="mt-0.5 truncate text-xs text-slate-500">{form.title?.trim() || "اطلاعات را مرحله‌به‌مرحله تکمیل کنید"}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className={"rounded-full border px-3 py-1 text-xs font-semibold " + (product?.status === "published" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-500/30 bg-amber-50 text-amber-700")}>
+          <div className="flex shrink-0 items-center gap-2">
+            <span className={"hidden rounded-full border px-3 py-1 text-xs font-semibold sm:inline-flex " + (product?.status === "published" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-500/30 bg-amber-50 text-amber-700")}>
               {product?.status === "published" ? "منتشرشده" : "پیش‌نویس"}
             </span>
-            <button type="button" onClick={requestClose} disabled={loading} aria-label="بستن فرم محصول" className="rounded-xl border border-slate-200 p-2.5 text-slate-700 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 disabled:opacity-50"><X className="h-5 w-5" /></button>
+            <button type="button" onClick={requestClose} disabled={loading || mainImageUploading || galleryUploading} aria-label="بستن فرم محصول" className="rounded-xl border border-slate-200 p-2.5 text-slate-700 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 disabled:opacity-50"><X className="h-5 w-5" /></button>
           </div>
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
           <nav aria-label="مراحل ساخت محصول" className="shrink-0 border-b border-slate-100 bg-slate-50 lg:w-64 lg:border-b-0 lg:border-l">
-            <div className="flex gap-2 overflow-x-auto p-3 lg:flex-col lg:gap-1.5 lg:p-4">
+            <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain p-2.5 sm:p-3 lg:flex-col lg:gap-1.5 lg:overflow-visible lg:p-4">
               {STEPS.map((step, index) => {
                 const Icon = step.icon;
                 const selected = activeStep === step.key;
                 return (
-                  <button key={step.key} type="button" aria-current={selected ? "step" : undefined} onClick={() => setActiveStep(step.key)} className={"group flex min-w-[138px] items-center gap-3 rounded-xl border px-3 py-3 text-right transition lg:w-full lg:min-w-0 " + (selected ? "border-teal-300 bg-teal-50 text-slate-900 shadow-sm" : "border-transparent text-slate-500 hover:border-slate-200 hover:bg-slate-100 hover:text-slate-800")}>
+                  <button key={step.key} type="button" aria-current={selected ? "step" : undefined} onClick={() => setActiveStep(step.key)} className={"group flex min-w-[118px] shrink-0 snap-start items-center gap-2 rounded-xl border px-2.5 py-2.5 text-right transition sm:min-w-[138px] sm:gap-3 sm:px-3 sm:py-3 lg:w-full lg:min-w-0 " + (selected ? "border-teal-300 bg-teal-50 text-slate-900 shadow-sm" : "border-transparent text-slate-500 hover:border-slate-200 hover:bg-slate-100 hover:text-slate-800")}>
                     <span className={"flex h-9 w-9 shrink-0 items-center justify-center rounded-lg " + (selected ? "bg-teal-700 text-white" : "bg-slate-100 text-slate-500")}><Icon className="h-4 w-4" /></span>
                     <span className="min-w-0">
                       <span className="block whitespace-nowrap text-xs font-semibold sm:text-sm">{step.title}</span>
@@ -436,8 +439,8 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
             </div>
           </nav>
 
-          <div ref={scrollRef} className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-7 sm:py-7">
-            <div className="mx-auto max-w-3xl space-y-5 pb-8">
+          <div ref={scrollRef} className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 sm:px-7 sm:py-7">
+            <div className="mx-auto w-full min-w-0 max-w-3xl space-y-5 pb-5 sm:pb-8">
               <div>
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
                   <span>مرحله {(activeIndex + 1).toLocaleString("fa-IR")} از {STEPS.length.toLocaleString("fa-IR")}</span>
@@ -452,7 +455,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
                 <p className="mt-1 text-xs">اطلاعاتی که وارد کرده‌اید در فرم باقی می‌مانند؛ مشکل را رفع کنید و دوباره امتحان کنید.</p>
               </div>}
 
-              <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-lg shadow-black/10 sm:p-6">
+              <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-6">
                 <div className="mb-6 border-b border-slate-100 pb-4">
                   <h3 className="text-lg font-bold">{active.title}</h3>
                   <p className="mt-1.5 text-xs leading-6 text-slate-500">{active.hint}</p>
@@ -570,18 +573,18 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
           </div>
         </div>
 
-        <footer className="shrink-0 border-t border-slate-100 bg-white px-4 py-3 shadow-[0_-12px_30px_rgba(0,0,0,0.18)] sm:px-7">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-2">
-              <button type="button" disabled={activeIndex === 0 || loading} onClick={() => setActiveStep(STEPS[activeIndex - 1].key)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"><ArrowRight className="h-4 w-4" /> قبلی</button>
-              <button type="button" disabled={activeIndex === STEPS.length - 1 || loading} onClick={() => setActiveStep(STEPS[activeIndex + 1].key)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40">بعدی <ArrowLeft className="h-4 w-4" /></button>
+        <footer className="shrink-0 border-t border-slate-100 bg-white px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-6px_24px_rgba(15,23,42,0.08)] sm:px-7">
+          <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:min-w-0 sm:items-center">
+              <button type="button" disabled={activeIndex === 0 || loading || mainImageUploading || galleryUploading} onClick={() => setActiveStep(STEPS[activeIndex - 1].key)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"><ArrowRight className="h-4 w-4" /> قبلی</button>
+              <button type="button" disabled={activeIndex === STEPS.length - 1 || loading || mainImageUploading || galleryUploading} onClick={() => setActiveStep(STEPS[activeIndex + 1].key)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40">بعدی <ArrowLeft className="h-4 w-4" /></button>
             </div>
-            <div className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:flex-none">
-              <button type="button" disabled={loading} onClick={() => void saveProduct("draft")} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-xs font-bold text-amber-800 transition hover:bg-amber-400/20 disabled:opacity-50 sm:flex-none">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:min-w-0 sm:items-center sm:justify-end">
+              <button type="button" disabled={loading || mainImageUploading || galleryUploading} onClick={() => void saveProduct("draft")} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-xs font-bold text-amber-800 transition hover:bg-amber-400/20 disabled:opacity-50 sm:flex-none">
                 {savingStatus === "draft" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 ذخیره پیش‌نویس
               </button>
-              <button type="button" disabled={loading} onClick={() => void saveProduct("published")} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-teal-800 disabled:opacity-50 sm:flex-none">
+              <button type="button" disabled={loading || mainImageUploading || galleryUploading} onClick={() => void saveProduct("published")} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-teal-800 disabled:opacity-50 sm:flex-none">
                 {savingStatus === "published" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 {product?.status === "published" ? "ذخیره و انتشار" : "انتشار محصول"}
               </button>
