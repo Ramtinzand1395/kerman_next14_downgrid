@@ -85,10 +85,10 @@ const SpecificationsEditor = ({
   };
 
   return (
-    <div className="rounded-2xl border border-white/30 bg-white/10 p-4 shadow-lg backdrop-blur-md">
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm font-semibold">مشخصات فنی</p>
-        <span className="rounded-full bg-white/20 px-2 py-1 text-xs">
+        <span className="rounded-full bg-slate-100 px-2 py-1 text-xs">
           {form.specifications.length} گروه
         </span>
       </div>
@@ -97,13 +97,13 @@ const SpecificationsEditor = ({
         {form.specifications.map((spec, sIndex) => (
           <div
             key={sIndex}
-            className="rounded-xl border border-white/30 bg-white/10 p-3"
+            className="rounded-xl border border-slate-200 bg-slate-50 p-3"
           >
             <div className="mb-3 flex items-center gap-2">
               <input
                 type="text"
                 aria-label={`عنوان گروه مشخصات ${sIndex + 1}`} placeholder="مثلاً: مشخصات نمایشگر"
-                className="w-full rounded-lg border border-white/40 bg-white/10 p-2 text-sm outline-none placeholder:text-white/70 focus:border-blue-300"
+                className="w-full rounded-lg border border-slate-200 bg-white p-2 text-sm outline-none placeholder:text-slate-500 focus:border-teal-500"
                 value={spec.title}
                 onChange={(e) => updateSpecTitle(sIndex, e.target.value)}
               />
@@ -121,12 +121,12 @@ const SpecificationsEditor = ({
               {spec.items.map((item, iIndex) => (
                 <div
                   key={iIndex}
-                  className="grid grid-cols-[1fr_1fr_auto] gap-2"
+                  className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto]"
                 >
                   <input
                     type="text"
                     aria-label={`نام ویژگی ${iIndex + 1} در گروه ${sIndex + 1}`} placeholder="کلید (مثلاً: اندازه)"
-                    className="rounded-lg border border-white/40 bg-white/10 p-2 text-sm outline-none placeholder:text-white/70 focus:border-blue-300"
+                    className="rounded-lg border border-slate-200 bg-white p-2 text-sm outline-none placeholder:text-slate-500 focus:border-teal-500"
                     value={item.key}
                     onChange={(e) =>
                       updateSpecItem(sIndex, iIndex, "key", e.target.value)
@@ -135,7 +135,7 @@ const SpecificationsEditor = ({
                   <input
                     type="text"
                     aria-label={`مقدار ویژگی ${iIndex + 1} در گروه ${sIndex + 1}`} placeholder="مقدار (مثلاً: ۶.۷ اینچ)"
-                    className="rounded-lg border border-white/40 bg-white/10 p-2 text-sm outline-none placeholder:text-white/70 focus:border-blue-300"
+                    className="rounded-lg border border-slate-200 bg-white p-2 text-sm outline-none placeholder:text-slate-500 focus:border-teal-500"
                     value={item.value}
                     onChange={(e) =>
                       updateSpecItem(sIndex, iIndex, "value", e.target.value)

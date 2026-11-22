@@ -202,7 +202,7 @@ const statusLabels: Record<string, string> = {
 
 const statusColors: Record<string, string> = {
   pending: "#f59e0b",
-  processing: "#6366f1",
+  processing: "#0f766e",
   shipped: "#0ea5e9",
   delivered: "#10b981",
   cancelled: "#ef4444",
@@ -215,7 +215,7 @@ const statusColors: Record<string, string> = {
   no_show: "#f97316",
   rejected: "#e11d48",
   scheduled: "#3b82f6",
-  assigned: "#6366f1",
+  assigned: "#0f766e",
   picked_up: "#06b6d4",
   at_store: "#8b5cf6",
   return_ready: "#d946ef",
@@ -311,7 +311,7 @@ function MetricCard({
   href?: string;
 }) {
   const tones = {
-    indigo: "bg-indigo-50 text-indigo-700 ring-indigo-100",
+    indigo: "bg-teal-50 text-teal-800 ring-teal-200",
     emerald: "bg-emerald-50 text-emerald-700 ring-emerald-100",
     amber: "bg-amber-50 text-amber-700 ring-amber-100",
     rose: "bg-rose-50 text-rose-700 ring-rose-100",
@@ -333,7 +333,7 @@ function MetricCard({
   return href ? (
     <Link
       href={href}
-      className="rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-400"
+      className="rounded-2xl focus:outline-none focus:ring-2 focus:ring-teal-500"
     >
       {content}
     </Link>
@@ -345,7 +345,7 @@ function MetricCard({
 function ChartTable({ points, services = false }: { points: Point[]; services?: boolean }) {
   return (
     <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50">
-      <summary className="cursor-pointer px-4 py-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-400">
+      <summary className="cursor-pointer px-4 py-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-500">
         جدول قابل دسترس داده‌های نمودار
       </summary>
       <div className="max-h-72 overflow-auto">
@@ -602,7 +602,7 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <span className="rounded-xl bg-indigo-50 p-2 text-indigo-700">
+            <span className="rounded-xl bg-teal-100 p-2 text-teal-800">
               <Sparkles className="h-5 w-5" aria-hidden="true" />
             </span>
             <div>
@@ -621,7 +621,7 @@ export default function DashboardPage() {
               key={option.key}
               onClick={() => setRange(option.key)}
               aria-pressed={range === option.key}
-              className={`min-h-10 rounded-xl px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400 ${range === option.key ? "bg-indigo-600 text-white shadow-sm" : "border border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-indigo-700"}`}
+              className={`min-h-10 rounded-xl px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-teal-500 ${range === option.key ? "bg-teal-700 text-white shadow-sm" : "border border-slate-200 bg-white text-slate-600 hover:border-teal-300 hover:text-teal-800"}`}
             >
               {option.label}
             </button>
@@ -629,7 +629,7 @@ export default function DashboardPage() {
           <button
             onClick={retry}
             disabled={loading}
-            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:opacity-50"
+            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50"
           >
             <RefreshCw
               className={`h-4 w-4 ${loading ? "animate-spin motion-reduce:animate-none" : ""}`}
@@ -640,7 +640,7 @@ export default function DashboardPage() {
         </div>
       </div>
       {range === "custom" && (
-        <div className="grid gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+        <div className="grid gap-3 rounded-2xl border border-teal-200 bg-teal-50/50 p-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
           <label className="space-y-1 text-sm font-bold text-slate-700">
             <span>از تاریخ</span>
             <DatePicker
@@ -652,7 +652,7 @@ export default function DashboardPage() {
               locale={persianFa}
               format="YYYY-MM-DD"
               calendarPosition="bottom-right"
-              inputClass="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none focus:border-indigo-500"
+              inputClass="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none focus:border-teal-600"
               containerStyle={{ width: "100%" }}
             />
           </label>
@@ -667,13 +667,13 @@ export default function DashboardPage() {
               locale={persianFa}
               format="YYYY-MM-DD"
               calendarPosition="bottom-right"
-              inputClass="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none focus:border-indigo-500"
+              inputClass="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none focus:border-teal-600"
               containerStyle={{ width: "100%" }}
             />
           </label>
           <button
             onClick={applyCustomRange}
-            className="min-h-11 rounded-xl bg-indigo-600 px-5 text-sm font-black text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2"
+            className="min-h-11 rounded-xl bg-teal-700 px-5 text-sm font-black text-white hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
           >
             اعمال بازه
           </button>
@@ -707,7 +707,7 @@ export default function DashboardPage() {
         {loading && (
           <div
             role="status"
-            className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm font-bold text-indigo-700"
+            className="rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-bold text-teal-800"
           >
             {report
               ? "در حال دریافت بازهٔ جدید؛ دادهٔ قبلی موقتاً پنهان شده است…"
@@ -726,7 +726,7 @@ export default function DashboardPage() {
       {loading && (
         <div
           role="status"
-          className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm font-bold text-indigo-700"
+          className="rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-bold text-teal-800"
         >
           در حال بروزرسانی گزارش…
         </div>
@@ -934,7 +934,7 @@ export default function DashboardPage() {
                 <Line
                   type="monotone"
                   dataKey="grossPaidAmount"
-                  stroke="#6366f1"
+                  stroke="#0d7685"
                   strokeWidth={2}
                   dot={combinedPoints.length <= 2}
                 />
@@ -988,7 +988,7 @@ export default function DashboardPage() {
                 <Bar
                   dataKey="ordersCreated"
                   name="سفارش ثبت‌شده"
-                  fill="#6366f1"
+                  fill="#0d7685"
                   radius={[7, 7, 0, 0]}
                 />
               </BarChart>
@@ -1085,7 +1085,7 @@ export default function DashboardPage() {
                 <Bar
                   dataKey="gameInstallAppointments"
                   stackId="appointments"
-                  fill="#6366f1"
+                  fill="#0d7685"
                 />
                 <Bar
                   dataKey="repairAppointments"
@@ -1244,7 +1244,7 @@ export default function DashboardPage() {
               </h3>
               <Link
                 href="/dashboard/appointments"
-                className="text-xs font-bold text-indigo-700 hover:underline"
+                className="text-xs font-bold text-teal-800 hover:underline"
               >
                 مشاهده همه
               </Link>
@@ -1258,7 +1258,7 @@ export default function DashboardPage() {
                   >
                     <Link
                       href={item.href}
-                      className="block focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      className="block focus:outline-none focus:ring-2 focus:ring-teal-500"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-bold text-slate-800">
@@ -1291,7 +1291,7 @@ export default function DashboardPage() {
               </h3>
               <Link
                 href="/dashboard/orders"
-                className="text-xs font-bold text-indigo-700 hover:underline"
+                className="text-xs font-bold text-teal-800 hover:underline"
               >
                 مشاهده همه
               </Link>
@@ -1305,7 +1305,7 @@ export default function DashboardPage() {
                   >
                     <Link
                       href={String(item.href)}
-                      className="block focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      className="block focus:outline-none focus:ring-2 focus:ring-teal-500"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-bold text-slate-800">
@@ -1334,7 +1334,7 @@ export default function DashboardPage() {
               <h3 className="font-black text-slate-900">صف پیک</h3>
               <Link
                 href="/dashboard/appointments?tab=courier"
-                className="text-xs font-bold text-indigo-700 hover:underline"
+                className="text-xs font-bold text-teal-800 hover:underline"
               >
                 مشاهده صف
               </Link>
@@ -1348,7 +1348,7 @@ export default function DashboardPage() {
                   >
                     <Link
                       href={String(item.href)}
-                      className="block focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      className="block focus:outline-none focus:ring-2 focus:ring-teal-500"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-bold text-slate-800">
@@ -1398,7 +1398,7 @@ export default function DashboardPage() {
                   جمع کل از موارد ایجادشده در بازه جدا شده است.
                 </p>
               </div>
-              <Users className="h-6 w-6 text-indigo-600" aria-hidden="true" />
+              <Users className="h-6 w-6 text-teal-700" aria-hidden="true" />
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div className="rounded-xl bg-slate-50 p-4">
@@ -1407,11 +1407,11 @@ export default function DashboardPage() {
                   {overview.totals.totalUsers.toLocaleString("fa-IR")}
                 </p>
               </div>
-              <div className="rounded-xl bg-indigo-50 p-4">
-                <p className="text-xs text-indigo-700">
+              <div className="rounded-xl bg-teal-50 p-4">
+                <p className="text-xs text-teal-800">
                   کاربر ایجادشده در بازه
                 </p>
-                <p className="mt-2 text-xl font-black text-indigo-900">
+                <p className="mt-2 text-xl font-black text-teal-950">
                   {overview.rangeCounts.usersCreated.toLocaleString("fa-IR")}
                 </p>
               </div>
@@ -1438,7 +1438,7 @@ export default function DashboardPage() {
         {loyalty ? (
           <Link
             href={loyalty.href}
-            className="dashboard-panel block focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="dashboard-panel block focus:outline-none focus:ring-2 focus:ring-teal-500"
           >
             <div className="mb-4 flex items-center gap-2">
               <span className="rounded-xl bg-amber-50 p-2 text-amber-700">
@@ -1489,7 +1489,7 @@ export default function DashboardPage() {
       </section>
 
       <details className="dashboard-panel">
-        <summary className="cursor-pointer font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+        <summary className="cursor-pointer font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500">
           تعریف و منبع شاخص‌ها
         </summary>
         <div className="mt-4 grid gap-3 text-sm text-slate-600 md:grid-cols-2">

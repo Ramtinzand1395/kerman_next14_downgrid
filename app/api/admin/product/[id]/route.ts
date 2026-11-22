@@ -44,7 +44,7 @@ export async function PUT(
     );
     if (!catalogReferences.ok) {
       return NextResponse.json(
-        { error: catalogReferences.error },
+        { error: catalogReferences.error, field: catalogReferences.error.includes("برچسب") ? "tags" : "category" },
         { status: 400 },
       );
     }
@@ -62,6 +62,10 @@ export async function PUT(
       purchasePrices,
     } = buildProductWriteInput(body, {
       mode: "update",
+      categorySlug: catalogReferences.categorySlug,
+      previousCondition: product.condition,
+      previousReport: product.usedConsole?.toObject({ flattenMaps: true }),
+      previousDigital: product.isDigital,
       productId: id,
       existingVariantIds,
       existingPurchasePrices: product.purchasePrices,
@@ -70,6 +74,9 @@ export async function PUT(
         : null,
     });
 
+    if (validatedProductData.condition === "used" && !validatedProductData.sku) {
+      validatedProductData.sku = product.sku || `SKU-${product._id}`;
+    }
     const previousProduct = product.toObject({ depopulate: true });
     const previousStatus = product.status;
     const nextProduct = { ...previousProduct, ...validatedProductData };
@@ -113,7 +120,15 @@ export async function PUT(
       );
     }
 
+    if (product.condition === "used" || validatedProductData.condition === "used") {
+      const version = product.inventoryVersion ?? 0;
+      if (body.expectedInventoryVersion !== undefined && body.expectedInventoryVersion !== version) {
+        return NextResponse.json({ error: "موجودی دستگاه تغییر کرده است. فرم را دوباره باز کنید." }, { status: 409 });
+      }
+      product.$where = { inventoryVersion: version === 0 ? { $in: [0, null] } : version };
+    }
     product.$locals.removedVariantIds = removedVariantIds;
+    if (productData.stock > 0 || productData.condition !== "used") product.usedUnitSoldAt = undefined;
     product.set(productData);
     const Update = await saveProductWithCatalogChange({
       product,
@@ -133,8 +148,11 @@ export async function PUT(
   } catch (err: any) {
     console.error("❌ Product Update Error:", err);
 
+    if (err?.name === "DocumentNotFoundError" || err?.name === "VersionError") {
+      return NextResponse.json({ error: "دستگاه تغییر کرده است. فرم را دوباره باز کنید." }, { status: 409 });
+    }
     if (err instanceof ProductInputValidationError) {
-      return NextResponse.json({ error: err.message }, { status: 400 });
+      return NextResponse.json({ error: err.message, field: err.field }, { status: 400 });
     }
 
     // خطاهای اعتبارسنجی Mongoose را به پیام فارسی تبدیل می‌کنیم
@@ -148,18 +166,33 @@ export async function PUT(
         stock: "موجودی",
         brand: "برند",
         description: "توضیحات",
+        purchasePrice: "قیمت خرید",
+        discountPrice: "قیمت تخفیف",
+        sku: "SKU",
+        barcode: "بارکد",
+        variants: "مدل‌های محصول",
+        usedConsole: "گزارش تست دستگاه",
+        faqs: "پرسش و پاسخ محصول",
+        specifications: "مشخصات فنی",
+        images: "گالری تصاویر",
+        seoTitle: "عنوان سئو",
+        metaDescription: "توضیحات سئو",
       };
 
       const messages = Object.values(err.errors).map((e: any) => {
-        const label = fieldNames[e.path] || e.path;
-        if (e.kind === "required") {
-          return `${label} الزامی است`;
-        }
-        return e.message;
+        const path = String(e.path || "");
+        const label = fieldNames[path] ||
+          (path.startsWith("faqs") ? "سوالات متداول" :
+          path.startsWith("specifications") ? "مشخصات فنی" :
+          path.startsWith("variants") ? "مدل‌های محصول" : path || "اطلاعات محصول");
+        if (e.kind === "required") return `${label} الزامی است؛ آن را تکمیل کنید.`;
+        if (e.kind === "min" || e.kind === "max") return `مقدار «${label}» خارج از محدوده مجاز است.`;
+        if (e.kind === "enum") return `مقدار «${label}» از گزینه‌های معتبر انتخاب نشده است.`;
+        return `مقدار «${label}» قابل ذخیره نیست. نوع و مقدار این فیلد را بررسی کنید.`;
       });
 
       return NextResponse.json(
-        { error: messages.join("، ") },
+        { error: messages.join("، "), field: Object.keys(err.errors)[0] || "body" },
         { status: 400 },
       );
     }
@@ -168,15 +201,15 @@ export async function PUT(
     if (err?.code === 11000) {
       const field = Object.keys(err?.keyPattern || {})[0];
       const label =
-        field === "slug" ? "نامک (slug)" : field === "sku" ? "SKU" : field;
+        field === "slug" ? "آدرس محصول (اسلاگ)" : field === "sku" ? "SKU" : field === "barcode" ? "بارکد" : "شناسه محصول";
       return NextResponse.json(
-        { error: `${label} وارد شده تکراری است.` },
+        { error: `${label} قبلاً استفاده شده است. مقدار جدیدی وارد کنید.`, field: field || "slug" },
         { status: 400 },
       );
     }
 
     return NextResponse.json(
-      { error: "خطا در بروزرسانی محصول" },
+      { error: "به‌روزرسانی محصول در سرور ناموفق بود. اطلاعات فرم محفوظ است؛ اتصال سرور و پایگاه داده را بررسی کنید یا دوباره تلاش کنید." },
       { status: 500 },
     );
   }

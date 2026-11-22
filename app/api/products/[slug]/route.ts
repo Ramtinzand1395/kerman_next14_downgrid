@@ -7,6 +7,8 @@ import "@/model/Tag";
 import "@/model/Comment";
 import "@/model/User";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   _req: NextRequest,
   context: { params: { slug: string } }

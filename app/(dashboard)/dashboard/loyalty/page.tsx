@@ -55,8 +55,8 @@ export default function LoyaltyAdminPage() {
   return (
     <div className="space-y-5 p-1 md:p-4">
       <div className="flex items-center gap-3">
-        <span className="rounded-xl bg-indigo-100 p-3">
-          <Sparkles className="h-6 w-6 text-indigo-600" />
+        <span className="rounded-xl bg-teal-100 p-3">
+          <Sparkles className="h-6 w-6 text-teal-700" />
         </span>
         <div>
           <h1 className="text-lg font-bold text-slate-800">باشگاه مشتریان و کیف پول</h1>
@@ -75,7 +75,7 @@ export default function LoyaltyAdminPage() {
             onClick={() => setTab(key)}
             className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm transition ${
               tab === key
-                ? "bg-indigo-600 text-white shadow-sm"
+                ? "bg-teal-700 text-white shadow-sm"
                 : "text-slate-600 hover:bg-slate-200/70 hover:text-slate-800"
             }`}
           >

@@ -139,6 +139,31 @@ test('POS local replica-set integration', { skip: process.env.POS_LOCAL_TRANSACT
       assert.equal((await query(headers)).status, 401);
       assert.deepEqual(await counts(), before); assert.equal((await Product.findById(single._id)).stock, beforeStock);
     });
+    await t.test('two used units retain separate identities when online checkout races POS for the last unit', async () => {
+      const { adjustProductInventoriesWithCatalogChange } = await import('./lib/pos/catalog-outbox.ts');
+      const unit = await makeProduct('used-one', { condition: 'used', sku: 'used-one', stock: 1 });
+      const sibling = await makeProduct('used-two', { condition: 'used', sku: 'used-two', stock: 1 });
+      const checkout = { productId: String(unit._id), quantityDelta: -1, requireAvailable: 1, source: 'zarinpal', idempotencyKey: 'test-last-unit' };
+      const request = payload('pos-last-unit', [line(unit)]);
+      const [web, pos] = await Promise.allSettled([
+        adjustProductInventoriesWithCatalogChange([checkout]), registerPosSale(request, context),
+      ]);
+      assert.equal(web.status, 'fulfilled');
+      const webWon = Boolean(web.value);
+      assert.notEqual(webWon, pos.status === 'fulfilled');
+      if (webWon) {
+        assert.equal(pos.reason.code, 'POS_SALE_INVENTORY_CONFLICT');
+        assert.ok(await adjustProductInventoriesWithCatalogChange([checkout]));
+      } else {
+        assert.equal((await registerPosSale(request, context)).replayed, true);
+      }
+      const sold = await Product.findById(unit._id);
+      assert.equal(sold.stock, 0);
+      assert.ok(sold.usedUnitSoldAt);
+      assert.equal((await Product.findById(sibling._id)).stock, 1);
+      assert.equal(await Change.countDocuments({ productId: unit._id }), 1);
+      assert.equal(await adjustProductInventoriesWithCatalogChange([{ productId: String(unit._id), quantityDelta: 2, source: 'system' }]), null);
+    });
     await t.test('first snapshot in fresh process populates Category; Changes exposes decreased stock', async () => {
       const run = code => spawnSync(process.execPath, ['--import', './scripts/pos-test-loader.mjs', '--input-type=module', '-e', code], {
         cwd: process.cwd(), env: { ...process.env, MONGODB_URI: repl.getUri('pos_synthetic_test') }, encoding: 'utf8', timeout: 30000,

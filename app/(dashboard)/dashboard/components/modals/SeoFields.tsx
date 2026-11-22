@@ -42,24 +42,24 @@ export default function SeoFields({ form, updateField }: SeoFieldsProps) {
 
   const titleColor =
     seoTitle.length === 0
-      ? "text-slate-400"
+      ? "text-slate-500"
       : seoTitle.length > 60
-        ? "text-red-400"
+        ? "text-red-600"
         : seoTitle.length < 30
-          ? "text-amber-400"
-          : "text-emerald-400";
+          ? "text-amber-600"
+          : "text-emerald-700";
 
   const metaColor =
     metaDescription.length === 0
-      ? "text-slate-400"
+      ? "text-slate-500"
       : metaDescription.length > 160
-        ? "text-red-400"
+        ? "text-red-600"
         : metaDescription.length < 70
-          ? "text-amber-400"
-          : "text-emerald-400";
+          ? "text-amber-600"
+          : "text-emerald-700";
 
   return (
-    <div className="space-y-4 rounded-2xl border border-white/30 bg-white/20 p-5 shadow-lg backdrop-blur-md">
+    <div className="space-y-5 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
       <div className="relative">
         <div className="mb-1 flex items-center justify-between">
           <label className="block text-xs">عنوان سئو (Title Tag)</label>
@@ -71,13 +71,13 @@ export default function SeoFields({ form, updateField }: SeoFieldsProps) {
           type="text"
           value={seoTitle}
           onChange={(e) => updateField("seoTitle", e.target.value)}
-          className="w-full rounded-md border border-slate-300 bg-inherit px-3 py-2 text-sm focus:border-blue-700 focus:outline-none"
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-500 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/15"
           placeholder="خرید PS5 Slim دیسک‌خور | کنسول پلی‌استیشن 5 | کرمان آتاری"
         />
         <button
           type="button"
           onClick={generateSeoTitle}
-          className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-blue-300 transition hover:text-blue-200"
+          className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-teal-700 transition hover:text-teal-800"
         >
           <Wand2 className="h-3 w-3" />
           تولید خودکار از عنوان محصول
@@ -95,13 +95,13 @@ export default function SeoFields({ form, updateField }: SeoFieldsProps) {
           rows={3}
           value={metaDescription}
           onChange={(e) => updateField("metaDescription", e.target.value)}
-          className="w-full rounded-md border border-slate-300 bg-inherit px-3 py-2 text-sm focus:border-blue-700 focus:outline-none"
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-500 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/15"
           placeholder="خرید PS5 Slim دیسک‌خور با ارسال براساس مقصد، گارانتی سلامت کالا و پشتیبانی واقعی از کرمان آتاری."
         />
         <button
           type="button"
           onClick={generateMetaDescription}
-          className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-blue-300 transition hover:text-blue-200"
+          className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-teal-700 transition hover:text-teal-800"
         >
           <Wand2 className="h-3 w-3" />
           تولید خودکار از توضیح کوتاه
@@ -114,13 +114,13 @@ export default function SeoFields({ form, updateField }: SeoFieldsProps) {
           type="text"
           value={form.mainImageAlt || ""}
           onChange={(e) => updateField("mainImageAlt", e.target.value)}
-          className="w-full rounded-md border border-slate-300 bg-inherit px-3 py-2 text-sm focus:border-blue-700 focus:outline-none"
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-500 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/15"
           placeholder="کنسول PS5 Slim دیسک‌خور با دسته DualSense"
         />
         <button
           type="button"
           onClick={generateImageAlt}
-          className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-blue-300 transition hover:text-blue-200"
+          className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-teal-700 transition hover:text-teal-800"
         >
           <Wand2 className="h-3 w-3" />
           تولید خودکار از عنوان و برند

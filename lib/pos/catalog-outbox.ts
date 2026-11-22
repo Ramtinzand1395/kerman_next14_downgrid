@@ -20,6 +20,7 @@ const PRODUCT_EVENT_PROJECTION = [
   "sku",
   "barcode",
   "productType",
+  "condition",
   "category",
   "mainImage",
   "status",
@@ -306,6 +307,13 @@ export async function adjustProductInventoriesWithCatalogChange(
           inventoryVersion: 1,
         };
 
+        if (input.quantityDelta > 0) {
+          filter.$or = [
+            { condition: { $ne: "used" } },
+            { stock: { $lte: 1 - input.quantityDelta } },
+          ];
+        }
+
         if (input.variantId) {
           filter.productType = "multi";
           filter.variants = {
@@ -328,6 +336,14 @@ export async function adjustProductInventoriesWithCatalogChange(
           { returnDocument: "after", session, runValidators: true },
         )) as ProductDocument | null;
         if (!product) throw new InventoryAdjustmentUnavailableError();
+        if (product.condition === "used") {
+          if (input.quantityDelta < 0 && (input.source === "wallet" || input.source === "zarinpal")) {
+            product.usedUnitSoldAt = new Date();
+          } else if (input.quantityDelta > 0) {
+            product.usedUnitSoldAt = undefined;
+          }
+          if (product.isModified("usedUnitSoldAt")) await product.save({ session });
+        }
 
         await appendCatalogChange(
           {

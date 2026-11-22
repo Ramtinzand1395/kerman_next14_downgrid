@@ -146,6 +146,7 @@ const consoleGuides = [
 ];
 
 function conditionLabel(product: Product) {
+  if (product.condition) return product.condition === "used" ? "کارکرده" : "نو";
   const slugs = new Set((product.tags || []).map((tag) => tag.slug));
   if (slugs.has("new")) return "نو";
   if (slugs.has("used")) return "کارکرده";
@@ -237,6 +238,41 @@ export default function LandingHome({
           </section>
         </Motion>
 
+        <section className="landing-section overflow-hidden rounded-[24px] border border-[#ccddf6] bg-white p-4 shadow-[0_12px_30px_rgba(12,52,111,0.05)] sm:p-6" aria-labelledby="used-consoles-home-heading">
+          <div className="grid items-center gap-5 md:grid-cols-[1fr_auto]">
+            <div>
+              <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700">
+                <ShieldCheck className="h-4 w-4" /> انتخاب با اطلاعات روشن
+              </span>
+              <h2 id="used-consoles-home-heading" className="mt-3 text-xl font-black leading-relaxed text-[#0b1d48] sm:text-2xl">
+                کنسول‌های کارکرده PS2 تا PS5
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
+                مدل‌های کارکرده پلی‌استیشن را یکجا مقایسه کن؛ عکس واقعی هر دستگاه،
+                لوازم همراه، وضعیت ظاهری و نتیجه بررسی را در صفحه محصول ببین.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2" aria-label="دسترسی به نسل‌های کنسول کارکرده">
+                {[
+                  { label: "PS2", slug: "playstation-2" },
+                  { label: "PS3", slug: "playstation-3" },
+                  { label: "PS4", slug: "playstation-4" },
+                  { label: "PS5", slug: "playstation-5" },
+                ].map((item) => (
+                  <Link key={item.slug} href={"/used-consoles?generation=" + item.slug}
+                    className="rounded-xl border border-blue-100 bg-[#f4f8ff] px-4 py-2 text-xs font-black text-[#1656ac] transition hover:border-blue-300 hover:bg-blue-50">
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+            <Link href="/used-consoles"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#1469f5] px-6 text-sm font-black text-white shadow-[0_8px_22px_rgba(20,105,245,0.17)] transition hover:bg-[#0b56ce]">
+              مشاهده همه کنسول‌های کارکرده
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </div>
+        </section>
+
         <div className="landing-section">
           <LandingCatalog
             title="نمیدونی چی بازی کنی؟"
@@ -275,12 +311,15 @@ export default function LandingHome({
                 کنسول‌های نو و کارکرده منتشرشده فروشگاه
               </p>
             </div>
+            <div className="flex flex-wrap gap-4">
+            <Link href="/used-consoles" className="inline-flex min-h-10 items-center text-sm font-bold text-blue-700">کنسول‌های کارکرده</Link>
             <Link
               href="/category/consoles"
               className="inline-flex min-h-10 items-center gap-1 text-sm font-black text-[#1469f5]"
             >
               همه کنسول‌ها <ChevronLeft className="h-3.5 w-3.5" />
             </Link>
+            </div>
           </div>
           {data.consoles.length > 0 ? (
             <div

@@ -23,6 +23,7 @@ const CATALOG_SNAPSHOT_PROJECTION = [
   "sku",
   "barcode",
   "productType",
+  "condition",
   "category",
   "mainImage",
   "status",

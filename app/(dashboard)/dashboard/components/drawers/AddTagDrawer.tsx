@@ -107,15 +107,15 @@ export default function AddTagDrawer({ onClose }: AddTagDrawerProps) {
     <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-slate-950/55 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative h-full w-full max-w-md border-r border-slate-700 bg-slate-900 text-slate-100 shadow-2xl">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-700 bg-slate-900/95 px-5 py-4 backdrop-blur">
+      <div className="relative h-full w-full max-w-md border-r border-slate-200 bg-white text-slate-900 shadow-2xl">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 backdrop-blur">
           <div className="flex items-center gap-2">
-            <TagIcon className="h-5 w-5 text-sky-400" />
+            <TagIcon className="h-5 w-5 text-teal-700" />
             <h2 className="text-sm font-bold">مدیریت تگ‌ها</h2>
           </div>
           <button
             onClick={onClose}
-            className="rounded-md p-1 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+            className="rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-teal-800"
             aria-label="بستن پنجره"
           >
             <X className="h-4 w-4" />
@@ -123,8 +123,8 @@ export default function AddTagDrawer({ onClose }: AddTagDrawerProps) {
         </div>
 
         <div className="space-y-5 p-5">
-          <div className="rounded-xl border border-slate-700 bg-slate-800/70 p-4">
-            <p className="mb-3 text-xs text-slate-300">افزودن تگ جدید</p>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="mb-3 text-xs text-slate-700">افزودن تگ جدید</p>
             <div className="space-y-2">
               <input
                 type="text"
@@ -135,14 +135,14 @@ export default function AddTagDrawer({ onClose }: AddTagDrawerProps) {
                   setName(nextName);
                   if (!slug) setSlug(slugify(nextName));
                 }}
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-xs outline-none ring-sky-500 transition placeholder:text-slate-500 focus:ring-2"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs outline-none ring-teal-500 transition placeholder:text-slate-500 focus:ring-2"
               />
               <input
                 type="text"
                 placeholder="slug"
                 value={slug}
                 onChange={(e) => setSlug(slugify(e.target.value))}
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-xs outline-none ring-sky-500 transition placeholder:text-slate-500 focus:ring-2"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs outline-none ring-teal-500 transition placeholder:text-slate-500 focus:ring-2"
               />
               <button
                 onClick={handleAdd}
@@ -155,31 +155,31 @@ export default function AddTagDrawer({ onClose }: AddTagDrawerProps) {
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-3">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-xs text-slate-300">لیست تگ‌ها</p>
+              <p className="text-xs text-slate-700">لیست تگ‌ها</p>
               <span className="rounded-full bg-slate-700 px-2 py-1 text-[10px]">{tags.length} مورد</span>
             </div>
 
             <div className="max-h-[56vh] space-y-2 overflow-y-auto pr-1">
               {loading ? (
-                <div className="flex items-center justify-center gap-2 py-8 text-xs text-slate-400">
+                <div className="flex items-center justify-center gap-2 py-8 text-xs text-slate-500">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   در حال بارگذاری...
                 </div>
               ) : tags.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-slate-700 py-6 text-center text-xs text-slate-500">
+                <p className="rounded-lg border border-dashed border-slate-200 py-6 text-center text-xs text-slate-500">
                   هنوز هیچ تگی ثبت نشده است.
                 </p>
               ) : (
                 tags.map((tag) => (
                   <div
                     key={tag._id}
-                    className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-900/70 px-3 py-2"
+                    className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2"
                   >
                     <div className="flex flex-col">
                       <span className="text-xs font-semibold">{tag.name}</span>
-                      <span className="text-[10px] text-slate-400">/{tag.slug}</span>
+                      <span className="text-[10px] text-slate-500">/{tag.slug}</span>
                     </div>
                     <button
                     title="حذف برچسب" aria-label={`حذف برچسب ${tag.name}`}

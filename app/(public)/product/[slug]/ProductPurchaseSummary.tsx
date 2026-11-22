@@ -75,11 +75,17 @@ export default function ProductPurchaseSummary() {
             {requiresSelection
               ? "منتظر انتخاب"
               : isOutOfStock
-              ? "ناموجود"
+              ? (product.condition === "used" && product.usedUnitSoldAt ? "فروخته شد" : "ناموجود")
               : `${toPersianDigits(effectiveStock)} عدد`}
           </span>
         </li>
 
+        {product.condition === "used" && product.usedConsole && (
+          <>
+            <li><strong>وضعیت دستگاه کارکرده</strong><p>{product.usedConsole.appearance}</p></li>
+            <li><strong>مهلت تست</strong><p>{product.usedConsole.terms}</p></li>
+          </>
+        )}
         {effectiveSku && (
           <li className="flex items-center justify-between">
             <span className="text-zinc-500">شناسه کالا (SKU)</span>

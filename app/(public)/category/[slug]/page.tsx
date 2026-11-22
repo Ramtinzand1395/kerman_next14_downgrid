@@ -187,6 +187,9 @@ export default async function CategoryPage({ params, searchParams }: Props) {
           ))}
         </nav>
       )}
+      {(category.slug === "consoles" || ancestors.some(row => row.slug === "consoles")) && (
+        <Link className="inline-block font-semibold text-blue-700" href="/used-consoles">همهٔ کنسول‌های کارکرده</Link>
+      )}
       <form
         key={catalogQueryString(query)}
         action={path}
@@ -236,6 +239,11 @@ export default async function CategoryPage({ params, searchParams }: Props) {
             <option value="highPrice">بیشترین قیمت</option>
           </select>
         </label>
+        {(category.slug === "consoles" || ancestors.some(row => row.slug === "consoles")) && (
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input type="checkbox" name="condition" value="used" defaultChecked={query.used} /> فقط کارکرده
+          </label>
+        )}
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <input
             name="inStock"

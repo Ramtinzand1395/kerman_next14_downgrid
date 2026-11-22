@@ -191,22 +191,43 @@ body {
   }
 }
 
+/* Kerman Atari administration — clear, light and accessible. Public store is unaffected. */
 .dashboard-shell {
-  background: radial-gradient(
-    circle at top right,
-    #e0e7ff 0%,
-    #f8fafc 38%,
-    #f1f5f9 100%
-  );
+  --dashboard-ink: #152438;
+  --dashboard-muted: #64748b;
+  --dashboard-border: #e3eaf0;
+  --dashboard-surface: #ffffff;
+  --dashboard-primary: #0f766e;
+  --dashboard-primary-hover: #115e59;
+  --dashboard-primary-soft: #e7f7f4;
+  color: var(--dashboard-ink);
+  color-scheme: light;
+  background: #f4f7fa;
 }
 
 .dashboard-sidebar {
-  background: linear-gradient(180deg, #312e81 0%, #3730a3 50%, #4338ca 100%);
+  color: #334155;
+  background: #ffffff;
+  border-left: 1px solid #e3eaf0;
+  box-shadow: -5px 0 24px rgba(30, 60, 83, 0.035);
+}
+
+.dashboard-sidebar nav {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.dashboard-sidebar :is(button, a):focus-visible,
+.dashboard-topbar :is(button, a):focus-visible {
+  outline: 2px solid var(--dashboard-primary);
+  outline-offset: 2px;
 }
 
 .dashboard-main {
   display: flex;
+  min-width: 0;
   flex-direction: column;
+  scrollbar-color: #cbd5e1 transparent;
 }
 
 .dashboard-topbar {
@@ -217,46 +238,324 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.9rem 1rem;
-  border-bottom: 1px solid #e2e8f0;
-  background: rgba(248, 250, 252, 0.92);
-  backdrop-filter: blur(8px);
+  padding: 0.95rem 1rem;
+  border-bottom: 1px solid var(--dashboard-border);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 4px 16px rgba(30, 60, 83, 0.025);
+  backdrop-filter: blur(14px);
 }
 
 .dashboard-content {
+  width: 100%;
   padding: 1rem;
+}
+
+.dashboard-panel,
+.dashboard-stat-card {
+  border: 1px solid var(--dashboard-border);
+  border-radius: 1.2rem;
+  background: var(--dashboard-surface);
+  box-shadow: 0 7px 23px rgba(30, 60, 83, 0.04);
+  transition: border-color 180ms ease, box-shadow 180ms ease;
 }
 
 .dashboard-panel {
-  border: 1px solid #e2e8f0;
-  border-radius: 1rem;
-  background: #ffffff;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
-  padding: 1rem;
+  padding: 1.2rem;
 }
 
 .dashboard-stat-card {
-  border: 1px solid #e2e8f0;
-  border-radius: 1rem;
-  background: #ffffff;
-  padding: 1rem;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+  padding: 1.2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
+.dashboard-panel:hover,
+.dashboard-stat-card:hover {
+  border-color: #cddcde;
+  box-shadow: 0 9px 26px rgba(30, 60, 83, 0.065);
+}
+
 .dashboard-content table {
-  border-radius: 0.75rem;
+  border-radius: 0.85rem;
   overflow: hidden;
 }
 
-@media (min-width: 768px) {
-  .dashboard-topbar {
-    padding: 1rem 1.5rem;
-  }
-
-  .dashboard-content {
-    padding: 1.5rem;
-  }
+.dashboard-content :is(input, textarea, select):focus-visible {
+  outline-offset: 1px;
 }
+
+.dashboard-shell ::selection {
+  background: #a9e3d9;
+  color: #134e4a;
+}
+
+/* Product wizard: match the same system without changing the public storefront. */
+.dashboard-product-editor {
+  color: #1e293b;
+  color-scheme: light;
+}
+
+.dashboard-product-editor :is(input, select, textarea) {
+  color-scheme: light;
+}
+
+.dashboard-product-editor :is(input, textarea)::placeholder {
+  color: #94a3b8;
+}
+
+.dashboard-product-editor :is(button, a, input, textarea, select):focus-visible {
+  outline-color: var(--dashboard-primary);
+}
+
+@media (min-width: 768px) {
+  .dashboard-topbar { padding: 1rem 1.75rem; }
+  .dashboard-content { padding: 1.75rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-panel,
+  .dashboard-stat-card { transition: none; }
+}
+
+
+/* Admin dark design system. Scoped: it never changes the public storefront. */
+.dashboard-shell[data-admin-theme="dark"] {
+  --dashboard-ink: #ecf3f8;
+  --dashboard-muted: #b4c4d3;
+  --dashboard-border: #384a59;
+  --dashboard-surface: #202e3c;
+  --dashboard-primary: #55d5c4;
+  --dashboard-primary-hover: #34bfae;
+  --dashboard-primary-soft: #174442;
+  --admin-base: #141f2a;
+  --admin-panel: #202e3c;
+  --admin-raised: #263746;
+  --admin-input: #182734;
+  --admin-line: #3b4e5e;
+  --admin-text: #edf5fa;
+  --admin-subtext: #b9c9d7;
+  --admin-accent: #6be5d4;
+  background: var(--admin-base);
+  color: var(--admin-text);
+  color-scheme: dark;
+}
+
+.dashboard-shell[data-admin-theme="dark"] .dashboard-sidebar,
+.dashboard-shell[data-admin-theme="dark"] .dashboard-topbar,
+.dashboard-shell[data-admin-theme="dark"] .dashboard-panel,
+.dashboard-shell[data-admin-theme="dark"] .dashboard-stat-card {
+  background: var(--admin-panel);
+  border-color: var(--admin-line);
+  color: var(--admin-text);
+  box-shadow: 0 6px 22px rgb(1 12 25 / 10%);
+}
+
+.dashboard-shell[data-admin-theme="dark"] .dashboard-product-editor {
+  background: var(--admin-base) !important;
+  color: var(--admin-text);
+  border-color: var(--admin-line) !important;
+  color-scheme: dark;
+}
+
+/* Surfaces: include Tailwind's opacity variants. The old dark theme missed
+   bg-teal-50/70, leaving the inspection form bright with near-white labels. */
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-white"], [class~="bg-white/80"], [class~="bg-white/90"],
+  [class~="bg-white/95"], [class~="bg-slate-50"], [class~="bg-slate-100"],
+  [class~="bg-slate-50/70"], [class~="bg-slate-50/80"],
+  [class~="bg-slate-100/80"], [class~="bg-gray-50"], [class~="bg-gray-100"],
+  [class~="bg-zinc-50"], [class~="bg-slate-900"], [class~="bg-slate-900/70"]
+) { background-color: var(--admin-panel) !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-slate-200"], [class~="bg-slate-300"], [class~="bg-gray-200"],
+  [class~="bg-gray-300"], [class~="bg-slate-800"], [class~="bg-slate-800/50"]
+) { background-color: var(--admin-raised) !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-teal-50"], [class~="bg-teal-50/70"], [class~="bg-teal-50/80"],
+  [class~="bg-teal-100"], [class~="bg-teal-100/50"],
+  [class~="bg-emerald-50"], [class~="bg-emerald-100"],
+  [class~="bg-green-50"], [class~="bg-lime-50"]
+) { background-color: #1b403f !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-sky-50"], [class~="bg-blue-50"], [class~="bg-indigo-50"],
+  [class~="bg-sky-100"], [class~="bg-blue-100"]
+) { background-color: #223b50 !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-amber-50"], [class~="bg-amber-100"], [class~="bg-orange-50"],
+  [class~="bg-yellow-50"]
+) { background-color: #403421 !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-rose-50"], [class~="bg-rose-100"],
+  [class~="bg-red-50"], [class~="bg-red-100"]
+) { background-color: #452b35 !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-purple-50"], [class~="bg-violet-50"],
+  [class~="bg-indigo-100"]
+) { background-color: #342d4b !important; }
+
+/* Text: clear hierarchy (body 14.5+: high contrast, metadata lower contrast).
+   Preserve actual white text on solid action buttons. */
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="text-slate-950"], [class~="text-slate-900"],
+  [class~="text-slate-800"], [class~="text-slate-700"],
+  [class~="text-gray-950"], [class~="text-gray-900"],
+  [class~="text-gray-800"], [class~="text-gray-700"],
+  [class~="text-zinc-900"]
+) { color: var(--admin-text) !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="text-slate-600"], [class~="text-slate-500"],
+  [class~="text-slate-400"], [class~="text-gray-600"],
+  [class~="text-gray-500"], [class~="text-gray-400"],
+  [class~="text-zinc-500"]
+) { color: var(--admin-subtext) !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="text-teal-600"], [class~="text-teal-700"],
+  [class~="text-teal-800"], [class~="text-teal-900"],
+  [class~="text-emerald-600"], [class~="text-emerald-700"],
+  [class~="text-emerald-800"], [class~="text-green-700"],
+  [class~="text-lime-700"]
+) { color: var(--admin-accent) !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="text-sky-700"], [class~="text-sky-800"],
+  [class~="text-blue-600"], [class~="text-blue-700"],
+  [class~="text-blue-800"], [class~="text-indigo-600"],
+  [class~="text-indigo-700"], [class~="text-indigo-800"]
+) { color: #a3d3fc !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="text-amber-600"], [class~="text-amber-700"],
+  [class~="text-amber-800"], [class~="text-orange-700"]
+) { color: #f7d692 !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="text-rose-600"], [class~="text-rose-700"],
+  [class~="text-rose-800"], [class~="text-red-600"],
+  [class~="text-red-700"], [class~="text-red-800"]
+) { color: #ffb0be !important; }
+
+/* Consistent outlines and table dividers */
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="border-slate-100"], [class~="border-slate-200"],
+  [class~="border-slate-300"], [class~="border-slate-600"],
+  [class~="border-slate-700"], [class~="border-gray-100"],
+  [class~="border-gray-200"], [class~="border-gray-300"],
+  [class~="border-white"], [class~="border-white/10"],
+  [class~="divide-slate-100"], [class~="divide-slate-200"]
+) { border-color: var(--admin-line) !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="border-teal-100"], [class~="border-teal-200"],
+  [class~="border-teal-300"], [class~="border-teal-400"],
+  [class~="border-emerald-200"]
+) { border-color: #2c7771 !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="border-sky-200"], [class~="border-blue-200"],
+  [class~="border-indigo-200"]
+) { border-color: #416986 !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="border-amber-200"], [class~="border-orange-200"]
+) { border-color: #846538 !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="border-rose-200"], [class~="border-red-200"]
+) { border-color: #985363 !important; }
+
+/* Inputs and selects always have consistent high contrast, including dropdown menus. */
+.dashboard-shell[data-admin-theme="dark"] :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]),
+  textarea, select
+) {
+  color: var(--admin-text) !important;
+  background: var(--admin-input) !important;
+  border-color: #4a6071 !important;
+  color-scheme: dark;
+}
+.dashboard-shell[data-admin-theme="dark"] :is(input, textarea)::placeholder {
+  color: #9cafc0 !important;
+}
+.dashboard-shell[data-admin-theme="dark"] select option {
+  background: #1c2935;
+  color: #edf5fa;
+}
+.dashboard-shell[data-admin-theme="dark"] :is(input, textarea, select):focus-visible {
+  outline: 2px solid #5eead4;
+  outline-offset: 1px;
+  border-color: #5eead4 !important;
+}
+.dashboard-shell[data-admin-theme="dark"] input::file-selector-button {
+  color: #edf5fa;
+  background: #304352;
+  border-color: var(--admin-line);
+}
+
+/* Action buttons retain solid dark-teal backgrounds with WHITE labels. */
+.dashboard-shell[data-admin-theme="dark"] [class~="bg-teal-700"] {
+  background-color: #08776f !important;
+  color: #ffffff !important;
+}
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-teal-700"], [class~="bg-blue-600"],
+  [class~="bg-emerald-600"], [class~="bg-rose-600"],
+  [class~="bg-red-600"]
+) [class~="text-white"] { color: #fff !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="hover:bg-white"], [class~="hover:bg-slate-50"],
+  [class~="hover:bg-slate-100"], [class~="hover:bg-slate-200"],
+  [class~="hover:bg-teal-50"], [class~="hover:bg-gray-100"]
+):hover { background-color: #304657 !important; }
+
+.dashboard-shell[data-admin-theme="dark"] :is(.dashboard-panel, .dashboard-stat-card):hover {
+  border-color: #597180;
+  box-shadow: 0 10px 28px rgb(0 0 0 / 10%);
+}
+.dashboard-shell[data-admin-theme="dark"] [class*="bg-gradient-to-"] {
+  background-image: none !important;
+  background-color: #243343;
+}
+
+/* Date picker, rich text editor and product images */
+.dashboard-shell[data-admin-theme="dark"] :is(.ql-toolbar, .ql-container, .ql-picker-options) {
+  background: var(--admin-panel);
+  border-color: #425667;
+  color: var(--admin-text);
+}
+.dashboard-shell[data-admin-theme="dark"] :is(.ql-editor, .ql-picker-label) {
+  color: var(--admin-text);
+}
+.dashboard-shell[data-admin-theme="dark"] .ql-stroke { stroke: #cfe1ee; }
+.dashboard-shell[data-admin-theme="dark"] .ql-fill { fill: #cfe1ee; }
+.dashboard-shell[data-admin-theme="dark"] :is(.rmdp-wrapper, .rmdp-calendar, .rmdp-header, .rmdp-day-picker, .rmdp-time-picker) {
+  background: #223242;
+  color: #e8f2f7;
+}
+.dashboard-shell[data-admin-theme="dark"] .rmdp-wrapper {
+  border: 1px solid #425667;
+}
+.dashboard-shell[data-admin-theme="dark"] :is(.rmdp-day, .rmdp-week-day, .rmdp-header-values) {
+  color: #e8f2f7;
+}
+.dashboard-shell[data-admin-theme="dark"] .rmdp-day.rmdp-selected span {
+  background: #08776f;
+  color: #fff;
+}
+.dashboard-shell[data-admin-theme="dark"] .product-image-pending {
+  background-color: #243343;
+}
+.dashboard-shell[data-admin-theme="dark"] ::selection {
+  background: #176b68;
+  color: #fff;
+}
+

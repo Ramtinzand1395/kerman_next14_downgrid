@@ -7,6 +7,7 @@ import { uploadCloudinaryImage } from "@/lib/cloudinary";
 export const runtime = "nodejs";
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
+const ACCEPTED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]);
 
 export async function POST(request: Request) {
   try {
@@ -27,8 +28,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "فایل تصویر ارسال نشده است" }, { status: 400 });
     }
 
-    if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ error: "فقط فایل تصویری مجاز است" }, { status: 400 });
+    if (!ACCEPTED_TYPES.has(file.type)) {
+      return NextResponse.json({ error: "فرمت تصویر مجاز نیست. تصویر JPG، PNG، WebP، GIF یا AVIF انتخاب کنید." }, { status: 400 });
+    }
+    if (file.size === 0) {
+      return NextResponse.json({ error: "فایل تصویر خالی یا خراب است؛ تصویر سالم دیگری انتخاب کنید." }, { status: 400 });
     }
 
     if (file.size > MAX_IMAGE_SIZE) {
@@ -45,8 +49,27 @@ export async function POST(request: Request) {
     return NextResponse.json(uploaded, { status: 201 });
   } catch (error) {
     console.error("Cloudinary upload failed:", error);
+    const cloudinaryStatus = error && typeof error === "object" && "http_code" in error
+      ? Number((error as { http_code?: unknown }).http_code)
+      : 0;
+    if (cloudinaryStatus === 400 || cloudinaryStatus === 422) {
+      return NextResponse.json(
+        { error: "محتوای فایل تصویر قابل پردازش نیست. تصویر را با فرمت JPG، PNG یا WebP دوباره ذخیره و ارسال کنید." },
+        { status: 400 },
+      );
+    }
+    if (cloudinaryStatus === 413) {
+      return NextResponse.json({ error: "اندازه تصویر از محدودیت سرویس بیشتر است. تصویر را کوچک‌تر کنید." }, { status: 413 });
+    }
+    if (cloudinaryStatus === 429) {
+      return NextResponse.json({ error: "سرویس تصویر درخواست‌های زیادی دریافت کرده است. کمی بعد دوباره تلاش کنید." }, { status: 429 });
+    }
     return NextResponse.json(
-      { error: "آپلود تصویر در Cloudinary ناموفق بود" },
+      { error:
+          error instanceof Error && error.message.includes("credentials are missing")
+            ? "تنظیمات سرویس آپلود تصویر روی سرور ناقص است. با پشتیبانی فنی تماس بگیرید."
+            : "سرویس بارگذاری تصویر در حال حاضر پاسخ نداد. اتصال سرور و تنظیمات Cloudinary را بررسی کنید."
+      },
       { status: 500 },
     );
   }

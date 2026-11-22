@@ -195,6 +195,30 @@ export default function MobileMenu({
                                 </ul>
                               </li>
                             ))}
+                            <li className="rounded-xl border border-blue-200 bg-blue-50 p-3">
+                              <Link href="/used-consoles" onClick={onClose}
+                                className="flex min-h-10 items-center gap-2 font-bold text-blue-800">
+                                <Sparkles className="h-4 w-4 shrink-0" aria-hidden="true" />
+                                کنسول‌های کارکرده
+                              </Link>
+                              <p className="my-1 text-xs leading-5 text-slate-600">
+                                PS2 تا PS5؛ همراه با جزئیات و گزارش تست دستگاه
+                              </p>
+                              <div className="mt-2 grid grid-cols-4 gap-2">
+                                {[
+                                  { name: "PS2", slug: "playstation-2" },
+                                  { name: "PS3", slug: "playstation-3" },
+                                  { name: "PS4", slug: "playstation-4" },
+                                  { name: "PS5", slug: "playstation-5" },
+                                ].map((item) => (
+                                  <Link key={item.slug} href={`/used-consoles?generation=${item.slug}`}
+                                    onClick={onClose}
+                                    className="rounded-lg border border-blue-200 bg-white px-2 py-2 text-center text-xs font-bold text-blue-700">
+                                    {item.name}
+                                  </Link>
+                                ))}
+                              </div>
+                            </li>
                           </motion.ul>
                         )}
                       </AnimatePresence>

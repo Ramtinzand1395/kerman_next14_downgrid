@@ -162,16 +162,16 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
         onClick={onClose}
       />
 
-      <div className="relative h-full w-full max-w-md overflow-y-auto border-r border-slate-700 bg-slate-900 text-slate-100 shadow-2xl">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-700 bg-slate-900/95 px-5 py-4 backdrop-blur">
+      <div className="relative h-full w-full max-w-md overflow-y-auto border-r border-slate-200 bg-white text-slate-900 shadow-2xl">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 backdrop-blur">
           <div className="flex items-center gap-2">
-            <FolderTree className="h-5 w-5 text-emerald-400" />
+            <FolderTree className="h-5 w-5 text-teal-700" />
             <h2 className="text-sm font-bold">مدیریت دسته‌بندی‌ها</h2>
           </div>
           <button
             aria-label="بستن پنجره"
             onClick={onClose}
-            className="rounded-md p-1 text-slate-400 transition hover:bg-slate-800 hover:text-white"
+            className="rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-teal-800"
           >
             <X className="h-4 w-4" />
           </button>
@@ -179,7 +179,7 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
 
         <div className="space-y-5 p-5">
           {editing && (
-            <div className="space-y-3 rounded-xl border border-emerald-700 bg-slate-800 p-4">
+            <div className="space-y-3 rounded-xl border border-emerald-700 bg-slate-100 p-4">
               <h3 className="text-sm font-bold">سئوی {editing.name}</h3>
               <a
                 href={`/category/${encodeURIComponent(editing.slug)}`}
@@ -189,7 +189,7 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
               >
                 مشاهده صفحه دسته‌بندی
               </a>
-              <p className="text-xs leading-6 text-slate-400">
+              <p className="text-xs leading-6 text-slate-500">
                 متن خالی از راهنمای پیش‌فرض استفاده می‌کند. آدرس دسته و محصولات
                 حفظ می‌شود.
               </p>
@@ -213,7 +213,7 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
                         [field.key]: e.target.value,
                       }))
                     }
-                    className="mt-2 w-full rounded-lg border border-slate-600 bg-slate-900 p-2"
+                    className="mt-2 w-full rounded-lg border border-slate-300 bg-white p-2"
                   />
                 </label>
               ))}
@@ -221,7 +221,7 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
               {faqs.map((faq, index) => (
                 <div
                   key={index}
-                  className="space-y-2 rounded-lg border border-slate-600 p-2"
+                  className="space-y-2 rounded-lg border border-slate-300 p-2"
                 >
                   <label className="block text-xs">
                     پرسش
@@ -237,7 +237,7 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
                           ),
                         )
                       }
-                      className="mt-1 w-full rounded bg-slate-900 p-2"
+                      className="mt-1 w-full rounded bg-white p-2"
                     />
                   </label>
                   <label className="block text-xs">
@@ -254,7 +254,7 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
                           ),
                         )
                       }
-                      className="mt-1 w-full rounded bg-slate-900 p-2"
+                      className="mt-1 w-full rounded bg-white p-2"
                     />
                   </label>
                   <button
@@ -299,14 +299,14 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
             </div>
           )}
 
-          <div className="rounded-xl border border-slate-700 bg-slate-800/70 p-4">
-            <p className="mb-3 text-xs text-slate-300">افزودن دسته جدید</p>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="mb-3 text-xs text-slate-700">افزودن دسته جدید</p>
             <div className="space-y-2">
               <select
                 title="انتخاب دسته مادر"
                 value={parentId}
                 onChange={(e) => setParentId(e.target.value)}
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-xs outline-none ring-emerald-500 transition focus:ring-2"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs outline-none ring-teal-500 transition focus:ring-2"
               >
                 <option value="">بدون دسته مادر</option>
                 {categories.map((cat) => (
@@ -325,7 +325,7 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
                   setName(nextName);
                   if (!slug) setSlug(slugify(nextName));
                 }}
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-xs outline-none ring-emerald-500 transition placeholder:text-slate-500 focus:ring-2"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs outline-none ring-teal-500 transition placeholder:text-slate-500 focus:ring-2"
               />
 
               <input
@@ -333,7 +333,7 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
                 placeholder="slug"
                 value={slug}
                 onChange={(e) => setSlug(slugify(e.target.value))}
-                className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-xs outline-none ring-emerald-500 transition placeholder:text-slate-500 focus:ring-2"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs outline-none ring-teal-500 transition placeholder:text-slate-500 focus:ring-2"
               />
 
               <button
@@ -351,9 +351,9 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-3">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-xs text-slate-300">لیست دسته‌ها</p>
+              <p className="text-xs text-slate-700">لیست دسته‌ها</p>
               <span className="rounded-full bg-slate-700 px-2 py-1 text-[10px]">
                 {categories.length} مورد
               </span>
@@ -361,23 +361,23 @@ export default function AddCategoryDrawer({ onClose }: AddCategoryDrawerProps) {
 
             <div className="max-h-[56vh] space-y-2 overflow-y-auto pr-1">
               {loading ? (
-                <div className="flex items-center justify-center gap-2 py-8 text-xs text-slate-400">
+                <div className="flex items-center justify-center gap-2 py-8 text-xs text-slate-500">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   در حال بارگذاری...
                 </div>
               ) : categories.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-slate-700 py-6 text-center text-xs text-slate-500">
+                <p className="rounded-lg border border-dashed border-slate-200 py-6 text-center text-xs text-slate-500">
                   هنوز هیچ دسته‌ای ثبت نشده است.
                 </p>
               ) : (
                 categories.map((cat) => (
                   <div
                     key={cat._id}
-                    className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-900/70 px-3 py-2"
+                    className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2"
                   >
                     <div className="flex flex-col">
                       <span className="text-xs font-semibold">{cat.name}</span>
-                      <span className="text-[10px] text-slate-400">
+                      <span className="text-[10px] text-slate-500">
                         مادر: {cat.parent ? cat.parent.name : "-"}
                       </span>
                     </div>

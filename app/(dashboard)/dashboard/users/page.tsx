@@ -66,7 +66,7 @@ const roleLabel: Record<User["role"], string> = {
 
 const roleBadge: Record<User["role"], string> = {
   user: "bg-slate-100 text-slate-700",
-  admin: "bg-indigo-100 text-indigo-700",
+  admin: "bg-teal-100 text-teal-800",
   superadmin: "bg-rose-100 text-rose-700",
 };
 
@@ -137,7 +137,7 @@ export default function UsersPage() {
       {
         label: "ادمین‌ها",
         value: summary.admins.toLocaleString("fa-IR"),
-        tone: "from-indigo-100 to-indigo-50",
+        tone: "from-teal-100 to-teal-50",
       },
       {
         label: "سفارش‌های موفق",
@@ -159,12 +159,12 @@ export default function UsersPage() {
 
   return (
     <section className="space-y-6 p-4 md:p-6">
-      <header className="rounded-2xl border border-slate-200 bg-gradient-to-r from-blue-900 to-blue-700 p-6 text-white shadow-sm">
-        <h1 className="mt-2 text-2xl font-bold md:text-3xl text-white">
+      <header className="rounded-2xl border border-slate-200 bg-gradient-to-r from-teal-50 to-white p-6 text-slate-900 shadow-sm">
+        <h1 className="mt-2 text-2xl font-bold md:text-3xl text-slate-900">
           مدیریت کاربران
         </h1>
 
-        <p className="mt-2 text-sm text-slate-200 md:text-base">
+        <p className="mt-2 text-sm text-slate-600 md:text-base">
           کاربران را جستجو کنید، براساس نقش فیلتر کنید و جزئیات فعالیت هر کاربر
           را سریع‌تر ببینید.
         </p>
@@ -210,7 +210,7 @@ export default function UsersPage() {
             }}
             aria-label="جستجوی کاربران با نام، شماره موبایل یا ایمیل"
             placeholder="جستجو با نام، شماره موبایل یا ایمیل"
-            className="h-11 rounded-xl border border-slate-200 px-4 text-sm outline-none transition focus:border-indigo-400"
+            className="h-11 rounded-xl border border-slate-200 px-4 text-sm outline-none transition focus:border-teal-600"
           />
           <select
             title="فیلتر نقش کاربر" aria-label="فیلتر نقش کاربر"
@@ -219,7 +219,7 @@ export default function UsersPage() {
               setRoleFilter(event.target.value as "all" | User["role"]);
               setPage(1);
             }}
-            className="h-11 rounded-xl border border-slate-200 px-4 text-sm outline-none transition focus:border-indigo-400"
+            className="h-11 rounded-xl border border-slate-200 px-4 text-sm outline-none transition focus:border-teal-600"
           >
             <option value="all">همه نقش‌ها</option>
             <option value="user">کاربر</option>

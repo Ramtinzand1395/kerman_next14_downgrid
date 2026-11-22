@@ -1,3 +1,4 @@
+import { isConsoleGeneration, readConsoleReport, type ConsoleCondition, type ConsoleReport } from "./used-console.ts";
 import mongoose from "mongoose";
 import {
   normalizeVariantSelector,
@@ -11,6 +12,10 @@ export type ProductInputMode = "create" | "update";
 export type BuildProductInputOptions = {
   mode: ProductInputMode;
   productId?: string;
+  categorySlug?: string;
+  previousCondition?: ConsoleCondition | null;
+  previousReport?: ConsoleReport | null;
+  previousDigital?: boolean;
   existingVariantIds?: readonly string[];
   existingDefaultVariantId?: string | null;
   existingPurchasePrices?: ReadonlyMap<string, number>;
@@ -503,7 +508,25 @@ export function buildProductWriteInput(
     throw error;
   }
 
+  const condition = body.condition === undefined ? options.previousCondition : body.condition;
+  let usedConsole: ConsoleReport | null = null;
+  if (condition != null && condition !== "new" && condition !== "used") {
+    throw new ProductInputValidationError("condition", "وضعیت کالا نامعتبر است.");
+  }
+  if (condition === "used") {
+    if (!isConsoleGeneration(options.categorySlug) || productType !== "single" || stock > 1 ||
+        (body.isDigital ?? options.previousDigital) || body.isOnlineGame) {
+      throw new ProductInputValidationError("condition", "کنسول کارکرده باید در دستهٔ نسل دستگاه، فیزیکی و تک‌مدلی با موجودی صفر یا یک باشد.");
+    }
+    try {
+      usedConsole = readConsoleReport(body.usedConsole === undefined ? options.previousReport : body.usedConsole,
+        options.categorySlug, status === "published");
+    } catch (error) {
+      throw new ProductInputValidationError("usedConsole", (error as Error).message);
+    }
+  }
   const productData = {
+    ...(condition !== undefined ? { condition, usedConsole } : {}),
     ...(typeof body.isDigital === "boolean" ? { isDigital: body.isDigital, isOnlineGame: body.isDigital && body.isOnlineGame === true } : {}),
     status,
     productType,
@@ -523,7 +546,9 @@ export function buildProductWriteInput(
     seoTitle: optionalString(body.seoTitle),
     metaDescription: optionalString(body.metaDescription),
     mainImageAlt: optionalString(body.mainImageAlt),
-    mainImage: requiredString(body.mainImage, "mainImage"),
+    mainImage: status === "draft"
+      ? optionalString(body.mainImage) ?? ""
+      : requiredString(body.mainImage, "mainImage"),
     images: normalizeImages(body.galleryImages ?? body.images),
     specifications: Array.isArray(body.specifications)
       ? body.specifications

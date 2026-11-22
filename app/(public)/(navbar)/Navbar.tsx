@@ -8,6 +8,7 @@ import {
   Info,
   Phone,
   Grid2x2,
+  Gamepad2,
   ChevronDown,
   FileText,
   Menu,
@@ -118,7 +119,7 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <ul className="relative hidden items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-2 text-gray-700 shadow-sm xl:flex">
+        <ul className="relative hidden items-center gap-1 rounded-full border border-slate-200/80 bg-white/80 px-2 py-2 text-gray-700 shadow-sm xl:flex">
           {menuItems.map((item) => (
             <li
               key={item.name}
@@ -133,7 +134,7 @@ export default function Navbar() {
               <Link
                 href={item.link}
                 aria-label={`رفتن به ${item.name}`}
-                className={`group relative flex items-center gap-1 rounded-full px-3 py-2 sm:text-xs lg:text-sm font-medium transition ${
+                className={`group relative flex items-center gap-1 rounded-full px-2.5 py-2 text-xs 2xl:text-sm font-medium transition ${
                   pathname === item.link
                     ? "bg-blue-50 text-blue-600"
                     : "text-gray-700 hover:bg-slate-100 hover:text-blue-600"
@@ -194,6 +195,30 @@ export default function Navbar() {
                           </div>
                         </div>
                       ))}
+                      <div className="rounded-xl border border-blue-200 bg-[linear-gradient(140deg,#eef5ff_0%,#fff_100%)] p-3">
+                        <Link href="/used-consoles" onClick={() => setShowCategories(false)}
+                          className="mb-2 flex items-center gap-2 text-sm font-black text-blue-800 transition hover:text-blue-600">
+                          <Gamepad2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+                          کنسول‌های کارکرده
+                        </Link>
+                        <p className="mb-2 text-xs leading-5 text-slate-600">
+                          پلی‌استیشن PS2 تا PS5 با تصاویر و گزارش تست هر دستگاه
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            { name: "PS2", slug: "playstation-2" },
+                            { name: "PS3", slug: "playstation-3" },
+                            { name: "PS4", slug: "playstation-4" },
+                            { name: "PS5", slug: "playstation-5" },
+                          ].map((item) => (
+                            <Link key={item.slug} href={`/used-consoles?generation=${item.slug}`}
+                              onClick={() => setShowCategories(false)}
+                              className="rounded-lg border border-blue-100 bg-white px-2 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-50">
+                              {item.name}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -204,7 +229,7 @@ export default function Navbar() {
 
         <form
           onSubmit={handleSearch}
-          className="hidden items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 shadow-inner xl:flex xl:w-[22vw]"
+          className="hidden items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 shadow-inner 2xl:flex 2xl:w-[18vw]"
           role="search"
           aria-label="جستجو در محصولات"
         >
