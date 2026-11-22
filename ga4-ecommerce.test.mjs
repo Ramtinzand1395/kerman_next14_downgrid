@@ -37,6 +37,7 @@ test("purchase uses the confirmed order, net item prices in rial, and the browse
     params: {
       currency: "IRR", value: 1200, shipping: 200, transaction_id: _id.toString(),
       items: [{ item_id: order.items[0].product.toString(), item_name: "شاسی", item_variant: "A5", price: 600, quantity: 2 }],
+      value_toman: 120, shipping_toman: 20,
       session_id: session.sessionId, engagement_time_msec: 1, debug_mode: 1,
     },
   }]);
@@ -90,4 +91,26 @@ test("the purchase queue retries with one transaction ID and claims orders atomi
   assert.equal(stored.purchaseAnalytics.session, undefined);
   assert.equal(stored.purchaseAnalytics.nextAttemptAt, undefined);
   assert.equal((await Order.findById(_id).lean()).purchaseAnalytics, undefined);
+});
+
+test("purchase converts toman to a supported GA4 currency only with an explicit rate", () => {
+  const previousCurrency = process.env.GA4_REPORTING_CURRENCY;
+  const previousRate = process.env.GA4_TOMAN_PER_REPORTING_UNIT;
+  try {
+    process.env.GA4_REPORTING_CURRENCY = "USD";
+    process.env.GA4_TOMAN_PER_REPORTING_UNIT = "100";
+    const params = purchasePayload(order, session, false).events[0].params;
+    assert.equal(params.currency, "USD");
+    assert.equal(params.value, 1.2);
+    assert.equal(params.shipping, 0.2);
+    assert.equal(params.items[0].price, 0.6);
+    assert.equal(params.value_toman, 120);
+    process.env.GA4_TOMAN_PER_REPORTING_UNIT = "not-a-rate";
+    assert.equal(purchasePayload(order, session, false).events[0].params.currency, "IRR");
+  } finally {
+    if (previousCurrency === undefined) delete process.env.GA4_REPORTING_CURRENCY;
+    else process.env.GA4_REPORTING_CURRENCY = previousCurrency;
+    if (previousRate === undefined) delete process.env.GA4_TOMAN_PER_REPORTING_UNIT;
+    else process.env.GA4_TOMAN_PER_REPORTING_UNIT = previousRate;
+  }
 });
