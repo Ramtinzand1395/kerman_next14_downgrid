@@ -4,11 +4,11 @@ import React, { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, ClipboardCheck, FileText, ImagePlus, Layers3, Loader2, PackagePlus, Save, SearchCheck, ShieldCheck, X } from "lucide-react";
 
-import type { ProductForm, ProductVariant, Tag } from "@/types";
+import type { Category, ProductForm, ProductVariant, Tag } from "@/types";
 import { isPurchasePrice } from "@/lib/product-profit";
 
 import UsedConsoleFields from "../modals/UsedConsoleFields";
-import { isConsoleGeneration, readConsoleReport } from "@/lib/used-console";
+import { isConsoleGeneration, readConsoleReport, type ConsoleGeneration } from "@/lib/used-console";
 import BasicInfoFields from "../modals/BasicInfoFields";
 import CategorySelector from "../modals/CategorySelector";
 import TagsSelector from "../modals/TagsSelector";
@@ -79,6 +79,13 @@ const STEPS = [
   { key: "publish", title: "بررسی نهایی", hint: "آماده‌سازی برای ذخیره و انتشار", icon: ShieldCheck },
 ] as const;
 
+const USED_CONSOLE_CHOICES: { slug: ConsoleGeneration; label: string }[] = [
+  { slug: "playstation-2", label: "PS2" },
+  { slug: "playstation-3", label: "PS3" },
+  { slug: "playstation-4", label: "PS4" },
+  { slug: "playstation-5", label: "PS5" },
+];
+
 export default function AddProductDrawer({ onClose, onSave, product }: Props) {
   const [form, setForm] = useState<ProductForm>({
     condition: product?.condition ?? null,
@@ -121,14 +128,20 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [loading, setLoading] = useState(false);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [tagsList, setTagsList] = useState<any[]>([]);
 
   useEffect(() => {
     fetch("/api/admin/category")
-      .then((res) => res.json())
-      .then(setCategories)
-      .catch(() => toast.error("دسته‌بندی‌ها دریافت نشدند؛ دوباره تلاش کنید."));
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Category request failed");
+        const result: unknown = await res.json();
+        if (!Array.isArray(result)) throw new Error("Invalid categories");
+        setCategories(result as Category[]);
+      })
+      .catch(() => toast.error("دسته‌بندی‌ها دریافت نشدند؛ دوباره تلاش کنید."))
+      .finally(() => setCategoriesLoading(false));
   }, []);
 
   useEffect(() => {
@@ -177,6 +190,30 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
       }
       return next;
     });
+  };
+
+  const startUsedConsole = (slug: ConsoleGeneration) => {
+    const category = categories.find((item) => item.slug === slug);
+    if (!category) {
+      validationWarning("taxonomy", "دسته‌بندی این نسل کنسول هنوز وجود ندارد یا بارگذاری نشده است. ابتدا دسته‌بندی مربوط به PS2 تا PS5 را بسازید و دوباره تلاش کنید.");
+      return;
+    }
+    setForm((prev) => ({
+      ...prev,
+      category: category._id,
+      condition: "used",
+      usedConsole: prev.condition === "used" && prev.category === category._id ? prev.usedConsole : null,
+      productType: "single",
+      isDigital: false,
+      isOnlineGame: false,
+      stock: 1,
+      variants: [],
+      defaultVariantId: null,
+      variantSelector: { enabled: false, version: 1, groups: [], mappings: [] },
+    }));
+    setIsDirty(true);
+    setErrorMessage(null);
+    setActiveStep("taxonomy");
   };
 
   const existingVariants: ProductVariant[] = product?.variants ?? [];
@@ -375,13 +412,45 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
                   <p className="mt-1.5 text-xs leading-6 text-slate-400">{active.hint}</p>
                 </div>
                 <form onSubmit={event => event.preventDefault()} className="space-y-5">
-                  {activeStep === "basic" && <BasicInfoFields form={form} updateField={updateField}
-                    purchasePriceRequired={!product || product.productType === "multi" || isPurchasePrice(product.purchasePrice)}
-                    variantPurchasePriceRequired={variant => !existingVariantIds.has(variant._id) ||
-                      isPurchasePrice(existingVariants.find(entry => entry._id === variant._id)?.purchasePrice)}
-                  />}
+                  {activeStep === "basic" && <div className="space-y-5">
+                    {!product && <section aria-labelledby="used-console-shortcut-heading" className="rounded-2xl border border-lime-400/30 bg-lime-400/[0.06] p-4 sm:p-5">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <h4 id="used-console-shortcut-heading" className="flex items-center gap-2 text-sm font-black text-lime-200">
+                            <ShieldCheck className="h-5 w-5" aria-hidden="true" /> ثبت سریع کنسول کارکرده
+                          </h4>
+                          <p className="mt-2 text-xs leading-6 text-slate-300">
+                            نسل را انتخاب کنید؛ دسته‌بندی، وضعیت کارکرده و موجودی یک دستگاه خودکار تنظیم می‌شود و گزارش تست باز خواهد شد.
+                          </p>
+                        </div>
+                        <span className="rounded-full border border-lime-400/20 bg-slate-950/40 px-3 py-1 text-[11px] text-lime-200">بدون انتخاب تگ</span>
+                      </div>
+                      <div role="group" aria-label="انتخاب سریع نسل کنسول کارکرده" className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        {USED_CONSOLE_CHOICES.map((choice) => {
+                          const exists = categories.some((category) => category.slug === choice.slug);
+                          return <button key={choice.slug} type="button" disabled={loading || categoriesLoading} onClick={() => startUsedConsole(choice.slug)}
+                            className="min-h-14 rounded-xl border border-slate-600 bg-slate-950/70 px-3 py-2.5 text-center transition hover:border-lime-400 hover:bg-lime-400/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-lime-400 disabled:cursor-wait disabled:opacity-50">
+                            <span className="block text-base font-black text-white">{choice.label}</span>
+                            {!categoriesLoading && <span className={"mt-1 block text-[10px] " + (exists ? "text-lime-300" : "text-amber-300")}>{exists ? "آماده ثبت" : "دسته موجود نیست"}</span>}
+                          </button>;
+                        })}
+                      </div>
+                      {categoriesLoading && <p role="status" className="mt-3 text-xs text-slate-400">در حال دریافت دسته‌بندی‌های سایت…</p>}
+                      {!categoriesLoading && USED_CONSOLE_CHOICES.some(choice => !categories.some(category => category.slug === choice.slug)) &&
+                        <p className="mt-3 text-xs leading-6 text-amber-200">اگر دسته نسل موردنظر وجود ندارد، ابتدا آن را از بخش «دسته‌بندی‌ها» در منوی مدیریت ایجاد کنید.</p>}
+                    </section>}
+                    <BasicInfoFields form={form} updateField={updateField}
+                      purchasePriceRequired={!product || product.productType === "multi" || isPurchasePrice(product.purchasePrice)}
+                      variantPurchasePriceRequired={variant => !existingVariantIds.has(variant._id) ||
+                        isPurchasePrice(existingVariants.find(entry => entry._id === variant._id)?.purchasePrice)}
+                    />
+                  </div>}
 
                   {activeStep === "taxonomy" && <div className="space-y-6">
+                    <div className="rounded-xl border border-sky-500/20 bg-sky-500/10 p-3 text-xs leading-6 text-sky-200">
+                      برای نمایش گزارش تست، دسته‌بندی اصلی PS2، PS3، PS4 یا PS5 را انتخاب کنید؛ انتخاب تگ کنسول کافی نیست.
+                      {!product && <button type="button" className="mr-2 font-bold text-lime-300 underline underline-offset-4 hover:text-lime-200" onClick={() => setActiveStep("basic")}>انتخاب سریع نسل در مرحله اول</button>}
+                    </div>
                     <CategorySelector categories={categories} form={form} updateField={updateField} />
                     {isConsoleGeneration(generation) && <UsedConsoleFields generation={generation} form={form} updateField={updateField} />}
                     <div className="border-t border-slate-800 pt-5"><TagsSelector tagsList={tagsList} form={form} updateField={updateField} /></div>
