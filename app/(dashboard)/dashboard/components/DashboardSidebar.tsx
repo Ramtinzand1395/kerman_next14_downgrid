@@ -139,7 +139,7 @@ useEffect(() => {
       <button
         title="باز کردن منو"
         onClick={() => setMobileOpen(true)}
-        className="fixed right-3 top-3 z-50 rounded-xl border border-lime-300/30 bg-[#101d30] p-2.5 text-lime-300 shadow-lg md:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-lime-400"
+        className="fixed right-3 top-3 z-50 rounded-xl border border-teal-200 bg-white p-2.5 text-teal-700 shadow-lg md:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600"
       >
         <Menu className="h-5 w-5" />
       </button>
@@ -147,7 +147,7 @@ useEffect(() => {
       {mobileOpen && (
         <div
           onClick={() => setMobileOpen(false)}
-          className="fixed inset-0 z-40 bg-slate-950/65 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-sm md:hidden"
         />
       )}
 
@@ -156,24 +156,24 @@ useEffect(() => {
         ${expanded ? "md:w-72" : "md:w-20"}
         ${mobileOpen ? "w-72 translate-x-0" : "w-0 translate-x-full md:w-auto md:translate-x-0"}`}
       >
-        <div className="flex min-h-[86px] items-center justify-between gap-2 border-b border-white/10 px-4 py-4">
+        <div className="flex min-h-[86px] items-center justify-between gap-2 border-b border-slate-100 px-4 py-4">
           <div className="flex min-w-0 items-center gap-3">
-            <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-lime-300/20 bg-lime-300/10 text-lime-300">
+            <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-teal-100 bg-teal-50 text-teal-700">
               <Gamepad2 className="h-6 w-6" />
             </span>
             {expanded && (
               <div className="min-w-0 text-right">
                 <p className="truncate text-[11px] font-medium tracking-wide text-slate-400">مدیریت فروشگاه</p>
-                <h2 className="truncate text-base font-black text-white">Kerman <span className="text-lime-300">Atari</span></h2>
+                <h2 className="truncate text-base font-black text-slate-900">Kerman <span className="text-teal-700">Atari</span></h2>
               </div>
             )}
           </div>
           <button type="button" title={expanded ? "جمع کردن منو" : "باز کردن منو"} aria-label={expanded ? "جمع کردن منو" : "باز کردن منو"}
-            onClick={() => setExpanded(prev => !prev)} className="hidden rounded-lg p-2 text-slate-400 transition hover:bg-white/10 hover:text-lime-300 md:inline-flex">
+            onClick={() => setExpanded(prev => !prev)} className="hidden rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-teal-700 md:inline-flex">
             {expanded ? <PanelRightClose className="h-5 w-5" /> : <PanelRightOpen className="h-5 w-5" />}
           </button>
           <button type="button" title="بستن منو" aria-label="بستن منو" onClick={() => setMobileOpen(false)}
-            className="rounded-lg p-2 text-slate-300 hover:bg-white/10 md:hidden">
+            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 md:hidden">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -186,11 +186,11 @@ useEffect(() => {
 
             if (item.children) {
               return (
-                <div key={item.label} className="rounded-xl border border-white/[0.06] bg-white/[0.025] p-1">
+                <div key={item.label} className="rounded-xl border border-slate-100 bg-slate-50/70 p-1">
                   <button
                     onClick={() => toggleMenu(item.label)}
                     className={`flex w-full items-center justify-between rounded-lg px-3 py-2 transition ${
-                      childActive ? "bg-lime-300/10 text-lime-300" : "text-slate-300 hover:bg-white/[0.07] hover:text-white"
+                      childActive ? "bg-teal-50 text-teal-800" : "text-slate-600 hover:bg-teal-50 hover:text-teal-800"
                     }`}
                   >
                     <span className="flex items-center gap-3">
@@ -204,7 +204,7 @@ useEffect(() => {
                   </button>
 
                   {isOpen && (
-                    <div className="mt-1 space-y-1 border-r border-lime-300/15 pr-2">
+                    <div className="mt-1 space-y-1 border-r border-teal-100 pr-2">
                       {item.children.map((sub) => {
                         const isActive = sub.href ? pathname === sub.href : false;
 
@@ -213,7 +213,7 @@ useEffect(() => {
                             <button
                               key={sub.label}
                               onClick={() => handleAction(sub.action)}
-                              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-right text-slate-300 transition hover:bg-white/[0.07] hover:text-lime-200"
+                              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-right text-slate-600 transition hover:bg-teal-50 hover:text-teal-800"
                             >
                               <sub.icon className="h-4 w-4" />
                               {(expanded || mobileOpen) && sub.label}
@@ -227,8 +227,8 @@ useEffect(() => {
                             href={sub.href!}
                             className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition ${
                               isActive
-                                ? "bg-lime-300 text-slate-950 font-bold shadow-[0_3px_12px_rgba(163,230,53,0.12)]"
-                                : "text-slate-300 hover:bg-white/[0.07] hover:text-lime-200"
+                                ? "border-r-2 border-teal-600 bg-teal-50 text-teal-800 font-bold"
+                                : "text-slate-600 hover:bg-teal-50 hover:text-teal-800"
                             }`}
                           >
                             <sub.icon className="h-4 w-4" />
@@ -249,8 +249,8 @@ useEffect(() => {
                   onClick={handleLinkClick}
                 className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 transition ${
                   directActive
-                    ? "bg-lime-300 text-slate-950 font-bold shadow-[0_3px_12px_rgba(163,230,53,0.12)]"
-                    : "text-slate-300 hover:bg-white/[0.07] hover:text-lime-200"
+                    ? "border-r-2 border-teal-600 bg-teal-50 text-teal-800 font-bold"
+                    : "text-slate-600 hover:bg-teal-50 hover:text-teal-800"
                 }`}
               >
                 <item.icon className="h-4 w-4" />
@@ -266,9 +266,9 @@ useEffect(() => {
           })}
         </nav>
         {role === "superadmin" && expanded && (
-          <div className="border-t border-white/10 px-4 py-4">
+          <div className="border-t border-slate-100 px-4 py-4">
             <button type="button" onClick={() => { setMobileOpen(false); setActiveDrawer("addProduct"); }}
-              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-lime-300 px-4 py-2.5 text-sm font-black text-slate-950 shadow-[0_5px_20px_rgba(163,230,53,0.12)] transition hover:bg-lime-200">
+              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-teal-800">
               <PlusCircle className="h-4 w-4" /> ثبت محصول جدید
             </button>
           </div>
