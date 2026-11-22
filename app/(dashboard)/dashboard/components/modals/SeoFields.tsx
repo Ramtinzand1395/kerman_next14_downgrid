@@ -59,7 +59,7 @@ export default function SeoFields({ form, updateField }: SeoFieldsProps) {
           : "text-emerald-400";
 
   return (
-    <div className="space-y-4 rounded-2xl border border-white/30 bg-white/20 p-5 shadow-lg backdrop-blur-md">
+    <div className="space-y-5 rounded-xl border border-slate-700 bg-slate-950/40 p-4 sm:p-5">
       <div className="relative">
         <div className="mb-1 flex items-center justify-between">
           <label className="block text-xs">عنوان سئو (Title Tag)</label>
@@ -71,7 +71,7 @@ export default function SeoFields({ form, updateField }: SeoFieldsProps) {
           type="text"
           value={seoTitle}
           onChange={(e) => updateField("seoTitle", e.target.value)}
-          className="w-full rounded-md border border-slate-300 bg-inherit px-3 py-2 text-sm focus:border-blue-700 focus:outline-none"
+          className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
           placeholder="خرید PS5 Slim دیسک‌خور | کنسول پلی‌استیشن 5 | کرمان آتاری"
         />
         <button
@@ -95,7 +95,7 @@ export default function SeoFields({ form, updateField }: SeoFieldsProps) {
           rows={3}
           value={metaDescription}
           onChange={(e) => updateField("metaDescription", e.target.value)}
-          className="w-full rounded-md border border-slate-300 bg-inherit px-3 py-2 text-sm focus:border-blue-700 focus:outline-none"
+          className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
           placeholder="خرید PS5 Slim دیسک‌خور با ارسال براساس مقصد، گارانتی سلامت کالا و پشتیبانی واقعی از کرمان آتاری."
         />
         <button
@@ -114,7 +114,7 @@ export default function SeoFields({ form, updateField }: SeoFieldsProps) {
           type="text"
           value={form.mainImageAlt || ""}
           onChange={(e) => updateField("mainImageAlt", e.target.value)}
-          className="w-full rounded-md border border-slate-300 bg-inherit px-3 py-2 text-sm focus:border-blue-700 focus:outline-none"
+          className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
           placeholder="کنسول PS5 Slim دیسک‌خور با دسته DualSense"
         />
         <button
