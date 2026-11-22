@@ -352,7 +352,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
             </div>
             <div className="hidden border-t border-slate-800 p-5 lg:block">
               <div className="mb-2 flex items-center justify-between text-xs"><span className="text-slate-400">آمادگی انتشار</span><span className="font-bold text-lime-300">{completion.toLocaleString("fa-IR")}٪</span></div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-slate-700"><div className="h-full rounded-full bg-indigo-400 transition-all" style={{ width: completion + "%" }} /></div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-slate-700"><div className="h-full rounded-full bg-lime-400 transition-all" style={{ width: completion + "%" }} /></div>
               <p className="mt-3 text-[11px] leading-6 text-slate-500">می‌توانید مراحل را به هر ترتیبی تکمیل کنید. تغییرات تا زمان ذخیره در سایت ثبت نمی‌شوند.</p>
             </div>
           </nav>
