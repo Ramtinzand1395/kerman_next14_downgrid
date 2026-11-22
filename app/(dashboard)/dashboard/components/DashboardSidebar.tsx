@@ -22,6 +22,9 @@ import {
   Bell,
   CalendarClock,
   Truck,
+  Gamepad2,
+  PanelRightClose,
+  PanelRightOpen,
 } from "lucide-react";
 import AddProductDrawer from "./drawers/AddProductDrawer";
 import AddCategoryDrawer from "./drawers/AddCategoryDrawer";
@@ -136,7 +139,7 @@ useEffect(() => {
       <button
         title="باز کردن منو"
         onClick={() => setMobileOpen(true)}
-        className="fixed right-4 top-4 z-50 rounded-xl bg-blue-600 p-2 text-white shadow-lg md:hidden"
+        className="fixed right-3 top-3 z-50 rounded-xl border border-lime-300/30 bg-[#101d30] p-2.5 text-lime-300 shadow-lg md:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-lime-400"
       >
         <Menu className="h-5 w-5" />
       </button>
@@ -144,7 +147,7 @@ useEffect(() => {
       {mobileOpen && (
         <div
           onClick={() => setMobileOpen(false)}
-          className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/65 backdrop-blur-sm md:hidden"
         />
       )}
 
@@ -153,24 +156,29 @@ useEffect(() => {
         ${expanded ? "md:w-72" : "md:w-20"}
         ${mobileOpen ? "w-72 translate-x-0" : "w-0 translate-x-full md:w-auto md:translate-x-0"}`}
       >
-        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-          <button title="تغییر حالت منو" onClick={() => setExpanded((prev) => !prev)}>
-            <Menu className="h-5 w-5 text-white" />
+        <div className="flex min-h-[86px] items-center justify-between gap-2 border-b border-white/10 px-4 py-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-lime-300/20 bg-lime-300/10 text-lime-300">
+              <Gamepad2 className="h-6 w-6" />
+            </span>
+            {expanded && (
+              <div className="min-w-0 text-right">
+                <p className="truncate text-[11px] font-medium tracking-wide text-slate-400">مدیریت فروشگاه</p>
+                <h2 className="truncate text-base font-black text-white">Kerman <span className="text-lime-300">Atari</span></h2>
+              </div>
+            )}
+          </div>
+          <button type="button" title={expanded ? "جمع کردن منو" : "باز کردن منو"} aria-label={expanded ? "جمع کردن منو" : "باز کردن منو"}
+            onClick={() => setExpanded(prev => !prev)} className="hidden rounded-lg p-2 text-slate-400 transition hover:bg-white/10 hover:text-lime-300 md:inline-flex">
+            {expanded ? <PanelRightClose className="h-5 w-5" /> : <PanelRightOpen className="h-5 w-5" />}
           </button>
-
-          {expanded && (
-            <div className="text-right">
-              <p className="text-xs text-indigo-100/80">مدیریت فروشگاه</p>
-              <h2 className="font-bold text-white">Kerman Atari</h2>
-            </div>
-          )}
-
-          <button title="بستن" onClick={() => setMobileOpen(false)} className="md:hidden">
-            <X className="h-5 w-5 text-white" />
+          <button type="button" title="بستن منو" aria-label="بستن منو" onClick={() => setMobileOpen(false)}
+            className="rounded-lg p-2 text-slate-300 hover:bg-white/10 md:hidden">
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        <nav className="flex-1 space-y-2 overflow-y-auto px-3 py-4 text-sm">
+        <nav aria-label="منوی مدیریت" className="flex-1 space-y-1.5 overflow-y-auto px-3 py-5 text-sm">
           {visibleNavItems.map((item) => {
             const isOpen = openMenus.includes(item.label);
             const directActive = item.href && pathname === item.href;
@@ -178,11 +186,11 @@ useEffect(() => {
 
             if (item.children) {
               return (
-                <div key={item.label} className="rounded-xl bg-white/5 p-1">
+                <div key={item.label} className="rounded-xl border border-white/[0.06] bg-white/[0.025] p-1">
                   <button
                     onClick={() => toggleMenu(item.label)}
                     className={`flex w-full items-center justify-between rounded-lg px-3 py-2 transition ${
-                      childActive ? "bg-white/20 text-white" : "hover:bg-white/10 text-indigo-50"
+                      childActive ? "bg-lime-300/10 text-lime-300" : "text-slate-300 hover:bg-white/[0.07] hover:text-white"
                     }`}
                   >
                     <span className="flex items-center gap-3">
@@ -196,7 +204,7 @@ useEffect(() => {
                   </button>
 
                   {isOpen && (
-                    <div className="mt-1 space-y-1 border-r border-white/10 pr-2">
+                    <div className="mt-1 space-y-1 border-r border-lime-300/15 pr-2">
                       {item.children.map((sub) => {
                         const isActive = sub.href ? pathname === sub.href : false;
 
@@ -205,7 +213,7 @@ useEffect(() => {
                             <button
                               key={sub.label}
                               onClick={() => handleAction(sub.action)}
-                              className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-right text-indigo-100 transition hover:bg-white/10 hover:text-white"
+                              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-right text-slate-300 transition hover:bg-white/[0.07] hover:text-lime-200"
                             >
                               <sub.icon className="h-4 w-4" />
                               {expanded && sub.label}
@@ -217,10 +225,10 @@ useEffect(() => {
                           <Link
                             key={sub.label}
                             href={sub.href!}
-                            className={`flex items-center gap-3 rounded-md px-3 py-2 transition ${
+                            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition ${
                               isActive
-                                ? "bg-indigo-500 text-white"
-                                : "text-indigo-100 hover:bg-white/10 hover:text-white"
+                                ? "bg-lime-300 text-slate-950 font-bold shadow-[0_3px_12px_rgba(163,230,53,0.12)]"
+                                : "text-slate-300 hover:bg-white/[0.07] hover:text-lime-200"
                             }`}
                           >
                             <sub.icon className="h-4 w-4" />
@@ -239,17 +247,17 @@ useEffect(() => {
                 key={item.label}
                 href={item.href!}
                   onClick={handleLinkClick}
-                className={`relative flex items-center gap-3 rounded-xl px-3 py-2 transition ${
+                className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 transition ${
                   directActive
-                    ? "bg-indigo-500 text-white shadow"
-                    : "text-indigo-100 hover:bg-white/10 hover:text-white"
+                    ? "bg-lime-300 text-slate-950 font-bold shadow-[0_3px_12px_rgba(163,230,53,0.12)]"
+                    : "text-slate-300 hover:bg-white/[0.07] hover:text-lime-200"
                 }`}
               >
                 <item.icon className="h-4 w-4" />
                 {expanded && item.label}
 
                 {item.label === "اعلان‌ها" && unreadCount > 0 && (
-                  <span className="mr-auto rounded-full bg-rose-500 px-2 py-0.5 text-xs text-white">
+                  <span className="mr-auto rounded-full bg-rose-500 px-2 py-0.5 text-xs font-bold text-white">
                     {unreadCount}
                   </span>
                 )}
@@ -257,6 +265,14 @@ useEffect(() => {
             );
           })}
         </nav>
+        {role === "superadmin" && expanded && (
+          <div className="border-t border-white/10 px-4 py-4">
+            <button type="button" onClick={() => { setMobileOpen(false); setActiveDrawer("addProduct"); }}
+              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-lime-300 px-4 py-2.5 text-sm font-black text-slate-950 shadow-[0_5px_20px_rgba(163,230,53,0.12)] transition hover:bg-lime-200">
+              <PlusCircle className="h-4 w-4" /> ثبت محصول جدید
+            </button>
+          </div>
+        )}
       </aside>
 
       {activeDrawer === "addProduct" && <AddProductDrawer onClose={closeDrawer} />}
