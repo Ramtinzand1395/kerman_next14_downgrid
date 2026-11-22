@@ -171,7 +171,7 @@ const BasicInfoFields = ({
               aria-pressed={form.productType === option.value}
               onClick={() => updateField("productType", option.value)}
               className={"rounded-xl border p-3 text-right transition disabled:cursor-not-allowed disabled:opacity-40 " +
-                (form.productType === option.value ? "border-indigo-400 bg-lime-400/10" : "border-slate-700 bg-slate-950/50 hover:border-slate-500")}>
+                (form.productType === option.value ? "border-lime-400 bg-lime-400/10" : "border-slate-700 bg-slate-950/50 hover:border-slate-500")}>
               <span className="block text-sm font-bold text-slate-100">{option.label}</span>
               <span className="mt-1 block text-xs text-slate-400">{option.help}</span>
             </button>
@@ -179,14 +179,14 @@ const BasicInfoFields = ({
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-700 bg-slate-950/40 p-3 text-xs text-slate-200">
-            <input type="checkbox" className="h-4 w-4 accent-indigo-500"
+            <input type="checkbox" className="h-4 w-4 accent-lime-400"
               disabled={form.condition === "used"}
               checked={!!form.isDigital}
               onChange={event => updateField("isDigital", event.target.checked)} />
             <span><strong className="block text-sm">محصول دیجیتال</strong><span className="mt-1 block text-slate-400">بدون ارسال فیزیکی</span></span>
           </label>
           {form.isDigital && <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-700 bg-slate-950/40 p-3 text-xs text-slate-200">
-            <input type="checkbox" className="h-4 w-4 accent-indigo-500" checked={!!form.isOnlineGame}
+            <input type="checkbox" className="h-4 w-4 accent-lime-400" checked={!!form.isOnlineGame}
               onChange={event => updateField("isOnlineGame", event.target.checked)} />
             <span><strong className="block text-sm">بازی آنلاین اکانتی</strong><span className="mt-1 block text-slate-400">تحویل اطلاعات اکانت</span></span>
           </label>}
@@ -426,7 +426,7 @@ const BasicInfoFields = ({
             <button
               type="button"
               onClick={handleAddVariant}
-              className="inline-flex items-center justify-center gap-1 rounded-lg bg-lime-400 hover:bg-lime-400 px-3 py-1.5 text-xs font-semibold text-white transition shadow-sm"
+              className="inline-flex items-center justify-center gap-1 rounded-lg bg-lime-400 hover:bg-lime-300 px-3 py-1.5 text-xs font-semibold text-slate-950 transition shadow-sm"
             >
               <Plus className="h-3.5 w-3.5" />
               افزودن مدل
