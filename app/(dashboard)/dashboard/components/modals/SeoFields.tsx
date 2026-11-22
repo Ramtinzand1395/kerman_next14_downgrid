@@ -44,19 +44,19 @@ export default function SeoFields({ form, updateField }: SeoFieldsProps) {
     seoTitle.length === 0
       ? "text-slate-500"
       : seoTitle.length > 60
-        ? "text-red-400"
+        ? "text-red-600"
         : seoTitle.length < 30
-          ? "text-amber-400"
-          : "text-emerald-400";
+          ? "text-amber-600"
+          : "text-emerald-700";
 
   const metaColor =
     metaDescription.length === 0
       ? "text-slate-500"
       : metaDescription.length > 160
-        ? "text-red-400"
+        ? "text-red-600"
         : metaDescription.length < 70
-          ? "text-amber-400"
-          : "text-emerald-400";
+          ? "text-amber-600"
+          : "text-emerald-700";
 
   return (
     <div className="space-y-5 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
