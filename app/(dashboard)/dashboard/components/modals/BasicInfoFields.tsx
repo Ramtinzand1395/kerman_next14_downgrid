@@ -40,7 +40,7 @@ function PurchasePriceField({
   onChange: (value: number | null) => void;
 }) {
   return (
-    <label className="block text-xs text-slate-300">
+    <label className="block text-xs font-semibold text-slate-300">
       <span className="mb-1 block">قیمت خرید (تومان){required ? " *" : ""}</span>
       <MoneyInput
         min="0"
@@ -49,7 +49,7 @@ function PurchasePriceField({
         aria-required={required}
         value={value ?? ""}
         onValueChange={(event) => onChange(event === "" ? null : Number(event))}
-        className="w-full rounded-lg border border-slate-600 bg-slate-800 px-2.5 py-1.5 text-sm text-slate-100 outline-none focus:border-indigo-500"
+        className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
       />
     </label>
   );
@@ -158,43 +158,46 @@ const BasicInfoFields = ({
   };
 
   return (
-    <div className="grid grid-cols-2 gap-5 rounded-2xl border border-slate-700/60 bg-slate-800/40 p-5 shadow-lg backdrop-blur-md transition-all duration-300">
-      {/* Product Type Selector */}
-      <div className="col-span-2 relative my-2 w-full">
-        <label
-          htmlFor="product-productType"
-          className="pointer-events-none absolute -top-4 left-0 text-xs text-slate-400"
-        >
-          {fieldLabels.productType}
-        </label>
-        <select
-          id="product-productType"
-          value={form.productType}
-          onChange={(e) =>
-            updateField(
-              "productType",
-              e.target.value as ProductForm["productType"],
-            )
-          }
-          className="w-full border-b border-slate-600 bg-inherit py-2 text-sm text-slate-100 transition-colors focus:border-b-2 focus:border-indigo-500 focus:outline-none"
-        >
-          <option value="single" className="bg-slate-900 text-slate-100">
-            محصول تکی (Single)
-          </option>
-          <option value="multi" className="bg-slate-900 text-slate-100">
-            محصول چند مدلی / دارای تنوع (Multi-Variant)
-          </option>
-        </select>
+    <div className="grid grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2">
+      <div className="space-y-3 sm:col-span-2">
+        <p className="text-sm font-semibold text-slate-200">نوع محصول</p>
+        <div role="group" aria-label="نوع محصول" className="grid grid-cols-2 gap-3">
+          {([
+            { value: "single", label: "محصول تکی", help: "یک قیمت و یک موجودی" },
+            { value: "multi", label: "چندمدلی", help: "چند رنگ، ظرفیت یا مدل" },
+          ] as const).map(option => (
+            <button key={option.value} type="button"
+              disabled={form.condition === "used" && option.value === "multi"}
+              aria-pressed={form.productType === option.value}
+              onClick={() => updateField("productType", option.value)}
+              className={"rounded-xl border p-3 text-right transition disabled:cursor-not-allowed disabled:opacity-40 " +
+                (form.productType === option.value ? "border-indigo-400 bg-indigo-500/15" : "border-slate-700 bg-slate-950/50 hover:border-slate-500")}>
+              <span className="block text-sm font-bold text-slate-100">{option.label}</span>
+              <span className="mt-1 block text-xs text-slate-400">{option.help}</span>
+            </button>
+          ))}
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-700 bg-slate-950/40 p-3 text-xs text-slate-200">
+            <input type="checkbox" className="h-4 w-4 accent-indigo-500"
+              disabled={form.condition === "used"}
+              checked={!!form.isDigital}
+              onChange={event => updateField("isDigital", event.target.checked)} />
+            <span><strong className="block text-sm">محصول دیجیتال</strong><span className="mt-1 block text-slate-400">بدون ارسال فیزیکی</span></span>
+          </label>
+          {form.isDigital && <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-700 bg-slate-950/40 p-3 text-xs text-slate-200">
+            <input type="checkbox" className="h-4 w-4 accent-indigo-500" checked={!!form.isOnlineGame}
+              onChange={event => updateField("isOnlineGame", event.target.checked)} />
+            <span><strong className="block text-sm">بازی آنلاین اکانتی</strong><span className="mt-1 block text-slate-400">تحویل اطلاعات اکانت</span></span>
+          </label>}
+        </div>
       </div>
 
-      <label><input type="checkbox" checked={!!form.isDigital} onChange={(e) => updateField("isDigital", e.target.checked)} /> محصول دیجیتال (بدون ارسال)</label>
-      {form.isDigital && <label><input type="checkbox" checked={!!form.isOnlineGame} onChange={(e) => updateField("isOnlineGame", e.target.checked)} /> بازی آنلاین با تحویل اکانت</label>}
-
       {/* Title */}
-      <div className="col-span-2 sm:col-span-1 relative my-2 w-full">
+      <div className="relative w-full sm:col-span-1">
         <label
           htmlFor="product-title"
-          className="pointer-events-none absolute -top-4 left-0 text-xs text-slate-400"
+          className="mb-2 block text-xs font-semibold text-slate-300"
         >
           {fieldLabels.title} *
         </label>
@@ -204,15 +207,15 @@ const BasicInfoFields = ({
           value={form.title || ""}
           onChange={(e) => updateField("title", e.target.value)}
           placeholder="مثلاً کنسول پلی‌استیشن ۵"
-          className="w-full border-b border-slate-600 bg-inherit py-1 text-sm text-slate-100 transition-colors focus:border-b-2 focus:border-indigo-500 focus:outline-none"
+          className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
         />
       </div>
 
       {/* Slug */}
-      <div className="col-span-2 sm:col-span-1 relative my-2 w-full">
+      <div className="relative w-full sm:col-span-1">
         <label
           htmlFor="product-slug"
-          className="pointer-events-none absolute -top-4 left-0 text-xs text-slate-400"
+          className="mb-2 block text-xs font-semibold text-slate-300"
         >
           {fieldLabels.slug} *
         </label>
@@ -222,15 +225,22 @@ const BasicInfoFields = ({
           value={form.slug || ""}
           onChange={(e) => updateField("slug", e.target.value)}
           placeholder="مثلاً ps5-standard-edition"
-          className="w-full border-b border-slate-600 bg-inherit py-1 text-sm text-slate-100 transition-colors focus:border-b-2 focus:border-indigo-500 focus:outline-none dir-ltr text-right"
+          className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 dir-ltr text-right"
         />
+        <button type="button" onClick={() => {
+          const suggested = (form.title || "").trim().toLowerCase()
+            .replace(/[^\w\u0600-\u06ff]+/g, "-").replace(/^-+|-+$/g, "");
+          if (suggested) updateField("slug", suggested);
+        }} className="mt-2 text-xs font-semibold text-indigo-300 transition hover:text-indigo-200">
+          ساخت اسلاگ از نام محصول
+        </button>
       </div>
 
       {/* Brand */}
-      <div className="col-span-2 sm:col-span-1 relative my-2 w-full">
+      <div className="relative w-full sm:col-span-1">
         <label
           htmlFor="product-brand"
-          className="pointer-events-none absolute -top-4 left-0 text-xs text-slate-400"
+          className="mb-2 block text-xs font-semibold text-slate-300"
         >
           {fieldLabels.brand}
         </label>
@@ -240,15 +250,15 @@ const BasicInfoFields = ({
           value={form.brand || ""}
           onChange={(e) => updateField("brand", e.target.value)}
           placeholder="مثلاً سونی (Sony)"
-          className="w-full border-b border-slate-600 bg-inherit py-1 text-sm text-slate-100 transition-colors focus:border-b-2 focus:border-indigo-500 focus:outline-none"
+          className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
         />
       </div>
 
       {/* Short Description */}
-      <div className="col-span-2 sm:col-span-1 relative my-2 w-full">
+      <div className="relative w-full sm:col-span-1">
         <label
           htmlFor="product-shortDesc"
-          className="pointer-events-none absolute -top-4 left-0 text-xs text-slate-400"
+          className="mb-2 block text-xs font-semibold text-slate-300"
         >
           {fieldLabels.shortDesc}
         </label>
@@ -258,7 +268,7 @@ const BasicInfoFields = ({
           value={form.shortDesc || ""}
           onChange={(e) => updateField("shortDesc", e.target.value)}
           placeholder="خلاصه ویژگی‌های محصول برای پیش‌نمایش"
-          className="w-full border-b border-slate-600 bg-inherit py-1 text-sm text-slate-100 transition-colors focus:border-b-2 focus:border-indigo-500 focus:outline-none"
+          className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
         />
       </div>
 
@@ -266,10 +276,10 @@ const BasicInfoFields = ({
       {form.productType === "single" && (
         <>
           {/* SKU */}
-          <div className="col-span-2 sm:col-span-1 relative my-2 w-full">
+          <div className="relative w-full sm:col-span-1">
             <label
               htmlFor="product-sku"
-              className="pointer-events-none absolute -top-4 left-0 text-xs text-slate-400"
+              className="mb-2 block text-xs font-semibold text-slate-300"
             >
               {fieldLabels.sku}
             </label>
@@ -279,15 +289,15 @@ const BasicInfoFields = ({
               value={form.sku || ""}
               onChange={(e) => updateField("sku", e.target.value)}
               placeholder="کد یکتای انبارداری (اختیاری)"
-              className="w-full border-b border-slate-600 bg-inherit py-1 text-sm text-slate-100 transition-colors focus:border-b-2 focus:border-indigo-500 focus:outline-none dir-ltr text-right"
+              className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 dir-ltr text-right"
             />
           </div>
 
           {/* Barcode */}
-          <div className="col-span-2 sm:col-span-1 relative my-2 w-full">
+          <div className="relative w-full sm:col-span-1">
             <label
               htmlFor="product-barcode"
-              className="pointer-events-none absolute -top-4 left-0 text-xs text-slate-400"
+              className="mb-2 block text-xs font-semibold text-slate-300"
             >
               {fieldLabels.barcode}
             </label>
@@ -298,15 +308,15 @@ const BasicInfoFields = ({
               value={form.barcode || ""}
               onChange={(e) => updateField("barcode", e.target.value)}
               placeholder="بارکد یکتای محصول تکی (اختیاری)"
-              className="w-full border-b border-slate-600 bg-inherit py-1 text-sm text-slate-100 transition-colors focus:border-b-2 focus:border-indigo-500 focus:outline-none dir-ltr text-right"
+              className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 dir-ltr text-right"
             />
           </div>
 
           {/* Price */}
-          <div className="col-span-2 sm:col-span-1 relative my-2 w-full">
+          <div className="relative w-full sm:col-span-1">
             <label
               htmlFor="product-price"
-              className="pointer-events-none absolute -top-4 left-0 text-xs text-slate-400"
+              className="mb-2 block text-xs font-semibold text-slate-300"
             >
               {fieldLabels.price} *
             </label>
@@ -316,11 +326,11 @@ const BasicInfoFields = ({
               step="1"
               value={form.price ?? ""}
               onValueChange={(e) => updateField("price", Math.max(0, Math.floor(Number(e))))}
-              className="w-full border-b border-slate-600 bg-inherit py-1 text-sm text-slate-100 transition-colors focus:border-b-2 focus:border-indigo-500 focus:outline-none"
+              className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
             />
           </div>
 
-          <div className="col-span-2 sm:col-span-1">
+          <div className="sm:col-span-1">
             <PurchasePriceField
               value={form.purchasePrice}
               required={purchasePriceRequired}
@@ -329,10 +339,10 @@ const BasicInfoFields = ({
           </div>
 
           {/* Stock */}
-          <div className="col-span-2 sm:col-span-1 relative my-2 w-full">
+          <div className="relative w-full sm:col-span-1">
             <label
               htmlFor="product-stock"
-              className="pointer-events-none absolute -top-4 left-0 text-xs text-slate-400"
+              className="mb-2 block text-xs font-semibold text-slate-300"
             >
               {fieldLabels.stock} *
             </label>
@@ -340,15 +350,16 @@ const BasicInfoFields = ({
               id="product-stock"
               type="number"
               min="0"
+              max={form.condition === "used" ? 1 : undefined}
               step="1"
               value={form.stock ?? ""}
-              onChange={(e) => updateField("stock", Math.max(0, Math.floor(Number(e.target.value))))}
-              className="w-full border-b border-slate-600 bg-inherit py-1 text-sm text-slate-100 transition-colors focus:border-b-2 focus:border-indigo-500 focus:outline-none"
+              onChange={(e) => updateField("stock", Math.min(form.condition === "used" ? 1 : Number.MAX_SAFE_INTEGER, Math.max(0, Math.floor(Number(e.target.value)))) )}
+              className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
             />
           </div>
 
           {/* Discount Toggle & Field */}
-          <div className="col-span-2 my-2 rounded-xl border border-slate-700 bg-slate-800/60 p-4">
+          <div className="rounded-xl border border-slate-700 bg-slate-950/40 p-4 sm:col-span-2">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-slate-200">
                 فعال‌سازی قیمت تخفیف‌خورده
@@ -376,7 +387,7 @@ const BasicInfoFields = ({
               <div className="relative mt-4 w-full">
                 <label
                   htmlFor="product-discountPrice"
-                  className="pointer-events-none absolute -top-4 left-0 text-xs text-slate-400"
+                  className="mb-2 block text-xs font-semibold text-slate-300"
                 >
                   {fieldLabels.discountPrice} (تومان)
                 </label>
@@ -402,7 +413,7 @@ const BasicInfoFields = ({
 
       {/* ─── MULTI-VARIANT EDITOR ─── */}
       {form.productType === "multi" && (
-        <div className="col-span-2 my-2 rounded-xl border border-indigo-500/30 bg-slate-800/80 p-4">
+        <div className="rounded-xl border border-indigo-500/30 bg-slate-950/40 p-4 sm:col-span-2">
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-700 pb-3">
             <div>
               <h4 className="text-sm font-bold text-slate-100">
@@ -616,7 +627,7 @@ const BasicInfoFields = ({
 
       {/* Description */}
       <RichTextEditor
-        className="col-span-2 my-2"
+        className="sm:col-span-2"
         label="توضیحات محصول"
         value={form.description || ""}
         onChange={(value) => updateField("description", value)}
