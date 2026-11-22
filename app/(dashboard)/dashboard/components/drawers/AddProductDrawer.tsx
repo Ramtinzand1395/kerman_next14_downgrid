@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, ClipboardCheck, FileText, ImagePlus, Layers3, Loader2, PackagePlus, Save, SearchCheck, ShieldCheck, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, ClipboardCheck, Eye, FileText, ImagePlus, Layers3, Loader2, PackagePlus, Save, SearchCheck, ShieldCheck, X } from "lucide-react";
 
 import type { Category, ProductForm, ProductVariant, Tag } from "@/types";
 import { isPurchasePrice } from "@/lib/product-profit";
@@ -18,6 +18,7 @@ import SpecificationsEditor from "../modals/SpecificationsEditor";
 import FaqEditor from "../modals/FaqEditor";
 import SeoFields from "../modals/SeoFields";
 import SeoAnalyzer from "../modals/SeoAnalyzer";
+import ProductDraftPreview from "../modals/ProductDraftPreview";
 import dynamic from "next/dynamic";
 
 const VariantSelectorBuilder = dynamic(
@@ -67,7 +68,7 @@ const initialForm: ProductForm = {
   },
 };
 
-type StepKey = "basic" | "taxonomy" | "media" | "details" | "seo" | "publish";
+type StepKey = "basic" | "taxonomy" | "media" | "details" | "seo" | "preview" | "publish";
 type SaveStatus = "draft" | "published";
 
 const STEPS = [
@@ -76,6 +77,7 @@ const STEPS = [
   { key: "media", title: "تصاویر محصول", hint: "عکس اصلی و گالری", icon: ImagePlus },
   { key: "details", title: "مشخصات بیشتر", hint: "مشخصات، تنوع‌ها و سوالات", icon: FileText },
   { key: "seo", title: "سئو و محتوا", hint: "اطلاعات گوگل و بررسی سئو", icon: SearchCheck },
+  { key: "preview", title: "پیش‌نمایش صفحه", hint: "نمای مشتری پیش از انتشار", icon: Eye },
   { key: "publish", title: "بررسی نهایی", hint: "آماده‌سازی برای ذخیره و انتشار", icon: ShieldCheck },
 ] as const;
 
@@ -85,6 +87,25 @@ const USED_CONSOLE_CHOICES: { slug: ConsoleGeneration; label: string }[] = [
   { slug: "playstation-4", label: "PS4" },
   { slug: "playstation-5", label: "PS5" },
 ];
+
+const stepForProductField = (field: string | undefined): StepKey => {
+  const key = field?.split(".")[0] || "";
+  if (["mainImage", "mainImageAlt", "galleryImages", "images"].includes(key)) return "media";
+  if (["category", "tags", "usedConsole", "condition"].includes(key)) return "taxonomy";
+  if (["specifications", "faqs", "variantSelector", "defaultVariantId"].includes(key)) return "details";
+  if (["seoTitle", "metaDescription"].includes(key)) return "seo";
+  return "basic";
+};
+
+const saveErrorMessage = (status: number, serverMessage?: string): string => {
+  if (status === 401) return "نشست مدیریت منقضی شده است. دوباره وارد پنل شوید؛ اطلاعات واردشده در این فرم را پیش از بستن حفظ کنید.";
+  if (status === 403) return "حساب فعلی مجوز ثبت محصول ندارد. با حساب مدیر اصلی وارد شوید.";
+  if (status === 409) return serverMessage || "این شناسه یا بارکد تکراری است یا اطلاعات محصول هم‌زمان تغییر کرده است. مقدار را اصلاح یا فرم را دوباره باز کنید.";
+  if (status === 413) return "حجم اطلاعات ارسالی بیش از محدودیت سرور است. تعداد یا حجم تصاویر را بررسی کنید.";
+  if (status === 429) return "درخواست‌های ثبت محصول بیش از حد مجاز بوده است. کمی بعد دوباره تلاش کنید.";
+  if (status >= 500) return serverMessage || "سرور در ذخیره محصول با خطا روبه‌رو شد. اطلاعات فرم حفظ شده‌اند؛ اتصال پایگاه داده یا لاگ سرور را بررسی کنید.";
+  return serverMessage || "اطلاعات محصول پذیرفته نشد. فیلدهای الزامی و مقادیر واردشده را بررسی کنید.";
+};
 
 export default function AddProductDrawer({ onClose, onSave, product }: Props) {
   const [form, setForm] = useState<ProductForm>({
@@ -124,6 +145,8 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
   const [activeStep, setActiveStep] = useState<StepKey>("basic");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [savingStatus, setSavingStatus] = useState<SaveStatus | null>(null);
+  const [mainImageUploading, setMainImageUploading] = useState(false);
+  const [galleryUploading, setGalleryUploading] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -220,6 +243,9 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
   const existingVariantIds = new Set(existingVariants.map((variant) => variant._id));
 
   const validateForm = (requestedStatus: SaveStatus) => {
+    if (mainImageUploading || galleryUploading) {
+      return validationWarning("media", "آپلود تصاویر هنوز کامل نشده است. بعد از پایان آپلود، دوباره ذخیره یا انتشار را انتخاب کنید.");
+    }
     const costRequired = !product || product.productType === "multi" || isPurchasePrice(product.purchasePrice);
     if (!form.title?.trim()) return validationWarning("basic", "نام محصول را وارد کنید.");
     if (!form.slug?.trim()) return validationWarning("basic", "آدرس (اسلاگ) محصول را وارد کنید.");
@@ -273,7 +299,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
       }
     }
     if (requestedStatus === "published" && !form.mainImage?.trim()) {
-      return validationWarning("media", "برای انتشار محصول باید تصویر اصلی را آپلود کنید.");
+      return validationWarning("media", "تصویر اصلی محصول ثبت نشده است. وارد مرحله «تصاویر محصول» شوید، یک عکس آپلود کنید و بعد از نمایش تصویر، انتشار را تکرار کنید.");
     }
     setErrorMessage(null);
     return true;
@@ -302,18 +328,27 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
             : [],
         }),
       });
-      const data = await res.json();
+      const payload: unknown = await res.json().catch(() => null);
       if (!res.ok) {
-        const message = data?.error || "ذخیره محصول انجام نشد. اطلاعات را بررسی و دوباره تلاش کنید.";
+        const info = payload && typeof payload === "object" ? payload as { error?: unknown; field?: unknown } : {};
+        const serverMessage = typeof info.error === "string" ? info.error : undefined;
+        const message = saveErrorMessage(res.status, serverMessage);
+        const field = typeof info.field === "string" ? info.field : undefined;
+        if (field) setActiveStep(stepForProductField(field));
+        else if (res.status === 409 && /SKU|بارکد|نامک|slug/i.test(message)) setActiveStep("basic");
         setErrorMessage(message);
         toast.error(message);
         return;
       }
       toast.success(requestedStatus === "draft" ? "پیش‌نویس محصول ذخیره شد." : "محصول با موفقیت منتشر شد.");
-      if (onSave) await onSave(data);
+      try {
+        if (onSave) await onSave(payload);
+      } catch {
+        toast.warning("محصول ذخیره شد، ولی تازه‌سازی لیست انجام نشد. صفحه محصولات را تازه‌سازی کنید.");
+      }
       onClose();
     } catch {
-      const message = "ارتباط با سرور برقرار نشد؛ دوباره تلاش کنید.";
+      const message = "ارتباط با سرور ثبت محصول برقرار نشد. اینترنت، VPN و اتصال سرور را بررسی کنید. داده‌های واردشده در فرم پاک نشده‌اند؛ دوباره تلاش کنید.";
       setErrorMessage(message);
       toast.error(message);
     } finally {
@@ -404,7 +439,11 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
                 <div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-teal-700 transition-all" style={{ width: ((activeIndex + 1) * 100 / STEPS.length) + "%" }} /></div>
               </div>
 
-              {errorMessage && <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-7 text-rose-800">{errorMessage}</div>}
+              {errorMessage && <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-7 text-rose-800">
+                <p className="font-bold">ثبت محصول انجام نشد</p>
+                <p>{errorMessage}</p>
+                <p className="mt-1 text-xs">اطلاعاتی که وارد کرده‌اید در فرم باقی می‌مانند؛ مشکل را رفع کنید و دوباره امتحان کنید.</p>
+              </div>}
 
               <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-lg shadow-black/10 sm:p-6">
                 <div className="mb-6 border-b border-slate-100 pb-4">
@@ -458,8 +497,8 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
 
                   {activeStep === "media" && <div className="space-y-5">
                     <p className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs leading-6 text-sky-800">تصویر اصلی روی کارت و صفحه محصول نمایش داده می‌شود. برای محصول کارکرده، حتماً عکس واقعی همان دستگاه را بگذارید. پیش‌نویس را می‌توانید بدون عکس ذخیره کنید.</p>
-                    <GalleryUploader form={form} updateField={updateField} />
-                    <ImageUploader form={form} updateField={updateField} />
+                    <GalleryUploader form={form} updateField={updateField} onUploadingChange={setMainImageUploading} />
+                    <ImageUploader form={form} updateField={updateField} onUploadingChange={setGalleryUploading} />
                   </div>}
 
                   {activeStep === "details" && <div className="space-y-6">
@@ -479,6 +518,11 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
                     </details>
                   </div>}
 
+                  {activeStep === "preview" &&
+                    <ProductDraftPreview form={form} categoryName={chosenCategory?.name}
+                      tagNames={tagsList.filter((tag) => form.tags.includes(tag._id)).map((tag) => tag.name)} />
+                  }
+
                   {activeStep === "publish" && <div className="space-y-5">
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                       <h4 className="mb-1 flex items-center gap-2 text-sm font-bold"><ClipboardCheck className="h-4 w-4 text-teal-700" /> چک‌لیست محصول</h4>
@@ -490,6 +534,9 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
                         </button>)}
                       </div>
                     </div>
+                    <button type="button" onClick={() => setActiveStep("preview")} className="flex w-full items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 p-3 text-sm font-bold text-teal-800 hover:border-teal-400">
+                      <Eye className="h-4 w-4" /> مشاهده پیش‌نمایش صفحه محصول قبل از انتشار
+                    </button>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                         <p className="mb-1 text-xs text-slate-500">نام محصول</p>
