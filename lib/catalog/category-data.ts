@@ -81,7 +81,7 @@ export function listingStages() {
 }
 
 export async function getCategoryProducts(
-  categoryId: string,
+  categoryId: string | string[],
   rows: CategoryRow[],
   query: CatalogQuery,
   priceRange: { min?: number; max?: number } = {},
@@ -91,9 +91,12 @@ export async function getCategoryProducts(
     status: "published",
     deletedAt: null,
     category: {
-      $in: descendantIds(categoryId, rows).map(
-        (id) => new mongoose.Types.ObjectId(id),
-      ),
+      // Support multiple category trees for the PS2–PS5 used-console hub,
+      // even when the categories are not children of a "consoles" parent.
+      $in: [...new Set(
+        (Array.isArray(categoryId) ? categoryId : [categoryId])
+          .flatMap((id) => descendantIds(id, rows)),
+      )].map((id) => new mongoose.Types.ObjectId(id)),
     },
   };
   if (query.used) filter.condition = "used";
