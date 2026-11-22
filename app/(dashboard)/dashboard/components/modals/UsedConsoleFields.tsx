@@ -24,11 +24,11 @@ export default function UsedConsoleFields({ generation, form, updateField }: Pro
   const update = (change: Partial<ConsoleReport>) => updateField("usedConsole", { ...report, ...change });
   const checks = consoleChecks[generation];
   const done = checks.filter(label => testResults.some(result => result === report.checks?.[label])).length;
-  const control = "mt-2 block w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20";
+  const control = "mt-2 block w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20";
 
   return (
-    <fieldset className="space-y-5 rounded-2xl border border-indigo-500/25 bg-indigo-500/5 p-4 text-slate-200 sm:p-5">
-      <legend className="px-2 text-sm font-bold text-indigo-200">وضعیت کنسول</legend>
+    <fieldset className="space-y-5 rounded-2xl border border-lime-400/25 bg-lime-400/5 p-4 text-slate-200 sm:p-5">
+      <legend className="px-2 text-sm font-bold text-lime-200">وضعیت کنسول</legend>
       <div role="group" aria-label="وضعیت کالا" className="grid grid-cols-2 gap-3">
         {([
           { value: "new", label: "کنسول نو", sub: "دستگاه استفاده‌نشده" },
@@ -37,7 +37,7 @@ export default function UsedConsoleFields({ generation, form, updateField }: Pro
           <button key={option.value} type="button" aria-pressed={form.condition === option.value}
             onClick={() => updateField("condition", option.value)}
             className={"rounded-xl border p-3 text-right transition " +
-              (form.condition === option.value ? "border-indigo-400 bg-indigo-500/20 text-white" : "border-slate-700 bg-slate-900/70 text-slate-300 hover:border-slate-500")}>
+              (form.condition === option.value ? "border-indigo-400 bg-lime-400/15 text-white" : "border-slate-700 bg-slate-900/70 text-slate-300 hover:border-slate-500")}>
             <strong className="block text-sm">{option.label}</strong>
             <span className="mt-1 block text-xs text-slate-400">{option.sub}</span>
           </button>
@@ -73,7 +73,7 @@ export default function UsedConsoleFields({ generation, form, updateField }: Pro
 
         <div className="rounded-xl border border-slate-700 bg-slate-950/40 p-4">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h4 className="flex items-center gap-2 text-sm font-bold"><ClipboardCheck className="h-4 w-4 text-indigo-300" /> نتیجه بررسی قطعات</h4>
+            <h4 className="flex items-center gap-2 text-sm font-bold"><ClipboardCheck className="h-4 w-4 text-lime-300" /> نتیجه بررسی قطعات</h4>
             <span className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300">{done.toLocaleString("fa-IR")} از {checks.length.toLocaleString("fa-IR")} تست مشخص شده</span>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
