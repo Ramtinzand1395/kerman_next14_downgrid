@@ -47,12 +47,6 @@ const quickAccess = [
     icon: Gamepad2,
   },
   {
-    title: "کنسول کارکرده",
-    description: "PS2 تا PS5؛ مشخصات و گزارش تست دستگاه",
-    href: "/used-consoles",
-    icon: ShieldCheck,
-  },
-  {
     title: "خدمات کرمان آتاری",
     description: "دریافت مشاوره خرید و خدمات",
     href: "/services",
@@ -176,7 +170,7 @@ export default function LandingHome({
         <HomeHeroSlider slides={heroSlides} />
 
         <section
-          className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4"
+          className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4"
           aria-label="دسترسی سریع"
         >
           {quickAccess.map((item) => {
