@@ -26,7 +26,9 @@ const loadCollection = cache(async (serialized: string) => {
   const category = selected ? generations.find(row => row.slug === selected) : null;
   // Always query the four PlayStation families, independent of parent category.
   // A parent "consoles" category is not required in the admin catalog.
-  const categoryIds = category ? [category._id] : generations.map(row => row._id);
+  const categoryIds = selected
+    ? (category ? [category._id] : [])
+    : generations.map(row => row._id);
   const range = { min: price(raw.min), max: price(raw.max) };
   const listing = categoryIds.length
     ? await getCategoryProducts(categoryIds, rows, { ...query, used: true }, range)
