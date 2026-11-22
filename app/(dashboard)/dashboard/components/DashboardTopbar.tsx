@@ -14,6 +14,9 @@ const pageTitles: Record<string, string> = {
   "/dashboard/notifications": "مرکز اعلان‌ها",
   "/dashboard/appointments": "مدیریت نوبت‌ها",
   "/dashboard/blogs": "مدیریت وبلاگ",
+  "/dashboard/pos-sales": "فروش‌های صندوق",
+  "/dashboard/loyalty": "باشگاه مشتریان",
+  "/dashboard/shipping": "تنظیمات ارسال",
 };
 
 export default function DashboardTopbar() {
@@ -40,20 +43,20 @@ export default function DashboardTopbar() {
 
   return (
     <header className="dashboard-topbar">
-      <div className="flex items-center gap-3 text-slate-700">
-        <span className="rounded-xl bg-indigo-100 p-2 text-indigo-700">
+      <div className="flex min-w-0 items-center gap-3 pr-12 sm:pr-0">
+        <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-lime-200 bg-lime-100 text-lime-900">
           <LayoutDashboard className="h-5 w-5" />
         </span>
-        <div>
-          <p className="text-xs text-slate-500">پنل مدیریت کرمان آتاری</p>
-          <h1 className="text-lg font-bold">{title}</h1>
+        <div className="min-w-0">
+          <p className="truncate text-[11px] font-semibold text-slate-500">کرمان آتاری <span className="mx-1 text-lime-600">/</span> پنل مدیریت</p>
+          <h1 className="truncate text-base font-black text-slate-900 sm:text-lg">{title}</h1>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
         <NotificationBell admin />
-        <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 shadow-sm">
-          <CalendarDays className="h-4 w-4 text-indigo-600" />
+        <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-semibold text-slate-600 sm:flex">
+          <CalendarDays className="h-4 w-4 text-lime-700" />
           <span>{today}</span>
         </div>
       </div>
