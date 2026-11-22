@@ -235,13 +235,13 @@ export default function VariantSelectorBuilder({ value, variants, onChange }: Pr
                     <div className="flex gap-1">
                       <button type="button" aria-label="انتقال گروه به بالا" onClick={() => moveGroup(groupIndex, -1)} disabled={groupIndex === 0} className="rounded p-2 text-slate-500 hover:bg-slate-200 disabled:opacity-30"><ArrowUp className="h-4 w-4" /></button>
                       <button type="button" aria-label="انتقال گروه به پایین" onClick={() => moveGroup(groupIndex, 1)} disabled={groupIndex === groups.length - 1} className="rounded p-2 text-slate-500 hover:bg-slate-200 disabled:opacity-30"><ArrowDown className="h-4 w-4" /></button>
-                      <button type="button" aria-label="حذف گروه" onClick={() => removeGroup(group)} className="rounded p-2 text-rose-400 hover:bg-rose-950/40"><Trash2 className="h-4 w-4" /></button>
+                      <button type="button" aria-label="حذف گروه" onClick={() => removeGroup(group)} className="rounded p-2 text-rose-700 hover:bg-rose-50"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-4 border-t border-slate-200 pt-3">
-                  <div className="mb-2 flex items-center justify-between"><span className="text-xs font-semibold text-slate-700">گزینه‌های {group.label}</span><button type="button" onClick={() => addOption(group)} className="inline-flex items-center gap-1 text-xs text-lime-300 hover:text-lime-200"><Plus className="h-3 w-3" /> افزودن گزینه</button></div>
+                  <div className="mb-2 flex items-center justify-between"><span className="text-xs font-semibold text-slate-700">گزینه‌های {group.label}</span><button type="button" onClick={() => addOption(group)} className="inline-flex items-center gap-1 text-xs text-teal-700 hover:text-teal-800"><Plus className="h-3 w-3" /> افزودن گزینه</button></div>
                   {group.options.length > 8 ? (
                     <label className="mb-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2"><Search className="h-3.5 w-3.5 text-slate-500" /><input value={optionSearch[group.id] || ""} onChange={(event) => setOptionSearch((current) => ({ ...current, [group.id]: event.target.value }))} placeholder="جستجو در گزینه‌ها..." className="w-full bg-transparent py-2 text-xs text-slate-900 outline-none" /></label>
                   ) : null}
@@ -250,7 +250,7 @@ export default function VariantSelectorBuilder({ value, variants, onChange }: Pr
                       <div key={option.id} className="grid grid-cols-[1fr_auto] gap-2 sm:grid-cols-[1fr_150px_auto]">
                         <input value={option.label} onChange={(event) => updateOption(group, option.id, { label: event.target.value })} className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-900 outline-none focus:border-teal-600" />
                         <input type="color" title="رنگ نمونه" value={option.color || "#6366f1"} onChange={(event) => updateOption(group, option.id, { color: event.target.value })} className="hidden h-9 w-full rounded border border-slate-200 bg-white p-1 sm:block" />
-                        <div className="flex"><button type="button" aria-label="انتقال گزینه به بالا" onClick={() => moveOption(group, optionIndex, -1)} className="p-2 text-slate-500"><ArrowUp className="h-3.5 w-3.5" /></button><button type="button" aria-label="انتقال گزینه به پایین" onClick={() => moveOption(group, optionIndex, 1)} className="p-2 text-slate-500"><ArrowDown className="h-3.5 w-3.5" /></button><button type="button" aria-label="حذف گزینه" onClick={() => removeOption(group, option.id)} className="p-2 text-rose-400"><Trash2 className="h-3.5 w-3.5" /></button></div>
+                        <div className="flex"><button type="button" aria-label="انتقال گزینه به بالا" onClick={() => moveOption(group, optionIndex, -1)} className="p-2 text-slate-500"><ArrowUp className="h-3.5 w-3.5" /></button><button type="button" aria-label="انتقال گزینه به پایین" onClick={() => moveOption(group, optionIndex, 1)} className="p-2 text-slate-500"><ArrowDown className="h-3.5 w-3.5" /></button><button type="button" aria-label="حذف گزینه" onClick={() => removeOption(group, option.id)} className="p-2 text-rose-700"><Trash2 className="h-3.5 w-3.5" /></button></div>
                       </div>
                     ))}
                   </div>
