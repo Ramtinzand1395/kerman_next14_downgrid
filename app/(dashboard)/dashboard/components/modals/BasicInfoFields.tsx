@@ -40,7 +40,7 @@ function PurchasePriceField({
   onChange: (value: number | null) => void;
 }) {
   return (
-    <label className="block text-xs font-semibold text-slate-300">
+    <label className="block text-xs font-semibold text-slate-700">
       <span className="mb-1 block">قیمت خرید (تومان){required ? " *" : ""}</span>
       <MoneyInput
         min="0"
@@ -49,7 +49,7 @@ function PurchasePriceField({
         aria-required={required}
         value={value ?? ""}
         onValueChange={(event) => onChange(event === "" ? null : Number(event))}
-        className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20"
+        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/15"
       />
     </label>
   );
@@ -160,7 +160,7 @@ const BasicInfoFields = ({
   return (
     <div className="grid grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2">
       <div className="space-y-3 sm:col-span-2">
-        <p className="text-sm font-semibold text-slate-200">نوع محصول</p>
+        <p className="text-sm font-semibold text-slate-800">نوع محصول</p>
         <div role="group" aria-label="نوع محصول" className="grid grid-cols-2 gap-3">
           {([
             { value: "single", label: "محصول تکی", help: "یک قیمت و یک موجودی" },
@@ -171,24 +171,24 @@ const BasicInfoFields = ({
               aria-pressed={form.productType === option.value}
               onClick={() => updateField("productType", option.value)}
               className={"rounded-xl border p-3 text-right transition disabled:cursor-not-allowed disabled:opacity-40 " +
-                (form.productType === option.value ? "border-lime-400 bg-lime-400/10" : "border-slate-700 bg-slate-950/50 hover:border-slate-500")}>
-              <span className="block text-sm font-bold text-slate-100">{option.label}</span>
-              <span className="mt-1 block text-xs text-slate-400">{option.help}</span>
+                (form.productType === option.value ? "border-teal-500 bg-teal-50" : "border-slate-200 bg-slate-50 hover:border-slate-500")}>
+              <span className="block text-sm font-bold text-slate-900">{option.label}</span>
+              <span className="mt-1 block text-xs text-slate-500">{option.help}</span>
             </button>
           ))}
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-700 bg-slate-950/40 p-3 text-xs text-slate-200">
-            <input type="checkbox" className="h-4 w-4 accent-lime-400"
+          <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-800">
+            <input type="checkbox" className="h-4 w-4 accent-teal-700"
               disabled={form.condition === "used"}
               checked={!!form.isDigital}
               onChange={event => updateField("isDigital", event.target.checked)} />
-            <span><strong className="block text-sm">محصول دیجیتال</strong><span className="mt-1 block text-slate-400">بدون ارسال فیزیکی</span></span>
+            <span><strong className="block text-sm">محصول دیجیتال</strong><span className="mt-1 block text-slate-500">بدون ارسال فیزیکی</span></span>
           </label>
-          {form.isDigital && <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-700 bg-slate-950/40 p-3 text-xs text-slate-200">
-            <input type="checkbox" className="h-4 w-4 accent-lime-400" checked={!!form.isOnlineGame}
+          {form.isDigital && <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-800">
+            <input type="checkbox" className="h-4 w-4 accent-teal-700" checked={!!form.isOnlineGame}
               onChange={event => updateField("isOnlineGame", event.target.checked)} />
-            <span><strong className="block text-sm">بازی آنلاین اکانتی</strong><span className="mt-1 block text-slate-400">تحویل اطلاعات اکانت</span></span>
+            <span><strong className="block text-sm">بازی آنلاین اکانتی</strong><span className="mt-1 block text-slate-500">تحویل اطلاعات اکانت</span></span>
           </label>}
         </div>
       </div>
@@ -197,7 +197,7 @@ const BasicInfoFields = ({
       <div className="relative w-full sm:col-span-1">
         <label
           htmlFor="product-title"
-          className="mb-2 block text-xs font-semibold text-slate-300"
+          className="mb-2 block text-xs font-semibold text-slate-700"
         >
           {fieldLabels.title} *
         </label>
@@ -207,7 +207,7 @@ const BasicInfoFields = ({
           value={form.title || ""}
           onChange={(e) => updateField("title", e.target.value)}
           placeholder="مثلاً کنسول پلی‌استیشن ۵"
-          className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20"
+          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-500 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/15"
         />
       </div>
 
@@ -215,7 +215,7 @@ const BasicInfoFields = ({
       <div className="relative w-full sm:col-span-1">
         <label
           htmlFor="product-slug"
-          className="mb-2 block text-xs font-semibold text-slate-300"
+          className="mb-2 block text-xs font-semibold text-slate-700"
         >
           {fieldLabels.slug} *
         </label>
@@ -225,13 +225,13 @@ const BasicInfoFields = ({
           value={form.slug || ""}
           onChange={(e) => updateField("slug", e.target.value)}
           placeholder="مثلاً ps5-standard-edition"
-          className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20 dir-ltr text-right"
+          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-500 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/15 dir-ltr text-right"
         />
         <button type="button" onClick={() => {
           const suggested = (form.title || "").trim().toLowerCase()
             .replace(/[^\w\u0600-\u06ff]+/g, "-").replace(/^-+|-+$/g, "");
           if (suggested) updateField("slug", suggested);
-        }} className="mt-2 text-xs font-semibold text-lime-300 transition hover:text-lime-200">
+        }} className="mt-2 text-xs font-semibold text-teal-700 transition hover:text-teal-800">
           ساخت اسلاگ از نام محصول
         </button>
       </div>
@@ -240,7 +240,7 @@ const BasicInfoFields = ({
       <div className="relative w-full sm:col-span-1">
         <label
           htmlFor="product-brand"
-          className="mb-2 block text-xs font-semibold text-slate-300"
+          className="mb-2 block text-xs font-semibold text-slate-700"
         >
           {fieldLabels.brand}
         </label>
@@ -250,7 +250,7 @@ const BasicInfoFields = ({
           value={form.brand || ""}
           onChange={(e) => updateField("brand", e.target.value)}
           placeholder="مثلاً سونی (Sony)"
-          className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20"
+          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-500 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/15"
         />
       </div>
 
@@ -258,7 +258,7 @@ const BasicInfoFields = ({
       <div className="relative w-full sm:col-span-1">
         <label
           htmlFor="product-shortDesc"
-          className="mb-2 block text-xs font-semibold text-slate-300"
+          className="mb-2 block text-xs font-semibold text-slate-700"
         >
           {fieldLabels.shortDesc}
         </label>
@@ -268,7 +268,7 @@ const BasicInfoFields = ({
           value={form.shortDesc || ""}
           onChange={(e) => updateField("shortDesc", e.target.value)}
           placeholder="خلاصه ویژگی‌های محصول برای پیش‌نمایش"
-          className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20"
+          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-500 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/15"
         />
       </div>
 
@@ -279,7 +279,7 @@ const BasicInfoFields = ({
           <div className="relative w-full sm:col-span-1">
             <label
               htmlFor="product-sku"
-              className="mb-2 block text-xs font-semibold text-slate-300"
+              className="mb-2 block text-xs font-semibold text-slate-700"
             >
               {fieldLabels.sku}
             </label>
@@ -289,7 +289,7 @@ const BasicInfoFields = ({
               value={form.sku || ""}
               onChange={(e) => updateField("sku", e.target.value)}
               placeholder="کد یکتای انبارداری (اختیاری)"
-              className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20 dir-ltr text-right"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-500 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/15 dir-ltr text-right"
             />
           </div>
 
@@ -297,7 +297,7 @@ const BasicInfoFields = ({
           <div className="relative w-full sm:col-span-1">
             <label
               htmlFor="product-barcode"
-              className="mb-2 block text-xs font-semibold text-slate-300"
+              className="mb-2 block text-xs font-semibold text-slate-700"
             >
               {fieldLabels.barcode}
             </label>
@@ -308,7 +308,7 @@ const BasicInfoFields = ({
               value={form.barcode || ""}
               onChange={(e) => updateField("barcode", e.target.value)}
               placeholder="بارکد یکتای محصول تکی (اختیاری)"
-              className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20 dir-ltr text-right"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-500 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/15 dir-ltr text-right"
             />
           </div>
 
@@ -316,7 +316,7 @@ const BasicInfoFields = ({
           <div className="relative w-full sm:col-span-1">
             <label
               htmlFor="product-price"
-              className="mb-2 block text-xs font-semibold text-slate-300"
+              className="mb-2 block text-xs font-semibold text-slate-700"
             >
               {fieldLabels.price} *
             </label>
@@ -326,7 +326,7 @@ const BasicInfoFields = ({
               step="1"
               value={form.price ?? ""}
               onValueChange={(e) => updateField("price", Math.max(0, Math.floor(Number(e))))}
-              className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-500 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/15"
             />
           </div>
 
@@ -342,7 +342,7 @@ const BasicInfoFields = ({
           <div className="relative w-full sm:col-span-1">
             <label
               htmlFor="product-stock"
-              className="mb-2 block text-xs font-semibold text-slate-300"
+              className="mb-2 block text-xs font-semibold text-slate-700"
             >
               {fieldLabels.stock} *
             </label>
@@ -354,14 +354,14 @@ const BasicInfoFields = ({
               step="1"
               value={form.stock ?? ""}
               onChange={(e) => updateField("stock", Math.min(form.condition === "used" ? 1 : Number.MAX_SAFE_INTEGER, Math.max(0, Math.floor(Number(e.target.value)))) )}
-              className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-500 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/15"
             />
           </div>
 
           {/* Discount Toggle & Field */}
-          <div className="rounded-xl border border-slate-700 bg-slate-950/40 p-4 sm:col-span-2">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 sm:col-span-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-slate-200">
+              <label className="text-sm font-medium text-slate-800">
                 فعال‌سازی قیمت تخفیف‌خورده
               </label>
               <button
@@ -372,7 +372,7 @@ const BasicInfoFields = ({
                   if (!nextValue) updateField("discountPrice", null);
                 }}
                 className={`relative h-6 w-11 rounded-full transition-colors ${
-                  isSingleDiscountEnabled ? "bg-emerald-600" : "bg-slate-700"
+                  isSingleDiscountEnabled ? "bg-emerald-600" : "bg-slate-200"
                 }`}
               >
                 <span
@@ -387,7 +387,7 @@ const BasicInfoFields = ({
               <div className="relative mt-4 w-full">
                 <label
                   htmlFor="product-discountPrice"
-                  className="mb-2 block text-xs font-semibold text-slate-300"
+                  className="mb-2 block text-xs font-semibold text-slate-700"
                 >
                   {fieldLabels.discountPrice} (تومان)
                 </label>
@@ -403,7 +403,7 @@ const BasicInfoFields = ({
                       e === "" ? null : Math.max(0, Math.floor(Number(e))),
                     )
                   }
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-slate-100 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20"
                 />
               </div>
             )}
@@ -413,20 +413,20 @@ const BasicInfoFields = ({
 
       {/* ─── MULTI-VARIANT EDITOR ─── */}
       {form.productType === "multi" && (
-        <div className="rounded-xl border border-lime-400/30 bg-slate-950/40 p-4 sm:col-span-2">
-          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-700 pb-3">
+        <div className="rounded-xl border border-teal-200 bg-slate-50 p-4 sm:col-span-2">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 pb-3">
             <div>
-              <h4 className="text-sm font-bold text-slate-100">
+              <h4 className="text-sm font-bold text-slate-900">
                 مدیریت مدل‌ها / تنوع‌های محصول (Variants)
               </h4>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 موجودی و قیمت کلی محصول به‌صورت خودکار از مدل‌های فعال زیر محاسبه می‌شود.
               </p>
             </div>
             <button
               type="button"
               onClick={handleAddVariant}
-              className="inline-flex items-center justify-center gap-1 rounded-lg bg-lime-400 hover:bg-lime-300 px-3 py-1.5 text-xs font-semibold text-slate-950 transition shadow-sm"
+              className="inline-flex items-center justify-center gap-1 rounded-lg bg-teal-700 hover:bg-teal-700 px-3 py-1.5 text-xs font-semibold text-white transition shadow-sm"
             >
               <Plus className="h-3.5 w-3.5" />
               افزودن مدل
@@ -434,22 +434,22 @@ const BasicInfoFields = ({
           </div>
 
           {/* Summary Box */}
-          <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-lg border border-slate-700 bg-slate-900/60 p-3 text-xs">
+          <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs">
             <div className="flex flex-col">
-              <span className="text-slate-400">تعداد مدل‌های فعال:</span>
-              <strong className="text-sm text-slate-100 mt-0.5">
+              <span className="text-slate-500">تعداد مدل‌های فعال:</span>
+              <strong className="text-sm text-slate-900 mt-0.5">
                 {toPersianDigits(variantSummary.activeCount)} مدل فعال
               </strong>
             </div>
             <div className="flex flex-col">
-              <span className="text-slate-400">موجودی کل انبار:</span>
+              <span className="text-slate-500">موجودی کل انبار:</span>
               <strong className="text-sm text-emerald-400 mt-0.5">
                 {toPersianDigits(variantSummary.totalStock)} عدد موجود
               </strong>
             </div>
             <div className="flex flex-col">
-              <span className="text-slate-400">بازه قیمت مدل‌ها:</span>
-              <strong className="text-sm text-lime-300 mt-0.5">
+              <span className="text-slate-500">بازه قیمت مدل‌ها:</span>
+              <strong className="text-sm text-teal-700 mt-0.5">
                 {variantSummary.priceRangeText}
               </strong>
             </div>
@@ -457,7 +457,7 @@ const BasicInfoFields = ({
 
           {/* Variant Items List */}
           {variants.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-slate-700 p-6 text-center text-xs text-slate-400">
+            <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-xs text-slate-500">
               هنوز مدلی اضافه نشده است. لطفاً با کلیک روی «افزودن مدل» حداقل یک مدل (مانند ظرفیت یا رنگ) اضافه کنید.
             </div>
           ) : (
@@ -467,14 +467,14 @@ const BasicInfoFields = ({
                   key={variant._id || index}
                   className={`rounded-xl border p-3 transition ${
                     variant.isActive !== false
-                      ? "border-slate-700 bg-slate-900/40"
-                      : "border-slate-800 bg-slate-900/20 opacity-70"
+                      ? "border-slate-200 bg-slate-50"
+                      : "border-slate-100 bg-slate-100 opacity-70"
                   }`}
                 >
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {/* Title */}
                     <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">
+                      <label className="block text-[11px] text-slate-500 mb-1">
                         نام مدل *
                       </label>
                       <input
@@ -484,13 +484,13 @@ const BasicInfoFields = ({
                         onChange={(e) =>
                           handleUpdateVariant(index, "title", e.target.value)
                         }
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 outline-none focus:border-lime-500"
+                        className="w-full rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:border-teal-600"
                       />
                     </div>
 
                     {/* SKU */}
                     <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">
+                      <label className="block text-[11px] text-slate-500 mb-1">
                         کد SKU
                       </label>
                       <input
@@ -500,13 +500,13 @@ const BasicInfoFields = ({
                         onChange={(e) =>
                           handleUpdateVariant(index, "sku", e.target.value)
                         }
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 outline-none focus:border-lime-500 dir-ltr text-right"
+                        className="w-full rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:border-teal-600 dir-ltr text-right"
                       />
                     </div>
 
                     {/* Barcode */}
                     <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">
+                      <label className="block text-[11px] text-slate-500 mb-1">
                         بارکد
                       </label>
                       <input
@@ -516,13 +516,13 @@ const BasicInfoFields = ({
                         onChange={(e) =>
                           handleUpdateVariant(index, "barcode", e.target.value)
                         }
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 outline-none focus:border-lime-500 dir-ltr text-right"
+                        className="w-full rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:border-teal-600 dir-ltr text-right"
                       />
                     </div>
 
                     {/* Price */}
                     <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">
+                      <label className="block text-[11px] text-slate-500 mb-1">
                         قیمت (تومان) *
                       </label>
                       <MoneyInput
@@ -537,7 +537,7 @@ const BasicInfoFields = ({
                             Math.max(0, Math.floor(Number(e))),
                           )
                         }
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 outline-none focus:border-lime-500"
+                        className="w-full rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:border-teal-600"
                       />
                     </div>
 
@@ -549,7 +549,7 @@ const BasicInfoFields = ({
 
                     {/* Discount Price */}
                     <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">
+                      <label className="block text-[11px] text-slate-500 mb-1">
                         قیمت تخفیف
                       </label>
                       <MoneyInput
@@ -566,13 +566,13 @@ const BasicInfoFields = ({
                               : Math.max(0, Math.floor(Number(e))),
                           )
                         }
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 outline-none focus:border-emerald-500"
+                        className="w-full rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:border-emerald-500"
                       />
                     </div>
 
                     {/* Stock */}
                     <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">
+                      <label className="block text-[11px] text-slate-500 mb-1">
                         موجودی
                       </label>
                       <input
@@ -588,13 +588,13 @@ const BasicInfoFields = ({
                             Math.max(0, Math.floor(Number(e.target.value))),
                           )
                         }
-                        className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-100 outline-none focus:border-lime-500"
+                        className="w-full rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:border-teal-600"
                       />
                     </div>
                   </div>
 
                   {/* Footer of variant card: Active toggle + Delete */}
-                  <div className="mt-2.5 flex items-center justify-between border-t border-slate-800 pt-2 text-xs">
+                  <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-2 text-xs">
                     <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                       <input
                         type="checkbox"
@@ -602,9 +602,9 @@ const BasicInfoFields = ({
                         onChange={(e) =>
                           handleUpdateVariant(index, "isActive", e.target.checked)
                         }
-                        className="h-3.5 w-3.5 rounded border-slate-700 text-lime-700 focus:ring-0"
+                        className="h-3.5 w-3.5 rounded border-slate-200 text-teal-700 focus:ring-0"
                       />
-                      <span className="text-slate-300">
+                      <span className="text-slate-700">
                         {variant.isActive !== false ? "فعال برای فروش" : "غیرفعال"}
                       </span>
                     </label>
@@ -612,7 +612,7 @@ const BasicInfoFields = ({
                     <button
                       type="button"
                       onClick={() => handleRemoveVariant(index)}
-                      className="inline-flex items-center gap-1 text-rose-400 hover:text-rose-300 transition py-0.5 px-2 rounded hover:bg-rose-950/40"
+                      className="inline-flex items-center gap-1 text-rose-400 hover:text-rose-700 transition py-0.5 px-2 rounded hover:bg-rose-950/40"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                       حذف مدل
