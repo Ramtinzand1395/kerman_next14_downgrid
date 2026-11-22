@@ -57,20 +57,20 @@ const ImageUploader = ({ form, updateField }: ImageUploaderProps) => {
   };
 
   return (
-    <div className="space-y-4 border-t border-slate-800 pt-6">
+    <div className="space-y-4 border-t border-slate-100 pt-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h4 className="flex items-center gap-2 text-sm font-bold text-slate-100"><Images className="h-4 w-4 text-lime-300" /> گالری تصاویر</h4>
-          <p className="mt-1 text-xs leading-6 text-slate-400">زاویه‌های دیگر، جزئیات و ایرادهای ظاهری کالا را نشان دهید.</p>
+          <h4 className="flex items-center gap-2 text-sm font-bold text-slate-900"><Images className="h-4 w-4 text-teal-700" /> گالری تصاویر</h4>
+          <p className="mt-1 text-xs leading-6 text-slate-500">زاویه‌های دیگر، جزئیات و ایرادهای ظاهری کالا را نشان دهید.</p>
         </div>
-        <span className="rounded-full border border-slate-700 bg-slate-950 px-3 py-1 text-xs text-slate-400">{form.galleryImages.length.toLocaleString("fa-IR")} تصویر</span>
+        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-500">{form.galleryImages.length.toLocaleString("fa-IR")} تصویر</span>
       </div>
 
       {form.galleryImages.length > 0 ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {form.galleryImages.map((img, index) => (
-            <div key={img.url + "-" + index} className="min-w-0 overflow-hidden rounded-xl border border-slate-700 bg-slate-950/50">
-              <div className="relative flex h-32 items-center justify-center bg-slate-800/50 p-2">
+            <div key={img.url + "-" + index} className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+              <div className="relative flex h-32 items-center justify-center bg-slate-100 p-2">
                 <ProductImage width={320} height={220} src={img.url}
                   alt={img.alt || form.title || "تصویر محصول"}
                   sizes="(max-width: 640px) 50vw, 33vw" className="h-full w-full rounded object-contain" />
@@ -82,16 +82,16 @@ const ImageUploader = ({ form, updateField }: ImageUploaderProps) => {
               </div>
               <input type="text" aria-label={"متن جایگزین تصویر " + (index + 1).toLocaleString("fa-IR")}
                 value={img.alt || ""} onChange={event => updateImageAlt(index, event.target.value)}
-                className="w-full border-t border-slate-700 bg-transparent px-3 py-2.5 text-xs text-slate-100 outline-none placeholder:text-slate-500 focus:bg-slate-800"
+                className="w-full border-t border-slate-200 bg-transparent px-3 py-2.5 text-xs text-slate-900 outline-none placeholder:text-slate-500 focus:bg-slate-100"
                 placeholder="توضیح تصویر (ALT)" />
             </div>
           ))}
         </div>
       ) : (
-        <p className="rounded-xl border border-dashed border-slate-700 bg-slate-950/40 px-4 py-6 text-center text-xs text-slate-400">هنوز تصویر دیگری برای محصول ثبت نشده است.</p>
+        <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-xs text-slate-500">هنوز تصویر دیگری برای محصول ثبت نشده است.</p>
       )}
 
-      <label htmlFor={uploadId} className={"flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-lime-400/40 bg-lime-400/10 px-4 py-4 text-sm font-semibold text-lime-200 transition hover:bg-lime-400/15 " + (loadingImage ? "pointer-events-none opacity-50" : "")}>
+      <label htmlFor={uploadId} className={"flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-teal-300 bg-teal-50 px-4 py-4 text-sm font-semibold text-teal-800 transition hover:bg-teal-50 " + (loadingImage ? "pointer-events-none opacity-50" : "")}>
         {loadingImage ? <Loader2 className="h-5 w-5 animate-spin" /> : <UploadCloud className="h-5 w-5" />}
         {loadingImage ? "در حال آپلود تصاویر..." : "افزودن چند تصویر به گالری"}
         <input id={uploadId} title="افزودن تصاویر گالری" type="file" multiple accept="image/*"
