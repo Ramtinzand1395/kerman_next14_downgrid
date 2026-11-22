@@ -202,7 +202,7 @@ const statusLabels: Record<string, string> = {
 
 const statusColors: Record<string, string> = {
   pending: "#f59e0b",
-  processing: "#6366f1",
+  processing: "#0f766e",
   shipped: "#0ea5e9",
   delivered: "#10b981",
   cancelled: "#ef4444",
@@ -215,7 +215,7 @@ const statusColors: Record<string, string> = {
   no_show: "#f97316",
   rejected: "#e11d48",
   scheduled: "#3b82f6",
-  assigned: "#6366f1",
+  assigned: "#0f766e",
   picked_up: "#06b6d4",
   at_store: "#8b5cf6",
   return_ready: "#d946ef",
