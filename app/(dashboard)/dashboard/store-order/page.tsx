@@ -104,12 +104,12 @@ export default function StoreOrder() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <div className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700">
+              <div className="rounded-xl border border-teal-100 bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-800">
                 مجموع سفارش‌ها: {totalOrders.toLocaleString("fa-IR")}
               </div>
               <button
                 onClick={() => setIsAddModalOpen(true)}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-800"
               >
                 <Plus className="h-4 w-4" />
                 افزودن سفارش جدید
