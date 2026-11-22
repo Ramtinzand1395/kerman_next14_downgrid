@@ -267,7 +267,7 @@ export default function ProductsPage() {
               </button>
               <button
                 onClick={openAddDrawer}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-800"
               >
                 <Plus className="h-4 w-4" />
                 افزودن محصول جدید
@@ -426,7 +426,7 @@ export default function ProductsPage() {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="mt-3 rounded-lg px-2 py-1 text-sm font-medium text-indigo-700 hover:bg-indigo-50"
+                className="mt-3 rounded-lg px-2 py-1 text-sm font-medium text-teal-800 hover:bg-teal-50"
               >
                 پاک کردن جستجو و فیلترها
               </button>
@@ -481,7 +481,7 @@ export default function ProductsPage() {
                                   {product.brand || "بدون برند"}
                                 </span>
                                 {product.productType === "multi" && (
-                                  <span className="rounded-md bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700 border border-indigo-200">
+                                  <span className="rounded-md bg-teal-50 px-1.5 py-0.5 text-[10px] font-medium text-teal-800 border border-teal-200">
                                     {product.variants?.filter((v) => v.isActive !== false).length || 0} مدل
                                   </span>
                                 )}
@@ -542,7 +542,7 @@ export default function ProductsPage() {
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() => openEditDrawer(product)}
-                              className="rounded-lg p-2 text-slate-500 transition hover:bg-indigo-50 hover:text-indigo-600"
+                              className="rounded-lg p-2 text-slate-500 transition hover:bg-teal-50 hover:text-teal-700"
                               title="ویرایش"
                             >
                               <Edit2 className="h-4 w-4" />
