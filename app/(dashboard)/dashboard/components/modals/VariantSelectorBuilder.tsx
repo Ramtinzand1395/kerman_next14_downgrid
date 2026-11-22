@@ -203,7 +203,7 @@ export default function VariantSelectorBuilder({ value, variants, onChange }: Pr
                 <h4 className="text-xs font-bold text-slate-200">تنظیمات انتخاب‌گر و گروه‌ها</h4>
                 <p className="mt-1 text-[11px] text-slate-500">گروه‌ها و گزینه‌ها را با دکمه‌های جهت مرتب کنید.</p>
               </div>
-              <button type="button" onClick={addGroup} className="inline-flex items-center gap-1 rounded-lg bg-lime-400 px-3 py-2 text-xs font-semibold text-white hover:bg-lime-400">
+              <button type="button" onClick={addGroup} className="inline-flex items-center gap-1 rounded-lg bg-lime-400 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-lime-300">
                 <Plus className="h-3.5 w-3.5" /> افزودن گروه
               </button>
             </div>
