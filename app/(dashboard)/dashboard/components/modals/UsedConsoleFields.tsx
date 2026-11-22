@@ -1,6 +1,11 @@
 "use client";
 
 import { ClipboardCheck, ShieldCheck } from "lucide-react";
+import DatePicker, { DateObject } from "react-multi-date-picker";
+import persian from "react-date-object/calendars/persian";
+import gregorian from "react-date-object/calendars/gregorian";
+import persianFa from "react-date-object/locales/persian_fa";
+import gregorianEn from "react-date-object/locales/gregorian_en";
 import { consoleChecks, reportLabels, testResults, type ConsoleGeneration, type ConsoleReport } from "@/lib/used-console";
 import type { ProductForm } from "@/types";
 
@@ -58,12 +63,33 @@ export default function UsedConsoleFields({ generation, form, updateField }: Pro
             const key = rawKey as keyof typeof reportLabels;
             return <label key={key} className={"block text-xs font-semibold text-slate-700 " + (key === "appearance" || key === "terms" ? "sm:col-span-2" : "")}>
               {label} <span className="text-rose-400">*</span>
-              {key === "appearance" || key === "terms" ? (
+              {key === "testedOn" ? (
+                <div className="mt-2">
+                  <DatePicker
+                    value={report.testedOn
+                      ? new DateObject({ date: report.testedOn, format: "YYYY-MM-DD", calendar: gregorian }).convert(persian, persianFa)
+                      : null}
+                    calendar={persian}
+                    locale={persianFa}
+                    calendarPosition="bottom-right"
+                    format="YYYY/MM/DD"
+                    inputClass={control}
+                    containerClassName="w-full"
+                    placeholder="تاریخ بررسی را از تقویم شمسی انتخاب کنید"
+                    onChange={(date: DateObject | null) =>
+                      update({ testedOn: date ? date.convert(gregorian, gregorianEn).format("YYYY-MM-DD") : "" })
+                    }
+                  />
+                  <span className="mt-1 block text-[11px] font-normal text-slate-500">
+                    تاریخ به‌صورت شمسی نمایش داده می‌شود و برای ثبت دقیق، میلادی استاندارد ذخیره خواهد شد.
+                  </span>
+                </div>
+              ) : key === "appearance" || key === "terms" ? (
                 <textarea rows={2} maxLength={1200} placeholder={placeholders[key]}
                   className={control} value={report[key] ?? ""}
                   onChange={event => update({ [key]: event.target.value })} />
               ) : (
-                <input type={key === "testedOn" ? "date" : "text"} maxLength={1200}
+                <input type="text" maxLength={1200}
                   placeholder={placeholders[key]} value={report[key] ?? ""}
                   className={control} onChange={event => update({ [key]: event.target.value })} />
               )}
