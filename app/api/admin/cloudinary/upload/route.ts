@@ -49,6 +49,21 @@ export async function POST(request: Request) {
     return NextResponse.json(uploaded, { status: 201 });
   } catch (error) {
     console.error("Cloudinary upload failed:", error);
+    const cloudinaryStatus = error && typeof error === "object" && "http_code" in error
+      ? Number((error as { http_code?: unknown }).http_code)
+      : 0;
+    if (cloudinaryStatus === 400 || cloudinaryStatus === 422) {
+      return NextResponse.json(
+        { error: "محتوای فایل تصویر قابل پردازش نیست. تصویر را با فرمت JPG، PNG یا WebP دوباره ذخیره و ارسال کنید." },
+        { status: 400 },
+      );
+    }
+    if (cloudinaryStatus === 413) {
+      return NextResponse.json({ error: "اندازه تصویر از محدودیت سرویس بیشتر است. تصویر را کوچک‌تر کنید." }, { status: 413 });
+    }
+    if (cloudinaryStatus === 429) {
+      return NextResponse.json({ error: "سرویس تصویر درخواست‌های زیادی دریافت کرده است. کمی بعد دوباره تلاش کنید." }, { status: 429 });
+    }
     return NextResponse.json(
       { error:
           error instanceof Error && error.message.includes("credentials are missing")
