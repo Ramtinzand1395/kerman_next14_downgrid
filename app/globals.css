@@ -317,3 +317,174 @@ body {
   .dashboard-panel,
   .dashboard-stat-card { transition: none; }
 }
+
+
+/* Optional, persistent dark theme for the ENTIRE admin shell. Not used on storefront routes. */
+.dashboard-shell[data-admin-theme="dark"] {
+  --dashboard-ink: #e6edf5;
+  --dashboard-muted: #aab9cb;
+  --dashboard-border: #354354;
+  --dashboard-surface: #202d3a;
+  --dashboard-primary: #5eead4;
+  --dashboard-primary-hover: #2dd4bf;
+  --dashboard-primary-soft: #17433f;
+  background: #141d27;
+  color: #e6edf5;
+  color-scheme: dark;
+}
+.dashboard-shell[data-admin-theme="dark"] .dashboard-sidebar,
+.dashboard-shell[data-admin-theme="dark"] .dashboard-topbar,
+.dashboard-shell[data-admin-theme="dark"] .dashboard-panel,
+.dashboard-shell[data-admin-theme="dark"] .dashboard-stat-card {
+  background: #202c39;
+  color: #e6edf5;
+  border-color: #354354;
+  box-shadow: none;
+}
+.dashboard-shell[data-admin-theme="dark"] .dashboard-product-editor {
+  background: #17212c !important;
+  color: #e6edf5;
+  color-scheme: dark;
+}
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-white"],
+  [class~="bg-slate-50"],
+  [class~="bg-gray-50"],
+  [class~="bg-zinc-50"],
+  [class~="bg-slate-100"],
+  [class~="bg-gray-100"]
+) {
+  background-color: #202c39 !important;
+}
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-slate-200"],
+  [class~="bg-gray-200"],
+  [class~="bg-slate-300"]
+) {
+  background-color: #334155 !important;
+}
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="text-slate-950"],
+  [class~="text-slate-900"],
+  [class~="text-slate-800"],
+  [class~="text-slate-700"],
+  [class~="text-gray-900"],
+  [class~="text-gray-800"],
+  [class~="text-gray-700"],
+  [class~="text-zinc-900"]
+) { color: #e6edf5 !important; }
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="text-slate-600"],
+  [class~="text-slate-500"],
+  [class~="text-slate-400"],
+  [class~="text-gray-600"],
+  [class~="text-gray-500"]
+) { color: #b4c3d3 !important; }
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="border-slate-100"],
+  [class~="border-slate-200"],
+  [class~="border-slate-300"],
+  [class~="border-gray-100"],
+  [class~="border-gray-200"],
+  [class~="border-gray-300"],
+  [class~="border-white"]
+) { border-color: #354354 !important; }
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-teal-50"],
+  [class~="bg-teal-100"],
+  [class~="bg-emerald-50"],
+  [class~="bg-emerald-100"]
+) { background-color: #173e3e !important; }
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="text-teal-700"],
+  [class~="text-teal-800"],
+  [class~="text-teal-900"],
+  [class~="text-emerald-700"],
+  [class~="text-emerald-800"]
+) { color: #70e5d5 !important; }
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="border-teal-100"],
+  [class~="border-teal-200"],
+  [class~="border-teal-300"],
+  [class~="border-emerald-200"]
+) { border-color: #276160 !important; }
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-amber-50"],
+  [class~="bg-amber-100"],
+  [class~="bg-orange-50"]
+) { background-color: #382d1d !important; }
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="text-amber-700"],
+  [class~="text-amber-800"],
+  [class~="text-orange-700"]
+) { color: #fde68a !important; }
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-rose-50"],
+  [class~="bg-red-50"]
+) { background-color: #39252d !important; }
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="text-rose-700"],
+  [class~="text-rose-800"],
+  [class~="text-red-700"],
+  [class~="text-red-600"]
+) { color: #fda4af !important; }
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-sky-50"],
+  [class~="bg-blue-50"],
+  [class~="bg-indigo-50"]
+) { background-color: #213649 !important; }
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="text-sky-800"],
+  [class~="text-blue-700"],
+  [class~="text-indigo-700"]
+) { color: #93c5fd !important; }
+.dashboard-shell[data-admin-theme="dark"] [class*="bg-gradient-to-"] {
+  background-image: none !important;
+}
+.dashboard-shell[data-admin-theme="dark"] :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]),
+  textarea,
+  select
+) {
+  background-color: #192632 !important;
+  color: #e6edf5 !important;
+  border-color: #465669;
+  color-scheme: dark;
+}
+.dashboard-shell[data-admin-theme="dark"] :is(input, textarea)::placeholder {
+  color: #9aafc3 !important;
+}
+.dashboard-shell[data-admin-theme="dark"] :is(.ql-toolbar, .ql-container, .ql-picker-options) {
+  background: #1d2a36;
+  color: #e6edf5;
+  border-color: #465669;
+}
+.dashboard-shell[data-admin-theme="dark"] :is(.ql-editor, .ql-picker-label) {
+  color: #e6edf5;
+}
+.dashboard-shell[data-admin-theme="dark"] :is(.ql-stroke) {
+  stroke: #d6e5ef;
+}
+.dashboard-shell[data-admin-theme="dark"] :is(.ql-fill) {
+  fill: #d6e5ef;
+}
+.dashboard-shell[data-admin-theme="dark"] .dashboard-product-editor [class~="bg-teal-700"],
+.dashboard-shell[data-admin-theme="dark"] [class~="bg-teal-700"] {
+  background-color: #0f766e !important;
+}
+.dashboard-shell[data-admin-theme="dark"] :is(
+  [class~="bg-teal-700"],
+  [class~="bg-rose-600"],
+  [class~="bg-red-500"],
+  [class~="bg-blue-600"]
+) > [class~="text-white"] {
+  color: white !important;
+}
+.dashboard-shell[data-admin-theme="dark"] :is(.dashboard-panel, .dashboard-stat-card):hover {
+  border-color: #496071;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .1);
+}
+.dashboard-shell[data-admin-theme="dark"] ::selection {
+  background: #176b68;
+  color: #fff;
+}
