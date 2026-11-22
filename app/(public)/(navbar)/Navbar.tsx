@@ -35,11 +35,6 @@ const menuItems = [
     icon: <Grid2x2 className="h-4 w-4 ml-1" />,
   },
   {
-    name: "کنسول کارکرده",
-    link: "/used-consoles",
-    icon: <Gamepad2 className="h-4 w-4 ml-1" />,
-  },
-  {
     name: "درباره ما",
     link: "/about-us",
     icon: <Info className="h-4 w-4 ml-1" />,
@@ -200,6 +195,30 @@ export default function Navbar() {
                           </div>
                         </div>
                       ))}
+                      <div className="rounded-xl border border-blue-200 bg-[linear-gradient(140deg,#eef5ff_0%,#fff_100%)] p-3">
+                        <Link href="/used-consoles" onClick={() => setShowCategories(false)}
+                          className="mb-2 flex items-center gap-2 text-sm font-black text-blue-800 transition hover:text-blue-600">
+                          <Gamepad2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+                          کنسول‌های کارکرده
+                        </Link>
+                        <p className="mb-2 text-xs leading-5 text-slate-600">
+                          پلی‌استیشن PS2 تا PS5 با تصاویر و گزارش تست هر دستگاه
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            { name: "PS2", slug: "playstation-2" },
+                            { name: "PS3", slug: "playstation-3" },
+                            { name: "PS4", slug: "playstation-4" },
+                            { name: "PS5", slug: "playstation-5" },
+                          ].map((item) => (
+                            <Link key={item.slug} href={`/used-consoles?generation=${item.slug}`}
+                              onClick={() => setShowCategories(false)}
+                              className="rounded-lg border border-blue-100 bg-white px-2 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-50">
+                              {item.name}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </motion.div>
                 )}
