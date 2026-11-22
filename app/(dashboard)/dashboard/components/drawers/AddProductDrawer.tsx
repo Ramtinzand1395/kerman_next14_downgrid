@@ -315,7 +315,7 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm" dir="rtl">
-      <div role="dialog" aria-modal="true" aria-label={product ? "ویرایش محصول" : "ثبت محصول جدید"} className="mr-auto flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden border-r border-slate-700 bg-[#0b1220] text-slate-100 shadow-2xl">
+      <div role="dialog" aria-modal="true" aria-label={product ? "ویرایش محصول" : "ثبت محصول جدید"} className="ml-auto flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden border-r border-slate-700 bg-[#0b1220] text-slate-100 shadow-2xl">
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 bg-slate-900/95 px-4 py-3 sm:px-7 sm:py-4">
           <div className="flex min-w-0 items-center gap-3">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-500/15 text-indigo-300"><PackagePlus className="h-5 w-5" /></span>
