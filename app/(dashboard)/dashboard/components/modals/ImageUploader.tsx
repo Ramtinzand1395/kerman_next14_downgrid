@@ -1,8 +1,8 @@
 "use client";
 import { uploadCloudinaryImage } from "@/helpers/uploadCloudinaryImage";
 import { ProductForm } from "@/types";
-import { Trash2 } from "lucide-react";
-import { useState } from "react";
+import { Images, Loader2, Trash2, UploadCloud } from "lucide-react";
+import { useId, useState } from "react";
 import { toast } from "react-toastify";
 import ProductImage from "@/app/components/ProductImage";
 
@@ -16,6 +16,7 @@ interface ImageUploaderProps {
 
 const ImageUploader = ({ form, updateField }: ImageUploaderProps) => {
   const [loadingImage, setLoadingImage] = useState(false);
+  const uploadId = useId();
 
   const handleGallery = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -55,62 +56,48 @@ const ImageUploader = ({ form, updateField }: ImageUploaderProps) => {
     updateField("galleryImages", updatedImages);
   };
 
-  if (loadingImage) return "در حال بارگذاری تصاویر";
-
   return (
-    <div className="borert my-10">
-      {/* Gallery Images */}
-      <div className="flex flex-col mt-5">
-        <label className="font-medium">گالری تصاویر</label>
-
-        {/* <div className="grid grid-cols-6 gap-2 mt-2"> */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
-          {form.galleryImages.length > 0 ? (
-            form.galleryImages.map((img, i) => (
-              <div
-                key={`${img.url}-${i}`}
-                className="relative group rounded border p-2"
-              >
-                <ProductImage
-                  width={300}
-                  height={200}
-                  src={img.url}
-                  alt={img.alt || form.title || `تصویر ${i + 1}`}
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
-                  className="w-full h-24 object-contain rounded"
-                />
-                <button
-                  type="button"
-                  title="حذف محصول"
-                  onClick={() => deleteImage(i)}
-                  className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
-                >
-                  <Trash2 size={16} />
-                </button>
-                <input
-                  type="text"
-                  value={img.alt || ""}
-                  onChange={(e) => updateImageAlt(i, e.target.value)}
-                  className="mt-2 w-full rounded border border-slate-600 bg-slate-900 px-2 py-1 text-xs"
-                  placeholder="متن ALT این تصویر"
-                />
-              </div>
-            ))
-          ) : (
-            <p className="text-xs">گالری تصاویر خالی است.</p>
-          )}
+    <div className="space-y-4 border-t border-slate-800 pt-6">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h4 className="flex items-center gap-2 text-sm font-bold text-slate-100"><Images className="h-4 w-4 text-indigo-300" /> گالری تصاویر</h4>
+          <p className="mt-1 text-xs leading-6 text-slate-400">زاویه‌های دیگر، جزئیات و ایرادهای ظاهری کالا را نشان دهید.</p>
         </div>
-        <input
-          title="عکس محصول"
-          type="file"
-          multiple
-          accept="image/*"
-          onChange={handleGallery}
-          className="border-blue-500 border-2 rounded-2xl p-2 w-fit mt-2"
-        />
+        <span className="rounded-full border border-slate-700 bg-slate-950 px-3 py-1 text-xs text-slate-400">{form.galleryImages.length.toLocaleString("fa-IR")} تصویر</span>
       </div>
+
+      {form.galleryImages.length > 0 ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {form.galleryImages.map((img, index) => (
+            <div key={img.url + "-" + index} className="min-w-0 overflow-hidden rounded-xl border border-slate-700 bg-slate-950/50">
+              <div className="relative flex h-32 items-center justify-center bg-slate-800/50 p-2">
+                <ProductImage width={320} height={220} src={img.url}
+                  alt={img.alt || form.title || "تصویر محصول"}
+                  sizes="(max-width: 640px) 50vw, 33vw" className="h-full w-full rounded object-contain" />
+                <button type="button" title="حذف تصویر" aria-label={"حذف تصویر " + (index + 1).toLocaleString("fa-IR")}
+                  onClick={() => deleteImage(index)}
+                  className="absolute left-2 top-2 rounded-lg bg-rose-600 p-1.5 text-white shadow-md transition hover:bg-rose-500">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+              <input type="text" aria-label={"متن جایگزین تصویر " + (index + 1).toLocaleString("fa-IR")}
+                value={img.alt || ""} onChange={event => updateImageAlt(index, event.target.value)}
+                className="w-full border-t border-slate-700 bg-transparent px-3 py-2.5 text-xs text-slate-100 outline-none placeholder:text-slate-500 focus:bg-slate-800"
+                placeholder="توضیح تصویر (ALT)" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="rounded-xl border border-dashed border-slate-700 bg-slate-950/40 px-4 py-6 text-center text-xs text-slate-400">هنوز تصویر دیگری برای محصول ثبت نشده است.</p>
+      )}
+
+      <label htmlFor={uploadId} className={"flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-4 py-4 text-sm font-semibold text-indigo-200 transition hover:bg-indigo-500/20 " + (loadingImage ? "pointer-events-none opacity-50" : "")}>
+        {loadingImage ? <Loader2 className="h-5 w-5 animate-spin" /> : <UploadCloud className="h-5 w-5" />}
+        {loadingImage ? "در حال آپلود تصاویر..." : "افزودن چند تصویر به گالری"}
+        <input id={uploadId} title="افزودن تصاویر گالری" type="file" multiple accept="image/*"
+          disabled={loadingImage} onChange={handleGallery} className="sr-only" />
+      </label>
     </div>
   );
 };
-
 export default ImageUploader;
