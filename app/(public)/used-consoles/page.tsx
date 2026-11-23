@@ -24,7 +24,7 @@ export const dynamic = "force-dynamic";
 const path = "/used-consoles";
 type Params = Record<string, string | string[] | undefined>;
 
-const title = "خرید کنسول کارکرده PS2 تا PS5 در کرمان | کرمان آتاری";
+const title = "خرید کنسول کارکرده PS2 تا PS5 در کرمان";
 const description =
   "قیمت و موجودی کنسول‌های کارکرده پلی‌استیشن ۲، ۳، ۴ و ۵ را در کرمان آتاری ببینید؛ عکس همان دستگاه، وضعیت ظاهری، لوازم همراه و گزارش تست را پیش از خرید بررسی کنید.";
 
@@ -157,7 +157,7 @@ export default async function UsedConsoles({ searchParams }: { searchParams: Par
   };
 
   return (
-    <main className="min-h-screen bg-[#f4f7fc] pb-24 text-[#132446] sm:pb-16" dir="rtl">
+    <div className="min-h-screen bg-[#f4f7fc] pb-24 text-[#132446] sm:pb-16" dir="rtl">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema).replace(/</g, "\\u003c") }}
@@ -211,7 +211,7 @@ export default async function UsedConsoles({ searchParams }: { searchParams: Par
                       className="h-full w-full object-contain" />
                   </div>
                   <div className="min-w-0">
-                    <span className="inline-block rounded-lg bg-cyan-300/15 px-2 py-1 text-[11px] font-bold text-cyan-200">از موجودی واقعی فروشگاه</span>
+                    <span className="inline-block rounded-lg bg-cyan-300/15 px-2 py-1 text-[11px] font-bold text-cyan-200">از کنسول‌های ثبت‌شده در فروشگاه</span>
                     <p className="mt-3 line-clamp-3 text-sm font-black leading-7 text-white sm:text-base">{featured.title}</p>
                     <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-sky-200">
                       مشاهده جزئیات <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
@@ -378,6 +378,6 @@ export default async function UsedConsoles({ searchParams }: { searchParams: Par
           </div>
         </section>
       </div>
-    </main>
+    </div>
   );
 }
