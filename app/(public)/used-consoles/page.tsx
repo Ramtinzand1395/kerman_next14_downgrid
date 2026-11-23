@@ -111,7 +111,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Params 
 export default async function UsedConsoles({ searchParams }: { searchParams: Params }) {
   const { query, selected, generations, range, listing, pages } = await loadCollection(JSON.stringify(searchParams));
   const filtered = hasFilter(searchParams);
-  const filterOpen = filtered;
+  const filterOpen = range.min !== undefined || range.max !== undefined || query.inStock;
   const featured = listing.products[0];
   const formatCount = (value: number) => value.toLocaleString("fa-IR");
   const href = (page: number) => {
