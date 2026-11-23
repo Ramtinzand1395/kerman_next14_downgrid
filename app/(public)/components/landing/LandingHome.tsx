@@ -251,8 +251,8 @@ export default function LandingHome({
                 خرید کارکرده، با اطلاعات دقیق‌تر
               </span>
               <h2 id="used-consoles-home-heading" className="mt-4 max-w-xl text-[25px] font-black leading-[1.65] tracking-tight sm:text-3xl lg:text-[38px]">
-                پلی‌استیشن کارکرده،
-                <span className="block text-[#8cc8ff]">با خیال روشن‌تر انتخاب کن.</span>
+                کنسول کارکرده PS2 تا PS5
+                <span className="block text-[#8cc8ff]">با اطلاعات کامل‌تر تصمیم بگیر.</span>
               </h2>
               <p className="mt-3 max-w-[560px] text-[13px] leading-8 text-slate-200 sm:text-[15px]">
                 از PS2 خاطره‌انگیز تا PS5؛ قبل از خرید، عکس همان دستگاه، وضعیت ظاهری،
@@ -287,7 +287,7 @@ export default function LandingHome({
                     />
                   </div>
                   <div className="min-w-0">
-                    <span className="text-[11px] font-bold text-cyan-200">انتخاب از موجودی فروشگاه</span>
+                    <span className="text-[11px] font-bold text-cyan-200">از کنسول‌های ثبت‌شده فروشگاه</span>
                     <p className="mt-2 line-clamp-3 text-sm font-black leading-7 text-white sm:text-base">
                       {data.consoles.find((product) => conditionLabel(product) === "کارکرده")!.title}
                     </p>
