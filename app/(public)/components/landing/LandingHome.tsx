@@ -160,6 +160,10 @@ export default function LandingHome({
   data: LandingData;
   courierEnabled: boolean;
 }) {
+  const featuredUsedConsole = data.usedConsoles?.find((product) =>
+    product.condition === "used" && product.stock > 0 && Boolean(product.mainImage) &&
+    ["playstation-2", "playstation-3", "playstation-4", "playstation-5"].includes(product.category?.slug || ""),
+  );
   const heroSlides = HOME_HERO_SLIDES.filter(
     (slide) => !slide.courierOnly || courierEnabled,
   );
@@ -239,74 +243,73 @@ export default function LandingHome({
         </Motion>
 
         <section
-          className="landing-section relative isolate overflow-hidden rounded-[28px] bg-[#081a38] text-white shadow-[0_20px_55px_rgba(11,42,93,0.18)] sm:rounded-[34px]"
+          className="landing-section overflow-hidden rounded-[24px] border border-[#dce7f8] bg-gradient-to-br from-white via-[#f8fbff] to-[#eaf3ff] text-[#142b55] shadow-[0_10px_30px_rgba(26,75,146,0.07)] sm:rounded-[30px]"
           aria-labelledby="used-consoles-home-heading"
         >
-          <div aria-hidden="true" className="pointer-events-none absolute -left-20 -top-32 h-[350px] w-[350px] rounded-full bg-blue-500/25 blur-[100px]" />
-          <div aria-hidden="true" className="pointer-events-none absolute -bottom-40 right-0 h-[300px] w-[340px] rounded-full bg-cyan-400/10 blur-[85px]" />
-          <div className="relative grid gap-5 p-5 sm:p-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-12 lg:px-12 lg:py-10">
+          <div className="grid min-w-0 gap-5 p-5 sm:p-7 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-center lg:gap-10 lg:p-9">
             <div className="min-w-0">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-bold text-blue-100 sm:text-xs">
-                <ShieldCheck className="h-4 w-4 text-cyan-300" aria-hidden="true" />
-                خرید کارکرده، با اطلاعات دقیق‌تر
+              <span className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-3 py-1.5 text-xs font-bold text-[#205da9]">
+                <ShieldCheck className="h-4 w-4 shrink-0 text-blue-600" aria-hidden="true" />
+                انتخاب آگاهانه
               </span>
-              <h2 id="used-consoles-home-heading" className="mt-4 max-w-xl text-[25px] font-black leading-[1.65] tracking-tight sm:text-3xl lg:text-[38px]">
-                کنسول کارکرده PS2 تا PS5
-                <span className="block text-[#8cc8ff]">با اطلاعات کامل‌تر تصمیم بگیر.</span>
+              <h2 id="used-consoles-home-heading" className="mt-3 break-words text-2xl font-black text-[#142b55] sm:text-3xl lg:text-[34px]" style={{ lineHeight: 1.65 }}>
+                کنسول‌های کارکرده <span className="whitespace-nowrap"><bdi dir="ltr">PS2</bdi> تا <bdi dir="ltr">PS5</bdi></span>
               </h2>
-              <p className="mt-3 max-w-[560px] text-[13px] leading-8 text-slate-200 sm:text-[15px]">
-                از PS2 خاطره‌انگیز تا PS5؛ قبل از خرید، عکس همان دستگاه، وضعیت ظاهری،
-                لوازم همراه و نتیجه بررسی‌های ثبت‌شده را در صفحه هر کنسول ببین.
-                مدل‌ها و قیمت‌ها را کنار هم مقایسه کن و متناسب با بودجه‌ات تصمیم بگیر.
+              <p className="mt-3 max-w-xl text-sm leading-8 text-slate-600 sm:text-base">
+                مدل‌های کارکرده پلی‌استیشن را با اطلاعات کامل‌تر مقایسه کن. عکس واقعی دستگاه،
+                وضعیت ظاهری، لوازم همراه، نتیجه تست و قیمت هر کنسول را در صفحه محصول ببین
+                و با خیال راحت‌تر انتخاب کن.
               </p>
-              <div className="mt-5 flex flex-wrap gap-2 text-[11px] font-bold text-blue-50 sm:text-xs">
-                {["عکس واقعی دستگاه", "گزارش بررسی", "جزئیات لوازم همراه"].map((item) => (
-                  <span key={item} className="inline-flex items-center gap-1.5 rounded-full border border-blue-200/20 bg-white/[0.07] px-3 py-2">
-                    <BadgeCheck className="h-3.5 w-3.5 text-cyan-300" aria-hidden="true" />
-                    {item}
+              <div className="mt-5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                {["عکس واقعی دستگاه", "گزارش تست", "لوازم همراه", "قیمت شفاف"].map((item) => (
+                  <span key={item} className="inline-flex min-w-0 items-center gap-1.5 rounded-xl border border-blue-100 bg-white px-2.5 py-2 text-[11px] font-bold leading-5 text-[#28527e] sm:px-3 sm:text-xs">
+                    <BadgeCheck className="h-4 w-4 shrink-0 text-blue-600" aria-hidden="true" />{item}
                   </span>
                 ))}
               </div>
               <Link href="/used-consoles"
-                className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#2275ff] px-6 text-sm font-black text-white shadow-[0_12px_25px_rgba(18,96,234,0.28)] transition hover:bg-[#3c86ff] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white sm:w-fit">
-                مشاهده و مقایسه کنسول‌های کارکرده
-                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1469f5] px-4 py-3 text-center text-sm font-black leading-6 text-white transition hover:bg-[#0b56ce] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600 sm:w-fit">
+                مشاهده همه کنسول‌های کارکرده <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
               </Link>
             </div>
-            <div className="relative min-h-[235px] overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(ellipse_at_50%_15%,#204881_0%,#10274a_58%,#0b1c37_100%)] p-4 sm:min-h-[290px] sm:p-6">
-              <div aria-hidden="true" className="absolute -right-8 top-8 h-40 w-40 rounded-full border border-white/10" />
-              <div aria-hidden="true" className="absolute -left-10 bottom-4 h-48 w-48 rounded-full border border-cyan-200/10" />
-              {data.consoles.find((product) => conditionLabel(product) === "کارکرده") ? (
-                <div className="relative flex h-full min-h-[210px] items-center gap-4">
-                  <div className="relative aspect-square w-[55%] max-w-[250px] shrink-0 overflow-hidden rounded-2xl bg-white/95 p-2 shadow-[0_18px_40px_rgba(0,0,0,0.3)]">
-                    <ProductImage
-                      src={data.consoles.find((product) => conditionLabel(product) === "کارکرده")!.mainImage}
-                      alt={data.consoles.find((product) => conditionLabel(product) === "کارکرده")!.mainImageAlt || "تصویر کنسول کارکرده موجود در فروشگاه"}
-                      width={320} height={320} loading="lazy" sizes="(max-width: 640px) 45vw, 260px"
-                      className="h-full w-full object-contain"
-                    />
+            <div className="min-w-0 rounded-[22px] border border-[#dbe8fb] bg-white/90 p-4 sm:p-5">
+              {featuredUsedConsole ? (
+                <Link href={"/product/" + featuredUsedConsole.slug} className="group grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center gap-3 rounded-2xl p-1">
+                  <div className="min-w-0 overflow-hidden rounded-xl border border-slate-100 bg-[#f7f9fd]">
+                    <ProductImage src={featuredUsedConsole.mainImage} alt={featuredUsedConsole.mainImageAlt || featuredUsedConsole.title}
+                      width={320} height={320} loading="lazy" sizes="(max-width: 640px) 40vw, 240px"
+                      className="aspect-square h-auto w-full object-contain p-2" />
                   </div>
                   <div className="min-w-0">
-                    <span className="text-[11px] font-bold text-cyan-200">از کنسول‌های ثبت‌شده فروشگاه</span>
-                    <p className="mt-2 line-clamp-3 text-sm font-black leading-7 text-white sm:text-base">
-                      {data.consoles.find((product) => conditionLabel(product) === "کارکرده")!.title}
-                    </p>
-                    <p className="mt-3 text-xs leading-6 text-blue-100">مشخصات و وضعیت همین دستگاه را بررسی کن.</p>
+                    <span className="inline-block rounded-lg bg-blue-50 px-2 py-1 text-[10px] font-bold leading-5 text-blue-700">از دستگاه‌های موجود</span>
+                    <p className="mt-2 line-clamp-3 break-words text-sm font-black leading-7 text-[#142b55]">{featuredUsedConsole.title}</p>
+                    <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-blue-700 group-hover:underline">مشاهده مشخصات <ChevronLeft className="h-3.5 w-3.5 shrink-0" /></span>
                   </div>
-                </div>
+                </Link>
               ) : (
-                <div className="relative flex h-full min-h-[210px] flex-col items-center justify-center gap-4 text-center">
-                  <div className="flex h-[86px] w-[86px] items-center justify-center rounded-[26px] border border-white/20 bg-white/10 shadow-[0_16px_45px_rgba(0,0,0,0.2)]">
-                    <Gamepad2 className="h-12 w-12 text-[#b3dcff]" strokeWidth={1.4} aria-hidden="true" />
-                  </div>
-                  <p className="text-base font-black tracking-wide text-blue-50">چهار نسل، انتخاب‌های متفاوت</p>
-                  <div className="grid w-full max-w-[280px] grid-cols-4 gap-2" dir="ltr">
-                    {["PS2", "PS3", "PS4", "PS5"].map((generation) => (
-                      <span key={generation} className="rounded-lg border border-white/15 bg-white/10 py-2 text-center text-xs font-black text-blue-100">{generation}</span>
-                    ))}
+                <div className="flex items-center gap-3 rounded-2xl bg-[#f3f8ff] p-4">
+                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-blue-100 bg-white text-blue-600">
+                    <Gamepad2 className="h-8 w-8" strokeWidth={1.5} aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-black leading-7 text-[#142b55]">نسل موردعلاقه‌ات رو انتخاب کن</p>
+                    <p className="mt-1 text-xs leading-6 text-slate-500">مدل‌ها و شرایط خرید هر نسل رو بررسی کن.</p>
                   </div>
                 </div>
               )}
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="انتخاب نسل کنسول">
+                {[
+                  { label: "PS2", slug: "playstation-2" },
+                  { label: "PS3", slug: "playstation-3" },
+                  { label: "PS4", slug: "playstation-4" },
+                  { label: "PS5", slug: "playstation-5" },
+                ].map((generation) => (
+                  <Link key={generation.slug} href={"/used-consoles?generation=" + generation.slug}
+                    className="flex min-h-11 items-center justify-center rounded-xl border border-[#e0e9f7] bg-[#f8fbff] px-2 text-sm font-black text-[#2359a4] transition hover:border-blue-300 hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600" dir="ltr">
+                    {generation.label}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </section>
