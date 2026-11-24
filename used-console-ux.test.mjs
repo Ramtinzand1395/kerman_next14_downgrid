@@ -18,7 +18,10 @@ test("used-console home feature has a dedicated link, while the general console 
   );
   assert.match(homeFeature, /href="\/used-consoles"/);
   assert.match(homeFeature, /عکس واقعی دستگاه/);
-  assert.match(homeFeature, /گزارش بررسی/);
+  assert.match(homeFeature, /گزارش تست/);
+  assert.doesNotMatch(homeFeature, /data\.consoles\.find/);
+  assert.match(homeFeature, /featuredUsedConsole/);
+  assert.match(homeFeature, /lineHeight: 1\.65/);
 
   const generalConsoleSection = home.slice(
     home.indexOf('aria-labelledby="console-heading"'),
@@ -31,6 +34,7 @@ test("used-console home feature has a dedicated link, while the general console 
 test("used-console page retains live catalog filtering, product links and essential SEO markup", () => {
   assert.match(catalog, /getCategoryProducts\(/);
   assert.match(catalog, /used: true/);
+  assert.match(catalog, /exactCategories: true/);
   assert.match(catalog, /name="generation"/);
   assert.match(catalog, /name="min"/);
   assert.match(catalog, /name="max"/);
@@ -40,4 +44,14 @@ test("used-console page retains live catalog filtering, product links and essent
   assert.match(catalog, /BreadcrumbList/);
   assert.match(catalog, /ItemList/);
   assert.match(catalog, /سؤال‌های رایج درباره خرید کنسول کارکرده/);
+});
+
+
+test("homepage loads only real available used consoles and admin keeps automatic tags", () => {
+  const data = readFileSync(new URL("./lib/landing-data.ts", import.meta.url), "utf8");
+  const drawer = readFileSync(new URL("./app/(dashboard)/dashboard/components/drawers/AddProductDrawer.tsx", import.meta.url), "utf8");
+  assert.match(data, /usedConsoleCategoryIds = categories\.filter\(\(category\) => isConsoleGeneration\(category\.slug\)\)/);
+  assert.match(data, /productQuery\(usedConsoleCategoryIds, 4, \{ condition: "used", productType: "single"/);
+  assert.match(drawer, /tags: syncUsedConsoleTags\(prev\.tags, tagsList, slug\)\.tagIds/);
+  assert.match(drawer, /lockedTagIds=\{automaticTags\?\.lockedIds\}/);
 });
