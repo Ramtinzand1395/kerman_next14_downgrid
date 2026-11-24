@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import "./scripts/pos-test-loader.mjs";
 const { buildProductWriteInput } = await import("./lib/productInput.ts");
-import { consoleChecks } from "./lib/used-console.ts";
+import { consoleChecks, syncUsedConsoleTags, removeUsedConditionTag } from "./lib/used-console.ts";
 import { mapCatalogProduct } from "./lib/pos/catalog.ts";
 
 const options = { mode: "create", categorySlug: "playstation-2" };
@@ -47,4 +47,29 @@ test("all product drafts may omit images while publication still requires one", 
 test("online confirmation flag in the POS catalog is specific to used units", () => {
   assert.equal(mapCatalogProduct({ _id: "1", ...body }).requiresOnlineSale, true);
   assert.equal(mapCatalogProduct({ _id: "1", ...base }).requiresOnlineSale, undefined);
+});
+
+
+test("used-console tag automation adds the selected generation, replaces conflicting tags and preserves unrelated tags", () => {
+  const tags = [
+    { _id: "u", slug: "used", name: "کارکرده" },
+    { _id: "n", slug: "new", name: "نو" },
+    { _id: "p2", slug: "ps2", name: "PS2" },
+    { _id: "p3", slug: "ps3", name: "PS3" },
+    { _id: "p4", slug: "ps4", name: "PS4" },
+    { _id: "p5", slug: "ps5", name: "PS5" },
+    { _id: "sony", slug: "sony", name: "سونی" },
+    { _id: "accessory", slug: "ps5-accessories", name: "لوازم PS5" },
+  ];
+  for (const n of [2, 3, 4, 5]) {
+    const current = syncUsedConsoleTags(["n", "p2", "p3", "p4", "p5", "sony", "accessory"], tags, "playstation-" + n);
+    assert.deepEqual(current.tagIds, ["sony", "accessory", "u", "p" + n]);
+    assert.deepEqual(current.lockedIds, ["u", "p" + n]);
+    assert.deepEqual(current.missing, []);
+    assert.deepEqual(syncUsedConsoleTags(current.tagIds, tags, "playstation-" + n).tagIds, current.tagIds);
+  }
+  assert.deepEqual(removeUsedConditionTag(["u", "p4", "sony"], tags), ["p4", "sony"]);
+  const aliases = [{ _id: "used-fa", slug: "کارکرده" }, { _id: "ps4-fa", slug: "پلی-استیشن-۴" }];
+  assert.deepEqual(syncUsedConsoleTags([], aliases, "playstation-4").tagIds, ["used-fa", "ps4-fa"]);
+  assert.deepEqual(syncUsedConsoleTags([], [], "playstation-4").missing, ["کارکرده", "PS4"]);
 });
