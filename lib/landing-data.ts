@@ -5,6 +5,7 @@ import ProductModel from "@/model/Product";
 import Tag from "@/model/Tag";
 import "@/model/Comment";
 import type { BlogPost, Product } from "@/types";
+import { isConsoleGeneration } from "./used-console";
 import { getLandingOffer, type LandingOffer, type LandingOfferProduct } from "./landing-offers";
 
 type CategoryRecord = {
@@ -31,6 +32,7 @@ export type LandingData = {
   gameTabs: LandingProductTab[];
   equipmentTabs: LandingProductTab[];
   consoles: Product[];
+  usedConsoles?: Product[];
   offers: LandingOffer[];
   articles: BlogPost[];
 };
@@ -203,6 +205,7 @@ export async function getLandingData(): Promise<LandingData> {
       { id: "ps5-accessories", label: "لوازم PS5", href: "/category/accessories?tag=ps5", products: [] },
     ],
     consoles: [],
+    usedConsoles: [],
     offers: [],
     articles: [],
   };
@@ -217,6 +220,7 @@ export async function getLandingData(): Promise<LandingData> {
 
     const gameCategoryIds = descendantsFor(categories, "games");
     const consoleCategoryIds = descendantsFor(categories, "consoles");
+    const usedConsoleCategoryIds = categories.filter((category) => isConsoleGeneration(category.slug)).map((category) => category._id);
     const equipmentCategoryIds = [
       ...descendantsFor(categories, "accessories"),
       ...descendantsFor(categories, "gaming-accessories"),
@@ -288,6 +292,7 @@ export async function getLandingData(): Promise<LandingData> {
       cablesRaw,
       ps5AccessoriesRaw,
       consolesRaw,
+      usedConsolesRaw,
       articlesRaw,
     ] = await Promise.all([
       Promise.all(
@@ -317,6 +322,7 @@ export async function getLandingData(): Promise<LandingData> {
         4,
       ),
       productQuery(consoleCategoryIds, 4),
+      productQuery(usedConsoleCategoryIds, 4, { condition: "used", productType: "single", isDigital: { $ne: true }, isOnlineGame: { $ne: true }, stock: 1, mainImage: { $type: "string", $ne: "" } }),
       Blog.find({ published: true })
         .select(
           "title slug excerpt content coverImage published createdAt updatedAt metaDescription focusKeyword",
@@ -346,6 +352,7 @@ export async function getLandingData(): Promise<LandingData> {
         ps5AccessoriesRaw,
       ]),
       consoles: consolesRaw.map(serializeProduct),
+      usedConsoles: usedConsolesRaw.map(serializeProduct),
       offers,
       articles: articlesRaw.map(serializeArticle),
     };

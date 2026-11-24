@@ -85,6 +85,7 @@ export async function getCategoryProducts(
   rows: CategoryRow[],
   query: CatalogQuery,
   priceRange: { min?: number; max?: number } = {},
+  options: { exactCategories?: boolean } = {},
 ) {
   await dbConnect();
   const filter: Record<string, unknown> = {
@@ -95,11 +96,16 @@ export async function getCategoryProducts(
       // even when the categories are not children of a "consoles" parent.
       $in: [...new Set(
         (Array.isArray(categoryId) ? categoryId : [categoryId])
-          .flatMap((id) => descendantIds(id, rows)),
+          .flatMap((id) => options.exactCategories ? [id] : descendantIds(id, rows)),
       )].map((id) => new mongoose.Types.ObjectId(id)),
     },
   };
   if (query.used) filter.condition = "used";
+  if (query.used && options.exactCategories) {
+    filter.productType = "single";
+    filter.isDigital = { $ne: true };
+    filter.isOnlineGame = { $ne: true };
+  }
   if (query.q)
     filter.$or = ["title", "brand"].map((key) => ({
       [key]: { $regex: escapeRegex(query.q), $options: "i" },

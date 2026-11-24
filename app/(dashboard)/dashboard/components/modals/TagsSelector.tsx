@@ -8,6 +8,7 @@ import type { ProductForm, Tag } from "@/types";
 interface TagsSelectorProps {
   form: ProductForm;
   tagsList: Tag[];
+  lockedTagIds?: string[];
   updateField: <K extends keyof ProductForm>(
     key: K,
     value: ProductForm[K],
@@ -21,7 +22,7 @@ const normalizeSearch = (value: string) =>
     .replaceAll("ي", "ی")
     .replaceAll("ك", "ک");
 
-const TagsSelector = ({ updateField, form, tagsList }: TagsSelectorProps) => {
+const TagsSelector = ({ updateField, form, tagsList, lockedTagIds = [] }: TagsSelectorProps) => {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -54,6 +55,7 @@ const TagsSelector = ({ updateField, form, tagsList }: TagsSelectorProps) => {
   }, []);
 
   const toggleTag = (tagId: string) => {
+    if (lockedTagIds.includes(tagId)) return;
     const nextTags = form.tags.includes(tagId)
       ? form.tags.filter((id) => id !== tagId)
       : [...form.tags, tagId];
@@ -83,14 +85,16 @@ const TagsSelector = ({ updateField, form, tagsList }: TagsSelectorProps) => {
               className="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 py-1 pr-2.5 pl-1.5 text-[11px] font-medium text-teal-800"
             >
               {tag.name}
-              <button
+              {lockedTagIds.includes(tag._id) ? (
+                <span className="rounded-full bg-white/80 px-1.5 py-0.5 text-[9px] font-bold text-teal-700">خودکار</span>
+              ) : <button
                 type="button"
                 onClick={() => toggleTag(tag._id)}
                 className="rounded-full p-0.5 text-teal-700 transition hover:bg-teal-100 hover:text-teal-800"
                 aria-label={`حذف تگ ${tag.name}`}
               >
                 <X className="h-3 w-3" />
-              </button>
+              </button>}
             </span>
           ))}
         </div>
@@ -145,6 +149,7 @@ const TagsSelector = ({ updateField, form, tagsList }: TagsSelectorProps) => {
                     <button
                       type="button"
                       onClick={() => toggleTag(tag._id)}
+                      disabled={lockedTagIds.includes(tag._id)}
                       className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-right text-xs transition ${
                         isSelected
                           ? "bg-teal-50 text-teal-800"

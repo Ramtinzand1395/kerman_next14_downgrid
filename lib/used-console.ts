@@ -55,3 +55,61 @@ export function readConsoleReport(value: unknown, generation: ConsoleGeneration,
   }
   return report;
 }
+
+
+type ConsoleTagReference = { _id: string; slug: string; name?: string };
+const normalizeTagKey = (value: string | undefined) =>
+  (value || "").trim().toLowerCase()
+    .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+    .replace(/[\s‌_-]+/g, "");
+
+const conditionKeys = {
+  used: ["used", "کارکرده", "دستدوم", "secondhand", "preowned"],
+  new: ["new", "نو", "آکبند"],
+};
+const generationKeys: Record<ConsoleGeneration, string[]> = {
+  "playstation-2": ["ps2", "playstation2", "پلیاستیشن2", "پیاستیشن2"],
+  "playstation-3": ["ps3", "playstation3", "پلیاستیشن3", "پیاستیشن3"],
+  "playstation-4": ["ps4", "playstation4", "پلیاستیشن4", "پیاستیشن4"],
+  "playstation-5": ["ps5", "playstation5", "پلیاستیشن5", "پیاستیشن5"],
+};
+
+function tagMatches(tag: ConsoleTagReference, keys: string[]) {
+  return keys.includes(normalizeTagKey(tag.slug)) || keys.includes(normalizeTagKey(tag.name));
+}
+
+function preferredTag(tags: ConsoleTagReference[], keys: string[]) {
+  // Prefer the established canonical slug; fall back to the exact existing aliases.
+  for (const key of keys) {
+    const tag = tags.find((item) => normalizeTagKey(item.slug) === key);
+    if (tag) return tag;
+  }
+  return tags.find((item) => tagMatches(item, keys));
+}
+
+/** Preserve unrelated tags, replace conflicting condition/generation tags, and use only existing tag IDs. */
+export function syncUsedConsoleTags(
+  selectedIds: string[],
+  tags: ConsoleTagReference[],
+  generation: ConsoleGeneration,
+) {
+  const used = preferredTag(tags, conditionKeys.used);
+  const generationTag = preferredTag(tags, generationKeys[generation]);
+  const lockedIds = [used?._id, generationTag?._id].filter((id): id is string => Boolean(id));
+  const managed = new Set(tags.filter((tag) =>
+    tagMatches(tag, conditionKeys.used) || tagMatches(tag, conditionKeys.new) ||
+    Object.values(generationKeys).some((keys) => tagMatches(tag, keys)),
+  ).map((tag) => tag._id));
+  const tagIds = [...new Set([...selectedIds.filter((id) => !managed.has(id)), ...lockedIds])];
+  const missing = [
+    ...(!used ? ["کارکرده"] : []),
+    ...(!generationTag ? [generationKeys[generation][0].toUpperCase()] : []),
+  ];
+  return { tagIds, lockedIds, missing };
+}
+
+export function removeUsedConditionTag(selectedIds: string[], tags: ConsoleTagReference[]) {
+  const usedIds = new Set(tags.filter((tag) => tagMatches(tag, conditionKeys.used)).map((tag) => tag._id));
+  return selectedIds.filter((id) => !usedIds.has(id));
+}

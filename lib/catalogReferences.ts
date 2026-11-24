@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Category from "@/model/Category";
 import Tag from "@/model/Tag";
+import { isConsoleGeneration, syncUsedConsoleTags, removeUsedConditionTag } from "@/lib/used-console";
 
 type ValidCatalogReferences = {
   ok: true;
@@ -44,4 +45,26 @@ export async function validateCatalogReferences(
   }
 
   return { ok: true, categoryId, categorySlug: String(categoryExists.slug), tagIds };
+}
+
+
+/** Resolve the same automatic tags at the API boundary, not only in the UI.
+ * Existing tag records are reused; saving a product never silently creates tags.
+ */
+export async function resolveUsedConsoleTagIds(
+  categorySlug: string,
+  tagIds: string[],
+  condition: unknown,
+  previousCondition?: unknown,
+): Promise<{ tagIds: string[]; missing: string[] }> {
+  if (condition !== "used" && previousCondition !== "used") return { tagIds, missing: [] };
+  const records = await Tag.find({}).select("_id slug name").lean<{ _id: { toString(): string }; slug: string; name: string }[]>();
+  const tags = records.map((record) => ({ _id: String(record._id), slug: record.slug, name: record.name }));
+  if (condition === "used" && isConsoleGeneration(categorySlug)) {
+    return syncUsedConsoleTags(tagIds, tags, categorySlug);
+  }
+  if (previousCondition === "used" && condition !== "used") {
+    return { tagIds: removeUsedConditionTag(tagIds, tags), missing: [] };
+  }
+  return { tagIds, missing: [] };
 }

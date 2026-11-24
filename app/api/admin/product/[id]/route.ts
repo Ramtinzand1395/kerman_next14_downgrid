@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import dbConnect from "@/lib/mongodb";
 import Product from "@/model/Product";
-import { validateCatalogReferences } from "@/lib/catalogReferences";
+import { validateCatalogReferences, resolveUsedConsoleTagIds } from "@/lib/catalogReferences";
 import { notifyLowInventory } from "@/lib/notifications/events";
 import {
   buildProductWriteInput,
@@ -89,11 +89,21 @@ export async function PUT(
     const costsChanged = previousCosts.size !== Object.keys(purchasePrices).length ||
       Object.entries(purchasePrices).some(([key, value]) => previousCosts.get(key) !== value);
 
+    const automaticTags = await resolveUsedConsoleTagIds(
+      catalogReferences.categorySlug,
+      catalogReferences.tagIds,
+      validatedProductData.condition,
+      product.condition,
+    );
+    if (validatedProductData.status === "published" && automaticTags.missing.length > 0) {
+      throw new ProductInputValidationError("tags", "تگ‌های خودکار کنسول در فهرست تگ‌ها موجود نیستند: " + automaticTags.missing.join("، ") + ". ابتدا تگ‌ها را از بخش مدیریت تگ‌ها ایجاد کنید.");
+    }
+
     const productData = {
       ...validatedProductData,
       ...(costsChanged ? { purchasePrices } : {}),
       category: catalogReferences.categoryId,
-      tags: catalogReferences.tagIds,
+      tags: automaticTags.tagIds,
       catalogRevision: (product.catalogRevision ?? 0) + 1,
       ...(isStockChanged
         ? { inventoryVersion: (product.inventoryVersion ?? 0) + 1 }
