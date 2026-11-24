@@ -13,7 +13,7 @@ import {
 } from "@/lib/product-profit";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/options";
-import { validateCatalogReferences } from "@/lib/catalogReferences";
+import { validateCatalogReferences, resolveUsedConsoleTagIds } from "@/lib/catalogReferences";
 import { notifyLowInventory } from "@/lib/notifications/events";
 import {
   buildProductWriteInput,
@@ -218,11 +218,20 @@ export async function POST(req: Request) {
       categorySlug: catalogReferences.categorySlug,
     });
 
+    const automaticTags = await resolveUsedConsoleTagIds(
+      catalogReferences.categorySlug,
+      catalogReferences.tagIds,
+      validatedProductData.condition,
+    );
+    if (validatedProductData.status === "published" && automaticTags.missing.length > 0) {
+      throw new ProductInputValidationError("tags", "تگ‌های خودکار کنسول در فهرست تگ‌ها موجود نیستند: " + automaticTags.missing.join("، ") + ". ابتدا تگ‌ها را از بخش مدیریت تگ‌ها ایجاد کنید.");
+    }
+
     const productData = {
       ...validatedProductData,
       purchasePrices,
       category: catalogReferences.categoryId,
-      tags: catalogReferences.tagIds,
+      tags: automaticTags.tagIds,
       sku: validatedProductData.sku || generateSKU(),
       catalogRevision: 0,
       inventoryVersion: 0,
