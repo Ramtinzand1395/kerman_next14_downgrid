@@ -1,3 +1,6 @@
+"use client";
+
+import { useId, useRef, useState } from "react";
 import {
   CalendarClock,
   Dices,
@@ -5,12 +8,14 @@ import {
   Heart,
   KeyRound,
   MapPinHouse,
+  Menu,
   MessageCircle,
   MessageSquareText,
   ShoppingBasket,
   Trophy,
   UserRound,
   WalletCards,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import Link from "@/app/components/navigation/NavigationFeedback";
@@ -31,9 +36,46 @@ const entries: { section: ProfileSection; title: string; icon: LucideIcon }[] = 
 ];
 
 export default function Sidebar({ activeStep }: { activeStep: number }) {
+  const [open, setOpen] = useState(false);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const linksId = useId();
+  const currentSection = entries.find(({ section }) => PROFILE_STEPS[section] === activeStep);
+  const ToggleIcon = open ? X : Menu;
+
+  function closeMenu() {
+    if (!open) return;
+    setOpen(false);
+    toggleRef.current?.focus();
+  }
+
   return (
-    <nav aria-label="منوی پنل کاربری" className="h-fit min-w-0 self-start rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm sm:p-3 lg:sticky lg:top-24 lg:p-4">
-      <ul className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-1">
+    <nav
+      aria-label="منوی پنل کاربری"
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && open) {
+          event.preventDefault();
+          closeMenu();
+        }
+      }}
+      className="h-fit min-w-0 self-start rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm sm:p-3 lg:sticky lg:top-24 lg:p-4"
+    >
+      <button
+        ref={toggleRef}
+        type="button"
+        aria-expanded={open}
+        aria-controls={linksId}
+        onClick={() => setOpen(current => !current)}
+        className="flex min-h-12 w-full items-center gap-3 rounded-xl px-2 text-right focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600 lg:hidden"
+      >
+        <span className="rounded-lg bg-indigo-50 p-2 text-indigo-700">
+          <ToggleIcon aria-hidden="true" className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 [overflow-wrap:anywhere]">
+          <span className="block text-sm font-bold text-slate-800">منوی پنل کاربری</span>
+          {currentSection && <span className="block text-xs leading-5 text-slate-600">{currentSection.title}</span>}
+        </span>
+      </button>
+      <ul id={linksId} className={`${open ? "grid" : "hidden"} mt-2 grid-cols-2 gap-1.5 sm:grid-cols-3 lg:mt-0 lg:grid lg:grid-cols-1`}>
         {entries.map(({ section, title, icon: Icon }) => {
           const isActive = activeStep === PROFILE_STEPS[section];
           return (
@@ -42,6 +84,7 @@ export default function Sidebar({ activeStep }: { activeStep: number }) {
                 href={profileRoute(section)}
                 scroll={false}
                 prefetch={false}
+                onClick={closeMenu}
                 aria-current={isActive ? "page" : undefined}
                 className={`flex min-h-11 items-center gap-2 rounded-xl border px-2.5 py-2 text-xs font-semibold leading-5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:text-sm ${
                   isActive
@@ -56,7 +99,7 @@ export default function Sidebar({ activeStep }: { activeStep: number }) {
           );
         })}
         <li className="min-w-0">
-          <Link href={profileRoute("loyalty")} scroll={false} prefetch={false} className="flex min-h-11 items-center gap-2 rounded-xl border border-indigo-100 bg-indigo-50 px-2.5 py-2 text-xs font-semibold leading-5 text-indigo-800 hover:border-indigo-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:text-sm">
+          <Link href={profileRoute("loyalty")} scroll={false} prefetch={false} onClick={closeMenu} className="flex min-h-11 items-center gap-2 rounded-xl border border-indigo-100 bg-indigo-50 px-2.5 py-2 text-xs font-semibold leading-5 text-indigo-800 hover:border-indigo-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:text-sm">
             <Gift aria-hidden="true" className="h-4 w-4 shrink-0" />
             <span className="min-w-0 [overflow-wrap:anywhere]">دعوت از دوستان</span>
           </Link>
