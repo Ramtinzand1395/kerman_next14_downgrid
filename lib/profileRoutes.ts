@@ -1,4 +1,4 @@
-const PROFILE_STEPS = {
+export const PROFILE_STEPS = {
   profile: 1,
   favorites: 2,
   addresses: 3,
@@ -9,6 +9,7 @@ const PROFILE_STEPS = {
   loyalty: 9,
   spin: 10,
   conversations: 11,
+  accounts: 12,
 } as const;
 
 export type ProfileSection = keyof typeof PROFILE_STEPS;

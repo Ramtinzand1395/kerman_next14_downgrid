@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import MyAccounts from "./MyAccounts";
 import Sidebar from "./Sidebar";
-import Stepper from "./Stepper";
 import ProfileContent from "./ProfileContent";
 import { redirect } from "next/navigation";
+import { PROFILE_STEPS, profileRoute } from "@/lib/profileRoutes";
 
 export const metadata: Metadata = {
   alternates: {
@@ -16,40 +16,32 @@ export const metadata: Metadata = {
 };
 
 interface MyProfilePageProps {
-  searchParams?: { step?: string; fulfillment?: string };
+  searchParams?: { step?: string; fulfillment?: string; ordersTab?: string };
 }
 
-export default async function MyProfile({ searchParams }: MyProfilePageProps) {
-  const data = await searchParams;
-  const activeStep = Number(data?.step ?? 1);
+export default function MyProfile({ searchParams }: MyProfilePageProps) {
+  const activeStep = Number(searchParams?.step ?? PROFILE_STEPS.profile);
   const initialFulfillment =
-    data?.fulfillment === "courier" || data?.fulfillment === "in_store"
-      ? data.fulfillment
+    searchParams?.fulfillment === "courier" || searchParams?.fulfillment === "in_store"
+      ? searchParams.fulfillment
       : null;
 
-  // سفارش‌های نصب بازی (مرحله ۷) اکنون در همان صفحه سفارش‌ها (مرحله ۵) نمایش داده می‌شود
   if (activeStep === 7) {
-    redirect("/my-profile?step=5");
+    redirect(profileRoute("orders", { ordersTab: searchParams?.ordersTab }));
   }
 
   return (
-    <div className="container mx-auto px-3 md:px-6 py-6 md:py-8">
-      <div className="grid min-w-0 grid-cols-1 gap-5 md:gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <Sidebar />
+    <div className="container mx-auto px-3 py-6 md:px-6 md:py-8">
+      <div className="grid min-w-0 grid-cols-1 gap-5 md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+        <Sidebar activeStep={activeStep} />
 
-        <section className="min-w-0 space-y-4 md:space-y-5">
-          <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-3 md:p-5 shadow-sm">
-            <Stepper activeStep={activeStep} />
-          </div>
-
-          <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50 p-3 md:p-5 shadow-sm min-h-[520px]">
-            {activeStep === 12 ? (
-              <MyAccounts />
-            ) : (
-              <ProfileContent activeStep={activeStep} initialFulfillment={initialFulfillment} />
-            )}
-          </div>
-        </section>
+        <div className="min-h-[520px] min-w-0 rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50 p-3 shadow-sm md:p-5">
+          {activeStep === PROFILE_STEPS.accounts ? (
+            <MyAccounts />
+          ) : (
+            <ProfileContent activeStep={activeStep} initialFulfillment={initialFulfillment} />
+          )}
+        </div>
       </div>
     </div>
   );
