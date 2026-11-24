@@ -8,7 +8,7 @@ import type { Category, ProductForm, ProductVariant, Tag } from "@/types";
 import { isPurchasePrice } from "@/lib/product-profit";
 
 import UsedConsoleFields from "../modals/UsedConsoleFields";
-import { isConsoleGeneration, readConsoleReport, type ConsoleGeneration } from "@/lib/used-console";
+import { isConsoleGeneration, readConsoleReport, syncUsedConsoleTags, removeUsedConditionTag, type ConsoleGeneration } from "@/lib/used-console";
 import BasicInfoFields from "../modals/BasicInfoFields";
 import CategorySelector from "../modals/CategorySelector";
 import TagsSelector from "../modals/TagsSelector";
@@ -182,6 +182,19 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
   }, []);
 
   const generation = categories.find(category => category._id === form.category)?.slug;
+  const automaticTags = form.condition === "used" && isConsoleGeneration(generation)
+    ? syncUsedConsoleTags(form.tags, tagsList, generation) : null;
+
+  // Tag and category requests can complete after the user opens the editor.
+  useEffect(() => {
+    setForm((previous) => {
+      const slug = categories.find((category) => category._id === previous.category)?.slug;
+      if (previous.condition !== "used" || !isConsoleGeneration(slug)) return previous;
+      const { tagIds } = syncUsedConsoleTags(previous.tags, tagsList, slug);
+      return tagIds.length === previous.tags.length && tagIds.every((id, i) => id === previous.tags[i])
+        ? previous : { ...previous, tags: tagIds };
+    });
+  }, [categories, tagsList]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -216,8 +229,16 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
         next.stock = Math.min(1, Math.max(0, Number(next.stock) || 0));
         if (!product && next.stock === 0) next.stock = 1;
       }
-      if (key === "category" && !isConsoleGeneration(categories.find(category => category._id === value)?.slug)) {
-        next.condition = null;
+      const nextGeneration = categories.find((category) => category._id === next.category)?.slug;
+      if (key === "category" && prev.category !== next.category && prev.condition === "used") {
+        // Never reuse a report from a different console generation.
+        next.usedConsole = null;
+      }
+      if (key === "category" && !isConsoleGeneration(nextGeneration)) next.condition = null;
+      if (next.condition === "used" && isConsoleGeneration(nextGeneration)) {
+        next.tags = syncUsedConsoleTags(next.tags, tagsList, nextGeneration).tagIds;
+      } else if (prev.condition === "used" && next.condition !== "used") {
+        next.tags = removeUsedConditionTag(next.tags, tagsList);
       }
       return next;
     });
@@ -233,11 +254,12 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
       ...prev,
       category: category._id,
       condition: "used",
+      tags: syncUsedConsoleTags(prev.tags, tagsList, slug).tagIds,
       usedConsole: prev.condition === "used" && prev.category === category._id ? prev.usedConsole : null,
       productType: "single",
       isDigital: false,
       isOnlineGame: false,
-      stock: 1,
+      stock: prev.condition === "used" && prev.category === category._id ? prev.stock : 1,
       variants: [],
       defaultVariantId: null,
       variantSelector: { enabled: false, version: 1, groups: [], mappings: [] },
@@ -469,18 +491,19 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
                             <ShieldCheck className="h-5 w-5" aria-hidden="true" /> ثبت سریع کنسول کارکرده
                           </h4>
                           <p className="mt-2 text-xs leading-6 text-slate-700">
-                            نسل را انتخاب کنید؛ دسته‌بندی، وضعیت کارکرده و موجودی یک دستگاه خودکار تنظیم می‌شود و گزارش تست باز خواهد شد.
+                            نسل دستگاه را انتخاب کنید؛ دسته‌بندی اصلی، وضعیت کارکرده، تگ کارکرده و تگ همان نسل خودکار انتخاب می‌شوند و فرم گزارش تست باز می‌شود.
                           </p>
                         </div>
-                        <span className="rounded-full border border-teal-200 bg-slate-50 px-3 py-1 text-[11px] text-teal-800">بدون انتخاب تگ</span>
+                        <span className="rounded-full border border-teal-200 bg-slate-50 px-3 py-1 text-[11px] text-teal-800">انتخاب خودکار دسته و تگ‌ها</span>
                       </div>
                       <div role="group" aria-label="انتخاب سریع نسل کنسول کارکرده" className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                         {USED_CONSOLE_CHOICES.map((choice) => {
                           const exists = categories.some((category) => category.slug === choice.slug);
-                          return <button key={choice.slug} type="button" disabled={loading || categoriesLoading} onClick={() => startUsedConsole(choice.slug)}
-                            className="min-h-14 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-center transition hover:border-teal-500 hover:bg-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 disabled:cursor-wait disabled:opacity-50">
+                          const selected = form.condition === "used" && generation === choice.slug;
+                          return <button key={choice.slug} type="button" aria-pressed={selected} disabled={loading || categoriesLoading || !exists} onClick={() => startUsedConsole(choice.slug)}
+                            className={"min-h-14 rounded-xl border px-3 py-2.5 text-center transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 disabled:cursor-not-allowed disabled:opacity-50 " + (selected ? "border-teal-600 bg-teal-100" : "border-slate-300 bg-white hover:border-teal-500 hover:bg-teal-50")}>
                             <span className="block text-base font-black text-slate-900">{choice.label}</span>
-                            {!categoriesLoading && <span className={"mt-1 block text-[10px] " + (exists ? "text-teal-700" : "text-amber-700")}>{exists ? "آماده ثبت" : "دسته موجود نیست"}</span>}
+                            {!categoriesLoading && <span className={"mt-1 block text-[10px] " + (exists ? "text-teal-700" : "text-amber-700")}>{selected ? "انتخاب شده" : exists ? "آماده ثبت" : "دسته موجود نیست"}</span>}
                           </button>;
                         })}
                       </div>
@@ -497,12 +520,19 @@ export default function AddProductDrawer({ onClose, onSave, product }: Props) {
 
                   {activeStep === "taxonomy" && <div className="space-y-6">
                     <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs leading-6 text-sky-800">
-                      برای نمایش گزارش تست، دسته‌بندی اصلی PS2، PS3، PS4 یا PS5 را انتخاب کنید؛ انتخاب تگ کنسول کافی نیست.
-                      {!product && <button type="button" className="mr-2 font-bold text-teal-700 underline underline-offset-4 hover:text-teal-800" onClick={() => setActiveStep("basic")}>انتخاب سریع نسل در مرحله اول</button>}
+                      {isConsoleGeneration(generation) && form.condition === "used"
+                        ? "دسته نسل دستگاه انتخاب شده است. گزارش تست همین نسل را تکمیل کنید؛ تگ کارکرده و تگ نسل به‌صورت خودکار تنظیم می‌شوند."
+                        : "برای ثبت کنسول کارکرده، نسل دستگاه را از بخش دسته‌بندی انتخاب و وضعیت آن را کارکرده کنید. گزارش تست براساس دسته اصلی نمایش داده می‌شود."}
+                      {!product && <button type="button" className="mr-2 font-bold text-teal-700 underline underline-offset-4 hover:text-teal-800" onClick={() => setActiveStep("basic")}>انتخاب سریع نسل</button>}
                     </div>
                     <CategorySelector categories={categories} form={form} updateField={updateField} />
                     {isConsoleGeneration(generation) && <UsedConsoleFields generation={generation} form={form} updateField={updateField} />}
-                    <div className="border-t border-slate-100 pt-5"><TagsSelector tagsList={tagsList} form={form} updateField={updateField} /></div>
+                    <div className="border-t border-slate-100 pt-5">
+                      {automaticTags && <div role="status" className="mb-3 rounded-xl border border-teal-200 bg-teal-50 p-3 text-xs leading-6 text-teal-800">
+                        {automaticTags.missing.length === 0 ? "تگ کارکرده و تگ نسل دستگاه خودکار انتخاب شده‌اند؛ می‌توانید تگ‌های دیگر را اضافه کنید." : tagsList.length ? "تگ‌های موردنیاز در فهرست موجود نیستند: " + automaticTags.missing.join("، ") + ". قبل از انتشار از بخش مدیریت تگ‌ها آن‌ها را بررسی کنید." : "تگ‌های خودکار هنگام دریافت فهرست یا ذخیره محصول بررسی می‌شوند."}
+                      </div>}
+                      <TagsSelector tagsList={tagsList} form={form} updateField={updateField} lockedTagIds={automaticTags?.lockedIds} />
+                    </div>
                   </div>}
 
                   {activeStep === "media" && <div className="space-y-5">
