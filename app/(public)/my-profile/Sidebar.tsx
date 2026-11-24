@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   CalendarClock,
   Dices,
@@ -37,19 +37,34 @@ const entries: { section: ProfileSection; title: string; icon: LucideIcon }[] = 
 
 export default function Sidebar({ activeStep }: { activeStep: number }) {
   const [open, setOpen] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const linksId = useId();
   const currentSection = entries.find(({ section }) => PROFILE_STEPS[section] === activeStep);
   const ToggleIcon = open ? X : Menu;
 
+  useEffect(() => {
+    if (!open) return;
+
+    function closeOnOutsidePress(event: PointerEvent) {
+      if (event.target instanceof Node && !navRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", closeOnOutsidePress);
+    return () => document.removeEventListener("pointerdown", closeOnOutsidePress);
+  }, [open]);
+
   function closeMenu() {
     if (!open) return;
     setOpen(false);
-    toggleRef.current?.focus();
+    toggleRef.current?.focus({ preventScroll: true });
   }
 
   return (
     <nav
+      ref={navRef}
       aria-label="منوی پنل کاربری"
       onKeyDown={(event) => {
         if (event.key === "Escape" && open) {
@@ -57,7 +72,7 @@ export default function Sidebar({ activeStep }: { activeStep: number }) {
           closeMenu();
         }
       }}
-      className="h-fit min-w-0 self-start rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm sm:p-3 lg:sticky lg:top-24 lg:p-4"
+      className="relative z-40 h-fit min-w-0 self-start rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm sm:p-3 lg:sticky lg:top-24 lg:z-auto lg:p-4"
     >
       <button
         ref={toggleRef}
@@ -75,7 +90,12 @@ export default function Sidebar({ activeStep }: { activeStep: number }) {
           {currentSection && <span className="block text-xs leading-5 text-slate-600">{currentSection.title}</span>}
         </span>
       </button>
-      <ul id={linksId} className={`${open ? "grid" : "hidden"} mt-2 grid-cols-2 gap-1.5 sm:grid-cols-3 lg:mt-0 lg:grid lg:grid-cols-1`}>
+      <ul
+        id={linksId}
+        className={`absolute inset-x-0 top-full mt-2 grid max-h-[50dvh] grid-cols-2 gap-1.5 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white p-2 shadow-lg transition-[opacity,transform,visibility] duration-200 ease-out motion-reduce:transition-none sm:grid-cols-3 sm:p-3 lg:pointer-events-auto lg:visible lg:static lg:mt-0 lg:max-h-none lg:translate-y-0 lg:grid-cols-1 lg:overflow-visible lg:rounded-none lg:border-0 lg:p-0 lg:opacity-100 lg:shadow-none lg:transition-none ${
+          open ? "visible translate-y-0 opacity-100" : "pointer-events-none invisible -translate-y-2 opacity-0"
+        }`}
+      >
         {entries.map(({ section, title, icon: Icon }) => {
           const isActive = activeStep === PROFILE_STEPS[section];
           return (
