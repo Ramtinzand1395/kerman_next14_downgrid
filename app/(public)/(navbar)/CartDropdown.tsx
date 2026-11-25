@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo } from "react";
+import { memo, useId, useMemo } from "react";
 import useCartStore from "@/stores/cartStore";
 import { CartItem } from "@/types";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -8,12 +8,8 @@ import { ChevronDown, ShoppingBag } from "lucide-react";
 import Link from "@/app/components/navigation/NavigationFeedback";
 import ProductImage from "@/app/components/ProductImage";
 
-type DropdownType = "user" | "cart" | null;
-
-interface CartDropdownProps {
-  setActiveDropdown: React.Dispatch<React.SetStateAction<DropdownType>>;
-  activeDropdown: DropdownType;
-}
+import { headerActionStyle, headerControlFocus } from "./navigationItems";
+import type { HeaderDropdownProps } from "./useHeaderDropdown";
 
 const getFinalUnitPrice = (item: CartItem) => {
   if (typeof item.discountPrice === "number" && item.discountPrice < item.price) {
@@ -72,10 +68,8 @@ const CartPreviewItem = memo(function CartPreviewItem({
   );
 });
 
-export default function CartDropdown({
-  setActiveDropdown,
-  activeDropdown,
-}: CartDropdownProps) {
+export default function CartDropdown({ open, boundaryEvents, onToggle, onClose }: HeaderDropdownProps) {
+  const panelId = useId();
   const shouldReduceMotion = useReducedMotion();
   const cart = useCartStore((state) => state.cart);
 
@@ -96,44 +90,53 @@ export default function CartDropdown({
   );
 
   const hasItems = cart.length > 0;
-  const dropdownVisible = activeDropdown === "cart";
   const hasDiscountedTotal = totalPrice < originalTotalPrice;
 
   return (
-    <div
-      className="relative"
-      onMouseEnter={() => setActiveDropdown("cart")}
-      onMouseLeave={() => setActiveDropdown(null)}
-    >
+    <div className="relative xl:flex" {...boundaryEvents}>
+      <span className="sr-only" aria-live="polite">{itemsCount.toLocaleString("fa-IR")} کالا در سبد خرید</span>
       <Link
-        aria-label="سبد خرید"
+        aria-label={hasItems ? `سبد خرید، ${itemsCount.toLocaleString("fa-IR")} کالا` : "سبد خرید"}
         href="/cart?step=1"
-        className="group relative flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 transition-colors hover:border-slate-300 md:border-0 md:bg-transparent md:px-0 md:py-0"
+        onClick={onClose}
+        className={`group relative flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 transition-colors hover:border-slate-300 md:border-0 md:bg-transparent md:px-0 md:py-0 xl:gap-2 xl:rounded-e-none ${headerActionStyle} ${headerControlFocus}`}
       >
-        <ShoppingBag className="h-4 w-4 text-slate-900" />
+        <ShoppingBag aria-hidden="true" className="h-4 w-4 text-slate-900 xl:text-current" />
+        <span className="hidden whitespace-nowrap xl:inline">سبد خرید</span>
 
         {hasItems && (
           <span
-            className="absolute -right-2 -top-2 flex min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold leading-4 text-white"
-            aria-live="polite"
+            className="absolute -right-2 -top-2 flex min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold leading-4 text-white xl:static"
+            aria-hidden="true"
           >
             {itemsCount}
           </span>
         )}
 
         {hasItems && (
-          <ChevronDown className="ml-1 hidden h-3 w-3 text-slate-500 transition-transform group-hover:rotate-180 md:block" />
+          <ChevronDown aria-hidden="true" className="ml-1 hidden h-3 w-3 text-slate-500 transition-transform group-hover:rotate-180 md:block xl:hidden" />
         )}
       </Link>
+      <button
+        type="button"
+        aria-label="پیش‌نمایش سبد خرید"
+        aria-expanded={open}
+        aria-controls={open ? panelId : undefined}
+        onClick={onToggle}
+        className={`hidden place-items-center transition-colors xl:grid xl:rounded-s-none xl:border-s-0 ${headerActionStyle} ${headerControlFocus}`}
+      >
+        <ChevronDown aria-hidden="true" className={`h-4 w-4 transition-transform duration-150 motion-reduce:transition-none ${open ? "rotate-180" : ""}`} />
+      </button>
 
       <AnimatePresence>
-        {dropdownVisible && (
+        {open && (
           <motion.div
+            id={panelId}
             initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
             animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
             exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
-            transition={{ duration: 0.18 }}
-            className="absolute left-0 top-10 z-50 hidden w-[22rem] rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl md:block"
+            transition={{ duration: shouldReduceMotion ? 0 : 0.18 }}
+            className="absolute left-0 top-10 z-50 hidden w-[22rem] rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl md:block xl:top-full"
           >
             {hasItems ? (
               <>
@@ -165,6 +168,7 @@ export default function CartDropdown({
 
                   <Link
                     href="/cart?step=1"
+                    onClick={onClose}
                     className="block w-full rounded-xl bg-blue-900 py-2.5 text-center text-sm text-white transition-colors hover:bg-blue-700"
                   >
                     ادامه خرید و پرداخت
@@ -175,7 +179,8 @@ export default function CartDropdown({
               <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
                 <p className="text-sm text-slate-600">سبد خرید شما هنوز خالی است</p>
                 <Link
-                  href="/shop"
+                  href="/products"
+                  onClick={onClose}
                   className="mt-3 inline-block text-sm font-semibold text-blue-600 hover:text-blue-700"
                 >
                   شروع خرید

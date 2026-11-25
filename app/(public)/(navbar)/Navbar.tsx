@@ -1,292 +1,38 @@
-"use client";
-
 import Image from "next/image";
 import Link from "@/app/components/navigation/NavigationFeedback";
-import {
-  Search,
-  Home,
-  Info,
-  Phone,
-  Grid2x2,
-  Gamepad2,
-  ChevronDown,
-  FileText,
-  Menu,
-  Sparkles,
-  ArrowUpLeft,
-   Wrench,
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { FormEvent, useMemo, useState } from "react";
-import MobileMenu from "./MobileMenu";
-import { usePathname } from "next/navigation";
-import { useRouter } from "@/app/components/navigation/NavigationFeedback";
-import CartDropdown from "./CartDropdown";
-import UserBtn from "./UserBtn";
-import { categories, categoryMenuHref } from "../constants/categories";
-import { useSession } from "next-auth/react";
+import DesktopNavigation from "./DesktopNavigation";
+import HeaderSearch from "./HeaderSearch";
+import HeaderActions from "./HeaderActions";
+import MobileNavigation from "./MobileNavigation";
 import NotificationBell from "@/app/components/notifications/NotificationBell";
-
-const menuItems = [
-  { name: "خانه", link: "/", icon: <Home className="h-4 w-4 ml-1" /> },
-  {
-    name: "دسته‌بندی‌ها",
-    link: "/categories",
-    icon: <Grid2x2 className="h-4 w-4 ml-1" />,
-  },
-  {
-    name: "درباره ما",
-    link: "/about-us",
-    icon: <Info className="h-4 w-4 ml-1" />,
-  },
-  {
-    name: "تماس با ما",
-    link: "/contact-us",
-    icon: <Phone className="h-4 w-4 ml-1" />,
-  },
-  {
-    name: "وبلاگ",
-    link: "/blog",
-    icon: <FileText className="h-4 w-4 ml-1" />,
-  },
-  {
-    name: "خدمات",
-    link: "/services",
-    icon: <Wrench className="h-4 w-4 ml-1" />,
-  },
-];
+import { headerControlFocus } from "./navigationItems";
 
 export default function Navbar() {
-  const pathname = usePathname();
-  const router = useRouter();
-  const { data: session } = useSession();
-
-  const [showCategories, setShowCategories] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState("");
-  const [activeDropdown, setActiveDropdown] = useState<"user" | "cart" | null>(
-    null,
-  );
-
-  const quickLinks = useMemo(
-    () =>
-      categories.flatMap((cat) =>
-        cat.subcategories.map((sub) => ({
-          ...sub,
-          parentName: cat.name,
-        })),
-      ),
-    [],
-  );
-
-  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const query = searchValue.trim();
-    if (!query) {
-      router.push("/products");
-      return;
-    }
-
-    const params = new URLSearchParams();
-    params.set("q", query);
-    params.set("page", "1");
-    params.set("sort", "newest");
-    router.push(`/products?${params.toString()}`);
-  };
-
   return (
     <>
-      <nav
-        className="sticky top-0 z-50 flex items-center justify-between gap-2 border-b border-slate-200/70 bg-white/95 px-2 py-2 shadow-lg backdrop-blur-md sm:px-3 md:px-10"
-        role="navigation"
-        aria-label="منوی اصلی سایت کرمان آتاری"
-      >
-        <Link
-          href="/"
-          className="flex min-w-0 items-center gap-2"
-          aria-label="صفحه اصلی کرمان آتاری"
-        >
-          <Image
-            width={32}
-            height={32}
-            alt="لوگوی کرمان آتاری"
-            src="/atari-seeklogo.svg"
-          
-            priority
-          />
-          <span className=" truncate text-base font-extrabold tracking-tight text-slate-900 sm:block md:text-lg">
-            Kerman Atari
-          </span>
-        </Link>
-
-        <ul className="relative hidden items-center gap-1 rounded-full border border-slate-200/80 bg-white/80 px-2 py-2 text-gray-700 shadow-sm xl:flex">
-          {menuItems.map((item) => (
-            <li
-              key={item.name}
-              onMouseEnter={() =>
-                item.name === "دسته‌بندی‌ها" && setShowCategories(true)
-              }
-              onMouseLeave={() =>
-                item.name === "دسته‌بندی‌ها" && setShowCategories(false)
-              }
-              className="relative"
-            >
-              <Link
-                href={item.link}
-                aria-label={`رفتن به ${item.name}`}
-                className={`group relative flex items-center gap-1 rounded-full px-2.5 py-2 text-xs 2xl:text-sm font-medium transition ${
-                  pathname === item.link
-                    ? "bg-blue-50 text-blue-600"
-                    : "text-gray-700 hover:bg-slate-100 hover:text-blue-600"
-                }`}
-              >
-                {item.icon}
-                {item.name}
-                {item.name === "دسته‌بندی‌ها" && (
-                  <ChevronDown className="ml-1 h-4 w-4" />
-                )}
-                <span className="absolute -bottom-0 left-3 h-0.5 w-0 bg-[#427D9D] transition-all duration-300 group-hover:w-[calc(100%-24px)]" />
-              </Link>
-
-              <AnimatePresence>
-                {item.name === "دسته‌بندی‌ها" && showCategories && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute right-0 top-12 z-50 w-[720px] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
-                  >
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                      <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
-                        <Sparkles className="h-4 w-4 text-blue-600" />
-                        دسته‌بندی‌ها 
-                      </div>
-
-                      <Link
-                        href="/products"
-                        className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline"
-                        aria-label="مشاهده همه محصولات"
-                      >
-                       محصولات مشاهده همه
-                        <ArrowUpLeft className="h-3 w-3" />
-                      </Link>
-                    </div>
-
-                    <div className="mt-3 grid grid-cols-3 gap-2">
-                      {categories.map((cat) => (
-                        <div
-                          key={cat.name}
-                          className="rounded-xl border border-slate-100 bg-slate-50/60 p-3"
-                        >
-                          <Link href={categoryMenuHref(cat.slug)} className="mb-2 block text-sm font-bold text-slate-800">
-                            {cat.name}
-                          </Link>
-                          <div className="flex flex-col gap-1">
-                            {cat.subcategories.slice(0, 5).map((sub) => (
-                              <Link
-                                key={sub.name}
-                                href={categoryMenuHref(sub.slug)}
-                                className="rounded-lg px-2 py-1 text-xs text-slate-700 transition hover:bg-white hover:text-blue-600"
-                              >
-                                {sub.name}
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                      <div className="rounded-xl border border-blue-200 bg-[linear-gradient(140deg,#eef5ff_0%,#fff_100%)] p-3">
-                        <Link href="/used-consoles" onClick={() => setShowCategories(false)}
-                          className="mb-2 flex items-center gap-2 text-sm font-black text-blue-800 transition hover:text-blue-600">
-                          <Gamepad2 className="h-4 w-4 shrink-0" aria-hidden="true" />
-                          کنسول‌های کارکرده
-                        </Link>
-                        <p className="mb-2 text-xs leading-5 text-slate-600">
-                          پلی‌استیشن PS2 تا PS5 با تصاویر و گزارش تست هر دستگاه
-                        </p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {[
-                            { name: "PS2", slug: "playstation-2" },
-                            { name: "PS3", slug: "playstation-3" },
-                            { name: "PS4", slug: "playstation-4" },
-                            { name: "PS5", slug: "playstation-5" },
-                          ].map((item) => (
-                            <Link key={item.slug} href={`/used-consoles?generation=${item.slug}`}
-                              onClick={() => setShowCategories(false)}
-                              className="rounded-lg border border-blue-100 bg-white px-2 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-50">
-                              {item.name}
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </li>
-          ))}
-        </ul>
-
-        <form
-          onSubmit={handleSearch}
-          className="hidden items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 shadow-inner 2xl:flex 2xl:w-[18vw]"
-          role="search"
-          aria-label="جستجو در محصولات"
-        >
-          <input
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            className="flex-1 bg-transparent p-1 text-sm text-black outline-none"
-            placeholder="جستجو در محصولات..."
-            type="search"
-            name="q"
-            autoComplete="off"
-          />
-          <button
-            type="submit"
-            className="rounded-full p-1 text-slate-500 transition hover:bg-slate-100 hover:text-blue-600"
-            aria-label="اجرای جستجو"
+      <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/95 shadow-lg backdrop-blur-md xl:-top-3 xl:shadow-sm">
+        <div className="mx-auto grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-2 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-3 md:px-10 xl:max-w-[1440px] xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(22rem,max-content)] xl:gap-6 xl:pb-3 xl:pt-4">
+          <Link
+            href="/"
+            aria-label="صفحه اصلی کرمان آتاری"
+            className={`flex min-w-0 items-center gap-2 xl:w-fit xl:rounded-lg ${headerControlFocus}`}
           >
-            <Search className="h-4 w-4" />
-          </button>
-        </form>
+            <Image width={32} height={32} alt="لوگوی کرمان آتاری" src="/atari-seeklogo.svg" priority />
+            <span className="truncate text-base font-extrabold tracking-tight text-slate-900 sm:block md:text-lg">
+              Kerman Atari
+            </span>
+          </Link>
 
-        <div className="relative flex shrink-0 items-center gap-1.5 md:gap-4">
-          <NotificationBell />
-          <UserBtn
-            setActiveDropdown={setActiveDropdown}
-            activeDropdown={activeDropdown}
-          />
+          <HeaderSearch />
 
-          <CartDropdown
-            setActiveDropdown={setActiveDropdown}
-            activeDropdown={activeDropdown}
-          />
-
-          <button
-            className="rounded-xl border border-slate-200 bg-white p-2 text-black shadow-sm xl:hidden"
-            aria-label="باز کردن منو"
-            onClick={() => setMobileMenuOpen(true)}
-            title="باز کردن منو"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
+          <div className="relative flex shrink-0 items-center justify-self-end gap-1.5 md:gap-4 xl:gap-2">
+            <NotificationBell />
+            <HeaderActions />
+          </div>
         </div>
-      </nav>
-      {mobileMenuOpen && (
-        <MobileMenu
-          isOpen={mobileMenuOpen}
-          onClose={() => setMobileMenuOpen(false)}
-          menuItems={menuItems}
-          categories={categories}
-          quickLinks={quickLinks}
-          user={
-            session?.user
-              ? { name: session.user.username, role: session.user.role }
-              : null
-          }
-        />
-      )}
+        <DesktopNavigation />
+      </header>
+      <MobileNavigation />
     </>
   );
 }

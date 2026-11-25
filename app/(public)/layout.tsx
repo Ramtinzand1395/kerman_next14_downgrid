@@ -11,7 +11,7 @@ import Navbar from "./(navbar)/Navbar";
 import PromotionModalHost from "./components/PromotionModalHost";
 import Footer from "./Footer";
 import { SITE_URL } from "@/lib/site";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
 const INSTAGRAM_URL =
    "https://www.instagram.com/kermanatari.ir?igsh=MTh4cmd3NnNib2N5dw==";
@@ -60,19 +60,21 @@ export const metadata: Metadata = {
   
 };
 
+export const viewport: Viewport = { viewportFit: "cover" };
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fa-IR" dir="rtl" className={vazir.className}>
+    <html lang="fa-IR" dir="rtl" className={`${vazir.className} [--mobile-nav-offset:calc(3.75rem+env(safe-area-inset-bottom))] scroll-pb-[var(--mobile-nav-offset)] xl:[--mobile-nav-offset:0px]`}>
       <head>
         {/* Minimal extra head tags that are safe in app dir */}
          <meta name="enamad" content="2601172" />
         <script src="https://accounts.google.com/gsi/client" async></script>
       </head>
-      <body>
+      <body className="pb-[var(--mobile-nav-offset)]">
         {/* Client-side wrappers (Auth, Navbar, Footer, Toast) are loaded dynamically */}
         <AuthProvider>
         <NavigationProvider>
@@ -88,6 +90,7 @@ export default function RootLayout({
         {/* Toast notifications (client-only) */}
         <ToastContainer
           position="bottom-right"
+          style={{ bottom: "max(var(--toastify-toast-bottom), var(--mobile-nav-offset))" }}
           autoClose={3000}
           hideProgressBar={false}
           newestOnTop={false}

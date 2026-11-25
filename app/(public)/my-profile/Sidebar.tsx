@@ -1,90 +1,84 @@
+"use client";
+
 import {
-  BadgeCheck,
+  CalendarClock,
+  Dices,
   Gift,
-  ShieldCheck,
-  User2Icon,
-  WalletCards,
-  FilePlus,
+  Heart,
+  KeyRound,
+  MapPinHouse,
+  LogOut,
   MessageCircle,
+  MessageSquareText,
+  ShoppingBasket,
+  Trophy,
+  UserRound,
+  WalletCards,
+  type LucideIcon,
 } from "lucide-react";
+import { signOut } from "next-auth/react";
 import Link from "@/app/components/navigation/NavigationFeedback";
+import { PROFILE_STEPS, profileRoute, type ProfileSection } from "@/lib/profileRoutes";
 
-export default function Sidebar() {
+const entries: { section: ProfileSection; title: string; icon: LucideIcon }[] = [
+  { section: "profile", title: "اطلاعات شخصی", icon: UserRound },
+  { section: "orders", title: "سفارش‌های من", icon: ShoppingBasket },
+  { section: "accounts", title: "اکانت‌های من", icon: KeyRound },
+  { section: "appointments", title: "دریافت نوبت", icon: CalendarClock },
+  { section: "wallet", title: "کیف پول و پرداخت", icon: WalletCards },
+  { section: "addresses", title: "آدرس‌ها", icon: MapPinHouse },
+  { section: "favorites", title: "علاقه‌مندی‌ها", icon: Heart },
+  { section: "comments", title: "نظرات من", icon: MessageSquareText },
+  { section: "loyalty", title: "باشگاه مشتریان", icon: Trophy },
+  { section: "spin", title: "گردونه شانس", icon: Dices },
+  { section: "conversations", title: "گفتگوهای پشتیبانی", icon: MessageCircle },
+];
+
+export default function Sidebar({ activeStep, onSelect }: { activeStep?: number; onSelect?: () => void }) {
   return (
-    <aside className="hidden lg:flex h-fit sticky top-24 flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm gap-4">
-      <div className="rounded-xl bg-gradient-to-l from-indigo-50 to-cyan-50 p-4">
-        <div className="flex items-center gap-3">
-          <div className="rounded-full bg-white p-3 border border-slate-200">
-            <User2Icon className="w-6 h-6 text-indigo-600" />
-          </div>
-
-          <div className="space-y-1">
-            <p className="text-sm font-semibold text-slate-700">کاربر عزیز</p>
-            <p className="text-xs text-slate-500">مدیریت کامل حساب کاربری</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Link
-          href="/my-profile?step=8"
-          className="block w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-right text-sm text-slate-700 hover:border-indigo-300 transition-colors"
-        >
-          <span className="flex items-center gap-2">
-            <WalletCards className="w-4 h-4 text-indigo-500" />
-            کیف پول و پرداخت
-          </span>
-        </Link>
-
-        <Link
-          href="/my-profile?step=9"
-          className="block w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-right text-sm text-slate-700 hover:border-indigo-300 transition-colors"
-        >
-          <span className="flex items-center gap-2">
-            <BadgeCheck className="w-4 h-4 text-amber-500" />
-            باشگاه مشتریان
-          </span>
-        </Link>
-
-        <Link
-          href="/my-profile?step=10"
-          className="block w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-right text-sm text-slate-700 hover:border-indigo-300 transition-colors"
-        >
-          <span className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-500" />
-            گردونه شانس
-          </span>
-        </Link>
-
-        <Link
-          href="/my-profile?step=6"
-          className="block w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-right text-sm text-slate-700 transition-colors hover:border-indigo-300"
-        >
-          <span className="flex items-center gap-2">
-            <FilePlus className="h-4 w-4 text-fuchsia-500" />
-            دریافت نوبت
-          </span>
-        </Link>
-
-        <Link
-          href="/my-profile?step=11"
-          className="block w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-right text-sm text-slate-700 transition-colors hover:border-indigo-300"
-        >
-          <span className="flex items-center gap-2">
-            <MessageCircle className="h-4 w-4 text-cyan-600" />
-            گفتگوهای پشتیبانی
-          </span>
-        </Link>
-      </div>
-      <Link
-        href="/my-profile?step=9"
-        className="mt-2 block w-full rounded-xl bg-indigo-600 text-white py-3 text-sm font-medium text-center hover:bg-indigo-700 transition-colors"
-      >
-        <span className="inline-flex items-center gap-2">
-          <Gift className="w-4 h-4" />
-          دعوت از دوستان
-        </span>
-      </Link>
-    </aside>
+    <nav
+      aria-label="منوی پنل کاربری"
+      className={onSelect ? "" : "hidden h-fit min-w-0 self-start rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm lg:sticky lg:top-32 lg:col-start-1 lg:row-start-1 lg:block lg:p-4 lg:text-right"}
+    >
+      <ul className={`grid grid-cols-2 gap-1.5 ${onSelect ? "" : "lg:grid-cols-1"}`}>
+        {entries.map(({ section, title, icon: Icon }) => {
+          const isActive = activeStep === PROFILE_STEPS[section];
+          return (
+            <li key={section} className="min-w-0">
+              <Link
+                href={profileRoute(section)}
+                scroll={onSelect ? undefined : false} onClick={onSelect}
+                prefetch={false}
+                aria-current={isActive ? "page" : undefined}
+                className={`flex min-h-11 items-center gap-2 rounded-xl border px-2.5 py-2 text-xs font-semibold leading-5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:text-sm ${
+                  isActive
+                    ? "border-indigo-700 bg-indigo-700 text-white"
+                    : "border-transparent bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-800"
+                }`}
+              >
+                <Icon aria-hidden="true" className={`h-4 w-4 shrink-0 ${isActive ? "" : "text-indigo-600"}`} />
+                <span className="min-w-0 [overflow-wrap:anywhere]">{title}</span>
+              </Link>
+            </li>
+          );
+        })}
+        <li className="min-w-0">
+          <Link href={profileRoute("loyalty")} scroll={onSelect ? undefined : false} onClick={onSelect} prefetch={false} className="flex min-h-11 items-center gap-2 rounded-xl border border-indigo-100 bg-indigo-50 px-2.5 py-2 text-xs font-semibold leading-5 text-indigo-800 hover:border-indigo-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:text-sm">
+            <Gift aria-hidden="true" className="h-4 w-4 shrink-0" />
+            <span className="min-w-0 [overflow-wrap:anywhere]">دعوت از دوستان</span>
+          </Link>
+        </li>
+        <li className={onSelect ? "min-w-0" : "min-w-0 xl:hidden"}>
+          <button
+            type="button"
+            onClick={() => { void signOut({ callbackUrl: "/" }); }}
+            className="flex min-h-11 w-full items-center gap-2 rounded-xl bg-slate-50 px-2.5 py-2 text-start text-xs font-semibold leading-5 text-red-600 hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 sm:text-sm"
+          >
+            <LogOut aria-hidden="true" className="h-4 w-4 shrink-0" />
+            خروج از حساب
+          </button>
+        </li>
+      </ul>
+    </nav>
   );
 }

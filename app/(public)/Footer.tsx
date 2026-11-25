@@ -23,6 +23,8 @@ const quickLinks = [
   { name: "کنسول‌های کارکرده", href: "/used-consoles", icon: Gamepad2 },
   { name: "درباره ما", href: "/about-us", icon: Info },
   { name: "تماس با ما", href: "/contact-us", icon: Phone },
+  { name: "وبلاگ", href: "/blog", icon: FileText },
+  { name: "پشتیبانی", href: "/contact-us?topic=after-sales", icon: BadgeCheck },
   { name: "قوانین و مقررات", href: "/terms", icon: FileText },
 ];
 

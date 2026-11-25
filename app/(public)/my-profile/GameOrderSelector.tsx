@@ -1071,7 +1071,7 @@ export default function GameOrderSelector({
         </aside>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+      <div className="fixed inset-x-0 bottom-[var(--mobile-nav-offset,0px)] z-40 border-t border-slate-200 bg-white/95 px-3 py-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-screen-md items-center gap-2">
           <button type="button" disabled={step === 1} onClick={previousStep} aria-label="مرحله قبل" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200 text-slate-700 disabled:opacity-40"><ChevronRight className="h-5 w-5" /></button>
           {step < 5 ? (

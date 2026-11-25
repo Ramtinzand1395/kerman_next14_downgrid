@@ -524,7 +524,7 @@ export default function CartPage({ shippingSettings }: { shippingSettings: Store
       </section>
 
       {cart.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-blue-100 bg-white/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_35px_rgba(15,23,42,0.12)] backdrop-blur xl:hidden">
+        <div className="fixed inset-x-0 bottom-[var(--mobile-nav-offset,0px)] z-40 border-t border-blue-100 bg-white/95 px-4 py-3 shadow-[0_-12px_35px_rgba(15,23,42,0.12)] backdrop-blur xl:hidden">
           <div className="mx-auto flex max-w-2xl items-center gap-3">
             <div className="min-w-0 flex-1">
               <p className="text-[11px] text-slate-500">{activeStep === 3 ? "جمع نهایی" : "مبلغ قابل پرداخت"}</p>

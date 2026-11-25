@@ -2,8 +2,7 @@
 
 import { usePathname, useSearchParams } from "next/navigation";
 import { useRouter } from "@/app/components/navigation/NavigationFeedback";
-import Link from "next/link";
-import { ShoppingBasket, Gamepad2, KeyRound } from "lucide-react";
+import { ShoppingBasket, Gamepad2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { PageLoading } from "@/app/components/loading/LoadingSystem";
 
@@ -31,37 +30,29 @@ export default function MyOrdersTabs() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1.5">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = tab.key === active;
-
+      <div role="group" aria-label="نوع سفارش" className="grid grid-cols-2 gap-1.5 rounded-xl border border-slate-200 bg-slate-50 p-1.5">
+        {tabs.map(({ key, title, icon: Icon }) => {
+          const isActive = key === active;
           return (
             <button
-              key={tab.key}
+              key={key}
               type="button"
-              onClick={() => setActive(tab.key)}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+              aria-pressed={isActive}
+              onClick={() => setActive(key)}
+              className={`flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold leading-5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600 sm:text-sm ${
                 isActive
-                  ? "bg-white text-indigo-700 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
+                  ? "bg-white text-indigo-800 shadow-sm"
+                  : "text-slate-600 hover:text-indigo-800"
               }`}
             >
-              <Icon className="h-4 w-4" />
-              {tab.title}
+              <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
+              <span className="min-w-0 [overflow-wrap:anywhere]">{title}</span>
             </button>
           );
         })}
-        <Link href="/my-profile?step=12" className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-indigo-700">
-          <KeyRound className="h-4 w-4 shrink-0" />
-          اکانت‌های من
-        </Link>
       </div>
 
-      <div>
-        {active === "products" && <MyStoreOrders />}
-        {active === "games" && <MyGameOrders />}
-      </div>
+      {active === "products" ? <MyStoreOrders /> : <MyGameOrders />}
     </div>
   );
 }
