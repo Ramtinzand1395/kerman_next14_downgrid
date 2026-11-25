@@ -77,7 +77,7 @@ export default function DesktopNavigation() {
 
   return (
     <nav aria-label="منوی اصلی سایت کرمان آتاری" className="hidden border-t border-slate-100 xl:block">
-      <ul className="mx-auto flex max-w-[1440px] items-stretch justify-center gap-2 px-10">
+      <ul className="mx-auto flex max-w-[1440px] items-stretch justify-start gap-2 px-10">
         {navigationItems.map(({ name, link, icon }) => {
           const catalog = link === "/categories";
           const current = pathname === link
