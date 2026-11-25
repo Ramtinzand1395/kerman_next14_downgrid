@@ -34,21 +34,21 @@ const entries: { section: ProfileSection; title: string; icon: LucideIcon }[] = 
   { section: "conversations", title: "گفتگوهای پشتیبانی", icon: MessageCircle },
 ];
 
-export default function Sidebar({ activeStep, showMobileMenu }: { activeStep: number; showMobileMenu: boolean }) {
+export default function Sidebar({ activeStep, onSelect }: { activeStep?: number; onSelect?: () => void }) {
   return (
     <nav
       aria-label="منوی پنل کاربری"
-      className={`${showMobileMenu ? "block" : "hidden lg:block"} h-fit min-w-0 self-start rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm sm:p-3 lg:sticky lg:top-24 lg:p-4`}
+      className={onSelect ? "" : "hidden h-fit min-w-0 self-start rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm sm:p-3 lg:sticky lg:top-24 lg:block lg:p-4"}
     >
-      <h1 className="px-2 pb-3 pt-1 text-sm font-bold text-slate-800 lg:hidden">بخش‌های حساب من</h1>
-      <ul className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-1">
+
+      <ul className={`grid grid-cols-2 gap-1.5 ${onSelect ? "" : "sm:grid-cols-3 lg:grid-cols-1"}`}>
         {entries.map(({ section, title, icon: Icon }) => {
           const isActive = activeStep === PROFILE_STEPS[section];
           return (
             <li key={section} className="min-w-0">
               <Link
                 href={profileRoute(section)}
-                scroll={false}
+                scroll={onSelect ? undefined : false} onClick={onSelect}
                 prefetch={false}
                 aria-current={isActive ? "page" : undefined}
                 className={`flex min-h-11 items-center gap-2 rounded-xl border px-2.5 py-2 text-xs font-semibold leading-5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:text-sm ${
@@ -64,12 +64,12 @@ export default function Sidebar({ activeStep, showMobileMenu }: { activeStep: nu
           );
         })}
         <li className="min-w-0">
-          <Link href={profileRoute("loyalty")} scroll={false} prefetch={false} className="flex min-h-11 items-center gap-2 rounded-xl border border-indigo-100 bg-indigo-50 px-2.5 py-2 text-xs font-semibold leading-5 text-indigo-800 hover:border-indigo-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:text-sm">
+          <Link href={profileRoute("loyalty")} scroll={onSelect ? undefined : false} onClick={onSelect} prefetch={false} className="flex min-h-11 items-center gap-2 rounded-xl border border-indigo-100 bg-indigo-50 px-2.5 py-2 text-xs font-semibold leading-5 text-indigo-800 hover:border-indigo-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:text-sm">
             <Gift aria-hidden="true" className="h-4 w-4 shrink-0" />
             <span className="min-w-0 [overflow-wrap:anywhere]">دعوت از دوستان</span>
           </Link>
         </li>
-        <li className="min-w-0 xl:hidden">
+        <li className={onSelect ? "min-w-0" : "min-w-0 xl:hidden"}>
           <button
             type="button"
             onClick={() => { void signOut({ callbackUrl: "/" }); }}

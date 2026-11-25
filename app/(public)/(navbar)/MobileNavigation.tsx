@@ -1,18 +1,17 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type MouseEventHandler } from "react";
-import { Grid2x2, Home, ShoppingBag, UserRound, Wrench } from "lucide-react";
+import { Grid2x2, Home, ShoppingBag, UserRound, Wrench, X } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import Link, { useRouter } from "@/app/components/navigation/NavigationFeedback";
 import useCartStore from "@/stores/cartStore";
-import { PROFILE_MENU_HREF } from "@/lib/profileRoutes";
+import Sidebar from "../my-profile/Sidebar";
 import MobileCategoryDialog from "./MobileCategoryDialog";
 
 const historyKey = "kermanAtariMobileNavigation";
 const catalogSections = ["/category", "/categories", "/product", "/products", "/used-consoles"];
-const profileHref = PROFILE_MENU_HREF;
-const loginHref = `/auth/login?callbackUrl=${encodeURIComponent(profileHref)}`;
+const loginHref = "/auth/login?callbackUrl=%2Fmy-profile";
 const cartHref = "/cart?step=1";
 
 function isCategoryOpen(state: unknown) {
@@ -39,6 +38,10 @@ export default function MobileNavigation() {
   const categoryTrigger = useRef<HTMLButtonElement>(null);
   const pendingBack = useRef<{ href?: string } | null>(null);
   const wasOpen = useRef(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountButton = useRef<HTMLButtonElement>(null);
+  const accountClose = useRef<HTMLButtonElement>(null);
+  const accountId = useId();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -75,7 +78,7 @@ export default function MobileNavigation() {
   }
 
   useEffect(() => {
-    if (!open) return;
+    if (!open && !accountOpen) return;
     const html = document.documentElement;
     const body = document.body;
     const htmlOverflow = html.style.overflow;
@@ -98,7 +101,7 @@ export default function MobileNavigation() {
       html.style.overflow = htmlOverflow;
       body.style.overflow = bodyOverflow;
     };
-  }, [open]);
+  }, [open, accountOpen]);
 
   function closeCategories(href?: string) {
     if (pendingBack.current) return;
@@ -120,13 +123,38 @@ export default function MobileNavigation() {
     closeCategories(`${pathname}${search}${hash}`);
   };
 
-  const accountHref = !session?.user
-    ? loginHref
-    : session.user.role === "admin"
-      ? "/dashboard/store-order"
-      : session.user.role === "superadmin"
-        ? "/dashboard"
-        : profileHref;
+  function closeAccount(restoreFocus = true) {
+    setAccountOpen(false);
+    if (restoreFocus) accountButton.current?.focus({ preventScroll: true });
+  }
+
+  useEffect(() => {
+    if (!accountOpen) return;
+    accountClose.current?.focus({ preventScroll: true });
+    function dismiss(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setAccountOpen(false);
+      accountButton.current?.focus({ preventScroll: true });
+    }
+    const desktop = window.matchMedia("(min-width: 1280px)");
+    const resize = () => { if (desktop.matches) setAccountOpen(false); };
+    desktop.addEventListener("change", resize);
+    document.addEventListener("keydown", dismiss);
+    return () => {
+      desktop.removeEventListener("change", resize);
+      document.removeEventListener("keydown", dismiss);
+    };
+  }, [accountOpen]);
+
+  const dismissViaBottomLink: MouseEventHandler<HTMLAnchorElement> = event => {
+    if (!accountOpen) return;
+    event.preventDefault();
+    closeAccount();
+  };
+
+  const dashboardHref = session?.user?.role === "admin"
+    ? "/dashboard/store-order"
+    : session?.user?.role === "superadmin" ? "/dashboard" : null;
 
   const homeActive = pathname === "/";
   const categoryActive = open || catalogSections.some(section => inSection(pathname, section));
@@ -139,9 +167,9 @@ export default function MobileNavigation() {
       <nav
         dir="rtl"
         aria-label="ناوبری اصلی موبایل"
-        className="fixed inset-x-0 bottom-0 z-30 grid h-[var(--mobile-nav-offset)] grid-cols-5 gap-0.5 border-t border-slate-200 bg-white p-1 shadow-[0_-4px_16px_rgba(15,23,42,0.06)] pb-[max(0.25rem,env(safe-area-inset-bottom))] pl-[max(0.25rem,env(safe-area-inset-left))] pr-[max(0.25rem,env(safe-area-inset-right))] xl:hidden"
+        className={`fixed inset-x-0 bottom-0 ${accountOpen ? "z-[60]" : "z-30"} grid h-[var(--mobile-nav-offset)] grid-cols-5 gap-0.5 border-t border-slate-200 bg-white p-1 shadow-[0_-4px_16px_rgba(15,23,42,0.06)] pb-[max(0.25rem,env(safe-area-inset-bottom))] pl-[max(0.25rem,env(safe-area-inset-left))] pr-[max(0.25rem,env(safe-area-inset-right))] xl:hidden`}
       >
-        <Link href="/" aria-current={homeActive ? "page" : undefined} className={itemClass(homeActive)}>
+        <Link href="/" onClick={dismissViaBottomLink} aria-current={homeActive ? "page" : undefined} className={itemClass(homeActive)}>
           <Home aria-hidden="true" className="h-5 w-5" />
           خانه
         </Link>
@@ -152,17 +180,17 @@ export default function MobileNavigation() {
           aria-expanded={open}
           aria-controls={open ? categoryId : undefined}
           aria-current={categoryActive && !open ? "location" : undefined}
-          onClick={openCategories}
+          onClick={() => accountOpen ? closeAccount() : openCategories()}
           className={itemClass(categoryActive)}
         >
           <Grid2x2 aria-hidden="true" className="h-5 w-5" />
           دسته‌بندی‌ها
         </button>
-        <Link href="/services" aria-current={servicesActive ? "page" : undefined} className={itemClass(servicesActive)}>
+        <Link href="/services" onClick={dismissViaBottomLink} aria-current={servicesActive ? "page" : undefined} className={itemClass(servicesActive)}>
           <Wrench aria-hidden="true" className="h-5 w-5" />
           خدمات
         </Link>
-        <Link href={cartHref} aria-label={count ? `سبد خرید، ${countLabel} کالا` : "سبد خرید"} aria-current={cartActive ? "page" : undefined} className={itemClass(cartActive)}>
+        <Link href={cartHref} onClick={dismissViaBottomLink} aria-label={count ? `سبد خرید، ${countLabel} کالا` : "سبد خرید"} aria-current={cartActive ? "page" : undefined} className={itemClass(cartActive)}>
           <span className="relative">
             <ShoppingBag aria-hidden="true" className="h-5 w-5" />
             {count > 0 && <span aria-hidden="true" className="absolute -end-2.5 -top-1 rounded-full bg-rose-500 px-1 text-[10px] leading-4 text-white">{countLabel}</span>}
@@ -174,13 +202,40 @@ export default function MobileNavigation() {
             <UserRound aria-hidden="true" className="h-5 w-5" />
             حساب من
           </button>
+        ) : session?.user ? (
+          <button
+            type="button"
+            ref={accountButton}
+            aria-expanded={accountOpen}
+            aria-controls={accountOpen ? accountId : undefined}
+            onClick={() => accountOpen ? closeAccount() : setAccountOpen(true)}
+            className={itemClass(accountOpen || accountActive)}
+          >
+            <UserRound aria-hidden="true" className="h-5 w-5" />
+            حساب من
+          </button>
         ) : (
-          <Link href={accountHref} aria-current={accountActive ? "location" : undefined} className={itemClass(accountActive)}>
+          <Link href={loginHref} aria-current={accountActive ? "location" : undefined} className={itemClass(accountActive)}>
             <UserRound aria-hidden="true" className="h-5 w-5" />
             حساب من
           </Link>
         )}
       </nav>
+      {accountOpen && (
+        <div className="fixed inset-0 bottom-[var(--mobile-nav-offset)] z-[55] flex items-end xl:hidden">
+          <button type="button" tabIndex={-1} aria-label="بستن منو با کلیک بیرون" className="absolute inset-0 bg-black/50" onClick={() => closeAccount()} />
+          <section id={accountId} role="dialog" aria-label="بخش‌های حساب من" className="relative max-h-full w-full overflow-y-auto overscroll-contain rounded-t-2xl border border-slate-200 bg-white p-3 shadow-xl">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <h2 className="text-sm font-bold text-slate-800">بخش‌های حساب من</h2>
+              <button ref={accountClose} type="button" aria-label="بستن منوی حساب" onClick={() => closeAccount()} className="grid h-11 w-11 place-items-center rounded-lg text-slate-700 hover:bg-slate-50">
+                <X aria-hidden="true" className="h-5 w-5" />
+              </button>
+            </div>
+            {dashboardHref && <Link href={dashboardHref} onClick={() => closeAccount(false)} className="mb-2 block rounded-lg bg-blue-50 p-3 text-sm font-semibold text-blue-800">داشبورد</Link>}
+            <Sidebar onSelect={() => closeAccount(false)} />
+          </section>
+        </div>
+      )}
       {open && <MobileCategoryDialog id={categoryId} onBack={() => closeCategories()} onLinkClick={followCategory} />}
     </>
   );

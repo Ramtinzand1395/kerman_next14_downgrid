@@ -1,5 +1,3 @@
-export const PROFILE_MENU_HREF = "/my-profile";
-
 export const PROFILE_STEPS = {
   profile: 1,
   favorites: 2,
