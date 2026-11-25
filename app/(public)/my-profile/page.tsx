@@ -32,10 +32,10 @@ export default function MyProfile({ searchParams }: MyProfilePageProps) {
 
   return (
     <div className="container mx-auto px-3 py-6 md:px-6 md:py-8">
-      <div className="grid min-w-0 grid-cols-1 gap-5 md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+      <div dir="rtl" className="grid min-w-0 grid-cols-1 gap-5 md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start">
         <Sidebar activeStep={activeStep} />
 
-        <div className="min-h-[520px] min-w-0 rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50 p-3 shadow-sm md:p-5">
+        <div className="min-h-[520px] min-w-0 rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50 p-3 shadow-sm md:p-5 lg:col-start-2 lg:row-start-1">
           {activeStep === PROFILE_STEPS.accounts ? (
             <MyAccounts />
           ) : (

@@ -77,8 +77,9 @@ export default function MobileNavigation() {
     setOpen(true);
   }
 
+  const overlayOpen = open || accountOpen;
   useEffect(() => {
-    if (!open && !accountOpen) return;
+    if (!overlayOpen) return;
     const html = document.documentElement;
     const body = document.body;
     const htmlOverflow = html.style.overflow;
@@ -101,7 +102,7 @@ export default function MobileNavigation() {
       html.style.overflow = htmlOverflow;
       body.style.overflow = bodyOverflow;
     };
-  }, [open, accountOpen]);
+  }, [overlayOpen]);
 
   function closeCategories(href?: string) {
     if (pendingBack.current) return;

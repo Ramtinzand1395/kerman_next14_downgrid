@@ -38,10 +38,9 @@ export default function Sidebar({ activeStep, onSelect }: { activeStep?: number;
   return (
     <nav
       aria-label="منوی پنل کاربری"
-      className={onSelect ? "" : "hidden h-fit min-w-0 self-start rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm sm:p-3 lg:sticky lg:top-24 lg:block lg:p-4"}
+      className={onSelect ? "" : "hidden h-fit min-w-0 self-start rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm lg:sticky lg:top-32 lg:col-start-1 lg:row-start-1 lg:block lg:p-4 lg:text-right"}
     >
-
-      <ul className={`grid grid-cols-2 gap-1.5 ${onSelect ? "" : "sm:grid-cols-3 lg:grid-cols-1"}`}>
+      <ul className={`grid grid-cols-2 gap-1.5 ${onSelect ? "" : "lg:grid-cols-1"}`}>
         {entries.map(({ section, title, icon: Icon }) => {
           const isActive = activeStep === PROFILE_STEPS[section];
           return (
