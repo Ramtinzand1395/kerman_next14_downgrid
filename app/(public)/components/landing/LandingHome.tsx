@@ -169,7 +169,7 @@ export default function LandingHome({
   );
 
   return (
-    <div className="overflow-x-clip bg-[#f3f8ff] pb-24 text-[#0b1d48] sm:pb-0">
+    <div className="overflow-x-clip bg-[#f3f8ff] text-[#0b1d48]">
       <div className="mx-auto w-full max-w-[1320px] px-4 py-4 sm:px-6 lg:px-8">
         <HomeHeroSlider slides={heroSlides} />
 
@@ -773,38 +773,6 @@ export default function LandingHome({
             </div>
           </div>
         </section>
-
-        <nav
-          className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 mx-auto grid max-w-md grid-cols-4 rounded-2xl border border-blue-100 bg-white/95 p-2 shadow-2xl backdrop-blur sm:hidden"
-          aria-label="دسترسی سریع موبایل"
-        >
-          {[
-            {
-              label: "محصولات",
-              href: "/products",
-              icon: PackageOpen,
-            },
-            {
-              label: "بازی‌ها",
-              href: "/category/games",
-              icon: Gamepad2,
-            },
-            { label: "درخواست", href: REQUEST_URL, icon: CalendarDays },
-            { label: "خدمات", href: "/services", icon: Wrench },
-          ].map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="flex min-h-12 flex-col items-center justify-center gap-1 text-xs font-black text-slate-500"
-              >
-                <Icon className="h-5 w-5 text-[#1469f5]" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
       </div>
     </div>
   );

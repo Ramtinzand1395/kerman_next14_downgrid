@@ -5,7 +5,7 @@ import { Search } from "lucide-react";
 import { useRouter } from "@/app/components/navigation/NavigationFeedback";
 import { headerControlFocus } from "./navigationItems";
 
-export default function DesktopSearch() {
+export default function HeaderSearch() {
   const router = useRouter();
 
   function search(event: FormEvent<HTMLFormElement>) {
@@ -20,7 +20,7 @@ export default function DesktopSearch() {
       role="search"
       aria-label="جستجو در محصولات"
       onSubmit={search}
-      className="hidden min-h-11 min-w-0 items-center rounded-xl border border-slate-200 bg-slate-50 pe-1 ps-4 focus-within:border-blue-600 xl:flex"
+      className="order-last col-span-2 flex min-h-11 min-w-0 items-center rounded-xl border border-slate-200 bg-slate-50 pe-1 ps-4 focus-within:border-blue-600 xl:order-none xl:col-span-1"
     >
       <input
         type="search"

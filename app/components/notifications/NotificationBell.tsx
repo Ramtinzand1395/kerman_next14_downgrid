@@ -82,7 +82,7 @@ export default function NotificationBell({ admin = false }: { admin?: boolean })
       </button>
 
       {open && (
-        <div className="absolute -right-44 top-12 z-[70] w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white text-right shadow-2xl">
+        <div className={`absolute top-12 z-[70] w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white text-right shadow-2xl ${admin ? "-right-44" : "left-0 xl:left-auto xl:-right-44"}`}>
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
             <div>
               <p className="font-bold text-slate-900">اعلان‌ها</p>

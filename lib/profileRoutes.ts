@@ -1,3 +1,5 @@
+export const MOBILE_PROFILE_NAVIGATION_EVENT = "kermanatari:open-profile-navigation";
+
 export const PROFILE_STEPS = {
   profile: 1,
   favorites: 2,

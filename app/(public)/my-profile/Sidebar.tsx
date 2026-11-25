@@ -8,7 +8,8 @@ import {
   Heart,
   KeyRound,
   MapPinHouse,
-  Menu,
+  Grid2x2,
+  LogOut,
   MessageCircle,
   MessageSquareText,
   ShoppingBasket,
@@ -18,8 +19,9 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import { signOut } from "next-auth/react";
 import Link from "@/app/components/navigation/NavigationFeedback";
-import { PROFILE_STEPS, profileRoute, type ProfileSection } from "@/lib/profileRoutes";
+import { MOBILE_PROFILE_NAVIGATION_EVENT, PROFILE_STEPS, profileRoute, type ProfileSection } from "@/lib/profileRoutes";
 
 const entries: { section: ProfileSection; title: string; icon: LucideIcon }[] = [
   { section: "profile", title: "اطلاعات شخصی", icon: UserRound },
@@ -39,9 +41,30 @@ export default function Sidebar({ activeStep }: { activeStep: number }) {
   const [open, setOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
+  const linksRef = useRef<HTMLUListElement>(null);
+  const opener = useRef<HTMLElement | null>(null);
   const linksId = useId();
   const currentSection = entries.find(({ section }) => PROFILE_STEPS[section] === activeStep);
-  const ToggleIcon = open ? X : Menu;
+  const ToggleIcon = open ? X : Grid2x2;
+
+  useEffect(() => {
+    function openFromBottomNav() {
+      opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      setOpen(true);
+    }
+
+    window.addEventListener(MOBILE_PROFILE_NAVIGATION_EVENT, openFromBottomNav);
+    return () => window.removeEventListener(MOBILE_PROFILE_NAVIGATION_EVENT, openFromBottomNav);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const frame = window.requestAnimationFrame(() => {
+      linksRef.current?.querySelector<HTMLElement>('[aria-current="page"]')?.focus({ preventScroll: true });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -59,7 +82,8 @@ export default function Sidebar({ activeStep }: { activeStep: number }) {
   function closeMenu() {
     if (!open) return;
     setOpen(false);
-    toggleRef.current?.focus({ preventScroll: true });
+    (opener.current ?? toggleRef.current)?.focus({ preventScroll: true });
+    opener.current = null;
   }
 
   return (
@@ -72,28 +96,35 @@ export default function Sidebar({ activeStep }: { activeStep: number }) {
           closeMenu();
         }
       }}
-      className="relative z-40 h-fit min-w-0 self-start rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm sm:p-3 lg:sticky lg:top-24 lg:z-auto lg:p-4"
+      className="relative z-[45] h-fit min-w-0 self-start rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm sm:p-3 lg:sticky lg:top-24 lg:z-auto lg:p-4"
     >
       <button
         ref={toggleRef}
         type="button"
         aria-expanded={open}
         aria-controls={linksId}
-        onClick={() => setOpen(current => !current)}
+        onClick={event => {
+          if (open) closeMenu();
+          else {
+            opener.current = event.currentTarget;
+            setOpen(true);
+          }
+        }}
         className="flex min-h-12 w-full items-center gap-3 rounded-xl px-2 text-right focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600 lg:hidden"
       >
-        <span className="rounded-lg bg-indigo-50 p-2 text-indigo-700">
+        <span className="rounded-lg bg-blue-50 p-2 text-blue-800">
           <ToggleIcon aria-hidden="true" className="h-5 w-5" />
         </span>
         <span className="min-w-0 [overflow-wrap:anywhere]">
-          <span className="block text-sm font-bold text-slate-800">منوی پنل کاربری</span>
+          <span className="block text-sm font-bold text-slate-800">بخش‌های حساب من</span>
           {currentSection && <span className="block text-xs leading-5 text-slate-600">{currentSection.title}</span>}
         </span>
       </button>
       <ul
+        ref={linksRef}
         id={linksId}
-        className={`absolute inset-x-0 top-full mt-2 grid max-h-[50dvh] grid-cols-2 gap-1.5 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white p-2 shadow-lg transition-[opacity,transform,visibility] duration-200 ease-out motion-reduce:transition-none sm:grid-cols-3 sm:p-3 lg:pointer-events-auto lg:visible lg:static lg:mt-0 lg:max-h-none lg:translate-y-0 lg:grid-cols-1 lg:overflow-visible lg:rounded-none lg:border-0 lg:p-0 lg:opacity-100 lg:shadow-none lg:transition-none ${
-          open ? "visible translate-y-0 opacity-100" : "pointer-events-none invisible -translate-y-2 opacity-0"
+        className={`fixed inset-x-3 bottom-[var(--mobile-nav-offset)] grid max-h-[50dvh] grid-cols-2 gap-1.5 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white p-2 shadow-lg transition-[opacity,transform,visibility] duration-200 ease-out motion-reduce:transition-none sm:grid-cols-3 sm:p-3 lg:pointer-events-auto lg:visible lg:static lg:mt-0 lg:max-h-none lg:translate-y-0 lg:grid-cols-1 lg:overflow-visible lg:rounded-none lg:border-0 lg:p-0 lg:opacity-100 lg:shadow-none lg:transition-none ${
+          open ? "visible translate-y-0 opacity-100" : "pointer-events-none invisible translate-y-2 opacity-0"
         }`}
       >
         {entries.map(({ section, title, icon: Icon }) => {
@@ -123,6 +154,16 @@ export default function Sidebar({ activeStep }: { activeStep: number }) {
             <Gift aria-hidden="true" className="h-4 w-4 shrink-0" />
             <span className="min-w-0 [overflow-wrap:anywhere]">دعوت از دوستان</span>
           </Link>
+        </li>
+        <li className="min-w-0 xl:hidden">
+          <button
+            type="button"
+            onClick={() => { void signOut({ callbackUrl: "/" }); }}
+            className="flex min-h-11 w-full items-center gap-2 rounded-xl bg-slate-50 px-2.5 py-2 text-start text-xs font-semibold leading-5 text-red-600 hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 sm:text-sm"
+          >
+            <LogOut aria-hidden="true" className="h-4 w-4 shrink-0" />
+            خروج از حساب
+          </button>
         </li>
       </ul>
     </nav>

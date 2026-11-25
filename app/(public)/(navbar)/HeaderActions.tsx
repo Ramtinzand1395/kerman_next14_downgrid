@@ -8,7 +8,7 @@ export default function HeaderActions() {
   const { root, active, boundary, toggle, close } = useHeaderDropdown<"user" | "cart", HTMLDivElement>();
 
   return (
-    <div ref={root} className="contents">
+    <div ref={root} className="hidden xl:contents">
       <UserBtn
         open={active === "user"}
         boundaryEvents={boundary("user")}
