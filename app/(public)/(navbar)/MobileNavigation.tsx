@@ -6,12 +6,12 @@ import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import Link, { useRouter } from "@/app/components/navigation/NavigationFeedback";
 import useCartStore from "@/stores/cartStore";
-import { MOBILE_PROFILE_NAVIGATION_EVENT, profileRoute } from "@/lib/profileRoutes";
+import { PROFILE_MENU_HREF } from "@/lib/profileRoutes";
 import MobileCategoryDialog from "./MobileCategoryDialog";
 
 const historyKey = "kermanAtariMobileNavigation";
 const catalogSections = ["/category", "/categories", "/product", "/products", "/used-consoles"];
-const profileHref = profileRoute("profile");
+const profileHref = PROFILE_MENU_HREF;
 const loginHref = `/auth/login?callbackUrl=${encodeURIComponent(profileHref)}`;
 const cartHref = "/cart?step=1";
 
@@ -120,12 +120,6 @@ export default function MobileNavigation() {
     closeCategories(`${pathname}${search}${hash}`);
   };
 
-  const showProfileMenu: MouseEventHandler<HTMLAnchorElement> = event => {
-    if (pathname !== "/my-profile" || window.matchMedia("(min-width: 1024px)").matches || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-    event.preventDefault();
-    window.dispatchEvent(new Event(MOBILE_PROFILE_NAVIGATION_EVENT));
-  };
-
   const accountHref = !session?.user
     ? loginHref
     : session.user.role === "admin"
@@ -181,7 +175,7 @@ export default function MobileNavigation() {
             حساب من
           </button>
         ) : (
-          <Link href={accountHref} onClick={showProfileMenu} aria-current={accountActive ? "location" : undefined} className={itemClass(accountActive)}>
+          <Link href={accountHref} aria-current={accountActive ? "location" : undefined} className={itemClass(accountActive)}>
             <UserRound aria-hidden="true" className="h-5 w-5" />
             حساب من
           </Link>

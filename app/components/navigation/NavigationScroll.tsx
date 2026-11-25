@@ -7,7 +7,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 export default function NavigationScroll() {
   const pathname = usePathname();
   const search = useSearchParams();
-  const step = pathname === "/my-profile" || pathname === "/cart" ? search.get("step") || "1" : "";
+  const step = pathname === "/my-profile" ? search.get("step") || "menu" : pathname === "/cart" ? search.get("step") || "1" : "";
   const key = `${pathname}:${step}`;
   const previous = useRef<string | undefined>(undefined);
   const restoring = useRef(false);
