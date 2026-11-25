@@ -49,17 +49,30 @@ test('production category HTTP serves real routes, metadata, filters and deep li
     assert.ok(node, `Missing ${name}`);
     return node.getText(ast);
   };
+  const variable = name => {
+    const node = ast.statements.find(node => ts.isVariableStatement(node) &&
+      node.declarationList.declarations.some(item => item.name.getText(ast) === name));
+    assert.ok(node, `Missing ${name}`);
+    return node.getText(ast);
+  };
   await writeFile(path.join(dir, 'app/products/page.tsx'), `
-import { permanentRedirect } from 'next/navigation';
+import { cache } from 'react';
+import { notFound, permanentRedirect } from 'next/navigation';
 import Pagination from './components/Pagination';
 import { ProductNavigationProvider } from './components/ProductNavigation';
 import { getCategoryCatalog } from '@/lib/catalog/category-data';
 import { resolveLegacyCategory, categoryHref, parseCatalogQuery, hasCatalogFilters } from '@/lib/catalog/category-seo';
 export const dynamic = 'force-dynamic';
 type ProductsSearchParams = any; type Metadata = any; const baseMetadata = {};
+const SITE_URL = 'https://kermanatari.ir';
+async function getProductsResponse(request: Request) {
+  const query = parseCatalogQuery(Object.fromEntries(new URL(request.url).searchParams), { allProducts: true });
+  return query.page > 3 ? new Response(null, { status: 404 }) : Response.json({ page: query.page, totalPages: 3 });
+}
 ${declaration('redirectLegacyCategory')}
+${variable('loadProducts')}
 ${declaration('generateMetadata')}
-export default async function Page({searchParams}: any) { await redirectLegacyCategory(searchParams); return <ProductNavigationProvider><h1>Products</h1><Pagination currentPage={Number(searchParams.page || 1)} totalPages={3}/></ProductNavigationProvider>; }
+export default async function Page({searchParams}: any) { const { data } = await loadProducts(JSON.stringify(searchParams)); return <ProductNavigationProvider><h1>Products</h1><Pagination currentPage={data.page} totalPages={data.totalPages}/></ProductNavigationProvider>; }
 `);
   try {
     await readFile(path.join(root, 'app/(public)/products/loading.tsx'));
@@ -137,6 +150,7 @@ export async function getCategoryProducts(id: string, rows: any, query: any) {
   const allProducts = await request(port, '/products?sort=newest&page=1');
   assert.match(allProducts.body, /content="index, follow"/);
   assert.match(allProducts.body, /rel="canonical" href="https:\/\/kermanatari.ir\/products"/);
+  assert.equal((await request(port, '/products?page=4')).status, 404);
   const allProductsSecond = await request(port, '/products?sort=newest&page=2');
   assert.match(allProductsSecond.body, /content="index, follow"/);
   assert.match(allProductsSecond.body, /rel="canonical" href="https:\/\/kermanatari.ir\/products\?page=2"/);

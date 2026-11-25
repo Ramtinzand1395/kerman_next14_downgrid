@@ -27,10 +27,20 @@ async function loadPage(file, value = product) {
   const stub = () => null;
   const genericModule = new Proxy({ __esModule: true, default: stub }, { get: (target, key) => key in target ? target[key] : stub });
   const dependencies = {
-    'react': { cache: fn => fn },
+    'react': { ...require('react'), cache: fn => fn },
     'react/jsx-runtime': require('react/jsx-runtime'),
     '@/lib/merchantSchema': merchantSchema,
-    '@/lib/site': { SITE_URL: siteUrl, toAbsoluteUrl: path => siteUrl + path },
+    '@/lib/site': {
+      SITE_URL: siteUrl,
+      STORE_ORGANIZATION_ID: siteUrl + '/#organization',
+      WEBSITE_ID: siteUrl + '/#website',
+      toAbsoluteUrl: path => siteUrl + path,
+    },
+    '@/lib/store-contact': { STORE_CONTACT: {
+      name: 'Fixture store', address: 'Fixture city، Fixture street', locality: 'Fixture city',
+      phoneNumbers: ['09383077225'], logoPath: '/logo.svg',
+    } },
+    'next/font/local': () => ({ className: 'font-fixture' }),
     '@/lib/shippingSettings': { getStoreShippingSettings: async () => shipping },
     '@/lib/currency': { tomanToIrr: amount => amount * 10 },
     '@/lib/shipping': { formatLocalShippingPolicyText: amount => `کرمان: ${amount}` },
@@ -59,10 +69,21 @@ test('category is plain Text; malformed identifiers/objects are omitted', () => 
   }
 });
 
-test('actual product offers link to the return policy defined on the actual terms page', async () => {
+test('actual product offers and website link to the server-rendered store and return policy', async () => {
+  const Layout = await loadPage('./app/(public)/layout.tsx');
+  const body = Layout({ children: null }).props.children.find(child => child.type === 'body');
+  const graph = jsonLd(body)['@graph'];
+  const organizations = graph.filter(node => node['@type'].includes('Organization'));
+  assert.equal(organizations.length, 1);
+  const [organization] = organizations;
+  assert.ok(organization['@type'].includes('Store'));
+  const website = graph.find(node => node['@type'] === 'WebSite');
+  assert.deepEqual(website.publisher, { '@id': organization['@id'] });
+
   const Terms = await loadPage('./app/(public)/terms/page.tsx');
-  const graph = jsonLd(await Terms())['@graph'];
-  const organization = graph.find(node => node['@type'] === 'Organization');
+  const termsGraph = jsonLd(await Terms())['@graph'];
+  assert.ok(termsGraph.some(node => node['@type'] === 'WebPage'));
+  assert.ok(termsGraph.every(node => node['@id'] !== organization['@id']));
   assert.equal(organization['@id'], `${siteUrl}/#organization`);
   const policy = organization.hasMerchantReturnPolicy;
   assert.equal(policy.merchantReturnLink, `${siteUrl}/terms#returns`);

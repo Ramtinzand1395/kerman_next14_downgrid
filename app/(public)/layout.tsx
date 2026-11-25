@@ -10,12 +10,49 @@ import AuthProvider from "../AuthProvider";
 import Navbar from "./(navbar)/Navbar";
 import PromotionModalHost from "./components/PromotionModalHost";
 import Footer from "./Footer";
-import { SITE_URL } from "@/lib/site";
+import { SITE_URL, STORE_ORGANIZATION_ID, WEBSITE_ID, toAbsoluteUrl } from "@/lib/site";
+import { STORE_CONTACT } from "@/lib/store-contact";
+import { buildMerchantReturnPolicy } from "@/lib/merchantSchema";
 import type { Metadata, Viewport } from "next";
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
-const INSTAGRAM_URL =
-   "https://www.instagram.com/kermanatari.ir?igsh=MTh4cmd3NnNib2N5dw==";
-
+const storefrontSchema = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": ["Organization", "Store"],
+      "@id": STORE_ORGANIZATION_ID,
+      name: STORE_CONTACT.name,
+      url: SITE_URL,
+      logo: toAbsoluteUrl(STORE_CONTACT.logoPath),
+      image: toAbsoluteUrl("/about-us.webp"),
+      telephone: STORE_CONTACT.phoneNumbers.map((phone) => `+98${phone.slice(1)}`),
+      email: STORE_CONTACT.email,
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: STORE_CONTACT.address.replace(`${STORE_CONTACT.locality}، `, ""),
+        addressLocality: STORE_CONTACT.locality,
+        addressCountry: "IR",
+      },
+      openingHours: STORE_CONTACT.openingHours,
+      hasMap: STORE_CONTACT.mapUrl,
+      sameAs: [STORE_CONTACT.instagramUrl, "https://t.me/kermanatari"],
+      hasMerchantReturnPolicy: buildMerchantReturnPolicy(SITE_URL),
+    },
+    {
+      "@type": "WebSite",
+      "@id": WEBSITE_ID,
+      name: STORE_CONTACT.name,
+      url: SITE_URL,
+      inLanguage: "fa",
+      publisher: { "@id": STORE_ORGANIZATION_ID },
+      potentialAction: {
+        "@type": "SearchAction",
+        target: toAbsoluteUrl("/products?q={search_term_string}"),
+        "query-input": "required name=search_term_string",
+      },
+    },
+  ],
+};
 const vazir = localFont({
   src: "../Vazir.woff2",
   display: "swap",
@@ -75,6 +112,13 @@ export default function RootLayout({
         <script src="https://accounts.google.com/gsi/client" async></script>
       </head>
       <body className="pb-[var(--mobile-nav-offset)]">
+        <script
+          id="storefront-schema"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(storefrontSchema).replace(/</g, "\\u003c"),
+          }}
+        />
         {/* Client-side wrappers (Auth, Navbar, Footer, Toast) are loaded dynamically */}
         <AuthProvider>
         <NavigationProvider>
@@ -100,44 +144,6 @@ export default function RootLayout({
           draggable
           pauseOnHover
           theme="colored"
-        />
-
-        {/* Structured data for Organization + WebSite (SEO) */}
-        <Script
-          id="organization-schema"
-          type="application/ld+json"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@graph": [
-                {
-                  "@type": "Organization",
-                  "@id":  `${SITE_URL}/#organization`,
-                  name: "کرمان آتاری",
-                   url: SITE_URL,
-                 logo: `${SITE_URL}/atari-seeklogo.svg`,
-                  sameAs: [
-                      INSTAGRAM_URL,
-                    "https://t.me/kermanatari",
-                  ],
-                },
-                {
-                  "@type": "WebSite",
-                   "@id": `${SITE_URL}/#website`,
-                 url: SITE_URL,
-                  name: "کرمان آتاری",
-                  inLanguage: "fa",
-                  potentialAction: {
-                    "@type": "SearchAction",
-                    target:
-                      `${SITE_URL}/products?q={search_term_string}`,
-                    "query-input": "required name=search_term_string",
-                  },
-                },
-              ],
-            }),
-          }}
         />
 
         {/* One Google tag per public page. GA4 handles enhanced measurement including SPA history changes. */}

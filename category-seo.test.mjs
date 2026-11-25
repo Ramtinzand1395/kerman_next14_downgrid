@@ -12,6 +12,7 @@ async function load(path, dependencies = {}) {
   return module.exports;
 }
 const seo = await load('./lib/catalog/category-seo.ts');
+const usedConsole = await load('./lib/used-console.ts');
 const rows = [
   { _id: '111111111111111111111111', name: 'لوازم جانبی', slug: 'accessories', parent: null },
   { _id: '222222222222222222222222', name: 'تابلو گیمینگ', slug: 'gaming-wall-art', parent: '111111111111111111111111' },
@@ -102,7 +103,7 @@ test('real query service scopes to published descendants, escapes text, ignores 
     react: { ...require('react'), cache: fn => fn },
     '@/lib/mongodb': async () => {}, '@/model/Product': product, '@/model/Category': {}, '@/model/Comment': {},
     '@/model/Tag': { collection: { name: 'tags' }, findOne: () => ({ select: () => ({ lean: async () => ({ _id: new mongoose.Types.ObjectId('555555555555555555555555') }) }) }) },
-    './category-seo': seo,
+    './category-seo': seo, '@/lib/used-console': usedConsole,
   });
   await data.getCategoryProducts(rows[0]._id, rows, { page: 2, q: '.*', tag: 'tekken', sort: 'lowPrice', inStock: true });
   const pipeline = pipelines.find(p => p.some(stage => stage.$facet));
@@ -137,4 +138,132 @@ test('admin SEO endpoint checks role, validates whitelist and changes only the r
   assert.equal(writes.length, 1);
   assert.equal(writes[0][0], rows[1]._id);
   assert.ok(!('slug' in writes[0][1].$set));
+});
+
+test('products use one listing for metadata and render, reject missing pages and apply the stock filter', async () => {
+  const calls = { count: 0, list: 0 };
+  const stockFilters = [];
+  let total = 13;
+  const listing = {
+    populate() { return this; },
+    sort() { return this; },
+    skip() { return this; },
+    limit() { return this; },
+    lean: async () => [],
+  };
+  const route = await load('./app/api/products/all_products/route.ts', {
+    'next/server': { NextResponse: Response },
+    '@/lib/mongodb': async () => {},
+    '@/model/Product': {
+      countDocuments: async filter => { calls.count++; stockFilters.push(filter); return total; },
+      aggregate: async stages => { if (stages.some(stage => stage.$skip !== undefined)) calls.list++; return []; },
+      find: () => { calls.list++; return listing; },
+    },
+    '@/model/Comment': { collection: { name: 'comments' } },
+    '@/model/Tag': { collection: { name: 'tags' } },
+    '@/model/Category': { collection: { name: 'categories' } },
+  });
+  const component = () => null;
+  const react = require('react');
+  const page = await load('./app/(public)/products/page.tsx', {
+    react: {
+      ...react,
+      cache(fn) {
+        const responses = new Map();
+        return key => {
+          if (!responses.has(key)) responses.set(key, fn(key));
+          return responses.get(key);
+        };
+      },
+    },
+    'next/navigation': { notFound: () => { throw new Error('404'); } },
+    '@/app/api/products/all_products/route': route,
+    '@/app/components/navigation/NavigationFeedback': component,
+    '@/lib/catalog/category-data': {},
+    '@/lib/catalog/category-seo': seo,
+    '@/lib/site': { SITE_URL: 'https://kermanatari.ir', toAbsoluteUrl: path => 'https://kermanatari.ir' + path },
+    '../constants/categories': { categories: [] },
+    '../components/Cart': component,
+    './components/FilterProducts': component,
+    './components/Pagination': component,
+    './components/SortProducts': component,
+    './components/ProductsSearch': component,
+    './components/ProductArtSlider': component,
+    './components/ProductNavigation': { ProductResults: component, ProductNavigationLink: component, ProductNavigationProvider: component },
+  });
+  const searchParams = { page: '2', sort: 'newest' };
+  const metadata = await page.generateMetadata({ searchParams });
+  await page.default({ searchParams: { ...searchParams } });
+  assert.equal(metadata.alternates.canonical, '/products?page=2');
+  assert.deepEqual(calls, { count: 1, list: 1 });
+  await assert.rejects(page.generateMetadata({ searchParams: { page: '100' } }), /404/);
+  assert.deepEqual(calls, { count: 2, list: 1 });
+  for (const sort of ['bestSeller', 'highestDiscount']) {
+    const alternative = await page.generateMetadata({ searchParams: { sort, page: '2' } });
+    assert.deepEqual(alternative.robots, { index: false, follow: true });
+    assert.equal(alternative.alternates.canonical, '/products');
+  }
+  total = 1;
+  await assert.rejects(page.generateMetadata({ searchParams: { page: '2', inStock: '1', q: 'PS5' } }), /404/);
+  const stockFilter = stockFilters.at(-1);
+  assert.equal(stockFilter.$or.length, 3);
+  assert.deepEqual(stockFilter.$and[0].$or, [
+    { productType: 'multi', variants: { $elemMatch: { isActive: { $ne: false }, stock: { $gt: 0 } } } },
+    { productType: { $ne: 'multi' }, stock: { $gt: 0 } },
+  ]);
+  for (const page of ['0', '-1', '9007199254740992']) {
+    assert.equal((await route.GET(new Request('http://localhost/api/products/all_products?page=' + page))).status, 404);
+  }
+  total = 0;
+  assert.equal((await route.GET(new Request('http://localhost/api/products/all_products'))).status, 200);
+});
+
+test('used-console sitemap eligibility matches the listing and tracking URLs keep their canonical', async () => {
+  const generation = { ...rows[0], slug: 'playstation-5' };
+  const child = { ...rows[1], parent: generation._id };
+  const catalog = [generation, child];
+  let existsFilter;
+  let listingFilter;
+  const data = await load('./lib/catalog/category-data.ts', {
+    react: { ...require('react'), cache: fn => fn },
+    '@/lib/mongodb': async () => {},
+    '@/lib/used-console': usedConsole,
+    '@/model/Product': {
+      exists: async filter => { existsFilter = filter; return { _id: 'eligible' }; },
+      aggregate: async stages => {
+        if (!stages.some(stage => stage.$facet)) return [];
+        listingFilter = stages[0].$match;
+        return [{ products: [], count: [{ total: 13 }] }];
+      },
+      populate: async () => {},
+    },
+    '@/model/Category': {},
+    '@/model/Comment': {},
+    '@/model/Tag': { collection: { name: 'tags' } },
+    './category-seo': seo,
+  });
+  const component = () => null;
+  const page = await load('./app/(public)/used-consoles/page.tsx', {
+    react: { ...require('react'), cache: fn => fn },
+    '@/app/components/navigation/NavigationFeedback': component,
+    '@/app/components/ProductImage': component,
+    '../components/Cart': component,
+    '@/lib/catalog/category-data': { ...data, getCategoryCatalog: async () => catalog },
+    '@/lib/catalog/category-seo': seo,
+    '@/lib/used-console': usedConsole,
+    '@/lib/site': { toAbsoluteUrl: path => 'https://kermanatari.ir' + path },
+  });
+  assert.equal(await data.hasUsedConsoleProducts(catalog), true);
+  const tracking = { utm_source: 'newsletter', utm_medium: 'email', utm_campaign: 'launch', gclid: '1', fbclid: '2' };
+  const meta = await page.generateMetadata({ searchParams: { page: '2', ...tracking } });
+  assert.equal(meta.alternates.canonical, '/used-consoles?page=2');
+  assert.deepEqual(meta.robots, { index: true, follow: true });
+  assert.deepEqual(existsFilter, listingFilter);
+  assert.deepEqual(existsFilter.category.$in.map(String), [generation._id]);
+  assert.equal(existsFilter.productType, 'single');
+  assert.deepEqual(existsFilter.isDigital, { $ne: true });
+  assert.deepEqual(existsFilter.isOnlineGame, { $ne: true });
+  const filter = await page.generateMetadata({ searchParams: { inStock: '1', ...tracking } });
+  assert.equal(filter.alternates.canonical, '/used-consoles');
+  assert.deepEqual(filter.robots, { index: false, follow: true });
 });

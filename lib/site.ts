@@ -14,6 +14,8 @@ const siteUrlWithProtocol = /^https?:\/\//i.test(configuredSiteUrl)
   : `https://${configuredSiteUrl}`;
 
 export const SITE_URL = new URL(siteUrlWithProtocol).origin;
+export const STORE_ORGANIZATION_ID = `${SITE_URL}/#organization`;
+export const WEBSITE_ID = `${SITE_URL}/#website`;
 
 export const toAbsoluteUrl = (path: string) => {
   if (/^https?:\/\//i.test(path)) return path;

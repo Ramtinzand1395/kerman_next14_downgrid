@@ -22,6 +22,7 @@ function elements(node) {
 
 test('each services action leads to its promised destination, including contextual contact requests',()=>{
   const page=load('./app/(public)/services/page.tsx',{
+    './_components/GameInstallationPage':{GameInstallationLinks:()=>null},
     '@/lib/contact-topics':topics,'@/lib/site':{SITE_URL:'https://example.test'},
     '@/app/components/navigation/NavigationFeedback':{__esModule:true,default:()=>null},
   }).default;

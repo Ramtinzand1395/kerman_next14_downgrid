@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import ContactForm from "./ContactForm";
-import { toAbsoluteUrl } from "@/lib/site";
+import { STORE_ORGANIZATION_ID, WEBSITE_ID, toAbsoluteUrl } from "@/lib/site";
 import { contactTopicSubject } from "@/lib/contact-topics";
-import { STORE_CONTACT } from "@/lib/store-contact";
 
 const faqItems = [
   {
@@ -73,54 +71,40 @@ export default function ContactUsPage({
   searchParams: { topic?: string | string[] };
 }) {
   const initialSubject = contactTopicSubject(searchParams.topic);
-  const faqSchema = {
+  const contactUrl = toAbsoluteUrl("/contact-us");
+  const contactPageId = `${contactUrl}#webpage`;
+  const contactSchema = {
     "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faqItems.map((item) => ({
-      "@type": "Question",
-      name: item.question,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: item.answer,
+    "@graph": [
+      {
+        "@type": "ContactPage",
+        "@id": contactPageId,
+        url: contactUrl,
+        name: metadata.title,
+        isPartOf: { "@id": WEBSITE_ID },
+        about: { "@id": STORE_ORGANIZATION_ID },
       },
-    })),
+      {
+        "@type": "FAQPage",
+        "@id": `${contactUrl}#faq`,
+        isPartOf: { "@id": contactPageId },
+        mainEntity: faqItems.map((item) => ({
+          "@type": "Question",
+          name: item.question,
+          acceptedAnswer: { "@type": "Answer", text: item.answer },
+        })),
+      },
+    ],
   };
-
-  const localBusinessSchema = {
-    "@context": "https://schema.org",
-    "@type": "Store",
-    name: "کرمان آتاری",
-    url: toAbsoluteUrl("/contact-us"),
-    image: toAbsoluteUrl("/about-us.webp"),
-    telephone: "+989383077225",
-    email: "info@kermanatari.ir",
-    address: {
-      "@type": "PostalAddress",
-      addressLocality: "کرمان",
-      streetAddress: STORE_CONTACT.address,
-      addressCountry: "IR",
-    },
-    openingHours: STORE_CONTACT.openingHours,
-    hasMap: STORE_CONTACT.mapUrl,
-    priceRange: "$$",
-    sameAs: ["https://www.instagram.com/kermanatari.ir?igsh=MTh4cmd3NnNib2N5dw=="],
-  };
-
   return (
     <section className="mx-auto max-w-7xl px-5 py-12 md:py-16">
-      <Script
-        id="contact-faq-schema"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
-      />
-      <Script
-        id="contact-local-business-schema"
+      <script
+        id="contact-page-schema"
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(localBusinessSchema),
+          __html: JSON.stringify(contactSchema).replace(/</g, "\\u003c"),
         }}
       />
-
       <header className="mb-10 rounded-3xl bg-gradient-to-l from-blue-50 via-white to-slate-50 p-6 md:p-10">
         <span className="mb-4 inline-flex rounded-full bg-blue-100 px-4 py-1 text-xs font-semibold text-blue-700">
           ارتباط مستقیم با تیم پشتیبانی

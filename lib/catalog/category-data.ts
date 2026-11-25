@@ -1,6 +1,7 @@
 import { cache } from "react";
 import mongoose from "mongoose";
 import dbConnect from "@/lib/mongodb";
+import { isConsoleGeneration } from "@/lib/used-console";
 import Category from "@/model/Category";
 import Product from "@/model/Product";
 import Tag from "@/model/Tag";
@@ -80,14 +81,12 @@ export function listingStages() {
   ];
 }
 
-export async function getCategoryProducts(
+function categoryProductsFilter(
   categoryId: string | string[],
   rows: CategoryRow[],
-  query: CatalogQuery,
-  priceRange: { min?: number; max?: number } = {},
-  options: { exactCategories?: boolean } = {},
+  used?: boolean,
+  exactCategories?: boolean,
 ) {
-  await dbConnect();
   const filter: Record<string, unknown> = {
     status: "published",
     deletedAt: null,
@@ -96,16 +95,38 @@ export async function getCategoryProducts(
       // even when the categories are not children of a "consoles" parent.
       $in: [...new Set(
         (Array.isArray(categoryId) ? categoryId : [categoryId])
-          .flatMap((id) => options.exactCategories ? [id] : descendantIds(id, rows)),
+          .flatMap((id) => exactCategories ? [id] : descendantIds(id, rows)),
       )].map((id) => new mongoose.Types.ObjectId(id)),
     },
   };
-  if (query.used) filter.condition = "used";
-  if (query.used && options.exactCategories) {
+  if (used) filter.condition = "used";
+  if (used && exactCategories) {
     filter.productType = "single";
     filter.isDigital = { $ne: true };
     filter.isOnlineGame = { $ne: true };
   }
+  return filter;
+}
+
+export function getUsedConsoleGenerations<T extends CategoryRow>(rows: T[]) {
+  return rows.filter((row) => isConsoleGeneration(row.slug));
+}
+
+export async function hasUsedConsoleProducts(rows: CategoryRow[]) {
+  const categoryIds = getUsedConsoleGenerations(rows).map((row) => row._id);
+  if (!categoryIds.length) return false;
+  return Boolean(await Product.exists(categoryProductsFilter(categoryIds, rows, true, true)));
+}
+
+export async function getCategoryProducts(
+  categoryId: string | string[],
+  rows: CategoryRow[],
+  query: CatalogQuery,
+  priceRange: { min?: number; max?: number } = {},
+  options: { exactCategories?: boolean } = {},
+) {
+  await dbConnect();
+  const filter = categoryProductsFilter(categoryId, rows, query.used, options.exactCategories);
   if (query.q)
     filter.$or = ["title", "brand"].map((key) => ({
       [key]: { $regex: escapeRegex(query.q), $options: "i" },

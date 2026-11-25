@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -47,17 +48,6 @@ const features = [
 ];
 
 export default function Footer() {
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    name: "Kerman Atari",
-    address: STORE_CONTACT.address,
-    openingHours: STORE_CONTACT.openingHours,
-    hasMap: STORE_CONTACT.mapUrl,
-    telephone: "09383077225 - 09044754897",
-    image: "/atari-seeklogo.svg",
-    url: "https://kermanatari.ir",
-  };
   // from-[#001A6E]  to-[#377dff]
   return (
     <footer
@@ -65,12 +55,6 @@ export default function Footer() {
       role="contentinfo"
       aria-label="پاورقی سایت"
     >
-      {/* SEO Structured Data */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
-
       <div className="mx-auto max-w-7xl px-4 pb-8 pt-10 md:px-8">
         {/* Top CTA */}
         <div className="relative mb-10 rounded-2xl border border-blue-100 bg-white/80 p-5 shadow-sm backdrop-blur md:p-7">
@@ -132,7 +116,7 @@ export default function Footer() {
                 width={42}
                 height={42}
                 alt="لوگوی کرمان آتاری"
-                src="/atari-seeklogo.svg"
+                src={STORE_CONTACT.logoPath}
               />
               <span className="text-lg font-extrabold text-gray-900">
                 Kerman Atari
@@ -180,13 +164,12 @@ export default function Footer() {
 
             <p className="flex items-center gap-2">
               <Phone className="h-4 w-4 text-[#001A6E]" />
-              <a href="tel:09383077225" className="hover:text-red-600">
-                09383077225
-              </a>
-              -
-              <a href="tel:09044754897" className="hover:text-red-600">
-                09044754897
-              </a>
+              {STORE_CONTACT.phoneNumbers.map((phone, index) => (
+                <Fragment key={phone}>
+                  {index > 0 && " - "}
+                  <a href={`tel:${phone}`} className="hover:text-red-600">{phone}</a>
+                </Fragment>
+              ))}
             </p>
 
             <p className="flex items-center gap-2">
@@ -195,7 +178,7 @@ export default function Footer() {
             </p>
 
             <a
-              href="https://www.instagram.com/kermanatari.ir?igsh=MTh4cmd3NnNib2N5dw=="
+              href={STORE_CONTACT.instagramUrl}
               className="inline-flex items-center gap-2 text-gray-600 transition hover:text-red-600"
               target="_blank"
               rel="noopener noreferrer"

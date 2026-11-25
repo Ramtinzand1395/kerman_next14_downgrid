@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "@/app/components/navigation/NavigationFeedback";
 import type { Metadata } from "next";
-import { SITE_URL } from "@/lib/site";
+import { SITE_URL, STORE_ORGANIZATION_ID, WEBSITE_ID } from "@/lib/site";
 
 const description =
   "کرمان آتاری با بیش از ۴۰ سال سابقه در کرمان؛ فروش کنسول و لوازم جانبی، نصب بازی PS4 و PS5 و عرضه تابلو گیمینگ. آدرس فروشگاه، خدمات و راه‌های ارتباطی.";
@@ -78,23 +78,14 @@ export default function AboutUsPage() {
     "@context": "https://schema.org",
     "@graph": [
       {
-        "@type": "Organization",
-        "@id": `${SITE_URL}/#organization`,
-        name: "کرمان آتاری",
-        url: SITE_URL,
-        logo: `${SITE_URL}/atari-seeklogo.svg`,
-       sameAs: ["https://www.instagram.com/kermanatari.ir?igsh=MTh4cmd3NnNib2N5dw=="],
-        description,
-      },
-      {
         "@type": "AboutPage",
         "@id": `${SITE_URL}/about-us#webpage`,
         name: "درباره ما | کرمان آتاری",
         url: `${SITE_URL}/about-us`,
         inLanguage: "fa-IR",
         description,
-        isPartOf: { "@id": `${SITE_URL}/#website` },
-        about: { "@id": `${SITE_URL}/#organization` },
+        isPartOf: { "@id": WEBSITE_ID },
+        about: { "@id": STORE_ORGANIZATION_ID },
       },
       {
         "@type": "BreadcrumbList",
