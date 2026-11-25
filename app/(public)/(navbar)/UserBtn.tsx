@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   ChevronDown,
   Heart,
@@ -13,55 +13,50 @@ import {
 import { signOut, useSession } from "next-auth/react";
 import Link from "@/app/components/navigation/NavigationFeedback";
 
-type DropdownType = "user" | "cart" | null;
+import { useId } from "react";
+import { headerActionStyle, headerControlFocus } from "./navigationItems";
+import type { HeaderDropdownProps } from "./useHeaderDropdown";
 
-interface UserBtnProps {
-  setActiveDropdown: React.Dispatch<React.SetStateAction<DropdownType>>;
-  activeDropdown: DropdownType;
-}
-
-export default function UserBtn({
-  setActiveDropdown,
-  activeDropdown,
-}: UserBtnProps) {
+export default function UserBtn({ open, boundaryEvents, onToggle, onClose }: HeaderDropdownProps) {
   const { data: session } = useSession();
-
-  const isUserDropdownOpen = activeDropdown === "user";
+  const panelId = useId();
+  const reduceMotion = useReducedMotion();
   return (
     <>
       {session ? (
         <div
           className="relative"
-          onMouseEnter={() => setActiveDropdown("user")}
-          onMouseLeave={() => setActiveDropdown(null)}
+          {...boundaryEvents}
         >
           <button
             title="منوی حساب کاربری" aria-label="منوی حساب کاربری"
             type="button"
-            onClick={() =>
-              setActiveDropdown(isUserDropdownOpen ? null : "user")
-            }
-            className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 transition hover:border-slate-300 md:gap-2 md:border-0 md:bg-transparent md:px-0 md:py-0"
+            aria-expanded={open}
+            aria-controls={open ? panelId : undefined}
+            onClick={onToggle}
+            className={`flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 transition-colors hover:border-slate-300 md:gap-2 md:border-0 md:bg-transparent md:px-0 md:py-0 ${headerActionStyle} ${headerControlFocus}`}
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100">
               <User className="h-4 w-4 text-slate-700" />
             </div>
 
-            <ChevronDown
-              className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${
-                isUserDropdownOpen ? "rotate-180" : "rotate-0"
+            <span className="hidden xl:inline">حساب کاربری</span>
+            <ChevronDown aria-hidden="true"
+              className={`h-4 w-4 text-slate-500 transition-transform duration-200 motion-reduce:transition-none ${
+                open ? "rotate-180" : "rotate-0"
               }`}
             />
           </button>
 
           <AnimatePresence>
-            {isUserDropdownOpen && (
+            {open && (
               <motion.div
-                initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                id={panelId}
+                initial={{ opacity: 0, y: reduceMotion ? 0 : -8, scale: reduceMotion ? 1 : 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -8, scale: 0.98 }}
-                transition={{ duration: 0.2 }}
-                className="absolute left-0 top-12 z-50 w-72 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl md:w-80"
+                exit={{ opacity: 0, y: reduceMotion ? 0 : -8, scale: reduceMotion ? 1 : 0.98 }}
+                transition={{ duration: reduceMotion ? 0 : 0.2 }}
+                className="absolute left-0 top-12 z-50 w-72 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl md:w-80 xl:top-full"
               >
                 <div className="mb-2 rounded-xl bg-slate-50 px-3 py-2.5">
                   <p className="text-xs text-slate-500">ورود شده به حساب</p>
@@ -74,6 +69,7 @@ export default function UserBtn({
                   {session.user && session.user.role === "user" ? (
                     <>
                       <Link
+                        onClick={onClose}
                         href="/my-profile?step=1"
                         className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-slate-700 transition hover:bg-slate-50 hover:text-blue-600"
                       >
@@ -81,6 +77,7 @@ export default function UserBtn({
                       </Link>
 
                       <Link
+                        onClick={onClose}
                         href="/my-profile?step=5"
                         className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-slate-700 transition hover:bg-slate-50 hover:text-blue-600"
                       >
@@ -88,6 +85,7 @@ export default function UserBtn({
                       </Link>
 
                       <Link
+                        onClick={onClose}
                         href="/my-profile?step=2"
                         className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-slate-700 transition hover:bg-slate-50 hover:text-blue-600"
                       >
@@ -96,6 +94,7 @@ export default function UserBtn({
                     </>
                   ) : (
                     <Link
+                      onClick={onClose}
                       href={
                         session.user?.role === "admin"
                           ? "/dashboard/store-order"
@@ -125,9 +124,10 @@ export default function UserBtn({
         <Link
           href="/auth/login"
           aria-label="ورود به حساب کاربری"
-          className="rounded-lg border border-slate-200 bg-white p-1.5 md:border-0 md:bg-transparent md:p-0"
+          className={`rounded-lg border border-slate-200 bg-white p-1.5 md:border-0 md:bg-transparent md:p-0 xl:flex xl:items-center xl:gap-2 ${headerActionStyle} ${headerControlFocus}`}
         >
-          <User className="h-5 w-5 text-black transition hover:text-[#427D9D]" />
+          <User aria-hidden="true" className="h-5 w-5 text-black transition hover:text-[#427D9D] xl:text-current" />
+          <span className="hidden xl:inline">ورود به حساب</span>
         </Link>
       )}
     </>
