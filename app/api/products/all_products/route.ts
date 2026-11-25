@@ -52,22 +52,26 @@ async function getTagFacets(filter: Record<string, unknown>) {
   ]);
 }
 
+function pageNotFound() {
+  return NextResponse.json({ error: "صفحه محصولات یافت نشد" }, { status: 404 });
+}
+
 export async function GET(req: Request) {
   try {
-    await dbConnect();
-
     const { searchParams } = new URL(req.url);
     const categorySlug = searchParams.get("category");
     const tagSlug = searchParams.get("tag");
     const sortParam = searchParams.get("sort");
     const query = (searchParams.get("q") || "").trim().slice(0, 80);
-    const page = positiveInteger(searchParams.get("page"), 1);
+    const rawPage = searchParams.get("page");
+    const page = rawPage && /^-?\d+$/.test(rawPage) ? Number(rawPage) : 1;
+    if (!Number.isSafeInteger(page) || page < 1) return pageNotFound();
     const limit = positiveInteger(
       searchParams.get("limit"),
       DEFAULT_PAGE_SIZE,
       MAX_PAGE_SIZE,
     );
-    const skip = (page - 1) * limit;
+    await dbConnect();
 
     // Excluding `tag` here lets the UI offer other tags without losing the
     // current category and text-search context.
@@ -75,6 +79,18 @@ export async function GET(req: Request) {
       status: "published",
       deletedAt: null,
     };
+
+    if (searchParams.get("inStock") === "1") {
+      baseFilter.$and = [{
+        $or: [
+          {
+            productType: "multi",
+            variants: { $elemMatch: { isActive: { $ne: false }, stock: { $gt: 0 } } },
+          },
+          { productType: { $ne: "multi" }, stock: { $gt: 0 } },
+        ],
+      }];
+    }
 
     if (categorySlug) {
       const decodedCategory = decodeURIComponent(categorySlug).trim();
@@ -109,6 +125,7 @@ export async function GET(req: Request) {
       }
 
       if (!mainCategory) {
+        if (page > 1) return pageNotFound();
         return NextResponse.json({
           products: [],
           total: 0,
@@ -147,6 +164,7 @@ export async function GET(req: Request) {
     ]);
 
     if (tagSlug && !selectedTag) {
+      if (page > 1) return pageNotFound();
       return NextResponse.json({
         products: [],
         total: 0,
@@ -162,6 +180,8 @@ export async function GET(req: Request) {
     }
 
     const total = await Product.countDocuments(filter);
+    if (page > Math.max(1, Math.ceil(total / limit))) return pageNotFound();
+    const skip = (page - 1) * limit;
 
     // اگر sort ارسال نشده بود: بر اساس میانگین امتیاز کامنت‌ها مرتب کن
     if (!sortParam) {

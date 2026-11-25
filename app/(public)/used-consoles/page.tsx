@@ -3,22 +3,20 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
-  BadgeCheck,
   ChevronLeft,
   ClipboardCheck,
   Gamepad2,
   Image as ImageIcon,
   PackageCheck,
-  ShieldCheck,
   SlidersHorizontal,
 } from "lucide-react";
 import Link from "@/app/components/navigation/NavigationFeedback";
 import ProductImage from "@/app/components/ProductImage";
 import Cart from "../components/Cart";
-import { getCategoryCatalog, getCategoryProducts, PAGE_SIZE } from "@/lib/catalog/category-data";
-import { parseCatalogQuery } from "@/lib/catalog/category-seo";
+import { getCategoryCatalog, getCategoryProducts, getUsedConsoleGenerations, PAGE_SIZE } from "@/lib/catalog/category-data";
+import { categoryHref, parseCatalogQuery } from "@/lib/catalog/category-seo";
 import { isConsoleGeneration } from "@/lib/used-console";
-import { toAbsoluteUrl } from "@/lib/site";
+import { WEBSITE_ID, toAbsoluteUrl } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 const path = "/used-consoles";
@@ -26,7 +24,7 @@ type Params = Record<string, string | string[] | undefined>;
 
 const title = "خرید کنسول کارکرده PS2 تا PS5 در کرمان";
 const description =
-  "قیمت و موجودی کنسول‌های کارکرده پلی‌استیشن ۲، ۳، ۴ و ۵ را در کرمان آتاری ببینید؛ عکس همان دستگاه، وضعیت ظاهری، لوازم همراه و گزارش تست را پیش از خرید بررسی کنید.";
+  "برای خرید کنسول کارکرده PS2 تا PS5 در کرمان، قیمت، وضعیت ظاهری و اقلام همراه هر دستگاه را در کرمان آتاری ببینید و گزارش تست را در صورت ثبت بررسی کنید.";
 
 const families = [
   { label: "PS2", slug: "playstation-2", caption: "برای بازی‌های خاطره‌انگیز" },
@@ -36,27 +34,39 @@ const families = [
 ] as const;
 
 const shoppingSteps = [
-  { title: "عکس همان دستگاه", text: "ظاهر دستگاه و تصاویر ثبت‌شده را ببین؛ هر کنسول کارکرده وضعیت مخصوص به خودش را دارد.", icon: ImageIcon },
-  { title: "گزارش بررسی", text: "نتیجه تست بخش‌های مختلف، ایرادهای اعلام‌شده و سابقه تعمیر درج‌شده را بخوان.", icon: ClipboardCheck },
-  { title: "لوازم و شرایط خرید", text: "مدل، ظرفیت، وسایل همراه، قیمت و شرایط مهلت تست درج‌شده برای همان محصول را مقایسه کن.", icon: PackageCheck },
+  {
+    title: "وضعیت ظاهری دستگاه",
+    text: "تصاویر و توضیحات ثبت‌شده برای همان دستگاه را بررسی کنید تا از ظاهر و ایرادهای قابل مشاهده مطلع شوید.",
+    icon: ImageIcon,
+  },
+  {
+    title: "نتیجهٔ بررسی فنی",
+    text: "موارد بررسی با نسل دستگاه فرق می‌کند و می‌تواند شامل تصویر، دیسک‌خوان یا عملکرد دسته باشد. گزارش مشخص می‌کند هر مورد سالم بوده، ایراد داشته، تست نشده یا در آن مدل وجود ندارد.",
+    icon: ClipboardCheck,
+  },
+  {
+    title: "اقلام همراه و شرایط خرید",
+    text: "مدل، ظرفیت، اقلام همراه، قیمت و شرایط مهلت تست را بر اساس اطلاعات ثبت‌شده برای همان دستگاه مقایسه کنید.",
+    icon: PackageCheck,
+  },
 ];
 
 const faqs = [
   {
-    question: "پیش از خرید کنسول کارکرده چه چیزهایی را بررسی کنم؟",
-    answer: "مدل دقیق و ظرفیت، وضعیت ظاهری، نتیجه تست بخش‌های مختلف، سابقه تعمیر یا سرویس، لوازم همراه و شرایط مهلت تست را در صفحه همان دستگاه بررسی کن. این جزئیات ممکن است برای هر محصول متفاوت باشند.",
+    question: "از کجا وضعیت ظاهری و فنی دستگاه را بررسی کنم؟",
+    answer: "تصاویر و توضیحات صفحهٔ همان دستگاه را ببینید. اگر گزارش بررسی ثبت شده است، تاریخ بررسی، نتیجهٔ هر مورد و توضیحات ایرادهای ثبت‌شده را بخوانید.",
   },
   {
-    question: "کنسول‌های PS2، PS3، PS4 و PS5 کارکرده چه تفاوتی دارند؟",
-    answer: "هر نسل، بازی‌ها و امکانات متفاوتی دارد. پیش از انتخاب، بازی‌های موردعلاقه، بودجه، نوع دسته و فضای موردنیازت را مشخص کن و سپس مشخصات دستگاه‌های موجود را با هم مقایسه کن.",
+    question: "سابقهٔ تعمیر یا سرویس دستگاه را کجا ببینم؟",
+    answer: "بخش «سابقهٔ تعمیر یا سرویس» را در گزارش همان دستگاه بررسی کنید. اگر سابقه درج نشده یا توضیح آن مبهم است، پیش از سفارش از فروشگاه بپرسید.",
   },
   {
-    question: "آیا قیمت و موجودی کنسول‌های کارکرده ثابت است؟",
-    answer: "خیر. قیمت هر دستگاه می‌تواند با توجه به مدل، ظرفیت، وضعیت ظاهری، لوازم همراه و نتایج بررسی متفاوت باشد. موجودی هم به دستگاه‌های منتشرشده و آماده فروش بستگی دارد.",
+    question: "چه اقلامی همراه کنسول تحویل داده می‌شود؟",
+    answer: "فهرست اقلام همراه و توضیحات ثبت‌شده دربارهٔ اصالت آن‌ها را در صفحهٔ محصول بخوانید. اگر دربارهٔ دسته یا کابل موردنیاز مطمئن نیستید، پیش از خرید سؤال کنید.",
   },
   {
-    question: "گزارش تست و مهلت تست هر دستگاه را کجا ببینم؟",
-    answer: "وارد صفحه محصول کنسول موردنظر شو؛ گزارش بررسی دستگاه و شرایط ثبت‌شده برای همان محصول را مطالعه کن. اگر موردی برای تصمیم‌گیری‌ات روشن نبود، قبل از ثبت سفارش از فروشگاه سؤال کن.",
+    question: "آیا دستگاه مهلت تست دارد؟",
+    answer: "بخش «شرایط مهلت تست و پیگیری» را در صفحهٔ همان دستگاه بررسی کنید. اگر مهلت یا شرایط آن مشخص نشده است، پیش از سفارش از فروشگاه بپرسید.",
   },
 ];
 
@@ -70,7 +80,7 @@ const loadCollection = cache(async (serialized: string) => {
   const raw: Params = JSON.parse(serialized);
   const query = parseCatalogQuery({ page: raw.page, inStock: raw.inStock });
   const rows = await getCategoryCatalog();
-  const generations = rows.filter((row) => isConsoleGeneration(row.slug));
+  const generations = getUsedConsoleGenerations(rows);
   const selected = isConsoleGeneration(raw.generation) ? raw.generation : "";
   const category = selected ? generations.find((row) => row.slug === selected) : null;
   const categoryIds = selected
@@ -82,17 +92,14 @@ const loadCollection = cache(async (serialized: string) => {
     : { total: 0, products: [] };
   const pages = Math.ceil(listing.total / PAGE_SIZE);
   if (query.page > Math.max(1, pages)) notFound();
-  return { query, selected, generations, range, listing, pages };
+  const filtered = Boolean(selected || query.inStock || range.min !== undefined || range.max !== undefined);
+  const canonical = !filtered && query.page > 1 ? path + "?page=" + query.page : path;
+  const relatedCategories = rows.filter((row) => row.slug === "consoles" || row.slug === "account-games");
+  return { query, selected, generations, range, listing, pages, filtered, canonical, relatedCategories };
 });
 
-function hasFilter(searchParams: Params) {
-  return Object.keys(searchParams).some((key) => key !== "page" && Boolean(searchParams[key]));
-}
-
 export async function generateMetadata({ searchParams }: { searchParams: Params }): Promise<Metadata> {
-  const { listing, query } = await loadCollection(JSON.stringify(searchParams));
-  const filtered = hasFilter(searchParams);
-  const canonical = !filtered && query.page > 1 ? path + "?page=" + query.page : path;
+  const { listing, filtered, canonical } = await loadCollection(JSON.stringify(searchParams));
   return {
     title,
     description,
@@ -109,8 +116,8 @@ export async function generateMetadata({ searchParams }: { searchParams: Params 
 }
 
 export default async function UsedConsoles({ searchParams }: { searchParams: Params }) {
-  const { query, selected, generations, range, listing, pages } = await loadCollection(JSON.stringify(searchParams));
-  const filtered = hasFilter(searchParams);
+  const { query, selected, generations, range, listing, pages, filtered, canonical, relatedCategories } =
+    await loadCollection(JSON.stringify(searchParams));
   const filterOpen = range.min !== undefined || range.max !== undefined || query.inStock;
   const featured = listing.products.find((product) => product.stock > 0 && Boolean(product.mainImage) && product.condition === "used" && isConsoleGeneration(product.category?.slug));
   const formatCount = (value: number) => value.toLocaleString("fa-IR");
@@ -133,8 +140,8 @@ export default async function UsedConsoles({ searchParams }: { searchParams: Par
         name: title,
         description,
         inLanguage: "fa-IR",
-        url: toAbsoluteUrl(path),
-        isPartOf: { "@type": "WebSite", name: "کرمان آتاری", url: toAbsoluteUrl("/") },
+        url: toAbsoluteUrl(canonical),
+        isPartOf: { "@id": WEBSITE_ID },
       },
       {
         "@type": "BreadcrumbList",
@@ -172,23 +179,12 @@ export default async function UsedConsoles({ searchParams }: { searchParams: Par
         <header className="overflow-hidden rounded-[26px] border border-[#dbe7f7] bg-gradient-to-br from-white via-[#f8fbff] to-[#eaf3ff] text-[#142b55] shadow-[0_10px_30px_rgba(26,75,146,0.07)] sm:rounded-[30px]">
           <div className="grid gap-6 p-5 sm:p-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-center lg:p-10">
             <div className="min-w-0">
-              <span className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-3 py-2 text-xs font-bold text-blue-700">
-                <ShieldCheck className="h-4 w-4 shrink-0 text-blue-600" aria-hidden="true" />
-                عکس واقعی و گزارش تست هر دستگاه
-              </span>
-              <h1 className="mt-4 max-w-2xl break-words text-2xl font-black text-[#142b55] sm:text-3xl lg:text-[38px]" style={{ lineHeight: 1.65 }}>
+              <h1 className="max-w-2xl break-words text-2xl font-black text-[#142b55] sm:text-3xl lg:text-[38px]" style={{ lineHeight: 1.65 }}>
                 خرید کنسول کارکرده <span className="whitespace-nowrap"><bdi dir="ltr">PS2</bdi> تا <bdi dir="ltr">PS5</bdi></span> در کرمان
               </h1>
               <p className="mt-4 max-w-[620px] text-sm leading-8 text-slate-600 sm:text-base">
-                در این صفحه می‌توانید کنسول‌های کارکرده پلی‌استیشن را با جزئیات کامل بررسی کنید. برای هر دستگاه، عکس واقعی، وضعیت ظاهری، لوازم همراه، نتیجه تست و قیمت درج می‌شود تا انتخاب مطمئن‌تری داشته باشید. اگر به دنبال خرید PS2، PS3، PS4 یا PS5 کارکرده هستید، مدل‌های موجود را مقایسه کنید و مناسب‌ترین گزینه را انتخاب کنید.
+                برای خرید پلی‌استیشن کارکرده از کرمان آتاری، نسل دستگاه را انتخاب کنید و قیمت، وضعیت ظاهری و اقلام همراه مدل‌های موجود را مقایسه کنید. اگر برای دستگاه گزارش تست ثبت شده باشد، آن را در صفحهٔ محصول می‌بینید.
               </p>
-              <div className="mt-5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap" aria-label="نکات مهم در خرید کنسول کارکرده">
-                {["عکس واقعی", "گزارش تست دستگاه", "جزئیات لوازم همراه", "قیمت هر دستگاه"].map((item) => (
-                  <span key={item} className="inline-flex min-w-0 items-center gap-1.5 rounded-xl border border-blue-100 bg-white px-3 py-2 text-[11px] font-bold leading-5 text-[#28527e] sm:text-xs">
-                    <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-blue-600" aria-hidden="true" />{item}
-                  </span>
-                ))}
-              </div>
               <a href="#console-results" className="mt-6 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#1469f5] px-5 py-3 text-center text-sm font-black text-white transition hover:bg-[#0b56ce] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600 sm:w-fit">
                 مشاهده دستگاه‌ها <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
               </a>
@@ -321,15 +317,11 @@ export default async function UsedConsoles({ searchParams }: { searchParams: Par
 
         <section aria-labelledby="shopping-guide" className="rounded-[26px] border border-[#dde7f5] bg-white p-5 shadow-sm sm:p-8">
           <div className="max-w-3xl">
-            <span className="inline-flex items-center gap-2 text-xs font-black text-blue-700">
-              <BadgeCheck className="h-4 w-4" aria-hidden="true" /> قبل از ثبت سفارش
-            </span>
-            <h2 id="shopping-guide" className="mt-2 text-xl font-black leading-9 text-[#142b55] sm:text-2xl">
-              کنسول کارکرده خوب را با اطلاعاتش انتخاب کن، نه فقط ظاهرش
+            <h2 id="shopping-guide" className="text-xl font-black leading-9 text-[#142b55] sm:text-2xl">
+              نحوهٔ ثبت و خواندن گزارش بررسی کنسول کارکرده
             </h2>
             <p className="mt-3 text-sm leading-8 text-slate-600">
-              موقع خرید پلی‌استیشن دست‌دوم، دو دستگاه از یک نسل هم ممکن است شرایط متفاوتی داشته باشند.
-              بهتر است مشخصات فنی، وضعیت دستگاه و اطلاعات درج‌شده برای همان محصول را با نیاز و بودجه خودت مقایسه کنی.
+              در گزارش هر دستگاه، تاریخ بررسی، نتیجهٔ موارد ثبت‌شده و توضیحات ایرادهای مشاهده‌شده درج می‌شود. جزئیات گزارش را در صورت ثبت، در بخش «نتیجهٔ بررسی همین دستگاه» در صفحهٔ محصول بخوانید.
             </p>
           </div>
           <div className="mt-6 grid gap-3 md:grid-cols-3">
@@ -347,6 +339,15 @@ export default async function UsedConsoles({ searchParams }: { searchParams: Par
               );
             })}
           </div>
+          <nav aria-label="دسته‌ها و خدمات مرتبط" className="mt-6 flex flex-wrap gap-x-5 gap-y-3 text-sm font-semibold text-blue-700">
+            {relatedCategories.map((category) => (
+              <Link key={category._id} href={categoryHref(category.slug)} className="hover:underline">
+                {category.name}
+              </Link>
+            ))}
+            <Link href="/services/ps4-game-installation" className="hover:underline">خدمات نصب بازی PS4</Link>
+            <Link href="/services/ps5-game-installation" className="hover:underline">خدمات نصب بازی PS5</Link>
+          </nav>
         </section>
 
         <section aria-labelledby="faq-heading" className="rounded-[26px] border border-[#dde7f5] bg-white p-5 shadow-sm sm:p-8">

@@ -7,6 +7,7 @@ import ts from 'typescript';
 const require = createRequire(import.meta.url);
 const { resolveRouteData } = require('next/dist/build/webpack/loaders/metadata/resolve-route-data.js');
 const source = await readFile(new URL('./app/sitemap.ts', import.meta.url), 'utf8');
+const consoleGenerations = new Set(['playstation-2', 'playstation-3', 'playstation-4', 'playstation-5']);
 const compiled = ts.transpileModule(source, { compilerOptions: {
   module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true,
 }}).outputText;
@@ -30,25 +31,19 @@ function loadSitemap({ blogs = [], products = [], connectionError, blogError, ca
     '@/model/Product': model('products', products),
     '@/model/Blog': model('blogs', blogs, blogError),
     '@/lib/site': { SITE_URL: 'https://kermanatari.ir' },
-    '@/lib/catalog/category-data': { getCategoryCatalog: async () => categories },
-    '@/lib/catalog/category-seo': {
-      categoryHref: slug => `/category/${encodeURIComponent(slug)}`,
-      descendantIds: (id, rows) => {
-        const ids = new Set([id]);
-        const queue = [id];
-        for (let i = 0; i < queue.length; i++) {
-          for (const row of rows) {
-            if (row.parent === queue[i] && !ids.has(row._id)) {
-              ids.add(row._id);
-              queue.push(row._id);
-            }
-          }
-        }
-        return [...ids];
+    '@/lib/catalog/category-data': {
+      getCategoryCatalog: async () => categories,
+      hasUsedConsoleProducts: async rows => {
+        const categoryIds = new Set(rows.filter(row => consoleGenerations.has(row.slug)).map(row => row._id));
+        return products.some(product => categoryIds.has(product.category) &&
+          product.status === 'published' && product.deletedAt == null &&
+          product.condition === 'used' && product.productType === 'single' &&
+          product.isDigital !== true && product.isOnlineGame !== true);
       },
     },
-    '@/lib/used-console': {
-      isConsoleGeneration: slug => ['playstation-2', 'playstation-3', 'playstation-4', 'playstation-5'].includes(slug),
+    '@/lib/catalog/category-seo': { categoryHref: slug => `/category/${encodeURIComponent(slug)}` },
+    '@/lib/game-installation-pages': {
+      installationPages: ['ps4', 'ps5'].map(console => ({ path: `/services/${console}-game-installation` })),
     },
   };
   const module = { exports: {} };
@@ -69,6 +64,8 @@ test('sitemap keeps static/product pages and includes only published, non-delete
   const entries = await sitemap.default();
   const urls = entries.map(entry => entry.url);
   assert.ok(urls.includes('https://kermanatari.ir/blog'));
+  assert.ok(urls.includes('https://kermanatari.ir/services/ps4-game-installation'));
+  assert.ok(urls.includes('https://kermanatari.ir/services/ps5-game-installation'));
   assert.ok(urls.includes('https://kermanatari.ir/product/valid-product'));
   assert.ok(urls.includes('https://kermanatari.ir/blog/published'));
   assert.ok(!urls.some(url => /draft|removed/.test(url)));
@@ -144,8 +141,9 @@ test('used PlayStation hub appears in sitemap only for published used devices in
     { _id: 'accessories-id', slug: 'accessories', parent: null, productCount: 2 },
   ];
   const products = [
-    { slug: 'used-ps5', status: 'published', condition: 'used', category: 'ps5-slim-id' },
-    { slug: 'used-controller', status: 'published', condition: 'used', category: 'accessories-id' },
+    { slug: 'used-ps5', status: 'published', condition: 'used', productType: 'single', category: 'ps5-id' },
+    { slug: 'used-child', status: 'published', condition: 'used', productType: 'single', category: 'ps5-slim-id' },
+    { slug: 'used-controller', status: 'published', condition: 'used', productType: 'single', category: 'accessories-id' },
     { slug: 'draft-ps5', status: 'draft', condition: 'used', category: 'ps5-id' },
   ];
   const sitemap = loadSitemap({ products, categories });
@@ -169,7 +167,7 @@ test('used PlayStation hub appears in sitemap only for published used devices in
 
 test('used controller alone does not create an empty PS2–PS5 collection sitemap URL', async () => {
   const categories = [{ _id: 'accessories-id', slug: 'accessories', parent: null, productCount: 1 }];
-  const products = [{ slug: 'used-controller', status: 'published', condition: 'used', category: 'accessories-id' }];
+  const products = [{ slug: 'used-controller', status: 'published', condition: 'used', productType: 'single', category: 'accessories-id' }];
   const urls = (await loadSitemap({ products, categories }).default()).map(row => row.url);
   assert.ok(!urls.includes('https://kermanatari.ir/used-consoles'));
 });

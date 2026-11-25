@@ -1,6 +1,8 @@
 import { Metadata } from "next";
 import Link from "@/app/components/navigation/NavigationFeedback";
-import { permanentRedirect } from "next/navigation";
+import { cache } from "react";
+import { notFound, permanentRedirect } from "next/navigation";
+import { GET as getProductsResponse } from "@/app/api/products/all_products/route";
 import { getCategoryCatalog } from "@/lib/catalog/category-data";
 import { categoryHref, hasCatalogFilters, parseCatalogQuery, resolveLegacyCategory } from "@/lib/catalog/category-seo";
 import { SlidersHorizontal, Tags, X } from "lucide-react";
@@ -20,6 +22,8 @@ import {
 } from "./components/ProductNavigation";
 import { SITE_URL, toAbsoluteUrl } from "@/lib/site";
 import { categories } from "../constants/categories";
+
+export const dynamic = "force-dynamic";
 
 const baseMetadata: Metadata = {
   title: "محصولات",
@@ -58,53 +62,38 @@ async function redirectLegacyCategory(searchParams: ProductsSearchParams) {
   }
 }
 
-export async function generateMetadata({ searchParams }: { searchParams: ProductsSearchParams }): Promise<Metadata> {
+const loadProducts = cache(async (serialized: string) => {
+  const searchParams: ProductsSearchParams = JSON.parse(serialized);
   await redirectLegacyCategory(searchParams);
-  const query = parseCatalogQuery(searchParams);
+
+  const params = new URLSearchParams();
+  for (const key of ["category", "sort", "page", "q", "tag", "inStock"] as const) {
+    const value = searchParams[key];
+    if (typeof value === "string" && value) params.set(key, value);
+  }
+
+  // Use the same listing as the API without an HTTP request to the public site.
+  const url = new URL("/api/products/all_products", SITE_URL);
+  url.search = params.toString();
+  const response = await getProductsResponse(new Request(url));
+  if (response.status === 404) notFound();
+  if (!response.ok) throw new Error("خطا در دریافت محصولات");
+
+  const data = await response.json();
+  const query = parseCatalogQuery(searchParams, { allProducts: true });
   const filtered = Boolean(searchParams.category) || hasCatalogFilters(query);
-  const page = query.page;
-  const canonical = !filtered && page > 1 ? `/products?page=${page}` : "/products";
+  const canonical = !filtered && data.page > 1 ? `/products?page=${data.page}` : "/products";
+  return { data, filtered, canonical };
+});
+
+export async function generateMetadata({ searchParams }: { searchParams: ProductsSearchParams }): Promise<Metadata> {
+  const { canonical, filtered } = await loadProducts(JSON.stringify(searchParams));
   return {
     ...baseMetadata,
     alternates: { canonical },
     openGraph: { ...baseMetadata.openGraph, url: canonical },
     robots: { index: !filtered, follow: true },
   };
-}
-
-async function getProducts(params: {
-  category?: string;
-  sort?: string;
-  page?: string;
-  q?: string;
-  tag?: string;
-}) {
-  const url = new URL(`${SITE_URL}/api/products/all_products`);
-
-  if (params.category) {
-    url.searchParams.append("category", params.category);
-  }
-
-  if (params.sort) {
-    url.searchParams.append("sort", params.sort);
-  }
-
-  if (params.page) {
-    url.searchParams.append("page", params.page);
-  }
-  if (params.q) {
-    url.searchParams.append("q", params.q);
-  }
-  if (params.tag) {
-    url.searchParams.append("tag", params.tag);
-  }
-  const res = await fetch(url.toString(), { cache: "no-store" });
-
-  if (!res.ok) {
-    throw new Error("خطا در دریافت محصولات");
-  }
-
-  return res.json();
 }
 
 type ProductsSearchParams = {
@@ -175,8 +164,7 @@ export default async function ProductsPage({
 }: {
   searchParams: ProductsSearchParams;
 }) {
-  await redirectLegacyCategory(searchParams);
-  const data = await getProducts(searchParams);
+  const { data, canonical: listingCanonical } = await loadProducts(JSON.stringify(searchParams));
   const products = data.products as Product[];
   const returnedTags = (data.filters?.tags || []) as ProductTagFacet[];
   const selectedTag = data.filters?.selectedTag as
@@ -197,11 +185,6 @@ export default async function ProductsPage({
   const hasActiveFilters = Boolean(
     searchParams.category || searchParams.tag || searchParams.q,
   );
-  const listingCanonical =
-    !searchParams.category && !hasCatalogFilters(parseCatalogQuery(searchParams)) && currentPage > 1
-      ? `/products?page=${currentPage}`
-      : "/products";
-
   const itemListSchema = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",

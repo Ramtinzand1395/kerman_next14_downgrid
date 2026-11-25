@@ -111,18 +111,20 @@ export function buildCategoryEntries(
 }
 export function parseCatalogQuery(
   raw: Record<string, string | string[] | undefined>,
+  { allProducts = false } = {},
 ): CatalogQuery {
   const one = (key: string) =>
     typeof raw[key] === "string" ? (raw[key] as string) : "";
   const pageValue = one("page");
   const page = /^\d+$/.test(pageValue) ? Number(pageValue) : 1;
+  const sort = one("sort");
+  const allowedSorts = ["newest", "lowPrice", "highPrice"];
+  if (allProducts) allowedSorts.push("bestSeller", "highestDiscount");
   return {
     page: Number.isSafeInteger(page) && page > 0 && page <= 100000 ? page : 1,
     q: one("q").trim().slice(0, 80),
     tag: one("tag").trim().slice(0, 150),
-    sort: ["newest", "lowPrice", "highPrice"].includes(one("sort"))
-      ? one("sort")
-      : "newest",
+    sort: allowedSorts.includes(sort) ? sort : "newest",
     ...(one("condition") === "used" ? { used: true } : {}),
     inStock: one("inStock") === "1",
   };
@@ -149,12 +151,45 @@ export function hasCatalogFilters(query: CatalogQuery) {
   );
 }
 
-const guides: Record<string, { intro: string; guide: string }> = {
+export function isGamingWallArtCategory(slug: string) {
+  return slug === "gaming-wall-art" || slug === "gaming-signs";
+}
+
+const guides: Record<
+  string,
+  { intro: string; guide: string; title?: string; description?: string; heading?: string; faqs?: CategoryRow["faqs"] }
+> = {
   "gaming-wall-art": {
+    title: "خرید تابلو و شاسی گیمینگ برای دکور اتاق گیمینگ",
+    description:
+      "برای خرید آنلاین تابلو و شاسی گیمینگ از کرمان آتاری، طرح‌ها، ابعاد و مدل‌های شاسی و قاب‌دار را مقایسه کنید و گزینه‌های ارسال به شهر خود را هنگام سفارش ببینید.",
+    heading: "خرید تابلو و شاسی گیمینگ",
     intro:
-      "تابلو گیمینگ و شاسی دکوراتیو با طرح بازی‌ها و شخصیت‌های محبوب را در این صفحه ببینید. هر طرح صفحهٔ مخصوص خود را دارد و اندازه‌ها و نوع اجرای موجود در همان صفحه قابل انتخاب‌اند.",
+      "برای دکور اتاق گیمینگ، طرح بازی یا شخصیت دلخواهتان را پیدا کنید. صفحهٔ همان طرح، مدل، ابعاد و موجودی گزینه‌های قابل سفارش را نشان می‌دهد.",
     guide:
-      "برای انتخاب تابلو اتاق گیمینگ، ابتدا سبک و رنگ طرح را با فضای اتاق هماهنگ کنید. ابعاد محل نصب را اندازه بگیرید و اندازه‌های موجود را در صفحهٔ همان طرح مقایسه کنید. شاسی و تابلو قاب‌دار را بر اساس ظاهر لبه‌ها و سلیقهٔ دکوراسیون انتخاب کنید؛ اندازه، نوع اجرا و قیمت نهایی هر ترکیب را پیش از افزودن به سبد بررسی کنید.",
+      "طرحی را انتخاب کنید که با رنگ دیوار و نور اتاق هماهنگ باشد. عرض و ارتفاع فضای نصب و جهت طرح را بررسی کنید. شاسی حاشیهٔ قاب دور طرح ندارد و در مدل قاب‌دار، قاب دور تصویر دیده می‌شود. برای مقایسهٔ ابعاد، شاسی ۱۵×۲۰ و تابلو قاب‌دار ۳۰×۴۰ و ۴۰×۶۰ نمونه‌هایی از مدل‌های ثبت‌شده‌اند. اندازه و نوع اجرای قابل سفارش را در صفحهٔ همان طرح بررسی کنید.",
+    faqs: [
+      {
+        question: "برای دیوار اتاق گیمینگ چه اندازه‌ای انتخاب کنم؟",
+        answer:
+          "فضای خالی دیوار را اندازه بگیرید و جای مانیتور، میز یا قفسه را در نظر بگیرید. عرض و ارتفاع گزینه‌های درج‌شده در صفحهٔ طرح را با فضای نصب مقایسه کنید.",
+      },
+      {
+        question: "تفاوت شاسی گیمینگ و تابلو قاب‌دار چیست؟",
+        answer:
+          "در شاسی، طرح بدون حاشیهٔ قاب دیده می‌شود. در تابلو قاب‌دار، قاب دور طرح بخشی از ظاهر تابلو است. تصویر و توضیحات مدل انتخابی را در صفحهٔ محصول بررسی کنید.",
+      },
+      {
+        question: "چطور طرح، مدل و اندازه را سفارش بدهم؟",
+        answer:
+          "صفحهٔ طرح را باز کنید، نوع و اندازهٔ قابل سفارش را انتخاب کنید و پس از بررسی جزئیات و قیمت همان گزینه، آن را به سبد خرید اضافه کنید.",
+      },
+      {
+        question: "روش و هزینهٔ ارسال به شهرم را کجا ببینم؟",
+        answer:
+          "مقصد را هنگام ثبت سفارش وارد کنید تا روش‌ها، هزینه و بازهٔ تقریبی ارسال همان سفارش را ببینید.",
+      },
+    ],
   },
   consoles: {
     intro:
@@ -207,10 +242,31 @@ Object.assign(guides, {
       "هنگام خرید PS2، به مدل دستگاه، ورودی‌های تصویر، سازگاری با تلویزیون، دسته‌ها و مموری کارت توجه کنید. روش اجرای بازی و کابل‌های مورد نیاز را از مشخصات همان دستگاه بررسی کنید.",
   },
   "account-games": {
+    title: "خرید بازی اکانتی PS4 و PS5",
+    description:
+      "خرید بازی اکانتی PS4 و PS5 در ظرفیت‌های موجود، مشاهده قیمت و شرایط هر بازی و ثبت سفارش آنلاین از کرمان آتاری.",
+    heading: "خرید بازی‌های اکانتی پلی‌استیشن برای PS4 و PS5",
     intro:
-      "بازی‌های اکانتی را همراه با پلتفرم و شرایط استفادهٔ هر محصول بررسی کنید.",
+      "عنوان بازی را پیدا کنید و در صفحهٔ محصول، نسخهٔ سازگار با PS4 یا PS5، ظرفیت‌های موجود و قیمت گزینهٔ انتخابی را بررسی کنید.",
     guide:
-      "در خرید بازی اکانتی، ظرفیت، شیوهٔ فعال‌سازی، نیاز به اینترنت و محدودیت‌های دسترسی را در توضیحات محصول بخوانید. پیش از پرداخت، مطمئن شوید گزینهٔ انتخابی با کنسول و نحوهٔ بازی‌کردنتان سازگار است.",
+      "پیش از ثبت سفارش، توضیحات ظرفیت انتخابی را دربارهٔ روش فعال‌سازی، نیاز به اینترنت و امکان اجرا با حساب شخصی بخوانید. اگر شرایط استفاده برایتان روشن نیست، پیش از پرداخت با فروشگاه تماس بگیرید.",
+    faqs: [
+      {
+        question: "از کجا بفهمم بازی با PS4 یا PS5 من سازگار است؟",
+        answer:
+          "پلتفرم و نسخهٔ بازی را در صفحهٔ همان عنوان بررسی کنید و هنگام سفارش، گزینهٔ سازگار با کنسولتان را انتخاب کنید.",
+      },
+      {
+        question: "قیمت و ظرفیت‌های موجود هر بازی را کجا ببینم؟",
+        answer:
+          "صفحهٔ بازی را باز کنید و گزینه‌های موجود را ببینید. پیش از سفارش، قیمت و توضیحات مربوط به گزینهٔ انتخابی را بررسی کنید.",
+      },
+      {
+        question: "آیا می‌توانم با حساب شخصی یا بدون اینترنت بازی کنم؟",
+        answer:
+          "شرایط اتصال به اینترنت و استفاده از حساب شخصی را در توضیحات ظرفیت موردنظرتان بررسی کنید. اگر پاسخ در صفحهٔ محصول مشخص نبود، پیش از خرید از فروشگاه بپرسید.",
+      },
+    ],
   },
   "disc-games": {
     intro:
@@ -276,24 +332,32 @@ export function categoryContent(
   ancestors: CategoryRow[],
 ) {
   const specific = guides[category.slug];
+  const isWallArt = [category, ...ancestors].some((row) => isGamingWallArtCategory(row.slug));
+  const buyingContent = specific ?? (isWallArt ? guides["gaming-wall-art"] : undefined);
   const parentName = ancestors.at(-1)?.name;
   const name = category.name;
+  const heading = specific?.heading || (isWallArt ? `خرید ${name} برای دکور اتاق گیمینگ` : `خرید ${name}`);
   return {
-    title: category.seoTitle || `خرید ${name} و بررسی قیمت`,
+    title: category.seoTitle || specific?.title || (isWallArt ? heading : `خرید ${name} و بررسی قیمت`),
+    heading,
     description:
       category.metaDescription ||
+      specific?.description ||
+      (isWallArt
+        ? `برای خرید آنلاین ${name} از کرمان آتاری، طرح‌ها، اندازه و مدل‌های قابل سفارش را بررسی کنید و گزینه‌های ارسال به مقصد خود را هنگام خرید ببینید.`
+        : undefined) ||
       `خرید ${name} از کرمان آتاری؛ مشاهده محصولات${parentName ? ` در دسته ${parentName}` : ""}، مقایسه قیمت و مشخصات و بررسی مدل‌های موجود.`,
     intro:
       category.introduction ||
-      specific?.intro ||
+      buyingContent?.intro ||
       `محصولات ${name}${parentName ? ` از مجموعهٔ ${parentName}` : ""} را در این صفحه بررسی کنید. با جستجو، انتخاب برچسب و مرتب‌سازی، گزینه‌های متناسب با نیازتان را پیدا کنید.`,
     guide:
       category.buyingGuide ||
-      specific?.guide ||
+      buyingContent?.guide ||
       `برای انتخاب ${name}، مشخصات و کاربرد کالا را با نیاز خود مقایسه کنید. در صفحهٔ هر محصول، تصاویر، توضیحات، مدل‌های قابل انتخاب و وضعیت موجودی را ببینید. قیمت نهایی به گزینهٔ انتخابی بستگی دارد؛ پیش از ثبت سفارش، اطلاعات محصول و شرایط خرید را بررسی کنید.`,
     faqs: category.faqs?.length
       ? category.faqs
-      : [
+      : buyingContent?.faqs ?? [
           {
             question: `قیمت ${name} را کجا ببینم؟`,
             answer:

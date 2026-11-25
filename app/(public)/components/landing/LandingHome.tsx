@@ -33,6 +33,7 @@ import LandingCatalog from "./LandingCatalog";
 import LandingSpecialOffers from "./LandingSpecialOffers";
 import ServiceOrderSection from "./ServiceOrderSection";
 import { STORE_CONTACT } from "@/lib/store-contact";
+import { GameInstallationLinks } from "../../services/_components/GameInstallationPage";
 
 const REQUEST_URL = "/my-profile?step=6";
 const INSTAGRAM_URL =
@@ -468,6 +469,10 @@ export default function LandingHome({
         </section>
 
         <ServiceOrderSection courierEnabled={courierEnabled} />
+
+        <div className="landing-section">
+          <GameInstallationLinks />
+        </div>
 
         <section className="landing-section" aria-labelledby="benefits-heading">
           <div className="relative overflow-hidden rounded-[28px] border border-[#174f9f] bg-[radial-gradient(circle_at_15%_10%,#1765c9_0%,#082d6b_42%,#051d49_100%)] p-5 text-white shadow-[0_22px_55px_rgba(5,35,86,0.2)] sm:p-8 lg:p-10">

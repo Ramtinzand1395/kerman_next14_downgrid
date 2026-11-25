@@ -3,14 +3,24 @@ import type { Metadata } from "next";
 import Link from "@/app/components/navigation/NavigationFeedback";
 import { SITE_URL } from "@/lib/site";
 import { contactTopicHref } from "@/lib/contact-topics";
+import { GameInstallationLinks } from "./_components/GameInstallationPage";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "خدمات کرمان آتاری | پشتیبانی و مشاوره خرید",
+  title: "خدمات نصب بازی PS4 و PS5 و مشاوره خرید",
   description:
-    "با خدمات کامل کرمان آتاری آشنا شوید؛ از بازی‌های اکانتی و مشاوره خرید تا ارسال براساس مقصد و پشتیبانی بعد از خرید.",
+    "خدمات کرمان آتاری شامل نصب بازی PS4 و PS5 در کرمان با مراجعه حضوری یا پیک، بازی‌های اکانتی، مشاوره خرید و پشتیبانی پس از خرید است.",
   alternates: {
     canonical: "/services",
+  },
+  openGraph: {
+    url: "/services",
+    title: "خدمات نصب بازی PS4 و PS5 و مشاوره خرید | کرمان آتاری",
+    description:
+      "نصب بازی PS4 و PS5 در کرمان با مراجعه حضوری یا پیک، بازی‌های اکانتی، مشاوره خرید و پشتیبانی پس از خرید.",
+    type: "website",
+    siteName: "KermanAtari",
+    locale: "fa_IR",
   },
 };
 // 
@@ -151,6 +161,8 @@ export default function ServicesPage() {
           و قابل اعتماد تبدیل شود.
         </p>
       </section>
+
+      <GameInstallationLinks />
 
       <section aria-label="خدمات کرمان آتاری" className="space-y-5">
         <h2 className="text-2xl font-extrabold text-slate-900 md:text-3xl">

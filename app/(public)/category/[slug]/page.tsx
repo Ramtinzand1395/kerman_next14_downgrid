@@ -17,6 +17,7 @@ import {
   catalogQueryString,
   decodeCategorySlug,
   hasCatalogFilters,
+  isGamingWallArtCategory,
   parseCatalogQuery,
 } from "@/lib/catalog/category-seo";
 
@@ -87,8 +88,14 @@ export default async function CategoryPage({ params, searchParams }: Props) {
     permanentRedirect(path + (suffix ? `?${suffix}` : ""));
   }
   const children = rows.filter((row) => row.parent === category._id);
-  const siblings = rows.filter(
-    (row) => row.parent === category.parent && row._id !== category._id,
+  const isWallArt = [category, ...ancestors].some((row) => isGamingWallArtCategory(row.slug));
+  const relatedCategories = rows.filter((row) =>
+    row._id !== category._id && (
+      row.parent === category.parent ||
+      (isWallArt && isGamingWallArtCategory(row.slug) &&
+        row.parent !== category._id &&
+        !ancestors.some((ancestor) => ancestor._id === row._id))
+    ),
   );
   const crumbs = [
     { name: "خانه", href: "/" },
@@ -159,7 +166,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
           مجموعهٔ محصولات کرمان آتاری
         </p>
         <h1 className="text-2xl font-extrabold md:text-3xl">
-          خرید {category.name}
+          {content.heading}
         </h1>
         <p className="mt-4 max-w-3xl text-sm leading-8 text-slate-200">
           {content.intro}
@@ -353,6 +360,12 @@ export default async function CategoryPage({ params, searchParams }: Props) {
         <div className="mt-5 flex flex-wrap gap-4 text-sm text-blue-700">
           <Link href="/terms">شرایط خرید و مرجوعی</Link>
           <Link href="/contact-us">مشاوره و تماس با فروشگاه</Link>
+          {category.slug === "account-games" && (
+            <>
+              <Link href="/services/ps4-game-installation">خدمات نصب بازی PS4</Link>
+              <Link href="/services/ps5-game-installation">خدمات نصب بازی PS5</Link>
+            </>
+          )}
           {[category.slug, ...ancestors.map((row) => row.slug)].includes(
             "consoles",
           ) && (
@@ -379,12 +392,12 @@ export default async function CategoryPage({ params, searchParams }: Props) {
           </details>
         ))}
       </article>
-      {siblings.length > 0 && (
+      {relatedCategories.length > 0 && (
         <nav aria-label="دسته‌بندی‌های مرتبط" className="flex flex-wrap gap-3">
           <span className="text-sm font-bold text-slate-700">
             دسته‌بندی‌های مرتبط:
           </span>
-          {siblings.map((row) => (
+          {relatedCategories.map((row) => (
             <Link
               href={categoryHref(row.slug)}
               key={row._id}
