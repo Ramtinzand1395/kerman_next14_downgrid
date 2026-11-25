@@ -2,18 +2,11 @@
 
 import Link from "@/app/components/navigation/NavigationFeedback";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronDown, User, Sparkles, Search } from "lucide-react";
+import { ArrowRight, X, ChevronDown, ChevronLeft, User, Search } from "lucide-react";
 import { signOut } from "next-auth/react";
-import { FormEvent, useState } from "react";
-import { useRouter } from "@/app/components/navigation/NavigationFeedback";
+import { useEffect, useRef, useState, type FormEvent, type MouseEventHandler } from "react";
+import CategoryBrowser from "./CategoryBrowser";
 import { categoryMenuHref } from "../constants/categories";
-
-interface Category {
-  name: string;
-  slug: string;
-  description: string;
-  subcategories: { name: string; slug: string }[];
-}
 
 interface MenuItem {
   name: string;
@@ -21,30 +14,29 @@ interface MenuItem {
   icon: React.ReactNode;
 }
 
-interface UserWithRole {
-  name?: string | null;
-  role?: string;
-}
-
 interface MobileMenuProps {
-  isOpen: boolean;
+  view: "menu" | "categories";
   onClose: () => void;
   menuItems: MenuItem[];
-  categories: Category[];
-  quickLinks: { name: string; slug: string; parentName: string }[];
-  user?: UserWithRole | null;
+  onOpenCategories: () => void;
+  onNavigate: (href: string) => void;
+  onLinkClick: MouseEventHandler<HTMLAnchorElement>;
+  onLeave: (action: () => void) => void;
+  quickLinks: { name: string; slug: string }[];
+  user?: { name?: string | null } | null;
 }
 
 export default function MobileMenu({
-  isOpen,
+  view,
   onClose,
   menuItems,
-  categories,
+  onOpenCategories,
+  onNavigate,
+  onLinkClick,
+  onLeave,
   quickLinks,
   user,
 }: MobileMenuProps) {
-  const router = useRouter();
-  const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [openUserMenu, setOpenUserMenu] = useState<boolean>(false);
   const [searchValue, setSearchValue] = useState("");
 
@@ -58,258 +50,231 @@ export default function MobileMenu({
       params.set("q", searchValue.trim());
     }
 
-    router.push(`/products?${params.toString()}`);
-    onClose();
+    onNavigate(`/products?${params.toString()}`);
   };
 
+  const categoryTrigger = useRef<HTMLButtonElement>(null);
+  const previousView = useRef(view);
+
+  useEffect(() => {
+    if (view === "menu" && previousView.current === "categories") {
+      categoryTrigger.current?.focus({ preventScroll: true });
+    }
+    previousView.current = view;
+  }, [view]);
+
+  if (view === "categories") {
+    return <MobileCategories onBack={onClose} onLinkClick={onLinkClick} />;
+  }
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-          />
+    <>
+      <motion.div
+        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        onClick={onClose}
+      />
 
-          <motion.div
-            className="fixed right-0 top-0 z-50 h-full w-[86%] overflow-y-auto border-l border-slate-200 bg-white shadow-xl sm:w-1/2"
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "tween", duration: 0.3 }}
+      <motion.div
+        className="fixed right-0 top-0 z-[60] h-full w-[86%] overflow-y-auto border-l border-slate-200 bg-white shadow-xl sm:w-1/2"
+        initial={{ x: "100%" }}
+        animate={{ x: 0 }}
+        transition={{ type: "tween", duration: 0.3 }}
+      >
+        <div className="sticky top-0 border-b border-gray-200 bg-white/95 p-4 backdrop-blur-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-extrabold text-[#001A6E]">منوی سایت</h2>
+            <button
+              onClick={onClose}
+              aria-label="بستن منو"
+              className="rounded-lg border border-slate-200 p-1"
+            >
+              <X className="h-6 w-6 text-gray-700" />
+            </button>
+          </div>
+
+          <form
+            onSubmit={handleSearch}
+            className="flex items-center gap-1 rounded-xl border border-slate-200 px-2 py-1"
           >
-            <div className="sticky top-0 border-b border-gray-200 bg-white/95 p-4 backdrop-blur-sm">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-lg font-extrabold text-[#001A6E]">منوی سایت</h2>
-                <button
-                  onClick={onClose}
-                  aria-label="بستن منو"
-                  className="rounded-lg border border-slate-200 p-1"
-                >
-                  <X className="h-6 w-6 text-gray-700" />
-                </button>
-              </div>
+            <input
+              type="search"
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              className="w-full bg-transparent py-1 text-sm text-gray-800 outline-none"
+              placeholder="جستجو در محصولات..."
+              aria-label="جستجو در محصولات"
+            />
+            <button
+              type="submit"
+              className="rounded-lg p-1 text-slate-500 hover:bg-slate-100"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+          </form>
+        </div>
 
-              <form
-                onSubmit={handleSearch}
-                className="flex items-center gap-1 rounded-xl border border-slate-200 px-2 py-1"
-              >
-                <input
-                  type="search"
-                  value={searchValue}
-                  onChange={(e) => setSearchValue(e.target.value)}
-                  className="w-full bg-transparent py-1 text-sm text-gray-800 outline-none"
-                  placeholder="جستجو در محصولات..."
-                  aria-label="جستجو در محصولات"
-                />
-                <button
-                  type="submit"
-                  className="rounded-lg p-1 text-slate-500 hover:bg-slate-100"
-                >
-                  <Search className="h-4 w-4" />
-                </button>
-              </form>
-            </div>
-
-            <div className="space-y-3 p-4">
-              {quickLinks.length > 0 && (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                  <h3 className="text-xs font-bold text-slate-500">دسترسی سریع</h3>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {quickLinks.slice(0, 6).map((link) => (
-                      <Link
-                        key={link.slug}
-                        href={categoryMenuHref(link.slug)}
-                        onClick={onClose}
-                        className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700"
-                      >
-                        {link.name}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {menuItems.map((item) => (
-                <div
-                  key={item.name}
-                  className="rounded-2xl border border-slate-200/70 bg-slate-50/80 px-3 py-2"
-                >
-                  {item.name === "دسته‌بندی‌ها" ? (
-                    <>
-                      <button
-                        onClick={() =>
-                          setOpenCategory(openCategory === item.name ? null : item.name)
-                        }
-                        className="flex w-full items-center justify-between text-base font-semibold text-gray-800 transition hover:text-blue-600"
-                        aria-expanded={openCategory === item.name}
-                      >
-                        <span className="flex items-center gap-2">
-                          {item.icon}
-                          {item.name}
-                        </span>
-                        <ChevronDown
-                          className={`h-4 w-4 transition-transform ${
-                            openCategory === item.name ? "rotate-180" : ""
-                          }`}
-                        />
-                      </button>
-
-                      <AnimatePresence>
-                        {openCategory === item.name && (
-                          <motion.ul
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="mt-2 space-y-3 overflow-hidden rounded-xl border border-slate-200 bg-white p-3"
-                          >
-                            {categories.map((cat) => (
-                              <li key={cat.slug} className="space-y-1">
-                                <Link
-                                  href={categoryMenuHref(cat.slug)}
-                                  onClick={onClose}
-                                  className="flex items-center gap-1 font-bold text-[#001A6E]"
-                                >
-                                  <Sparkles className="h-3.5 w-3.5" />
-                                  {cat.name}
-                                </Link>
-
-                                <p className="text-xs text-slate-500">{cat.description}</p>
-
-                                <ul className="space-y-1 pr-2">
-                                  {cat.subcategories.map((sub) => (
-                                    <li key={sub.name}>
-                                      <Link
-                                        aria-label={`رفتن به ${sub.name}`}
-                                        href={categoryMenuHref(sub.slug)}
-                                        onClick={onClose}
-                                        className="block text-sm text-gray-600 transition hover:text-blue-600"
-                                      >
-                                        {sub.name}
-                                      </Link>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </li>
-                            ))}
-                            <li className="rounded-xl border border-blue-200 bg-blue-50 p-3">
-                              <Link href="/used-consoles" onClick={onClose}
-                                className="flex min-h-10 items-center gap-2 font-bold text-blue-800">
-                                <Sparkles className="h-4 w-4 shrink-0" aria-hidden="true" />
-                                کنسول‌های کارکرده
-                              </Link>
-                              <p className="my-1 text-xs leading-5 text-slate-600">
-                                PS2 تا PS5؛ همراه با جزئیات و گزارش تست دستگاه
-                              </p>
-                              <div className="mt-2 grid grid-cols-4 gap-2">
-                                {[
-                                  { name: "PS2", slug: "playstation-2" },
-                                  { name: "PS3", slug: "playstation-3" },
-                                  { name: "PS4", slug: "playstation-4" },
-                                  { name: "PS5", slug: "playstation-5" },
-                                ].map((item) => (
-                                  <Link key={item.slug} href={`/used-consoles?generation=${item.slug}`}
-                                    onClick={onClose}
-                                    className="rounded-lg border border-blue-200 bg-white px-2 py-2 text-center text-xs font-bold text-blue-700">
-                                    {item.name}
-                                  </Link>
-                                ))}
-                              </div>
-                            </li>
-                          </motion.ul>
-                        )}
-                      </AnimatePresence>
-                    </>
-                  ) : (
-                    <Link
-                      href={item.link}
-                      onClick={onClose}
-                      className="flex items-center gap-2 py-1 text-base font-semibold text-gray-800 transition hover:text-blue-600"
-                    >
-                      {item.icon}
-                      {item.name}
-                    </Link>
-                  )}
-                </div>
-              ))}
-
-              {user && (
-                <div className="mt-5 rounded-2xl border border-gray-200 bg-white p-3">
-                  <button
-                    onClick={() => setOpenUserMenu(!openUserMenu)}
-                    className="flex w-full items-center justify-between text-base font-medium text-gray-800 transition hover:text-blue-600"
+        <div className="space-y-3 p-4">
+          {quickLinks.length > 0 && (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+              <h3 className="text-xs font-bold text-slate-500">دسترسی سریع</h3>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {quickLinks.map((link) => (
+                  <Link
+                    key={link.slug}
+                    href={categoryMenuHref(link.slug)}
+                    onClick={onLinkClick}
+                    className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700"
                   >
-                    <span className="flex items-center gap-2">
-                      <User className="h-4 w-4" /> {user.name || "کاربر"}
-                    </span>
-                    <ChevronDown
-                      className={`h-4 w-4 transition-transform ${
-                        openUserMenu ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
+                    {link.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
-                  <AnimatePresence>
-                    {openUserMenu && (
-                      <motion.ul
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="mt-2 space-y-2 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-3"
-                      >
-                        <li>
-                          <Link
-                            href="/my-profile?step=1"
-                            onClick={onClose}
-                            className="block text-sm text-gray-600 transition hover:text-blue-600"
-                          >
-                            پروفایل من
-                          </Link>
-                        </li>
-
-                        <li>
-                          <Link
-                            href="/my-profile?step=5"
-                            onClick={onClose}
-                            className="block text-sm text-gray-600 transition hover:text-blue-600"
-                          >
-                            سفارش‌ها
-                          </Link>
-                        </li>
-
-                        <li>
-                          <Link
-                            href="/my-profile?step=2"
-                            onClick={onClose}
-                            className="block text-sm text-gray-600 transition hover:text-blue-600"
-                          >
-                            لیست علاقه‌مندی‌ها
-                          </Link>
-                        </li>
-
-                        <li>
-                          <button
-                            onClick={() => {
-                              signOut({ callbackUrl: "/" });
-                              onClose();
-                            }}
-                            className="w-full text-left text-sm text-red-600 hover:text-red-700"
-                          >
-                            خروج
-                          </button>
-                        </li>
-                      </motion.ul>
-                    )}
-                  </AnimatePresence>
-                </div>
+          {menuItems.map((item) => (
+            <div
+              key={item.name}
+              className="rounded-2xl border border-slate-200/70 bg-slate-50/80 px-3 py-2"
+            >
+              {item.link === "/categories" ? (
+                <button
+                  ref={categoryTrigger}
+                  type="button"
+                  onClick={onOpenCategories}
+                  aria-haspopup="dialog"
+                  className="flex w-full items-center justify-between text-base font-semibold text-gray-800 transition hover:text-blue-600"
+                >
+                  <span className="flex items-center gap-2">{item.icon}{item.name}</span>
+                  <ChevronLeft aria-hidden="true" className="h-4 w-4" />
+                </button>
+              ) : (
+                <Link
+                  href={item.link}
+                  onClick={onLinkClick}
+                  className="flex items-center gap-2 py-1 text-base font-semibold text-gray-800 transition hover:text-blue-600"
+                >
+                  {item.icon}
+                  {item.name}
+                </Link>
               )}
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+          ))}
+
+          {user && (
+            <div className="mt-5 rounded-2xl border border-gray-200 bg-white p-3">
+              <button
+                onClick={() => setOpenUserMenu(!openUserMenu)}
+                className="flex w-full items-center justify-between text-base font-medium text-gray-800 transition hover:text-blue-600"
+              >
+                <span className="flex items-center gap-2">
+                  <User className="h-4 w-4" /> {user.name || "کاربر"}
+                </span>
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${
+                    openUserMenu ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              <AnimatePresence>
+                {openUserMenu && (
+                  <motion.ul
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="mt-2 space-y-2 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-3"
+                  >
+                    <li>
+                      <Link
+                        href="/my-profile?step=1"
+                        onClick={onLinkClick}
+                        className="block text-sm text-gray-600 transition hover:text-blue-600"
+                      >
+                        پروفایل من
+                      </Link>
+                    </li>
+
+                    <li>
+                      <Link
+                        href="/my-profile?step=5"
+                        onClick={onLinkClick}
+                        className="block text-sm text-gray-600 transition hover:text-blue-600"
+                      >
+                        سفارش‌ها
+                      </Link>
+                    </li>
+
+                    <li>
+                      <Link
+                        href="/my-profile?step=2"
+                        onClick={onLinkClick}
+                        className="block text-sm text-gray-600 transition hover:text-blue-600"
+                      >
+                        لیست علاقه‌مندی‌ها
+                      </Link>
+                    </li>
+
+                    <li>
+                      <button
+                        onClick={() => onLeave(() => { void signOut({ callbackUrl: "/" }); })}
+                        className="w-full text-left text-sm text-red-600 hover:text-red-700"
+                      >
+                        خروج
+                      </button>
+                    </li>
+                  </motion.ul>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </>
+  );
+}
+
+function MobileCategories({
+  onBack,
+  onLinkClick,
+}: {
+  onBack: () => void;
+  onLinkClick: MouseEventHandler<HTMLAnchorElement>;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const element = dialog.current;
+    element?.showModal();
+    return () => element?.close();
+  }, []);
+
+  return (
+    <dialog
+      ref={dialog}
+      aria-label="دسته‌بندی محصولات"
+      onCancel={event => {
+        event.preventDefault();
+        onBack();
+      }}
+      className="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none overflow-hidden bg-white p-0 text-slate-900"
+    >
+      <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)]">
+        <div className="flex items-center gap-2 border-b border-slate-200 px-2 py-2">
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="بازگشت به منوی سایت"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
+          >
+            <ArrowRight aria-hidden="true" className="h-5 w-5" />
+          </button>
+          <h2 className="text-base font-extrabold text-blue-900">دسته‌بندی محصولات</h2>
+        </div>
+        <CategoryBrowser onLinkClick={onLinkClick} />
+      </div>
+    </dialog>
   );
 }
